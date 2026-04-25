@@ -2,7 +2,7 @@
   "name": "scout-admin",
   "version": "0.4.0",
   "private": true,
-  "description": "Scout — multi-tenant catalog management admin (Phase 1).",
+  "description": "Scout — multi-tenant catalog management admin.",
   "scripts": {
     "dev": "next dev --port 3030",
     "build": "next build",
@@ -13,9 +13,9 @@
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.0",
-    "next": "15.3.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "15.3.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

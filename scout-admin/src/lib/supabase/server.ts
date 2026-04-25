@@ -4,13 +4,6 @@ import { cookies } from "next/headers";
 /**
  * Server Supabase client. Reads the user's session from cookies so the JWT
  * flows through to Postgres — which is what makes RLS work automatically.
- *
- * This is the default client for server components and route handlers.
- * Every query made through this client is scoped to the authenticated user
- * via `public.current_tenant_id()` in the RLS policies.
- *
- * For admin flows that must bypass RLS (imports, reconciliation,
- * cross-tenant reads), use `createServiceRoleClient()` instead.
  */
 export async function createClient() {
   const cookieStore = await cookies();
@@ -23,14 +16,15 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(
+          cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[],
+        ) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+              cookieStore.set(name, value, options as any),
             );
           } catch {
-            // `setAll` throws from server components. Middleware handles
-            // the actual cookie refresh — this catch lets reads still work.
+            // setAll throws from server components. Middleware handles refresh.
           }
         },
       },

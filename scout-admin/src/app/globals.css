@@ -1,23 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* =============================================================================
    Scout Admin — design system
    =============================================================================
-   Derived directly from the Bloom Admin design system (see the design file
-   for origin). Prefix renamed from `bl-` → `s-` and `bloom-` → `scout-`;
-   tokens and values preserved verbatim so the two apps can share a visual
-   language (D22: dedicated Scout admin, shared design language with Bloom).
-
-   Scope of this file:
-   - Tokens (colors, radii, fonts)
-   - App shell (nav, main, topbar)
-   - Core content primitives (card, field, button, tag, table)
-   - Screens implemented this pass (products list, product editor)
-
-   Deliberately omitted (deferred screens):
-   - Assistant rail / diff / thread styles
-   - Onboarding stepper
-   - Pack builder / supply recipe rows
-   - Image library grid
+   shadcn/ui + Tailwind CSS + Lucide icons.
+   Custom s-* classes retained for existing screens during migration.
+   New components use shadcn primitives.
    ========================================================================== */
+
+@layer base {
+  :root {
+    --background: 40 20% 98%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --primary: 211 61% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 8% 96%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 40 8% 96%;
+    --muted-foreground: 40 4% 53%;
+    --accent: 40 8% 96%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 55% 41%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 0% / 0.08;
+    --input: 0 0% 0% / 0.08;
+    --ring: 211 61% 53%;
+    --radius: 8px;
+  }
+}
 
 :root {
   --scout-accent: #378ADD;

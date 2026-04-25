@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { formatRelative } from "@/lib/format";
+import { FilePlus, Sheet, Globe } from "lucide-react";
 
 /**
  * Import dashboard. Entry point for all catalog import flows:
@@ -92,21 +93,7 @@ export default async function ImportPage() {
           style={{ textDecoration: "none" }}
         >
           <div className="s-import-card-icon">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <path d="M14 2v6h6" />
-              <path d="M12 18v-6" />
-              <path d="M9 15h6" />
-            </svg>
+            <FilePlus size={24} strokeWidth={1.5} />
           </div>
           <div className="s-import-card-text">
             <div className="s-import-card-title">Entrada de texto</div>
@@ -121,23 +108,7 @@ export default async function ImportPage() {
         {/* Excel/CSV — disabled */}
         <div className="s-import-card disabled">
           <div className="s-import-card-icon">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <path d="M14 2v6h6" />
-              <path d="M8 13h2" />
-              <path d="M8 17h2" />
-              <path d="M14 13h2" />
-              <path d="M14 17h2" />
-            </svg>
+            <Sheet size={24} strokeWidth={1.5} />
           </div>
           <div className="s-import-card-text">
             <div className="s-import-card-title">Excel / CSV</div>
@@ -152,18 +123,7 @@ export default async function ImportPage() {
         {/* Migration — disabled */}
         <div className="s-import-card disabled">
           <div className="s-import-card-icon">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9" />
-            </svg>
+            <Globe size={24} strokeWidth={1.5} />
           </div>
           <div className="s-import-card-text">
             <div className="s-import-card-title">Migración de tienda</div>

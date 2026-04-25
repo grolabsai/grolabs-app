@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { formatGTQ, formatRelative, initialsFromName } from "@/lib/format";
+import { Plus } from "lucide-react";
 
 /**
  * Products list screen. Mirror of Bloom's `screen-products` visually,
@@ -170,16 +171,7 @@ export default async function ProductsPage({
             title="Crear producto — próximamente"
             disabled
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M7 2v10M2 7h10" />
-            </svg>
+            <Plus size={12} strokeWidth={2} />
             Nuevo producto
           </button>
         </div>

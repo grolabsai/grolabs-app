@@ -2,6 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { updateVariantConfig } from "@/lib/actions/category";
+import {
+  Scale,
+  Droplets,
+  Ruler,
+  Palette,
+  MoveHorizontal,
+  Beef,
+  Hash,
+  Layers,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 /**
  * VariantAxisConfig — editable chip selector for default_variant_axes
@@ -13,16 +24,16 @@ import { updateVariantConfig } from "@/lib/actions/category";
  * not product size").
  */
 
-const STANDARD_AXES = [
-  { value: "weight", label: "Peso", icon: "⚖" },
-  { value: "volume", label: "Volumen", icon: "🧴" },
-  { value: "size", label: "Talla", icon: "📐" },
-  { value: "color", label: "Color", icon: "🎨" },
-  { value: "length", label: "Largo", icon: "📏" },
-  { value: "flavor", label: "Sabor", icon: "🍖" },
-  { value: "count", label: "Cantidad", icon: "🔢" },
-  { value: "material", label: "Material", icon: "🧵" },
-] as const;
+const STANDARD_AXES: { value: string; label: string; Icon: LucideIcon }[] = [
+  { value: "weight", label: "Peso", Icon: Scale },
+  { value: "volume", label: "Volumen", Icon: Droplets },
+  { value: "size", label: "Talla", Icon: Ruler },
+  { value: "color", label: "Color", Icon: Palette },
+  { value: "length", label: "Largo", Icon: MoveHorizontal },
+  { value: "flavor", label: "Sabor", Icon: Beef },
+  { value: "count", label: "Cantidad", Icon: Hash },
+  { value: "material", label: "Material", Icon: Layers },
+];
 
 export function VariantAxisConfig({
   categoryId,
@@ -98,7 +109,7 @@ export function VariantAxisConfig({
             className={`s-axis-chip${axes.includes(ax.value) ? " selected" : ""}`}
             onClick={() => toggleAxis(ax.value)}
           >
-            <span className="s-axis-icon">{ax.icon}</span>
+            <ax.Icon size={14} strokeWidth={1.5} />
             {ax.label}
           </button>
         ))}

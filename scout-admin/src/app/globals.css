@@ -1,23 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* =============================================================================
    Scout Admin — design system
    =============================================================================
-   Derived directly from the Bloom Admin design system (see the design file
-   for origin). Prefix renamed from `bl-` → `s-` and `bloom-` → `scout-`;
-   tokens and values preserved verbatim so the two apps can share a visual
-   language (D22: dedicated Scout admin, shared design language with Bloom).
-
-   Scope of this file:
-   - Tokens (colors, radii, fonts)
-   - App shell (nav, main, topbar)
-   - Core content primitives (card, field, button, tag, table)
-   - Screens implemented this pass (products list, product editor)
-
-   Deliberately omitted (deferred screens):
-   - Assistant rail / diff / thread styles
-   - Onboarding stepper
-   - Pack builder / supply recipe rows
-   - Image library grid
+   shadcn/ui + Tailwind CSS + Lucide icons.
+   Custom s-* classes retained for existing screens during migration.
+   New components use shadcn primitives.
    ========================================================================== */
+
+@layer base {
+  :root {
+    --background: 40 20% 98%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --primary: 211 61% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 8% 96%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 40 8% 96%;
+    --muted-foreground: 40 4% 53%;
+    --accent: 40 8% 96%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 55% 41%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 0% / 0.08;
+    --input: 0 0% 0% / 0.08;
+    --ring: 211 61% 53%;
+    --radius: 8px;
+  }
+}
 
 :root {
   --scout-accent: #378ADD;
@@ -48,6 +62,13 @@
   --s-radius-xl: 16px;
   --s-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
   --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+
+  /* Typography tiers — NEVER make content smaller than --s-content-size */
+  --s-content-size: 16px;
+  --s-content-weight: 500;
+  --s-hint-size: 11px;
+  --s-hint-weight: 400;
+  --s-hint-color: var(--s-text-tertiary);
 }
 
 * {
@@ -456,11 +477,17 @@ button {
 
 /* =============================================================================
    FORM FIELDS
+   =============================================================================
+   Treatment principle: the value is the answer; the label is metadata.
+   - Label: 9px ALL-CAPS, very dim, sits on the input border
+   - Value: 16px / weight 500, near-black, dominant
+   - Read-only inputs use a slightly off-white surface so they read
+     as data-on-display rather than as form chrome
    ========================================================================== */
 
 .s-field {
   position: relative;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .s-field:last-child {
   margin-bottom: 0;
@@ -471,10 +498,10 @@ button {
   left: 10px;
   padding: 0 6px;
   background: var(--s-surface);
-  font-size: 10px;
-  color: var(--s-text-secondary);
+  font-size: 9px;
+  color: var(--s-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-weight: 500;
   z-index: 1;
   display: inline-flex;
@@ -485,23 +512,25 @@ button {
 .s-select,
 .s-textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 14px 14px 12px;
   background: var(--s-surface);
   border: 0.5px solid var(--s-border);
   border-radius: var(--s-radius-md);
-  font-size: 13px;
+  font-size: var(--s-content-size);
+  font-weight: var(--s-content-weight);
   font-family: inherit;
   color: var(--s-text);
   outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
+  letter-spacing: -0.005em;
 }
 .s-input,
 .s-select {
-  height: 40px;
+  height: 48px;
 }
-.s-input:hover,
-.s-select:hover,
-.s-textarea:hover {
+.s-input:hover:not(:disabled),
+.s-select:hover:not(:disabled),
+.s-textarea:hover:not(:disabled) {
   border-color: var(--s-border-strong);
 }
 .s-input:focus,
@@ -510,14 +539,32 @@ button {
   border-color: var(--scout-accent);
   box-shadow: 0 0 0 3px var(--scout-accent-50);
 }
+.s-input:disabled,
+.s-select:disabled,
+.s-textarea:disabled {
+  background: var(--s-surface);
+  color: var(--s-text);
+  cursor: default;
+  opacity: 1;
+  -webkit-text-fill-color: var(--s-text); /* Safari read-only contrast fix */
+}
 .s-textarea {
-  padding: 12px;
+  padding: 14px;
   min-height: 90px;
   resize: vertical;
+  font-weight: var(--s-content-weight);
+  font-size: var(--s-content-size);
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+}
+.s-textarea:disabled {
+  font-weight: var(--s-content-weight);
 }
 .s-input-mono {
   font-family: var(--s-font-mono);
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 /* =============================================================================
@@ -587,8 +634,9 @@ button {
   font-weight: 500;
 }
 .s-toggle-sub {
-  font-size: 11px;
-  color: var(--s-text-tertiary);
+  font-size: var(--s-hint-size);
+  color: var(--s-hint-color);
+  font-weight: var(--s-hint-weight);
   margin-top: 2px;
 }
 .s-toggle {
@@ -1069,3 +1117,763 @@ button {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* =============================================================================
+   SPLIT LAYOUT — used by Categories (tree + detail)
+   ========================================================================== */
+
+.s-split {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: calc(100vh - 200px);
+  background: var(--s-surface);
+  border: 0.5px solid var(--s-border);
+  border-radius: var(--s-radius-lg);
+  overflow: hidden;
+}
+
+.s-split-aside {
+  background: var(--s-surface-alt);
+  border-right: 0.5px solid var(--s-border);
+  padding: 16px 14px;
+  overflow-y: auto;
+}
+
+.s-split-main {
+  padding: 24px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.s-aside-section-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--s-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+  padding: 0 6px;
+}
+
+.s-pill-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.s-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  background: var(--s-surface);
+  border: 0.5px solid var(--s-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  font-family: inherit;
+  text-decoration: none;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.s-pill:hover {
+  border-color: var(--s-border-strong);
+  color: var(--s-text);
+}
+.s-pill.active {
+  background: var(--scout-accent-50);
+  border-color: var(--scout-accent);
+  color: var(--scout-accent-800);
+  font-weight: 500;
+}
+
+.s-aside-search {
+  position: relative;
+  margin-bottom: 12px;
+}
+.s-aside-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 30px;
+  background: var(--s-surface);
+  border: 0.5px solid var(--s-border);
+  border-radius: var(--s-radius-md);
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--s-text);
+  outline: none;
+  box-sizing: border-box;
+}
+.s-aside-search input:focus {
+  border-color: var(--scout-accent);
+  box-shadow: 0 0 0 3px var(--scout-accent-50);
+}
+.s-aside-search-icon {
+  position: absolute;
+  left: 9px;
+  top: 9px;
+  width: 13px;
+  height: 13px;
+  color: var(--s-text-tertiary);
+  pointer-events: none;
+}
+
+/* =============================================================================
+   TREE
+   ========================================================================== */
+
+.s-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s-tree-l1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--s-radius-sm);
+  cursor: pointer;
+  user-select: none;
+  color: var(--s-text);
+  font-weight: 500;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+}
+.s-tree-l1:hover {
+  background: var(--s-surface-hover);
+}
+.s-tree-l1.expanded {
+  color: var(--scout-accent-600);
+}
+.s-tree-caret {
+  width: 12px;
+  height: 12px;
+  color: var(--s-text-tertiary);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.s-tree-l1.expanded .s-tree-caret {
+  transform: rotate(90deg);
+  color: var(--scout-accent-600);
+}
+.s-tree-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--s-text-tertiary);
+  flex-shrink: 0;
+}
+.s-tree-l1.expanded .s-tree-icon {
+  color: var(--scout-accent);
+}
+.s-tree-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--s-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.s-tree-children {
+  padding-left: 22px;
+  margin: 2px 0;
+  list-style: none;
+}
+.s-tree-l2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--s-radius-sm);
+  cursor: pointer;
+  user-select: none;
+  color: var(--s-text-secondary);
+  font-size: 13px;
+  text-decoration: none;
+}
+.s-tree-l2:hover {
+  background: var(--s-surface-hover);
+  color: var(--s-text);
+}
+.s-tree-l2.selected {
+  background: var(--scout-accent-50);
+  color: var(--scout-accent-800);
+  font-weight: 500;
+}
+.s-tree-l2 .s-tree-icon {
+  color: var(--s-text-muted);
+}
+.s-tree-l2.selected .s-tree-icon {
+  color: var(--scout-accent-600);
+}
+
+/* =============================================================================
+   ACCORDION CARD
+   ========================================================================== */
+
+.s-acc {
+  background: var(--s-surface);
+  border: 0.5px solid var(--s-border);
+  border-radius: var(--s-radius-lg);
+  overflow: hidden;
+}
+
+.s-acc-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+}
+.s-acc-summary::-webkit-details-marker {
+  display: none;
+}
+.s-acc-summary:hover {
+  background: var(--s-surface-alt);
+}
+.s-acc-chev {
+  width: 14px;
+  height: 14px;
+  color: var(--s-text-tertiary);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.s-acc[open] .s-acc-chev {
+  transform: rotate(90deg);
+}
+.s-acc-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--s-text);
+}
+.s-acc-pic {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--s-radius-md);
+  background: var(--scout-accent-50);
+  color: var(--scout-accent-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.s-acc-status {
+  display: inline-flex;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--s-success-bg);
+  color: var(--s-success-text);
+  margin-left: auto;
+}
+
+.s-acc-body {
+  padding: 4px 18px 18px;
+}
+
+/* Header card — bigger title block */
+.s-acc-h-card .s-acc-summary {
+  padding: 16px 20px;
+}
+.s-acc-h-card .s-acc-pic {
+  width: 36px;
+  height: 36px;
+}
+.s-acc-h-card .s-acc-title {
+  font-size: 16px;
+}
+
+/* =============================================================================
+   DEFINITION ROWS — label/value pairs
+   ========================================================================== */
+
+.s-def-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 13px;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+}
+.s-def-row:first-child {
+  padding-top: 4px;
+}
+.s-def-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.s-def-row-label {
+  color: var(--s-text-tertiary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  padding-top: 2px;
+}
+.s-def-row-value {
+  color: var(--s-text);
+}
+.s-def-row-value a {
+  color: var(--scout-accent-600);
+  text-decoration: none;
+}
+.s-def-row-value a:hover {
+  text-decoration: underline;
+}
+
+/* =============================================================================
+   ATTRIBUTE ROW — used inside the Atributos accordion
+   ========================================================================== */
+
+.s-attr-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s-attr-row {
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+}
+.s-attr-row:last-child {
+  border-bottom: 0;
+}
+.s-attr-row[open] {
+  background: var(--s-surface-alt);
+  margin: 0 -8px;
+  padding: 0 8px;
+  border-radius: var(--s-radius-sm);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+}
+.s-attr-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.s-attr-summary::-webkit-details-marker {
+  display: none;
+}
+.s-attr-chev {
+  width: 14px;
+  height: 14px;
+  color: var(--s-text-tertiary);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.s-attr-row[open] .s-attr-chev {
+  transform: rotate(90deg);
+}
+.s-attr-chev.empty {
+  visibility: hidden;
+}
+
+/* Type glyph */
+.s-type-glyph {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--s-surface-alt);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--s-text-secondary);
+  font-family: var(--s-font-mono);
+  font-weight: 600;
+  font-size: 11px;
+}
+.s-type-glyph svg {
+  width: 12px;
+  height: 12px;
+}
+.s-type-glyph.list {
+  color: #534AB7;
+  background: #EEEDFE;
+}
+.s-type-glyph.list-multi {
+  color: #534AB7;
+  background: #CECBF6;
+}
+.s-type-glyph.num {
+  color: var(--scout-accent-600);
+  background: var(--scout-accent-50);
+}
+.s-type-glyph.text-t {
+  color: var(--s-text-secondary);
+  background: var(--s-surface-alt);
+}
+.s-type-glyph.bool {
+  color: var(--s-success-text);
+  background: var(--s-success-bg);
+}
+.s-type-glyph.date {
+  color: #854F0B;
+  background: #FAEEDA;
+}
+.s-type-glyph.ref {
+  color: #993556;
+  background: #FBEAF0;
+}
+
+/* Required dot */
+.s-req-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.s-req-dot.req {
+  background: #EF9F27;
+}
+.s-req-dot.opt {
+  background: var(--s-text-muted);
+}
+
+.s-attr-name {
+  flex: 1;
+  min-width: 0;
+}
+.s-attr-name a {
+  color: var(--s-text);
+  text-decoration: none;
+  font-weight: 500;
+}
+.s-attr-name a:hover {
+  color: var(--scout-accent-600);
+  text-decoration: underline;
+}
+
+.s-attr-body {
+  padding: 4px 0 14px 56px;
+}
+.s-attr-body-label {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  padding: 4px 0;
+}
+.s-attr-body-label .lbl {
+  color: var(--s-text-tertiary);
+}
+
+/* Option pills */
+.s-opt-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.s-opt {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--s-surface);
+  border: 0.5px solid var(--s-border);
+  font-size: 11px;
+  color: var(--s-text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+}
+.s-opt:hover {
+  background: var(--scout-accent-50);
+  color: var(--scout-accent-800);
+  border-color: var(--scout-accent);
+}
+
+/* Per-species two-column block */
+.s-species-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.s-species-card {
+  background: var(--s-surface-alt);
+  border-radius: var(--s-radius-md);
+  padding: 12px 14px;
+}
+.s-species-card-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.s-species-card-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.s-species-card-row .lbl {
+  color: var(--s-text-tertiary);
+}
+.s-species-card-row .val {
+  color: var(--s-text);
+}
+.s-species-card-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--scout-accent-100);
+  color: var(--scout-accent-800);
+}
+
+/* Compact products table for the in-category list */
+.s-table-compact {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.s-table-compact th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--s-text-tertiary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--s-border);
+}
+.s-table-compact td {
+  padding: 10px;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+  vertical-align: middle;
+}
+.s-table-compact tbody tr:last-child td {
+  border-bottom: 0;
+}
+.s-table-compact tbody tr:hover td {
+  background: var(--s-surface-alt);
+}
+
+/* =============================================================================
+   VARIANT AXIS CONFIG
+   ========================================================================== */
+
+.s-variant-config {
+  font-size: 13px;
+}
+
+.s-variant-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--s-text);
+  margin-bottom: 4px;
+}
+
+.s-variant-desc {
+  font-size: 12px;
+  color: var(--s-text-tertiary);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.s-axis-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.s-axis-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--s-border);
+  background: var(--s-surface);
+  color: var(--s-text-secondary);
+  font-family: var(--s-font);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.s-axis-chip:hover {
+  border-color: var(--s-border-strong);
+  background: var(--s-surface-alt);
+}
+
+.s-axis-chip.selected {
+  background: var(--scout-accent-50);
+  border-color: var(--scout-accent);
+  color: var(--scout-accent-600);
+  font-weight: 500;
+}
+
+.s-axis-chip.add {
+  border-style: dashed;
+  color: var(--s-text-tertiary);
+}
+
+.s-axis-chip.add:hover {
+  color: var(--scout-accent);
+  border-color: var(--scout-accent);
+}
+
+.s-axis-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.s-axis-remove {
+  margin-left: 2px;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.s-axis-custom-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--scout-accent);
+  background: var(--scout-accent-50);
+}
+
+.s-variant-note {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-sm);
+  font-family: var(--s-font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--s-text);
+  background: var(--s-surface-alt);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.s-variant-note:focus {
+  border-color: var(--scout-accent);
+}
+
+.s-variant-note::placeholder {
+  color: var(--s-text-muted);
+}
+
+.s-agent-preview {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-sm);
+  background: var(--s-surface-alt);
+  font-family: var(--s-font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.s-agent-preview-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--s-text-tertiary);
+  margin-bottom: 4px;
+  font-family: var(--s-font);
+  font-weight: 500;
+}
+
+.s-agent-preview-body {
+  color: var(--s-text-secondary);
+}
+
+/* =============================================================================
+   IMPORT METHODS
+   ========================================================================== */
+
+.s-import-methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.s-import-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-md);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.s-import-card:hover {
+  border-color: var(--scout-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.s-import-card.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.s-import-card.disabled:hover {
+  border-color: var(--s-border);
+  box-shadow: none;
+}
+
+.s-import-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--s-radius-sm);
+  background: var(--s-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--s-text-secondary);
+}
+
+.s-import-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--s-text);
+}
+
+.s-import-card-desc {
+  font-size: 12px;
+  color: var(--s-text-tertiary);
+  line-height: 1.5;
+}
+
+.s-import-card-status {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: auto;
+}
+
+.s-import-card-status.active {
+  color: var(--s-success);
+}
+
+.s-import-card-status.pending {
+  color: var(--s-text-muted);
+}
+
+@media (max-width: 800px) {
+  .s-import-methods {
+    grid-template-columns: 1fr;
+  }
+}
+

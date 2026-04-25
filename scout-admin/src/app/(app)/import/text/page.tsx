@@ -1,3 +1,15 @@
+/**
+ * UC1 — Single text import (Texto rápido).
+ *
+ * Phase 1 placeholder. When CI-11 is implemented, this page will have:
+ *   - A text field for pasting product text (name, brand, price, description)
+ *   - A "Parsear" button that calls fn_parse_product_text
+ *   - Staging preview showing parsed fields
+ *   - Category assignment (auto-suggested, user-confirmable)
+ *   - Variant detection results (using category's default_variant_axes)
+ *   - "Promote to catalog" button
+ */
+
 export default function TextImportPage() {
   return (
     <div style={{ padding: "28px 32px", maxWidth: 760 }}>
@@ -5,7 +17,7 @@ export default function TextImportPage() {
         style={{
           fontSize: 18,
           fontWeight: 600,
-          color: "var(--s-text, #23211d)",
+          color: "var(--s-text)",
           marginBottom: 8,
         }}
       >
@@ -14,7 +26,7 @@ export default function TextImportPage() {
       <p
         style={{
           fontSize: 13,
-          color: "var(--s-muted, #73726c)",
+          color: "var(--s-text-tertiary)",
           marginBottom: 24,
         }}
       >
@@ -31,10 +43,10 @@ export default function TextImportPage() {
             flex: 1,
             fontSize: 13,
             padding: "8px 12px",
-            border: "1px solid var(--s-border, #e5e2da)",
+            border: "1px solid var(--s-border)",
             borderRadius: 6,
-            background: "var(--s-bg, #fff)",
-            color: "var(--s-text, #23211d)",
+            background: "var(--s-surface)",
+            color: "var(--s-text)",
             fontFamily: "inherit",
           }}
         />
@@ -44,7 +56,7 @@ export default function TextImportPage() {
             padding: "8px 20px",
             fontSize: 13,
             fontWeight: 600,
-            background: "var(--s-accent, #378ADD)",
+            background: "var(--scout-accent)",
             color: "#fff",
             border: "none",
             borderRadius: 6,
@@ -60,7 +72,7 @@ export default function TextImportPage() {
       <div
         style={{
           padding: 20,
-          background: "var(--s-surface, #f5f2eb)",
+          background: "var(--s-surface-alt)",
           borderRadius: 8,
           textAlign: "center" as const,
         }}
@@ -68,7 +80,7 @@ export default function TextImportPage() {
         <p
           style={{
             fontSize: 13,
-            color: "var(--s-muted, #73726c)",
+            color: "var(--s-text-tertiary)",
             margin: 0,
           }}
         >

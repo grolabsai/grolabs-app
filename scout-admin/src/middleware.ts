@@ -1,9 +1,17 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Supabase session middleware.
- * Keeps auth cookies fresh so getUser() succeeds in server components.
+ *
+ * Runs on every request (except static assets — see matcher below).
+ * Its only job is to keep the auth cookies fresh so `getUser()` succeeds
+ * in server components without a stale token.
+ *
+ * It does NOT enforce auth-required routes — that's done inside the
+ * protected layouts (see `src/app/(app)/layout.tsx`). Keeping the auth
+ * check in the layout means 404s, static files, and the `/login` page
+ * don't get caught up in the redirect logic.
  */
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -17,26 +25,30 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(
-          cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[],
+          cookiesToSet: { name: string; value: string; options: CookieOptions }[],
         ) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options as any),
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
     },
   );
 
+  // Touching getUser() is what refreshes the session if needed.
   await supabase.auth.getUser();
+
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
+    // Run on everything EXCEPT:
+    //   static files, images, favicons, the Next.js internals
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

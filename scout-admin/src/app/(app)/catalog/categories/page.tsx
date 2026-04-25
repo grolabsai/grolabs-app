@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { AttributeTypeGlyph } from "@/components/catalog/AttributeTypeGlyph";
 import { VariantAxisConfig } from "@/components/catalog/VariantAxisConfig";
+import { resolveVariantAxes } from "@/lib/resolveVariantAxes";
 import { initialsFromName } from "@/lib/format";
 
 /**
@@ -945,36 +946,49 @@ async function CategoryDetail({
             <path d="M5 3l5 5-5 5z" />
           </svg>
           <span className="s-acc-title">Configuración de variantes</span>
-          {category.default_variant_axes &&
-          category.default_variant_axes.length > 0 ? (
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 11,
-                color: "var(--s-text-tertiary)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {category.default_variant_axes.length}{" "}
-              {category.default_variant_axes.length === 1 ? "eje" : "ejes"}
-            </span>
-          ) : (
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 11,
-                color: "var(--s-text-muted)",
-              }}
-            >
-              sin configurar
-            </span>
-          )}
+          {(() => {
+            const resolved = resolveVariantAxes(category.category_id, allCats);
+            const own = (category.default_variant_axes ?? []).length;
+            const inherited = resolved.length - own;
+            if (resolved.length > 0) {
+              return (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 11,
+                    color: "var(--s-text-tertiary)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {resolved.length} {resolved.length === 1 ? "eje" : "ejes"}
+                  {inherited > 0 && (
+                    <span style={{ color: "var(--s-text-muted)" }}>
+                      {" "}({inherited} heredado{inherited !== 1 ? "s" : ""})
+                    </span>
+                  )}
+                </span>
+              );
+            }
+            return (
+              <span
+                style={{
+                  marginLeft: "auto",
+                  fontSize: 11,
+                  color: "var(--s-text-muted)",
+                }}
+              >
+                sin configurar
+              </span>
+            );
+          })()}
         </summary>
         <div className="s-acc-body">
           <VariantAxisConfig
             categoryId={category.category_id}
             initialAxes={category.default_variant_axes ?? []}
             initialNote={category.parsing_note ?? null}
+            resolvedAxes={resolveVariantAxes(category.category_id, allCats)}
+            categoryName={category.category_name}
           />
         </div>
       </details>

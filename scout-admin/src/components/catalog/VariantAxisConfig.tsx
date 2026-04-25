@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateVariantConfig } from "@/lib/actions/category";
+import type { ResolvedAxis } from "@/lib/resolveVariantAxes";
 import {
   Scale,
   Droplets,
@@ -15,36 +16,53 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 /**
- * VariantAxisConfig — editable chip selector for default_variant_axes
- * and a parsing_note textarea. Saves via server action.
+ * VariantAxisConfig — shows the full resolved axis pool for a category.
  *
- * Standard axes are predefined; "custom" lets the user type one in.
- * The parsing note is optional — used for ambiguous cases where the
- * AI agent needs extra context (e.g. "Mediano refers to breed size,
- * not product size").
+ * Inherited axes (from parent categories) are shown as read-only chips
+ * with a source label. Own axes (defined at this level) are editable.
+ * Standard axes not yet assigned anywhere in the chain can be added.
+ *
+ * The parsing note is category-specific — it doesn't inherit.
  */
 
-const STANDARD_AXES: { value: string; label: string; Icon: LucideIcon }[] = [
-  { value: "weight", label: "Peso", Icon: Scale },
-  { value: "volume", label: "Volumen", Icon: Droplets },
-  { value: "size", label: "Talla", Icon: Ruler },
-  { value: "color", label: "Color", Icon: Palette },
-  { value: "length", label: "Largo", Icon: MoveHorizontal },
-  { value: "flavor", label: "Sabor", Icon: Beef },
-  { value: "count", label: "Cantidad", Icon: Hash },
-  { value: "material", label: "Material", Icon: Layers },
-];
+const AXIS_META: Record<string, { label: string; Icon: LucideIcon }> = {
+  weight:   { label: "Peso",     Icon: Scale },
+  volume:   { label: "Volumen",  Icon: Droplets },
+  size:     { label: "Talla",    Icon: Ruler },
+  color:    { label: "Color",    Icon: Palette },
+  length:   { label: "Largo",    Icon: MoveHorizontal },
+  flavor:   { label: "Sabor",    Icon: Beef },
+  count:    { label: "Cantidad", Icon: Hash },
+  material: { label: "Material", Icon: Layers },
+};
+
+const STANDARD_AXIS_KEYS = Object.keys(AXIS_META);
+
+function axisLabel(axis: string): string {
+  return AXIS_META[axis]?.label ?? axis;
+}
+
+function AxisIcon({ axis, size = 14 }: { axis: string; size?: number }) {
+  const meta = AXIS_META[axis];
+  if (!meta) return null;
+  const Icon = meta.Icon;
+  return <Icon size={size} strokeWidth={1.5} />;
+}
 
 export function VariantAxisConfig({
   categoryId,
   initialAxes,
   initialNote,
+  resolvedAxes,
+  categoryName,
 }: {
   categoryId: number;
   initialAxes: string[];
   initialNote: string | null;
+  resolvedAxes: ResolvedAxis[];
+  categoryName: string;
 }) {
-  const [axes, setAxes] = useState<string[]>(initialAxes);
+  const [ownAxes, setOwnAxes] = useState<string[]>(initialAxes);
   const [note, setNote] = useState(initialNote ?? "");
   const [customAxis, setCustomAxis] = useState("");
   const [showCustom, setShowCustom] = useState(false);
@@ -52,23 +70,43 @@ export function VariantAxisConfig({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Inherited axes = resolved axes NOT defined at this category
+  const inheritedAxes = resolvedAxes.filter(
+    (r) => r.fromCategoryId !== categoryId,
+  );
+
+  // Full pool = inherited + own (deduped)
+  const inheritedSet = new Set(inheritedAxes.map((r) => r.axis));
+  const fullPool = [
+    ...inheritedAxes.map((r) => r.axis),
+    ...ownAxes.filter((a) => !inheritedSet.has(a)),
+  ];
+
+  // Available to add = standard axes not already in the full pool
+  const availableToAdd = STANDARD_AXIS_KEYS.filter(
+    (k) => !fullPool.includes(k),
+  );
+
   const dirty =
-    JSON.stringify(axes) !== JSON.stringify(initialAxes) ||
+    JSON.stringify(ownAxes) !== JSON.stringify(initialAxes) ||
     (note || null) !== (initialNote || null);
 
-  function toggleAxis(value: string) {
-    setAxes((prev) =>
-      prev.includes(value)
-        ? prev.filter((a) => a !== value)
-        : [...prev, value],
-    );
+  function addOwnAxis(value: string) {
+    if (!ownAxes.includes(value) && !inheritedSet.has(value)) {
+      setOwnAxes((prev) => [...prev, value]);
+      setSaved(false);
+    }
+  }
+
+  function removeOwnAxis(value: string) {
+    setOwnAxes((prev) => prev.filter((a) => a !== value));
     setSaved(false);
   }
 
   function addCustom() {
     const v = customAxis.trim().toLowerCase().replace(/\s+/g, "_");
-    if (v && !axes.includes(v)) {
-      setAxes((prev) => [...prev, v]);
+    if (v && !fullPool.includes(v)) {
+      setOwnAxes((prev) => [...prev, v]);
       setCustomAxis("");
       setShowCustom(false);
       setSaved(false);
@@ -80,7 +118,7 @@ export function VariantAxisConfig({
       setError(null);
       const result = await updateVariantConfig(
         categoryId,
-        axes,
+        ownAxes,
         note || null,
       );
       if (result.error) {
@@ -94,41 +132,85 @@ export function VariantAxisConfig({
 
   return (
     <div className="s-variant-config">
-      <div className="s-variant-label">Ejes de variante predeterminados</div>
+
+      {/* ── Inherited axes (read-only) ── */}
+      {inheritedAxes.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="s-variant-label">
+            Heredados de categorías superiores
+          </div>
+          <div className="s-variant-desc">
+            Estos ejes se definieron en categorías padre y están disponibles
+            automáticamente.
+          </div>
+          <div className="s-axis-chips">
+            {inheritedAxes.map((r) => (
+              <span
+                key={r.axis}
+                className="s-axis-chip selected"
+                style={{ cursor: "default", opacity: 0.7 }}
+                title={`Heredado de ${r.fromCategoryName}`}
+              >
+                <AxisIcon axis={r.axis} />
+                {axisLabel(r.axis)}
+                <span
+                  style={{
+                    fontSize: 9,
+                    color: "var(--s-text-muted)",
+                    marginLeft: 4,
+                    fontWeight: 400,
+                  }}
+                >
+                  ← {r.fromCategoryName}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Own axes (editable) ── */}
+      <div className="s-variant-label">
+        Ejes definidos en {categoryName}
+      </div>
       <div className="s-variant-desc">
-        Define qué dimensiones generan variantes para productos en esta
-        categoría. El agente de importación usará esta configuración para
-        distinguir variantes de atributos.
+        Estos ejes se suman a los heredados. El agente de importación usará
+        el conjunto completo para detectar variantes en los nombres de producto.
       </div>
 
       <div className="s-axis-chips">
-        {STANDARD_AXES.map((ax) => (
-          <button
-            key={ax.value}
-            type="button"
-            className={`s-axis-chip${axes.includes(ax.value) ? " selected" : ""}`}
-            onClick={() => toggleAxis(ax.value)}
-          >
-            <ax.Icon size={14} strokeWidth={1.5} />
-            {ax.label}
-          </button>
-        ))}
-
-        {/* Custom axes that aren't in the standard list */}
-        {axes
-          .filter((a) => !STANDARD_AXES.some((s) => s.value === a))
+        {/* Own axes — removable */}
+        {ownAxes
+          .filter((a) => !inheritedSet.has(a))
           .map((a) => (
             <button
               key={a}
               type="button"
-              className="s-axis-chip selected custom"
-              onClick={() => toggleAxis(a)}
+              className="s-axis-chip selected"
+              onClick={() => removeOwnAxis(a)}
+              title="Clic para quitar"
             >
-              {a}
+              <AxisIcon axis={a} />
+              {axisLabel(a)}
               <span className="s-axis-remove">×</span>
             </button>
           ))}
 
+        {/* Available standard axes — clickable to add */}
+        {availableToAdd.map((k) => (
+          <button
+            key={k}
+            type="button"
+            className="s-axis-chip"
+            onClick={() => addOwnAxis(k)}
+            title="Clic para agregar"
+          >
+            <AxisIcon axis={k} />
+            {axisLabel(k)}
+          </button>
+        ))}
+
+        {/* Custom axis input */}
         {showCustom ? (
           <span className="s-axis-custom-input">
             <input
@@ -174,6 +256,7 @@ export function VariantAxisConfig({
         )}
       </div>
 
+      {/* ── Parsing note ── */}
       <div className="s-variant-label" style={{ marginTop: 16 }}>
         Nota de contexto para el agente
         <span
@@ -197,15 +280,17 @@ export function VariantAxisConfig({
         placeholder='Ej: "Palabras como Mediano, Grande se refieren al tamaño de raza, no al tamaño del producto."'
       />
 
-      {/* Agent preview */}
-      {axes.length > 0 && (
+      {/* ── Agent preview — shows full resolved pool ── */}
+      {fullPool.length > 0 && (
         <div className="s-agent-preview">
-          <div className="s-agent-preview-label">Vista previa del agente</div>
+          <div className="s-agent-preview-label">
+            Vista previa del agente — pool completo para esta categoría
+          </div>
           <div className="s-agent-preview-body">
             <span style={{ color: "var(--s-text-tertiary)" }}>
               Ejes de variante:
             </span>{" "}
-            {axes.join(", ")}
+            {fullPool.map((a) => axisLabel(a)).join(", ")}
             {note ? (
               <>
                 <br />
@@ -217,7 +302,7 @@ export function VariantAxisConfig({
         </div>
       )}
 
-      {/* Save button */}
+      {/* ── Save ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
         <button
           type="button"

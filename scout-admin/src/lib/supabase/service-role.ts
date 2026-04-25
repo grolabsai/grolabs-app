@@ -4,7 +4,7 @@ import { createClient as _createClient } from "@supabase/supabase-js";
  * Service-role Supabase client. Bypasses RLS entirely. Use ONLY from
  * server-side code that performs privileged operations:
  *
- *   - copy_template_to_tenant(target) on signup
+ *   - copy_instance(source, target) on signup
  *   - imports from external systems
  *   - reconciliation jobs
  *   - cross-tenant administration

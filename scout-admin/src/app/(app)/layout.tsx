@@ -6,8 +6,11 @@ import { TopBar } from "@/components/shell/TopBar";
 /**
  * Protected app layout. Every route under `(app)/` inherits this:
  *   - Auth gate (unauthenticated → /login)
- *   - Sidebar (with instance name)
+ *   - Sidebar
  *   - Topbar with search + user avatar
+ *
+ * The `(app)` parentheses mean this segment does NOT appear in the URL —
+ * `/catalog/products` is still `/catalog/products`, not `/app/catalog/products`.
  */
 export default async function AppLayout({
   children,
@@ -23,7 +26,10 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Grab the user's current instance (D26: one user, one instance in Phase 1)
+  // Grab the user's current instance (they should have exactly one in
+  // Phase 1 per D19). Used by the sidebar to show which instance is active.
+  // Supabase types the joined `instance` relation as an array; in practice a
+  // single instance_member row has exactly one instance, so we normalize here.
   const { data: membership } = await supabase
     .from("instance_member")
     .select("instance_id, role, instance:instance_id(name, slug, kind)")
@@ -39,6 +45,7 @@ export default async function AppLayout({
   const instanceObj = Array.isArray(instanceRel) ? instanceRel[0] : instanceRel;
   const instanceName = instanceObj?.name ?? "Sin instancia";
 
+  // User initials for the topbar avatar — from email local part if no name.
   const initials = (user.email ?? "??").slice(0, 2).toUpperCase();
 
   return (

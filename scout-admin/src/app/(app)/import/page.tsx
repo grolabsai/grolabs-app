@@ -1,173 +1,285 @@
 import Link from "next/link";
+import type { Route } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
+import { formatRelative } from "@/lib/format";
 
-export default function ImportDashboardPage() {
-  return (
-    <div style={{ padding: "28px 32px", maxWidth: 760 }}>
-      <h1
-        style={{
-          fontSize: 18,
-          fontWeight: 600,
-          color: "var(--s-text, #23211d)",
-          marginBottom: 20,
-        }}
-      >
-        Importar
-      </h1>
+/**
+ * Import dashboard. Entry point for all catalog import flows:
+ *   - Quick text entry (single product, paste-and-go)
+ *   - Excel / CSV upload (bulk, column mapping)
+ *   - Migration import (WooCommerce, Shopify, etc.)
+ *
+ * Shows recent import jobs from import_job table.
+ * Text import is the only active path in Phase 1 (CI-11).
+ * Excel and migration are shown as disabled cards pending M3/M4.
+ */
 
-      {/* Quick entry */}
-      <div style={{ marginBottom: 24 }}>
-        <label
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--s-muted, #73726c)",
-            textTransform: "uppercase" as const,
-            letterSpacing: "0.06em",
-            display: "block",
-            marginBottom: 8,
-          }}
-        >
-          Entrada rápida
-        </label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            type="text"
-            placeholder="Royal Canin Medium Adult 15kg saco alimento seco perros"
-            disabled
-            style={{
-              flex: 1,
-              fontSize: 13,
-              padding: "8px 12px",
-              border: "1px solid var(--s-border, #e5e2da)",
-              borderRadius: 6,
-              background: "var(--s-bg, #fff)",
-              color: "var(--s-text, #23211d)",
-              fontFamily: "inherit",
-            }}
-          />
-          <button
-            disabled
-            style={{
-              padding: "8px 20px",
-              fontSize: 13,
-              fontWeight: 600,
-              background: "var(--s-accent, #378ADD)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              cursor: "not-allowed",
-              opacity: 0.5,
-              fontFamily: "inherit",
-            }}
-          >
-            Parsear
-          </button>
+export const dynamic = "force-dynamic";
+
+type ImportJob = {
+  import_job_id: number;
+  source_type: string;
+  source_label: string | null;
+  status: string;
+  total_rows: number | null;
+  rows_promoted: number | null;
+  rows_rejected: number | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export default async function ImportPage() {
+  const supabase = await createClient();
+  const instanceId = await currentInstanceId();
+
+  if (instanceId === null) {
+    return (
+      <div className="s-content">
+        <div className="s-strip warning">
+          <span className="s-strip-title">Sesión expirada</span>
+          <span className="s-strip-text">Volvé a iniciar sesión.</span>
         </div>
-        <p
-          style={{
-            fontSize: 11,
-            color: "var(--s-muted, #73726c)",
-            marginTop: 4,
-          }}
-        >
-          Próximamente — UC1 texto rápido (CI-11)
-        </p>
       </div>
+    );
+  }
 
-      {/* Import cards */}
-      <label
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "var(--s-muted, #73726c)",
-          textTransform: "uppercase" as const,
-          letterSpacing: "0.06em",
-          display: "block",
-          marginBottom: 8,
-        }}
-      >
-        Opciones de importación
-      </label>
+  // Fetch recent import jobs
+  const { data: jobs } = await supabase
+    .from("import_job")
+    .select(
+      "import_job_id, source_type, source_label, status, total_rows, rows_promoted, rows_rejected, created_at, completed_at",
+    )
+    .eq("instance_id", instanceId)
+    .order("created_at", { ascending: false })
+    .limit(20)
+    .returns<ImportJob[]>();
+
+  const recentJobs = jobs ?? [];
+
+  return (
+    <div className="s-content">
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 10,
-          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 20,
+          paddingBottom: 14,
+          borderBottom: "0.5px solid var(--s-border)",
         }}
       >
-        <Link
-          href="/import/text"
-          style={{
-            background: "var(--s-bg, #fff)",
-            border: "1px solid var(--s-border, #e5e2da)",
-            borderRadius: 8,
-            padding: "14px 16px",
-            textDecoration: "none",
-            color: "inherit",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--s-text, #23211d)",
-              marginBottom: 2,
-            }}
-          >
-            Texto rápido
-          </div>
-          <div style={{ fontSize: 11, color: "var(--s-muted, #73726c)" }}>
-            Un producto, una línea
-          </div>
-        </Link>
-        <div
-          style={{
-            background: "var(--s-bg, #fff)",
-            border: "1px solid var(--s-border, #e5e2da)",
-            borderRadius: 8,
-            padding: "14px 16px",
-            opacity: 0.5,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--s-text, #23211d)",
-              marginBottom: 2,
-            }}
-          >
-            Excel / CSV
-          </div>
-          <div style={{ fontSize: 11, color: "var(--s-muted, #73726c)" }}>
-            Próximamente (M3)
-          </div>
-        </div>
-        <div
-          style={{
-            background: "var(--s-bg, #fff)",
-            border: "1px solid var(--s-border, #e5e2da)",
-            borderRadius: 8,
-            padding: "14px 16px",
-            opacity: 0.5,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--s-text, #23211d)",
-              marginBottom: 2,
-            }}
-          >
-            Migración completa
-          </div>
-          <div style={{ fontSize: 11, color: "var(--s-muted, #73726c)" }}>
-            Próximamente (M4)
-          </div>
+        <div className="s-breadcrumb">
+          <span>Importar</span>
         </div>
       </div>
+
+      <div className="s-title-row">
+        <div className="s-title-inner">
+          <h1 className="s-title">Importar productos</h1>
+          <p className="s-meta">
+            Ingresá productos manualmente, desde un archivo, o desde tu tienda.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Import method cards ── */}
+      <div className="s-import-methods">
+        {/* Text entry — active */}
+        <Link
+          href={"/import/text" as Route}
+          className="s-import-card"
+          style={{ textDecoration: "none" }}
+        >
+          <div className="s-import-card-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <path d="M14 2v6h6" />
+              <path d="M12 18v-6" />
+              <path d="M9 15h6" />
+            </svg>
+          </div>
+          <div className="s-import-card-text">
+            <div className="s-import-card-title">Entrada de texto</div>
+            <div className="s-import-card-desc">
+              Pegá el nombre, marca y precio de un producto. El agente lo
+              parsea, detecta variantes y lo clasifica.
+            </div>
+          </div>
+          <div className="s-import-card-status active">Disponible</div>
+        </Link>
+
+        {/* Excel/CSV — disabled */}
+        <div className="s-import-card disabled">
+          <div className="s-import-card-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <path d="M14 2v6h6" />
+              <path d="M8 13h2" />
+              <path d="M8 17h2" />
+              <path d="M14 13h2" />
+              <path d="M14 17h2" />
+            </svg>
+          </div>
+          <div className="s-import-card-text">
+            <div className="s-import-card-title">Excel / CSV</div>
+            <div className="s-import-card-desc">
+              Subí un archivo con columnas de producto. Mapeo de columnas
+              asistido por IA.
+            </div>
+          </div>
+          <div className="s-import-card-status pending">Próximamente</div>
+        </div>
+
+        {/* Migration — disabled */}
+        <div className="s-import-card disabled">
+          <div className="s-import-card-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9" />
+            </svg>
+          </div>
+          <div className="s-import-card-text">
+            <div className="s-import-card-title">Migración de tienda</div>
+            <div className="s-import-card-desc">
+              Conectá WooCommerce, Shopify o tu plataforma. Importación
+              automática con mapeo de categorías.
+            </div>
+          </div>
+          <div className="s-import-card-status pending">Próximamente</div>
+        </div>
+      </div>
+
+      {/* ── Recent imports ── */}
+      {recentJobs.length > 0 ? (
+        <div className="s-card" style={{ padding: 0, marginTop: 32 }}>
+          <div
+            style={{
+              padding: "12px 20px",
+              borderBottom: "0.5px solid var(--s-border)",
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+          >
+            Importaciones recientes
+          </div>
+          <div className="s-table-wrap">
+            <table className="s-table">
+              <thead>
+                <tr>
+                  <th style={{ paddingLeft: 20 }}>Fuente</th>
+                  <th>Tipo</th>
+                  <th className="text-center">Productos</th>
+                  <th className="text-center">Promovidos</th>
+                  <th className="text-center">Rechazados</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentJobs.map((job) => {
+                  const statusMap: Record<string, { dot: string; label: string }> = {
+                    completed: { dot: "success", label: "Completado" },
+                    in_progress: { dot: "accent", label: "En progreso" },
+                    failed: { dot: "danger", label: "Error" },
+                    pending: { dot: "neutral", label: "Pendiente" },
+                  };
+                  const st = statusMap[job.status] ?? {
+                    dot: "neutral",
+                    label: job.status,
+                  };
+                  const typeLabels: Record<string, string> = {
+                    single_text: "Texto",
+                    excel: "Excel",
+                    csv: "CSV",
+                    bulk_migration: "Migración",
+                    url: "URL",
+                  };
+
+                  return (
+                    <tr key={job.import_job_id}>
+                      <td style={{ paddingLeft: 20, fontSize: 13, fontWeight: 500 }}>
+                        {job.source_label ?? "—"}
+                      </td>
+                      <td>
+                        <span className="s-tag s-tag-accent">
+                          {typeLabels[job.source_type] ?? job.source_type}
+                        </span>
+                      </td>
+                      <td className="text-center tabular" style={{ fontSize: 12 }}>
+                        {job.total_rows ?? "—"}
+                      </td>
+                      <td
+                        className="text-center tabular"
+                        style={{ fontSize: 12, color: "var(--s-success)" }}
+                      >
+                        {job.rows_promoted ?? "—"}
+                      </td>
+                      <td
+                        className="text-center tabular"
+                        style={{
+                          fontSize: 12,
+                          color:
+                            (job.rows_rejected ?? 0) > 0
+                              ? "var(--s-danger)"
+                              : "var(--s-text-muted)",
+                        }}
+                      >
+                        {job.rows_rejected ?? "—"}
+                      </td>
+                      <td>
+                        <div className="s-dot-row">
+                          <div className={`s-dot ${st.dot}`} />
+                          <span style={{ fontSize: 12 }}>{st.label}</span>
+                        </div>
+                      </td>
+                      <td style={{ fontSize: 12, color: "var(--s-text-muted)" }}>
+                        {formatRelative(job.created_at)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="s-card" style={{ marginTop: 32 }}>
+          <div className="s-empty">
+            <div className="s-empty-title">Sin importaciones aún</div>
+            <div className="s-empty-sub">
+              Usá cualquiera de los métodos de arriba para importar tu primer
+              producto.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

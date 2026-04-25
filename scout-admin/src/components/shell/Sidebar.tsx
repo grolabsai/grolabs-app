@@ -2,125 +2,230 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { Route } from "next";
+
+/**
+ * Scout sidebar navigation. Adopts the Bloom IA visually (dense, 13px,
+ * cream surface) but reflects the Scout feature set instead:
+ *
+ *   Catálogo (the user works here daily)
+ *     Productos, Categorías, Atributos, Marcas, Tipos de producto, Etiquetas,
+ *     Reglas de coincidencia
+ *
+ *   Referencias (pet-shop-specific data modeling)
+ *     Especies, Razas, Atributos de perfil
+ *
+ *   Configuración
+ *     Ajustes de la tienda
+ *
+ * Routes not yet implemented are marked with `disabled` and render as a
+ * dimmed row — user can see what's coming without clicking into a 404.
+ */
 
 type NavItem = {
-  href: string | null;
+  href: Route | null; // null = not yet implemented (disabled row)
   label: string;
   icon: React.ReactNode;
   badge?: string;
 };
 
-type NavGroup = {
-  title: string | null;
-  items: NavItem[];
-};
+type NavGroup = { title?: string; items: NavItem[] };
+
+// Tiny 16×16 inline icons — intentionally simple, designed to match Bloom's
+// stroke-only icon vocabulary. Each is 1.5px stroke, currentColor.
+const i = (d: string) => (
+  <svg
+    className="s-nav-icon"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    dangerouslySetInnerHTML={{ __html: d }}
+  />
+);
 
 const NAV: NavGroup[] = [
   {
     title: "Catálogo",
     items: [
-      { href: "/catalog/products", label: "Productos", icon: <Ico d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /> },
-      { href: "/catalog/categories", label: "Categorías", icon: <Ico d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /> },
-      { href: null, label: "Marcas", icon: <Ico d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /> },
-      { href: null, label: "Atributos", icon: <Ico d="M4 6h16M4 10h16M4 14h16M4 18h16" /> },
-      { href: null, label: "Especies", icon: <Ico d="M12 21C8 17 4 13 4 9a8 8 0 0116 0c0 4-4 8-8 12z" /> },
-      { href: null, label: "Etiquetas", icon: <Ico d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581a2.25 2.25 0 003.182 0l4.318-4.318a2.25 2.25 0 000-3.182L11.16 3.66A2.25 2.25 0 009.568 3z" /> },
+      {
+        href: "/catalog/products",
+        label: "Productos",
+        icon: i(
+          '<path d="M2 5l6-3 6 3v6l-6 3-6-3V5z"/><path d="M2 5l6 3 6-3"/><path d="M8 8v6"/>',
+        ),
+      },
+      {
+        href: "/catalog/categories",
+        label: "Categorías",
+        icon: i('<path d="M3 4h10M3 8h10M3 12h6"/>'),
+      },
+      {
+        href: null,
+        label: "Atributos",
+        icon: i(
+          '<rect x="2" y="2" width="5" height="12" rx="1"/><rect x="9" y="2" width="5" height="6" rx="1"/>',
+        ),
+      },
+      {
+        href: null,
+        label: "Marcas",
+        icon: i(
+          '<path d="M8 1l7 4v6l-7 4-7-4V5l7-4z"/><path d="M5 8l2 2 4-4"/>',
+        ),
+      },
+      {
+        href: null,
+        label: "Tipos de producto",
+        icon: i(
+          '<circle cx="8" cy="8" r="6"/><path d="M8 4v8M4 8h8"/>',
+        ),
+      },
+      {
+        href: null,
+        label: "Etiquetas",
+        icon: i(
+          '<path d="M2 7V2h5l7 7-5 5z"/><circle cx="5" cy="5" r="1"/>',
+        ),
+      },
+      {
+        href: null,
+        label: "Reglas de coincidencia",
+        icon: i(
+          '<circle cx="5" cy="5" r="3"/><circle cx="11" cy="11" r="3"/><path d="M7.5 7.5l1 1"/>',
+        ),
+      },
     ],
   },
   {
-    title: "Importar",
+    title: "Datos",
     items: [
-      { href: "/import", label: "Inicio", icon: <Ico d="M12 4v16m8-8H4" /> },
-      { href: "/import/text", label: "Texto rápido", icon: <Ico d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /> },
-      { href: null, label: "Excel / CSV", icon: <Ico d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
-      { href: null, label: "Migración", icon: <Ico d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /> },
-      { href: null, label: "Revisión", icon: <Ico d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /> },
-      { href: null, label: "Calidad", icon: <Ico d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /> },
+      {
+        href: "/import",
+        label: "Importar",
+        icon: i(
+          '<path d="M12 3v10M8 9l4 4 4-4"/><path d="M4 14v2a1 1 0 001 1h6a1 1 0 001-1v-2"/>',
+        ),
+      },
+    ],
+  },
+  {
+    title: "Referencias",
+    items: [
+      {
+        href: null,
+        label: "Especies",
+        icon: i(
+          '<circle cx="6" cy="4" r="2"/><circle cx="11" cy="5" r="1.5"/><path d="M4 14c0-3 2-5 4-5s4 2 4 5"/>',
+        ),
+      },
+      {
+        href: null,
+        label: "Razas",
+        icon: i(
+          '<path d="M3 12l2-6h6l2 6"/><path d="M5 12v-2h6v2"/>',
+        ),
+      },
+      {
+        href: null,
+        label: "Atributos de perfil",
+        icon: i(
+          '<circle cx="8" cy="5" r="2"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5"/>',
+        ),
+      },
     ],
   },
   {
     title: "Configuración",
     items: [
-      { href: null, label: "SKU", icon: <Ico d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /> },
-      { href: null, label: "Exportar", icon: <Ico d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /> },
+      {
+        href: null,
+        label: "Ajustes de la tienda",
+        icon: i(
+          '<circle cx="8" cy="8" r="2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2M4 4l1.5 1.5M10.5 10.5L12 12M4 12l1.5-1.5M10.5 5.5L12 4"/>',
+        ),
+      },
     ],
   },
 ];
 
-function Ico({ d }: { d: string }) {
-  return (
-    <svg
-      width={16}
-      height={16}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={d} />
-    </svg>
-  );
-}
-
 export function Sidebar({ instanceName }: { instanceName: string }) {
   const pathname = usePathname();
-  const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
   return (
-    <aside className="s-sidebar">
-      {/* Brand */}
-      <div className="s-sidebar-brand">
-        <Link href="/catalog/products" style={{ textDecoration: "none", color: "inherit" }}>
-          Scout
-        </Link>
+    <nav className="s-nav">
+      <div className="s-brand">
+        <div className="s-brand-mark" />
+        <span className="s-brand-name">Scout</span>
       </div>
 
-      {/* Navigation */}
-      <nav className="s-nav">
-        {NAV.map((group) => (
-          <div key={group.title ?? "root"} className="s-nav-group">
-            {group.title ? <p className="s-nav-section">{group.title}</p> : null}
-            {group.items.map((item) => {
-              const isActive = item.href ? pathname.startsWith(item.href) : false;
-              const disabled = item.href === null;
+      {NAV.map((group) => (
+        <div key={group.title ?? "_"}>
+          {group.title ? <p className="s-nav-section">{group.title}</p> : null}
+          {group.items.map((item) => {
+            const isActive = item.href
+              ? pathname === item.href || pathname.startsWith(item.href + "/")
+              : false;
 
-              if (disabled) {
-                return (
-                  <div key={item.label} className="s-nav-item s-nav-item--disabled">
-                    <span className="s-nav-icon">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </div>
-                );
-              }
-
+            if (!item.href) {
               return (
-                <Link
+                <div
                   key={item.label}
-                  href={item.href!}
-                  className={`s-nav-item ${isActive ? "s-nav-item--active" : ""}`}
+                  className="s-nav-item"
+                  style={{ opacity: 0.45, cursor: "not-allowed" }}
+                  title="Próximamente"
                 >
-                  <span className="s-nav-icon">{item.icon}</span>
-                  <span>{item.label}</span>
-                  {item.badge && <span className="s-nav-badge">{item.badge}</span>}
-                </Link>
+                  {item.icon}
+                  {item.label}
+                  <span className="s-nav-badge">···</span>
+                </div>
               );
-            })}
-          </div>
-        ))}
-      </nav>
+            }
 
-      {/* Instance + version */}
-      <div className="s-sidebar-footer">
-        <p className="s-nav-section" style={{ marginBottom: 4 }}>
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`s-nav-item${isActive ? " active" : ""}`}
+              >
+                {item.icon}
+                {item.label}
+                {item.badge ? (
+                  <span className="s-nav-badge">{item.badge}</span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+
+      <div style={{ marginTop: 24, padding: "8px 10px" }}>
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--s-text-tertiary)",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            marginBottom: 4,
+          }}
+        >
           Instancia
-        </p>
+        </div>
         <div style={{ fontSize: 13, color: "var(--s-text)" }}>{instanceName}</div>
-        <div style={{ fontSize: 10, color: "var(--s-muted)", marginTop: 8 }}>
-          scout-admin v{version}
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--s-text-muted)",
+            marginTop: 8,
+            fontFamily: "var(--s-font-mono)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          scout-admin v{process.env.NEXT_PUBLIC_APP_VERSION ?? "?.?.?"}
         </div>
       </div>
-    </aside>
+    </nav>
   );
 }

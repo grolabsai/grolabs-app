@@ -48,6 +48,13 @@
   --s-radius-xl: 16px;
   --s-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
   --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+
+  /* Typography tiers — NEVER make content smaller than --s-content-size */
+  --s-content-size: 16px;
+  --s-content-weight: 500;
+  --s-hint-size: 11px;
+  --s-hint-weight: 400;
+  --s-hint-color: var(--s-text-tertiary);
 }
 
 * {
@@ -495,8 +502,8 @@ button {
   background: var(--s-surface);
   border: 0.5px solid var(--s-border);
   border-radius: var(--s-radius-md);
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--s-content-size);
+  font-weight: var(--s-content-weight);
   font-family: inherit;
   color: var(--s-text);
   outline: none;
@@ -531,13 +538,13 @@ button {
   padding: 14px;
   min-height: 90px;
   resize: vertical;
-  font-weight: 400;
-  font-size: 15px;
+  font-weight: var(--s-content-weight);
+  font-size: var(--s-content-size);
   line-height: 1.55;
-  letter-spacing: 0;
+  letter-spacing: -0.005em;
 }
 .s-textarea:disabled {
-  font-weight: 400;
+  font-weight: var(--s-content-weight);
 }
 .s-input-mono {
   font-family: var(--s-font-mono);
@@ -613,8 +620,9 @@ button {
   font-weight: 500;
 }
 .s-toggle-sub {
-  font-size: 11px;
-  color: var(--s-text-tertiary);
+  font-size: var(--s-hint-size);
+  color: var(--s-hint-color);
+  font-weight: var(--s-hint-weight);
   margin-top: 2px;
 }
 .s-toggle {

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
-import { formatQuetzal } from "@/lib/format";
+import { formatGTQ } from "@/lib/format";
 
 export default async function ProductsPage() {
   const supabase = await createClient();
@@ -86,8 +86,8 @@ export default async function ProductsPage() {
                 <td style={{ textAlign: "right", fontSize: 13, fontFamily: "var(--font-mono)" }}>
                   {minPrice != null
                     ? minPrice === maxPrice
-                      ? formatQuetzal(minPrice)
-                      : `${formatQuetzal(minPrice)} – ${formatQuetzal(maxPrice)}`
+                      ? formatGTQ(minPrice)
+                      : `${formatGTQ(minPrice)} – ${formatGTQ(maxPrice)}`
                     : "—"}
                 </td>
               </tr>

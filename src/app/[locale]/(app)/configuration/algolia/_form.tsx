@@ -14,10 +14,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import {
-  testAlgoliaConnection,
-  saveAlgoliaConfig,
-} from "./actions";
+import { testAlgoliaConnection, saveAlgoliaConfig } from "./actions";
+
+/** Returns a short relative time string: "12s", "5m", "2h", "3d", or a date. */
+function timeAgo(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  const days = Math.floor(diff / 86400);
+  if (days < 30) return `${days}d`;
+  return new Date(iso).toLocaleDateString();
+}
 
 type InitialValues = {
   appId: string;
@@ -26,16 +34,21 @@ type InitialValues = {
   primaryIndex: string;
   lastVerifiedAt?: string;
   lastHttpStatus?: number;
+  lastVerifiedLatencyMs?: number;
 };
 
 type Props = {
-  tenantId: number;
+  instanceId: number;
   initialValues: InitialValues;
   /** Whether an admin key is already stored in Vault. */
   hasAdminKey: boolean;
 };
 
-export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
+const REGIONS = [
+  "us", "eu", "de", "in", "sg", "au", "br", "ca", "za", "uae", "uk", "jp", "hk",
+] as const;
+
+export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
   const t = useTranslations("configuration.algolia");
 
   // ── Field state ─────────────────────────────────────────────────────────────
@@ -49,9 +62,10 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
   const [adminApiKey, setAdminApiKey] = useState("");
   const [showAdminKey, setShowAdminKey] = useState(false);
 
-  // ── Verification status (local, updated optimistically) ─────────────────────
+  // ── Verification status (updated after test/save) ───────────────────────────
   const [verifiedAt, setVerifiedAt] = useState(initialValues.lastVerifiedAt);
   const [httpStatus, setHttpStatus] = useState(initialValues.lastHttpStatus);
+  const [latencyMs, setLatencyMs] = useState(initialValues.lastVerifiedLatencyMs);
 
   const [isPending, startTransition] = useTransition();
 
@@ -64,14 +78,13 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
       return;
     }
 
-    // For test-only we need the admin key in the browser when replacing,
-    // or we delegate to the server when using the existing key.
     if (replacingKey) {
+      // Key is in the browser — test directly without touching DB
       startTransition(async () => {
         const result = await testAlgoliaConnection(appId, adminApiKey);
         if (result.ok) {
           toast.success(t("toast.testSuccess"), {
-            description: `HTTP ${result.status}`,
+            description: `HTTP ${result.status} · ${result.latencyMs}ms`,
           });
         } else {
           toast.error(t("toast.testFailed"), {
@@ -80,29 +93,27 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
         }
       });
     } else {
-      // Delegate: save triggers a test internally; here we just trigger a
-      // lightweight save-with-test via saveAlgoliaConfig (no key replacement).
+      // Key lives in Vault — delegate to saveAlgoliaConfig (no key replacement)
       startTransition(async () => {
         const result = await saveAlgoliaConfig({
-          tenantId,
+          instanceId,
           appId,
           region,
           searchApiKey,
           primaryIndex,
-          // adminApiKey omitted → server reuses stored key
         });
+        const now = new Date().toISOString();
+        setVerifiedAt(now);
+        setHttpStatus(result.httpStatus);
+        setLatencyMs(result.latencyMs);
         if (result.verified) {
           toast.success(t("toast.testSuccess"), {
-            description: `HTTP ${result.httpStatus}`,
+            description: `HTTP ${result.httpStatus} · ${result.latencyMs}ms`,
           });
-          setVerifiedAt(new Date().toISOString());
-          setHttpStatus(result.httpStatus);
         } else {
           toast.error(t("toast.testFailed"), {
             description: result.error ?? `HTTP ${result.httpStatus ?? 0}`,
           });
-          setVerifiedAt(new Date().toISOString());
-          setHttpStatus(result.httpStatus);
         }
       });
     }
@@ -112,7 +123,7 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
   function handleSave() {
     startTransition(async () => {
       const result = await saveAlgoliaConfig({
-        tenantId,
+        instanceId,
         appId,
         region,
         searchApiKey,
@@ -128,6 +139,7 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
       toast.success(t("toast.saveSuccess"));
       setVerifiedAt(new Date().toISOString());
       setHttpStatus(result.httpStatus);
+      setLatencyMs(result.latencyMs);
 
       // After a successful save with a new key, switch back to "key is stored" state
       if (replacingKey && adminApiKey) {
@@ -135,6 +147,17 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
         setAdminApiKey("");
       }
     });
+  }
+
+  // ── Region key → i18n key mapping ──────────────────────────────────────────
+  function regionKey(code: string): string {
+    const map: Record<string, string> = {
+      us: "regionUs", eu: "regionEu", de: "regionDe", in: "regionIn",
+      sg: "regionSg", au: "regionAu", br: "regionBr", ca: "regionCa",
+      za: "regionZa", uae: "regionUae", uk: "regionUk", jp: "regionJp",
+      hk: "regionHk",
+    };
+    return map[code] ?? code;
   }
 
   return (
@@ -158,9 +181,11 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
             <SelectValue placeholder={t("fields.regionPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="us">{t("fields.regionUs")}</SelectItem>
-            <SelectItem value="eu">{t("fields.regionEu")}</SelectItem>
-            <SelectItem value="de">{t("fields.regionDe")}</SelectItem>
+            {REGIONS.map((code) => (
+              <SelectItem key={code} value={code}>
+                {t(`fields.${regionKey(code)}`)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -232,7 +257,10 @@ export function AlgoliaForm({ tenantId, initialValues, hasAdminKey }: Props) {
         ) : httpStatus && httpStatus >= 200 && httpStatus < 300 ? (
           <span className="s-status-badge s-status-badge--success">
             <CheckCircle2 size={14} />
-            {t("status.verified")}
+            {t("status.verified", {
+              time: timeAgo(verifiedAt),
+              latency: latencyMs ?? 0,
+            })}
           </span>
         ) : (
           <span className="s-status-badge s-status-badge--danger">

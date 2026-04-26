@@ -6,7 +6,7 @@ import { AlgoliaForm } from "./_form";
 /**
  * Algolia configuration page (server component).
  *
- * Loads the tenant's current Algolia config from integrations_config and
+ * Loads the instance's current Algolia config from integrations_config and
  * passes it to the client form as initial values. The admin key is fetched
  * from Vault via RPC so it never touches the browser.
  */
@@ -14,28 +14,28 @@ export default async function AlgoliaConfigPage() {
   const t = await getTranslations("configuration.algolia");
   const supabase = await createClient();
 
-  // ── Auth & tenant resolution ────────────────────────────────────────────────
+  // ── Auth & instance resolution ──────────────────────────────────────────────
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: membership } = await supabase
-    .from("tenant_member")
-    .select("tenant_id")
+    .from("instance_member")
+    .select("instance_id")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .maybeSingle();
 
   if (!membership) redirect("/login");
 
-  const tenantId: number = membership.tenant_id;
+  const instanceId: number = membership.instance_id;
 
   // ── Load existing config ────────────────────────────────────────────────────
-  const { data: tenantRow } = await supabase
-    .from("tenant")
+  const { data: instanceRow } = await supabase
+    .from("instance")
     .select("integrations_config")
-    .eq("id", tenantId)
+    .eq("id", instanceId)
     .maybeSingle();
 
   type AlgoliaConfig = {
@@ -45,10 +45,11 @@ export default async function AlgoliaConfigPage() {
     primary_index?: string;
     last_verified_at?: string;
     last_http_status?: number;
+    last_verified_latency_ms?: number;
   };
 
   const algolia: AlgoliaConfig =
-    (tenantRow?.integrations_config as { algolia?: AlgoliaConfig })
+    (instanceRow?.integrations_config as { algolia?: AlgoliaConfig })
       ?.algolia ?? {};
 
   // ── Fetch admin key existence (boolean only — never expose the value) ───────
@@ -57,7 +58,7 @@ export default async function AlgoliaConfigPage() {
   let hasAdminKey = false;
   if (algolia.app_id) {
     const { data: key } = await supabase.rpc("algolia_get_admin_key", {
-      p_tenant_id: tenantId,
+      p_instance_id: instanceId,
     });
     hasAdminKey = !!key;
   }
@@ -70,7 +71,7 @@ export default async function AlgoliaConfigPage() {
       </div>
 
       <AlgoliaForm
-        tenantId={tenantId}
+        instanceId={instanceId}
         initialValues={{
           appId: algolia.app_id ?? "",
           region: algolia.region ?? "",
@@ -78,6 +79,7 @@ export default async function AlgoliaConfigPage() {
           primaryIndex: algolia.primary_index ?? "",
           lastVerifiedAt: algolia.last_verified_at,
           lastHttpStatus: algolia.last_http_status,
+          lastVerifiedLatencyMs: algolia.last_verified_latency_ms,
         }}
         hasAdminKey={hasAdminKey}
       />

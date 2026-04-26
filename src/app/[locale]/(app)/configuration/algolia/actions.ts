@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export type TestResult = {
   ok: boolean;
   status: number;
+  latencyMs: number;
   message?: string;
 };
 
@@ -18,6 +19,7 @@ export async function testAlgoliaConnection(
   adminKey: string
 ): Promise<TestResult> {
   const url = `https://${appId}-dsn.algolia.net/1/keys/${adminKey}`;
+  const start = Date.now();
   try {
     const res = await fetch(url, {
       method: "GET",
@@ -27,15 +29,15 @@ export async function testAlgoliaConnection(
       },
       signal: AbortSignal.timeout(10_000),
     });
-    return { ok: res.ok, status: res.status };
+    return { ok: res.ok, status: res.status, latencyMs: Date.now() - start };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";
-    return { ok: false, status: 0, message };
+    return { ok: false, status: 0, latencyMs: Date.now() - start, message };
   }
 }
 
 export type SavePayload = {
-  tenantId: number;
+  instanceId: number;
   appId: string;
   region: string;
   searchApiKey: string;
@@ -48,6 +50,7 @@ export type SaveResult = {
   ok: boolean;
   verified: boolean;
   httpStatus?: number;
+  latencyMs?: number;
   error?: string;
 };
 
@@ -63,7 +66,7 @@ export async function saveAlgoliaConfig(
   payload: SavePayload
 ): Promise<SaveResult> {
   const supabase = await createClient();
-  const { tenantId, appId, region, searchApiKey, adminApiKey, primaryIndex } =
+  const { instanceId, appId, region, searchApiKey, adminApiKey, primaryIndex } =
     payload;
 
   // ── Resolve the admin key we'll use ────────────────────────────────────────
@@ -75,7 +78,7 @@ export async function saveAlgoliaConfig(
     // User kept the existing key — fetch from Vault before overwriting config.
     const { data: storedKey, error: keyError } = await supabase.rpc(
       "algolia_get_admin_key",
-      { p_tenant_id: tenantId }
+      { p_instance_id: instanceId }
     );
     if (keyError || !storedKey) {
       return {
@@ -89,7 +92,7 @@ export async function saveAlgoliaConfig(
 
   // ── Persist all fields ──────────────────────────────────────────────────────
   const { error: saveError } = await supabase.rpc("algolia_save_credentials", {
-    p_tenant_id: tenantId,
+    p_instance_id: instanceId,
     p_app_id: appId,
     p_region: region,
     p_search_key: searchApiKey,
@@ -105,8 +108,9 @@ export async function saveAlgoliaConfig(
 
   // ── Record verification result ──────────────────────────────────────────────
   await supabase.rpc("algolia_record_verification", {
-    p_tenant_id: tenantId,
+    p_instance_id: instanceId,
     p_http_status: testResult.status,
+    p_latency_ms: testResult.latencyMs,
   });
 
   // ── Invalidate page cache ───────────────────────────────────────────────────
@@ -116,5 +120,6 @@ export async function saveAlgoliaConfig(
     ok: true,
     verified: testResult.ok,
     httpStatus: testResult.status,
+    latencyMs: testResult.latencyMs,
   };
 }

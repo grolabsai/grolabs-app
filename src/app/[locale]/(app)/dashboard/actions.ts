@@ -33,7 +33,7 @@ export async function addSynonym(
   const { data: instanceRow } = await supabase
     .from("instance")
     .select("integrations_config")
-    .eq("id", instanceId)
+    .eq("instance_id", instanceId)
     .maybeSingle();
 
   type AlgoliaConfig = { app_id?: string; primary_index?: string };

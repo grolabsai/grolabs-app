@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "conversion": "Conversión",
+    "catalog": "Catálogo",
+    "configuration": "Configuración"
+  },
+  "settings": {
+    "algolia": {
+      "title": "Configuración de Algolia",
+      "description": "Credenciales y ajustes de índice solo para esta instancia.",
+      "fields": {
+        "appId": "ID de aplicación",
+        "region": "Región",
+        "searchKey": "Clave de búsqueda (solo lectura)",
+        "adminKey": "Clave de administración"
+      },
+      "actions": {
+        "test": "Probar conexión",
+        "save": "Guardar"
+      }
+    }
+  }
+}

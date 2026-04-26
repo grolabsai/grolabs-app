@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { updateVariantConfig } from "@/lib/actions/category";
 import type { ResolvedAxis } from "@/lib/resolveVariantAxes";
 import {
@@ -21,31 +22,24 @@ import type { LucideIcon } from "lucide-react";
  * Inherited axes (from parent categories) are shown as read-only chips
  * with a source label. Own axes (defined at this level) are editable.
  * Standard axes not yet assigned anywhere in the chain can be added.
- *
- * The parsing note is category-specific — it doesn't inherit.
  */
 
-const AXIS_META: Record<string, { label: string; Icon: LucideIcon }> = {
-  weight:   { label: "Peso",     Icon: Scale },
-  volume:   { label: "Volumen",  Icon: Droplets },
-  size:     { label: "Talla",    Icon: Ruler },
-  color:    { label: "Color",    Icon: Palette },
-  length:   { label: "Largo",    Icon: MoveHorizontal },
-  flavor:   { label: "Sabor",    Icon: Beef },
-  count:    { label: "Cantidad", Icon: Hash },
-  material: { label: "Material", Icon: Layers },
+const AXIS_ICONS: Record<string, LucideIcon> = {
+  weight: Scale,
+  volume: Droplets,
+  size: Ruler,
+  color: Palette,
+  length: MoveHorizontal,
+  flavor: Beef,
+  count: Hash,
+  material: Layers,
 };
 
-const STANDARD_AXIS_KEYS = Object.keys(AXIS_META);
-
-function axisLabel(axis: string): string {
-  return AXIS_META[axis]?.label ?? axis;
-}
+const STANDARD_AXIS_KEYS = Object.keys(AXIS_ICONS);
 
 function AxisIcon({ axis, size = 14 }: { axis: string; size?: number }) {
-  const meta = AXIS_META[axis];
-  if (!meta) return null;
-  const Icon = meta.Icon;
+  const Icon = AXIS_ICONS[axis];
+  if (!Icon) return null;
   return <Icon size={size} strokeWidth={1.5} />;
 }
 
@@ -62,6 +56,8 @@ export function VariantAxisConfig({
   resolvedAxes: ResolvedAxis[];
   categoryName: string;
 }) {
+  const t = useTranslations("catalog.variantAxis");
+
   const [ownAxes, setOwnAxes] = useState<string[]>(initialAxes);
   const [note, setNote] = useState(initialNote ?? "");
   const [customAxis, setCustomAxis] = useState("");
@@ -91,6 +87,15 @@ export function VariantAxisConfig({
     JSON.stringify(ownAxes) !== JSON.stringify(initialAxes) ||
     (note || null) !== (initialNote || null);
 
+  function axisLabel(axis: string): string {
+    const key = `axes.${axis}` as Parameters<typeof t>[0];
+    try {
+      return t(key);
+    } catch {
+      return axis;
+    }
+  }
+
   function addOwnAxis(value: string) {
     if (!ownAxes.includes(value) && !inheritedSet.has(value)) {
       setOwnAxes((prev) => [...prev, value]);
@@ -116,11 +121,7 @@ export function VariantAxisConfig({
   function handleSave() {
     startTransition(async () => {
       setError(null);
-      const result = await updateVariantConfig(
-        categoryId,
-        ownAxes,
-        note || null,
-      );
+      const result = await updateVariantConfig(categoryId, ownAxes, note || null);
       if (result.error) {
         setError(result.error);
       } else {
@@ -136,20 +137,15 @@ export function VariantAxisConfig({
       {/* ── Inherited axes (read-only) ── */}
       {inheritedAxes.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div className="s-variant-label">
-            Heredados de categorías superiores
-          </div>
-          <div className="s-variant-desc">
-            Estos ejes se definieron en categorías padre y están disponibles
-            automáticamente.
-          </div>
+          <div className="s-variant-label">{t("inheritedLabel")}</div>
+          <div className="s-variant-desc">{t("inheritedDesc")}</div>
           <div className="s-axis-chips">
             {inheritedAxes.map((r) => (
               <span
                 key={r.axis}
                 className="s-axis-chip selected"
                 style={{ cursor: "default", opacity: 0.7 }}
-                title={`Heredado de ${r.fromCategoryName}`}
+                title={t("inheritedFrom", { name: r.fromCategoryName })}
               >
                 <AxisIcon axis={r.axis} />
                 {axisLabel(r.axis)}
@@ -171,12 +167,9 @@ export function VariantAxisConfig({
 
       {/* ── Own axes (editable) ── */}
       <div className="s-variant-label">
-        Ejes definidos en {categoryName}
+        {t("ownLabel", { categoryName })}
       </div>
-      <div className="s-variant-desc">
-        Estos ejes se suman a los heredados. El agente de importación usará
-        el conjunto completo para detectar variantes en los nombres de producto.
-      </div>
+      <div className="s-variant-desc">{t("ownDesc")}</div>
 
       <div className="s-axis-chips">
         {/* Own axes — removable */}
@@ -188,7 +181,7 @@ export function VariantAxisConfig({
               type="button"
               className="s-axis-chip selected"
               onClick={() => removeOwnAxis(a)}
-              title="Clic para quitar"
+              title={t("removeHint")}
             >
               <AxisIcon axis={a} />
               {axisLabel(a)}
@@ -203,7 +196,7 @@ export function VariantAxisConfig({
             type="button"
             className="s-axis-chip"
             onClick={() => addOwnAxis(k)}
-            title="Clic para agregar"
+            title={t("addHint")}
           >
             <AxisIcon axis={k} />
             {axisLabel(k)}
@@ -218,7 +211,7 @@ export function VariantAxisConfig({
               value={customAxis}
               onChange={(e) => setCustomAxis(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustom()}
-              placeholder="nombre…"
+              placeholder={t("customPlaceholder")}
               autoFocus
               style={{
                 border: "none",
@@ -251,14 +244,14 @@ export function VariantAxisConfig({
             className="s-axis-chip add"
             onClick={() => setShowCustom(true)}
           >
-            + Otro
+            {t("addOther")}
           </button>
         )}
       </div>
 
       {/* ── Parsing note ── */}
       <div className="s-variant-label" style={{ marginTop: 16 }}>
-        Nota de contexto para el agente
+        {t("noteLabel")}
         <span
           style={{
             fontWeight: 400,
@@ -266,7 +259,7 @@ export function VariantAxisConfig({
             marginLeft: 6,
           }}
         >
-          (opcional)
+          {t("noteOptional")}
         </span>
       </div>
       <textarea
@@ -277,24 +270,24 @@ export function VariantAxisConfig({
           setNote(e.target.value);
           setSaved(false);
         }}
-        placeholder='Ej: "Palabras como Mediano, Grande se refieren al tamaño de raza, no al tamaño del producto."'
+        placeholder={t("notePlaceholder")}
       />
 
       {/* ── Agent preview — shows full resolved pool ── */}
       {fullPool.length > 0 && (
         <div className="s-agent-preview">
-          <div className="s-agent-preview-label">
-            Vista previa del agente — pool completo para esta categoría
-          </div>
+          <div className="s-agent-preview-label">{t("previewLabel")}</div>
           <div className="s-agent-preview-body">
             <span style={{ color: "var(--s-text-tertiary)" }}>
-              Ejes de variante:
+              {t("previewAxes")}
             </span>{" "}
             {fullPool.map((a) => axisLabel(a)).join(", ")}
             {note ? (
               <>
                 <br />
-                <span style={{ color: "var(--s-text-tertiary)" }}>Nota:</span>{" "}
+                <span style={{ color: "var(--s-text-tertiary)" }}>
+                  {t("previewNote")}
+                </span>{" "}
                 {note}
               </>
             ) : null}
@@ -311,11 +304,11 @@ export function VariantAxisConfig({
           disabled={!dirty || isPending}
           style={{ opacity: dirty ? 1 : 0.5 }}
         >
-          {isPending ? "Guardando…" : "Guardar configuración"}
+          {isPending ? t("saving") : t("saveButton")}
         </button>
         {saved && (
           <span style={{ fontSize: 12, color: "var(--s-success)" }}>
-            ✓ Guardado
+            {t("saved")}
           </span>
         )}
         {error && (

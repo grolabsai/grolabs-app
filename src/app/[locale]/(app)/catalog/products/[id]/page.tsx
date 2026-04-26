@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatGTQ, formatRelative } from "@/lib/format";

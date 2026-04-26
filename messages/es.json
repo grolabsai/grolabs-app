@@ -20,6 +20,38 @@
       }
     }
   },
+  "catalog": {
+    "variantAxis": {
+      "inheritedLabel": "Heredados de categorías superiores",
+      "inheritedDesc": "Estos ejes se definieron en categorías padre y están disponibles automáticamente.",
+      "inheritedFrom": "Heredado de {name}",
+      "ownLabel": "Ejes definidos en {categoryName}",
+      "ownDesc": "Estos ejes se suman a los heredados. El agente de importación usará el conjunto completo para detectar variantes en los nombres de producto.",
+      "removeHint": "Clic para quitar",
+      "addHint": "Clic para agregar",
+      "addOther": "+ Otro",
+      "customPlaceholder": "nombre…",
+      "noteLabel": "Nota de contexto para el agente",
+      "noteOptional": "(opcional)",
+      "notePlaceholder": "Ej: \"Palabras como Mediano, Grande se refieren al tamaño de raza, no al tamaño del producto.\"",
+      "previewLabel": "Vista previa del agente — pool completo para esta categoría",
+      "previewAxes": "Ejes de variante:",
+      "previewNote": "Nota:",
+      "saveButton": "Guardar configuración",
+      "saving": "Guardando…",
+      "saved": "✓ Guardado",
+      "axes": {
+        "weight": "Peso",
+        "volume": "Volumen",
+        "size": "Talla",
+        "color": "Color",
+        "length": "Largo",
+        "flavor": "Sabor",
+        "count": "Cantidad",
+        "material": "Material"
+      }
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

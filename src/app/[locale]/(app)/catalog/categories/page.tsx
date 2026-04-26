@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
@@ -772,8 +772,6 @@ async function CategoryDetail({
                           }
                         />
                         <span className="s-attr-name">
-                          {/* Attribute home page doesn't exist yet — make
-                              this a span until the route lands. */}
                           <span style={{ fontWeight: 500 }}>
                             {attr.attribute_name}
                           </span>

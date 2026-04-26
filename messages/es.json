@@ -117,8 +117,9 @@
         "regionJp": "Japón (jp)",
         "regionHk": "Hong Kong (hk)",
         "searchApiKey": "Search API Key",
-        "adminApiKey": "Admin API Key",
-        "adminApiKeyHidden": "Admin API Key guardada",
+        "adminApiKey": "Clave de escritura",
+        "adminApiKeyHint": "Acceso de escritura. Encriptada en Vault.",
+        "adminApiKeyHidden": "Clave de escritura guardada",
         "replaceKey": "Reemplazar clave",
         "primaryIndex": "Índice principal"
       },

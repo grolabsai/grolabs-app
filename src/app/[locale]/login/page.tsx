@@ -30,7 +30,7 @@ async function login(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/catalog/products");
+  redirect("/dashboard");
 }
 
 export default async function LoginPage({
@@ -45,7 +45,7 @@ export default async function LoginPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/catalog/products");
+  if (user) redirect("/dashboard");
 
   return (
     <div className="s-auth-shell">

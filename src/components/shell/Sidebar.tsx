@@ -7,6 +7,7 @@ import type { Route } from "next";
 import {
   Package,
   LayoutList,
+  LayoutDashboard,
   SlidersHorizontal,
   Building2,
   Shapes,
@@ -47,9 +48,16 @@ type NavGroup = {
 
 export function Sidebar({ instanceName }: { instanceName: string }) {
   const pathname = usePathname();
+  const tNav = useTranslations("nav");
   const t = useTranslations("configuration.algolia");
 
   const NAV: NavGroup[] = [
+    {
+      title: tNav("dashboard"),
+      items: [
+        { href: "/dashboard" as Route, label: tNav("dashboard"), icon: LayoutDashboard },
+      ],
+    },
     {
       title: "Catálogo",
       items: [

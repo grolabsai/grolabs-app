@@ -2,7 +2,8 @@
   "nav": {
     "conversion": "Conversión",
     "catalog": "Catálogo",
-    "configuration": "Configuración"
+    "configuration": "Configuración",
+    "dashboard": "Dashboard"
   },
   "settings": {
     "algolia": {
@@ -50,6 +51,47 @@
         "count": "Cantidad",
         "material": "Material"
       }
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "noResults": {
+      "title": "Búsquedas sin resultados",
+      "description": "Términos que tus clientes buscaron pero no encontraron. Añadir un sinónimo conecta el término con productos existentes.",
+      "columns": {
+        "query": "Búsqueda",
+        "count": "Conteo",
+        "withFilter": "Con filtro",
+        "action": "Acción"
+      },
+      "actions": {
+        "addSynonym": "Añadir sinónimo",
+        "loadMore": "Cargar más"
+      },
+      "empty": "No hay búsquedas sin resultados en este período.",
+      "notConfigured": "Algolia no está configurado para esta instancia.",
+      "configureButton": "Configurar Algolia",
+      "window": {
+        "label": "Período",
+        "day": "24 horas",
+        "week": "7 días",
+        "month": "30 días"
+      },
+      "withFilterText": "{n}/{total} con filtro"
+    },
+    "catalogAlerts": {
+      "title": "Alertas del catálogo",
+      "placeholder": "Próximamente: alertas del catálogo desde el motor de importación."
+    },
+    "synonym": {
+      "dialogTitle": "Añadir sinónimo",
+      "queryLabel": "Búsqueda original",
+      "synonymLabel": "Sinónimo",
+      "note": "Sinónimo bidireccional: ambos términos encontrarán los mismos productos.",
+      "save": "Guardar sinónimo",
+      "cancel": "Cancelar",
+      "toastSuccess": "Sinónimo añadido: {query} ↔ {synonym}",
+      "toastFailed": "No se pudo guardar el sinónimo"
     }
   },
   "configuration": {

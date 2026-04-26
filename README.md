@@ -1,106 +1,117 @@
-# Scout
+# Scout Admin
 
-**Catalog management platform for ecommerce.** Scout is a GroLabs product that helps merchants manage their product catalog, enrich it with external data, push it to their ecommerce platform (Medusa / WooCommerce / Shopify), index it into Algolia search, and close the loop with search-performance feedback.
+Multi-tenant catalog management admin for Scout (a GRO Labs product).
+Dedicated Scout admin, shares visual language with Bloom (D22).
 
-## Status
+## What's built (Phase 1.0 slice)
 
-**Phase 1 in active development.** Foundation work: database schema, multi-tenant infrastructure, first tenant (Wazú pet shop) migration.
+- **Next.js 15** App Router + TypeScript + Supabase SSR
+- **Auth**: Supabase email + password. Session cookies refreshed by middleware on every request. Google login / magic link deferred (trivial to add later).
+- **App shell**: sidebar + topbar, Scout's IA (Catálogo / Referencias / Configuración), Spanish copy throughout.
+- **Products list** (`/catalog/products`): real Supabase data, filter chips (all / active / inactive / consignment / service) with live counts, click-through to editor, empty state.
+- **Product editor** (`/catalog/products/[id]`): read-only two-column layout mirroring Bloom's design, exercising the full Scout schema — product info, brand, primary category, attribute values, variants with SKU/barcode/weight/pricing, import-ID backlink when `wazudb1_id` is set.
+- **Design system**: the Bloom tokens + components ported verbatim, prefix renamed `bl-` → `s-` and `bloom-` → `scout-`. See `src/app/globals.css`.
 
-## What Scout is (six-layer scope)
+## What's NOT built yet (deliberately)
 
-1. **Catalog management core** — products, variants, categories, attributes, species, types, pricing, media, services
-2. **Enrichment inbound** — fetch data from external sources to fill gaps
-3. **Agentic readiness** — prepare catalog for AI agent consumption
-4. **Push to ecommerce** — sync to Medusa / WooCommerce / Shopify
-5. **Push to Algolia** — index the catalog into search
-6. **Read-back loop** — consume search analytics, recommend catalog and search tweaks
+Each of these is a clean follow-up slice:
 
-Phase 1 scope: layer 1 only, plus architectural foundations to support layers 2-6.
+- Product editor **write path** (edit + save). Currently every input is `disabled` and shows DB data read-only.
+- Categories screen (tree view)
+- Attributes screen (split view)
+- Matching rules screen
+- Species / breeds reference screens
+- Command palette (⌘K)
+- Assistant side panel (Bloom's inline AI)
+- Image library / upload
+- Dashboard
+- Service editor, pack builder (specialized flows per product_type)
+- Sign-up flow (users are provisioned out-of-band for now)
 
-## Architecture at a glance
-
-- **Multi-tenant SaaS** — one deployment serves many customers, each isolated by `tenant_id` with row-level security
-- **Copy-on-signup templates** — new tenants start with vertical-specific reference data (pet shop template first, pharmacy/café/hardware later)
-- **Multi-language from day one** — translation tables alongside every translatable entity, BCP 47 locale codes (e.g. `es-GT`, `en-US`), primary-locale value in base tables with translations as overlays
-- **Database**: Supabase (PostgreSQL 17)
-- **Frontend**: TBD — leaning toward Next.js + TypeScript
-- **Deployment target**: TBD
-
-## Repository structure
-
-```
-scout/
-├── supabase/
-│   ├── config.toml                    # Supabase CLI configuration
-│   ├── migrations/                    # Database migrations, version-controlled
-│   │   └── 20260422000001_initial_schema.sql
-│   ├── seed.sql                       # Seed data (later)
-│   └── functions/                     # Edge functions (later)
-├── apps/                              # Application code (coming soon)
-├── docs/
-│   ├── inventory.md                   # Phase 1 entity × field × screen inventory
-│   ├── decisions.md                   # Running decision log
-│   └── design-prompt.md               # Claude Design prompt for UI generation
-├── .gitignore
-├── LICENSE
-└── README.md
-```
-
-## Getting started
-
-### Prerequisites
+## Prerequisites
 
 - Node.js 20+
-- Supabase CLI (`npm i -g supabase` or `brew install supabase/tap/supabase`)
-- Docker (for local Supabase)
+- A Supabase project with the Scout schema applied (project `ixbbhwtpnebrhquunege`)
+- A user in `auth.users` with a `tenant_member` row — `tuncho@wazu.test` already exists
 
-### Local development setup
-
-```bash
-# Clone the repo
-git clone https://github.com/grolabsai/scout.git
-cd scout
-
-# Link to the Scout Supabase project
-supabase login
-supabase link --project-ref ixbbhwtpnebrhquunege
-
-# Pull the latest schema from cloud
-supabase db pull
-
-# Or start a local Supabase instance
-supabase start
-```
-
-### Running migrations
+## Run it locally
 
 ```bash
-# Apply all migrations to the linked project
-supabase db push
+# 1. Install
+npm install
 
-# Create a new migration
-supabase migration new my_change_name
+# 2. Configure
+cp .env.example .env.local
+# Edit .env.local and paste:
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY  (from Supabase → Settings → API → Project API keys → anon public)
+#   SUPABASE_SERVICE_ROLE_KEY      (from the same page → service_role — SECRET)
+
+# 3. Set a password for the test user
+# In the Supabase dashboard:
+#   Authentication → Users → tuncho@wazu.test → ... → "Send recovery"
+# or use the SQL editor to set a password directly.
+
+# 4. Run
+npm run dev
+# App runs on http://localhost:3030
 ```
 
-## Key decisions
+Sign in with `tuncho@wazu.test` and the password you set. You should land on the products list showing the 6 Wazu synthetic products.
 
-See [`docs/decisions.md`](./docs/decisions.md) for the full running log. Highlights:
+## Architecture
 
-- **Multi-tenant from day one** to avoid a painful rewrite later
-- **Templates as SQL seed scripts** committed to the repo
-- **Translation tables, not JSONB** — matches Medusa and Shopify API shapes directly
-- **Phase 1 UI defers locale switcher** — schema foundation only, tab switcher UI comes later
+### Routing
+- `/login` — public
+- `/catalog/products` — lists products
+- `/catalog/products/[id]` — product editor
+- Everything else: sidebar shows dimmed "coming soon" rows
 
-## Tenancy model
+### Auth flow
+1. Unauthenticated user visits `/catalog/products`
+2. `(app)/layout.tsx` checks `supabase.auth.getUser()` → redirects to `/login`
+3. Login page server-actions into `supabase.auth.signInWithPassword()` → redirects back
+4. Middleware (`src/middleware.ts`) refreshes the session cookies on every subsequent request
 
-Each customer is a `tenant`. Currently one tenant: Wazú (the first pet shop). Future tenants may include FastCap (hardware retail), plus partner-managed customers via the growth partner program.
+### Data flow
+Every data fetch uses the `server` Supabase client (`src/lib/supabase/server.ts`), which reads the session cookie and makes queries under the authenticated user's JWT. **RLS does the tenant isolation automatically** — application code never writes `WHERE tenant_id = X`; the policies do it.
 
-Tenants share the Scout infrastructure but their data is fully isolated via `tenant_id` columns and Postgres Row Level Security policies. Enterprise customers who require dedicated infrastructure can later run the same codebase against their own Supabase project — same code, different database.
+For admin-only flows (signup's `copy_template_to_tenant`, imports, reconciliation), there's a `service-role` client (`src/lib/supabase/service-role.ts`) that bypasses RLS. Not used this pass.
 
-## License
+## Project structure
 
-Proprietary. See [LICENSE](./LICENSE).
+```
+src/
+├── app/
+│   ├── globals.css              ← design system (ported from Bloom)
+│   ├── layout.tsx               ← root layout
+│   ├── page.tsx                 ← redirects → /catalog/products
+│   ├── login/page.tsx           ← public login
+│   └── (app)/                   ← protected route group (auth-gated)
+│       ├── layout.tsx           ← sidebar + topbar + auth gate
+│       └── catalog/
+│           ├── page.tsx         ← redirects → /catalog/products
+│           └── products/
+│               ├── page.tsx     ← list
+│               └── [id]/page.tsx ← editor
+├── components/
+│   └── shell/
+│       ├── Sidebar.tsx          ← nav with Scout IA
+│       └── TopBar.tsx           ← search placeholder + user menu
+├── lib/
+│   ├── format.ts                ← formatGTQ, formatRelative, initials
+│   └── supabase/
+│       ├── client.ts            ← browser client
+│       ├── server.ts            ← server client (RLS-scoped)
+│       └── service-role.ts      ← service-role client (bypasses RLS)
+└── middleware.ts                ← refreshes auth cookies per request
+```
 
-## Contact
+## Design fidelity
 
-GroLabs · info@grolabs.ai (or wherever your actual contact is)
+The `s-*` classes in `globals.css` are 1:1 ports of the Bloom `bl-*` design tokens and components. If you want to look at Bloom for reference, the token values and component shapes are identical — only the prefix changed. This is what lets Bloom and Scout share visual language without sharing code.
+
+## Next suggested session
+
+- Wire up the product editor to actually save. Server action → Supabase update → `revalidatePath`. ~30 min.
+- Build Categories screen (tree picker). ~1 session.
+- Build Attributes split-view. ~1 session.

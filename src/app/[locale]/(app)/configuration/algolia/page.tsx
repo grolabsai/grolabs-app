@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlgoliaForm } from "./_form";
 
 /**
@@ -65,11 +66,12 @@ export default async function AlgoliaConfigPage() {
 
   return (
     <div className="s-page-content">
-      <div className="s-page-header">
-        <h1 className="s-page-title">{t("pageTitle")}</h1>
-        <p className="s-page-description">{t("pageDescription")}</p>
-      </div>
-
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("pageTitle")}</CardTitle>
+          <CardDescription>{t("pageDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
       <AlgoliaForm
         instanceId={instanceId}
         initialValues={{
@@ -83,6 +85,8 @@ export default async function AlgoliaConfigPage() {
         }}
         hasAdminKey={hasAdminKey}
       />
+        </CardContent>
+      </Card>
     </div>
   );
 }

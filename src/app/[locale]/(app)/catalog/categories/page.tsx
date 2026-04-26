@@ -278,6 +278,8 @@ export default async function CategoriesPage({
             <div className="s-aside-search">
               <svg
                 className="s-aside-search-icon"
+                width="16"
+                height="16"
                 viewBox="0 0 16 16"
                 fill="none"
                 stroke="currentColor"

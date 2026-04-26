@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { Route } from "next";
 import {
   Package,
@@ -15,6 +16,7 @@ import {
   Rabbit,
   UserRound,
   Settings,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,37 +44,39 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const NAV: NavGroup[] = [
-  {
-    title: "Catálogo",
-    items: [
-      { href: "/catalog/products", label: "Productos", icon: Package },
-      { href: null, label: "Categorías", icon: LayoutList },
-      { href: null, label: "Atributos", icon: SlidersHorizontal },
-      { href: null, label: "Marcas", icon: Building2 },
-      { href: null, label: "Tipos de producto", icon: Shapes },
-      { href: null, label: "Etiquetas", icon: Tag },
-      { href: null, label: "Reglas de coincidencia", icon: GitMerge },
-    ],
-  },
-  {
-    title: "Referencias",
-    items: [
-      { href: null, label: "Especies", icon: PawPrint },
-      { href: null, label: "Razas", icon: Rabbit },
-      { href: null, label: "Atributos de perfil", icon: UserRound },
-    ],
-  },
-  {
-    title: "Configuración",
-    items: [
-      { href: null, label: "Ajustes de la tienda", icon: Settings },
-    ],
-  },
-];
-
 export function Sidebar({ tenantName }: { tenantName: string }) {
   const pathname = usePathname();
+  const t = useTranslations("configuration.algolia");
+
+  const NAV: NavGroup[] = [
+    {
+      title: "Catálogo",
+      items: [
+        { href: "/catalog/products", label: "Productos", icon: Package },
+        { href: null, label: "Categorías", icon: LayoutList },
+        { href: null, label: "Atributos", icon: SlidersHorizontal },
+        { href: null, label: "Marcas", icon: Building2 },
+        { href: null, label: "Tipos de producto", icon: Shapes },
+        { href: null, label: "Etiquetas", icon: Tag },
+        { href: null, label: "Reglas de coincidencia", icon: GitMerge },
+      ],
+    },
+    {
+      title: "Referencias",
+      items: [
+        { href: null, label: "Especies", icon: PawPrint },
+        { href: null, label: "Razas", icon: Rabbit },
+        { href: null, label: "Atributos de perfil", icon: UserRound },
+      ],
+    },
+    {
+      title: "Configuración",
+      items: [
+        { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
+        { href: null, label: "Ajustes de la tienda", icon: Settings },
+      ],
+    },
+  ];
 
   return (
     <nav className="s-nav">

@@ -22,6 +22,7 @@
   },
   "configuration": {
     "algolia": {
+      "navLabel": "Algolia",
       "pageTitle": "Algolia",
       "pageDescription": "Conecta tu cuenta de Algolia para habilitar búsqueda en tiempo real en tu catálogo.",
       "fields": {

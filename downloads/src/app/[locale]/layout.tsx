@@ -1,0 +1,48 @@
+import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
+import { notFound } from "next/navigation";
+import { routing } from "@/i18n/routing";
+import "../globals.css";
+
+export const metadata: Metadata = {
+  title: "Scout · Administración de catálogo",
+  description:
+    "Scout — administración multi-tenant de catálogos de comercio electrónico.",
+};
+
+type Props = {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+};
+
+/**
+ * Locale root layout. Provides:
+ *   - <html lang> set from the active locale
+ *   - NextIntlClientProvider with the locale's message bundle
+ *
+ * This is the outermost layout that renders html/body; the thin
+ * app/layout.tsx above it satisfies Next.js's root-layout requirement
+ * without re-wrapping html/body.
+ */
+export default async function LocaleLayout({ children, params }: Props) {
+  const { locale } = await params;
+
+  // Guard: if somehow an unknown locale segment reaches this layout, 404.
+  if (!(routing.locales as readonly string[]).includes(locale)) {
+    notFound();
+  }
+
+  // getMessages() reads from the request config (src/i18n/request.ts).
+  const messages = await getMessages();
+
+  return (
+    <html lang={locale}>
+      <body>
+        <NextIntlClientProvider messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  );
+}

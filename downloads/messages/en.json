@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "conversion": "Conversion",
+    "catalog": "Catalog",
+    "configuration": "Configuration"
+  },
+  "settings": {
+    "algolia": {
+      "title": "Algolia Settings",
+      "description": "Credentials and index settings for this instance only.",
+      "fields": {
+        "appId": "Application ID",
+        "region": "Region",
+        "searchKey": "Search Key (read-only)",
+        "adminKey": "Admin Key"
+      },
+      "actions": {
+        "test": "Test connection",
+        "save": "Save"
+      }
+    }
+  }
+}

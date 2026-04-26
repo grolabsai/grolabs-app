@@ -26,31 +26,31 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Grab the user's current tenant (they should have exactly one in Phase 1
-  // per D19). Used by the sidebar and for UX breadcrumbs.
-  // Supabase types the joined `tenant` relation as an array; in practice a
-  // single tenant_member row has exactly one tenant, so we normalize here.
+  // Grab the user's current instance (they should have exactly one in
+  // Phase 1 per D19). Used by the sidebar to show which instance is active.
+  // Supabase types the joined `instance` relation as an array; in practice a
+  // single instance_member row has exactly one instance, so we normalize here.
   const { data: membership } = await supabase
-    .from("tenant_member")
-    .select("tenant_id, role, tenant:tenant_id(name, slug)")
+    .from("instance_member")
+    .select("instance_id, role, instance:instance_id(name, slug, kind)")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .maybeSingle();
 
-  const tenantRel = membership?.tenant as
-    | { name: string; slug: string }
-    | { name: string; slug: string }[]
+  const instanceRel = membership?.instance as
+    | { name: string; slug: string; kind: string }
+    | { name: string; slug: string; kind: string }[]
     | null
     | undefined;
-  const tenantObj = Array.isArray(tenantRel) ? tenantRel[0] : tenantRel;
-  const tenantName = tenantObj?.name ?? "Sin tenant";
+  const instanceObj = Array.isArray(instanceRel) ? instanceRel[0] : instanceRel;
+  const instanceName = instanceObj?.name ?? "Sin instancia";
 
   // User initials for the topbar avatar — from email local part if no name.
   const initials = (user.email ?? "??").slice(0, 2).toUpperCase();
 
   return (
     <div className="s-app">
-      <Sidebar tenantName={tenantName} />
+      <Sidebar instanceName={instanceName} />
       <main className="s-main">
         <TopBar initials={initials} userEmail={user.email ?? ""} />
         {children}

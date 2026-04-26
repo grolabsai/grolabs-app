@@ -20,6 +20,38 @@
       }
     }
   },
+  "catalog": {
+    "variantAxis": {
+      "inheritedLabel": "Inherited from parent categories",
+      "inheritedDesc": "These axes were defined in parent categories and are automatically available.",
+      "inheritedFrom": "Inherited from {name}",
+      "ownLabel": "Axes defined in {categoryName}",
+      "ownDesc": "These axes are added to the inherited ones. The import agent will use the full pool to detect variants in product names.",
+      "removeHint": "Click to remove",
+      "addHint": "Click to add",
+      "addOther": "+ Other",
+      "customPlaceholder": "name…",
+      "noteLabel": "Context note for the agent",
+      "noteOptional": "(optional)",
+      "notePlaceholder": "E.g.: \"Words like Medium, Large refer to breed size, not product size.\"",
+      "previewLabel": "Agent preview — full pool for this category",
+      "previewAxes": "Variant axes:",
+      "previewNote": "Note:",
+      "saveButton": "Save configuration",
+      "saving": "Saving…",
+      "saved": "✓ Saved",
+      "axes": {
+        "weight": "Weight",
+        "volume": "Volume",
+        "size": "Size",
+        "color": "Color",
+        "length": "Length",
+        "flavor": "Flavor",
+        "count": "Count",
+        "material": "Material"
+      }
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

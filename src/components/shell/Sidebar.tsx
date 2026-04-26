@@ -17,6 +17,7 @@ import {
   UserRound,
   Settings,
   Search,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +45,7 @@ type NavGroup = {
   items: NavItem[];
 };
 
-export function Sidebar({ tenantName }: { tenantName: string }) {
+export function Sidebar({ instanceName }: { instanceName: string }) {
   const pathname = usePathname();
   const t = useTranslations("configuration.algolia");
 
@@ -53,12 +54,18 @@ export function Sidebar({ tenantName }: { tenantName: string }) {
       title: "Catálogo",
       items: [
         { href: "/catalog/products", label: "Productos", icon: Package },
-        { href: null, label: "Categorías", icon: LayoutList },
+        { href: "/catalog/categories" as Route, label: "Categorías", icon: LayoutList },
         { href: null, label: "Atributos", icon: SlidersHorizontal },
         { href: null, label: "Marcas", icon: Building2 },
         { href: null, label: "Tipos de producto", icon: Shapes },
         { href: null, label: "Etiquetas", icon: Tag },
         { href: null, label: "Reglas de coincidencia", icon: GitMerge },
+      ],
+    },
+    {
+      title: "Datos",
+      items: [
+        { href: "/import" as Route, label: "Importar", icon: Download },
       ],
     },
     {
@@ -135,7 +142,7 @@ export function Sidebar({ tenantName }: { tenantName: string }) {
         </div>
       ))}
 
-      {/* Tenant badge */}
+      {/* Instance badge */}
       <div style={{ marginTop: 24, padding: "8px 10px" }}>
         <div
           style={{
@@ -146,9 +153,9 @@ export function Sidebar({ tenantName }: { tenantName: string }) {
             marginBottom: 4,
           }}
         >
-          Tenant
+          Instancia
         </div>
-        <div style={{ fontSize: 13, color: "var(--s-text)" }}>{tenantName}</div>
+        <div style={{ fontSize: 13, color: "var(--s-text)" }}>{instanceName}</div>
       </div>
     </nav>
   );

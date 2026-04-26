@@ -1657,6 +1657,10 @@ button {
   color: #854F0B;
   background: #FAEEDA;
 }
+.s-type-glyph.qty {
+  color: #1E6B5A;
+  background: #D6F0EB;
+}
 .s-type-glyph.ref {
   color: #993556;
   background: #FBEAF0;

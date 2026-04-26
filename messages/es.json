@@ -22,6 +22,98 @@
     }
   },
   "catalog": {
+    "attributes": {
+      "title": "Atributos",
+      "searchPlaceholder": "Buscar atributos…",
+      "filters": {
+        "all": "Todos",
+        "variant": "Variante",
+        "descriptive": "Descriptivo"
+      },
+      "groups": {
+        "list": "Lista",
+        "text": "Texto",
+        "number": "Número",
+        "boolean": "Sí / No",
+        "date": "Fecha",
+        "quantity": "Cantidad",
+        "single_ref": "Referencia",
+        "other": "Otro"
+      },
+      "inactive": "inactivo",
+      "empty": {
+        "noAttributes": "Sin atributos todavía.",
+        "noResults": "Sin resultados para \"{query}\".",
+        "createFirst": "Crear el primero",
+        "selectPrompt": "Selecciona un atributo o crea uno nuevo."
+      },
+      "createButton": "Nuevo atributo",
+      "form": {
+        "createTitle": "Nuevo atributo",
+        "editTitle": "Editar atributo",
+        "sections": {
+          "basic": "Información básica",
+          "type": "Tipo de dato",
+          "behavior": "Comportamiento",
+          "options": "Opciones"
+        },
+        "fields": {
+          "name": "Nombre",
+          "namePlaceholder": "Ej: Color, Sabor, Peso",
+          "code": "Código",
+          "codePlaceholder": "color, sabor, peso",
+          "codeHint": "Solo minúsculas, sin espacios.",
+          "description": "Descripción",
+          "descriptionPlaceholder": "Para qué sirve este atributo…",
+          "dataType": "Tipo de dato",
+          "dataTypePlaceholder": "Seleccionar tipo…",
+          "dimension": "Dimensión física",
+          "dimensionPlaceholder": "Seleccionar dimensión…",
+          "dimensionMass": "Masa (kg, g)",
+          "dimensionVolume": "Volumen (L, ml)",
+          "dimensionCount": "Conteo (unidades)"
+        },
+        "dataTypes": {
+          "list": "Lista",
+          "text": "Texto",
+          "number": "Número",
+          "boolean": "Sí / No",
+          "date": "Fecha",
+          "quantity": "Cantidad",
+          "single_ref": "Referencia"
+        },
+        "behavior": {
+          "isMultivalue": "Multivalor",
+          "isMultivalueDesc": "Un producto puede tener múltiples valores",
+          "isFilterable": "Filtrable",
+          "isFilterableDesc": "Aparece en filtros de búsqueda",
+          "isSearchable": "Buscable",
+          "isSearchableDesc": "El valor se indexa para búsqueda",
+          "appliesToVariants": "Eje de variante",
+          "appliesToVariantsDesc": "Puede diferenciar variantes de producto",
+          "isActive": "Activo",
+          "isActiveDesc": "Solo los activos se usan en importaciones"
+        },
+        "options": {
+          "addOption": "Agregar opción",
+          "optionValuePlaceholder": "Valor…",
+          "deleteOption": "×",
+          "noOptions": "Sin opciones aún."
+        }
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "saved": "✓ Guardado",
+        "delete": "Eliminar atributo",
+        "deleteLinked": "Vinculado a {n} categoría(s) — no se puede eliminar.",
+        "confirmDelete": "¿Eliminar este atributo? Esta acción no se puede deshacer."
+      },
+      "assistant": {
+        "title": "Asistente",
+        "comingSoon": "próximamente"
+      }
+    },
     "variantAxis": {
       "inheritedLabel": "Heredados de categorías superiores",
       "inheritedDesc": "Estos ejes se definieron en categorías padre y están disponibles automáticamente.",

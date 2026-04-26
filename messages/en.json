@@ -19,5 +19,52 @@
         "save": "Save"
       }
     }
+  },
+  "configuration": {
+    "algolia": {
+      "pageTitle": "Algolia",
+      "pageDescription": "Connect your Algolia account to enable real-time search on your catalog.",
+      "fields": {
+        "appId": "Application ID",
+        "region": "Region",
+        "regionPlaceholder": "Select region",
+        "regionUs": "United States (us)",
+        "regionEu": "Europe (eu)",
+        "regionDe": "Germany (de)",
+        "regionIn": "India (in)",
+        "regionSg": "Singapore (sg)",
+        "regionAu": "Australia (au)",
+        "regionBr": "Brazil (br)",
+        "regionCa": "Canada (ca)",
+        "regionZa": "South Africa (za)",
+        "regionUae": "United Arab Emirates (uae)",
+        "regionUk": "United Kingdom (uk)",
+        "regionJp": "Japan (jp)",
+        "regionHk": "Hong Kong (hk)",
+        "searchApiKey": "Search API Key",
+        "adminApiKey": "Admin API Key",
+        "adminApiKeyHidden": "Admin API Key saved",
+        "replaceKey": "Replace key",
+        "primaryIndex": "Primary index"
+      },
+      "status": {
+        "label": "Status",
+        "verified": "Verified {time} ago · {latency}ms",
+        "failed": "Verification failed",
+        "notVerified": "Not verified"
+      },
+      "actions": {
+        "test": "Test connection",
+        "save": "Save",
+        "showKey": "Show key",
+        "hideKey": "Hide key"
+      },
+      "toast": {
+        "testSuccess": "Connection successful",
+        "testFailed": "Connection failed",
+        "saveSuccess": "Configuration saved",
+        "saveFailed": "Could not save configuration"
+      }
+    }
   }
 }

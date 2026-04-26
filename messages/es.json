@@ -19,5 +19,52 @@
         "save": "Guardar"
       }
     }
+  },
+  "configuration": {
+    "algolia": {
+      "pageTitle": "Algolia",
+      "pageDescription": "Conecta tu cuenta de Algolia para habilitar búsqueda en tiempo real en tu catálogo.",
+      "fields": {
+        "appId": "ID de aplicación",
+        "region": "Región",
+        "regionPlaceholder": "Seleccionar región",
+        "regionUs": "Estados Unidos (us)",
+        "regionEu": "Europa (eu)",
+        "regionDe": "Alemania (de)",
+        "regionIn": "India (in)",
+        "regionSg": "Singapur (sg)",
+        "regionAu": "Australia (au)",
+        "regionBr": "Brasil (br)",
+        "regionCa": "Canadá (ca)",
+        "regionZa": "Sudáfrica (za)",
+        "regionUae": "Emiratos Árabes Unidos (uae)",
+        "regionUk": "Reino Unido (uk)",
+        "regionJp": "Japón (jp)",
+        "regionHk": "Hong Kong (hk)",
+        "searchApiKey": "Search API Key",
+        "adminApiKey": "Admin API Key",
+        "adminApiKeyHidden": "Admin API Key guardada",
+        "replaceKey": "Reemplazar clave",
+        "primaryIndex": "Índice principal"
+      },
+      "status": {
+        "label": "Estado",
+        "verified": "Verificado hace {time} · {latency}ms",
+        "failed": "Falló la verificación",
+        "notVerified": "Sin verificar"
+      },
+      "actions": {
+        "test": "Probar conexión",
+        "save": "Guardar",
+        "showKey": "Mostrar clave",
+        "hideKey": "Ocultar clave"
+      },
+      "toast": {
+        "testSuccess": "Conexión exitosa",
+        "testFailed": "Error de conexión",
+        "saveSuccess": "Configuración guardada",
+        "saveFailed": "No se pudo guardar"
+      }
+    }
   }
 }

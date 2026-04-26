@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safety net: any SVG without explicit sizing renders at parent font-size */
+svg {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
 /* =============================================================================
    Scout Admin — design system
    =============================================================================

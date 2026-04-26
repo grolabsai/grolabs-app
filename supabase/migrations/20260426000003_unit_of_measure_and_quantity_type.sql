@@ -54,13 +54,13 @@ CREATE POLICY "uom_read_all"
 INSERT INTO public.unit_of_measure
   (code,    name,            dimension, to_si_factor, si_base_unit, sort_order)
 VALUES
-  ('kg',    'Kilogramo',     'mass',    1,            'g',          10),
-  ('g',     'Gramo',         'mass',    0.001,        'g',          20),
-  ('lb',    'Libra',         'mass',    0.453592,     'g',          30),
-  ('oz',    'Onza',          'mass',    0.0283495,    'g',          40),
-  ('l',     'Litro',         'volume',  1,            'ml',         50),
-  ('ml',    'Mililitro',     'volume',  0.001,        'ml',         60),
-  ('fl_oz', 'Onza líquida',  'volume',  0.0295735,    'ml',         70),
+  ('kg',    'Kilogramo',     'mass',    1000,         'g',          10),
+  ('g',     'Gramo',         'mass',    1,            'g',          20),
+  ('lb',    'Libra',         'mass',    453.592,      'g',          30),
+  ('oz',    'Onza',          'mass',    28.3495,      'g',          40),
+  ('l',     'Litro',         'volume',  1000,         'ml',         50),
+  ('ml',    'Mililitro',     'volume',  1,            'ml',         60),
+  ('fl_oz', 'Onza líquida',  'volume',  29.5735,      'ml',         70),
   ('ea',    'Unidad',        'count',   1,            'ea',         80);
 
 

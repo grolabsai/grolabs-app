@@ -165,6 +165,30 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         </div>
         <div style={{ fontSize: 13, color: "var(--s-text)" }}>{instanceName}</div>
       </div>
+
+      {/* Version */}
+      <div style={{ padding: "4px 10px 8px" }}>
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--s-text-tertiary)",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            marginBottom: 2,
+          }}
+        >
+          Versión
+        </div>
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--s-text-tertiary)",
+            fontFamily: "var(--s-font-mono)",
+          }}
+        >
+          {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}
+        </div>
+      </div>
     </nav>
   );
 }

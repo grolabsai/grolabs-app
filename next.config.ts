@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
   // strings are valid when all routes live under a dynamic [locale] segment.
   // The pattern "'/catalog/products' as Route" does not type-check cleanly
   // against RouteImpl<T> in this configuration.
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString().slice(0, 10),
+  },
 };
 
 export default withNextIntl(nextConfig);

@@ -102,7 +102,7 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="s-auth-footnote">Scout · Phase 1 · dev</p>
+        <p className="s-auth-footnote">Scout · {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
       </div>
     </div>
   );

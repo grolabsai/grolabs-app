@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { AttributeTypeGlyph } from "@/components/catalog/AttributeTypeGlyph";
 import { VariantAxisConfig } from "@/components/catalog/VariantAxisConfig";
-import { resolveVariantAxes } from "@/lib/resolveVariantAxes";
+import { resolveVariantAxes, type VariantAxisRow } from "@/lib/resolveVariantAxes";
 import { initialsFromName } from "@/lib/format";
 
 /**
@@ -40,7 +40,6 @@ type CategoryNode = {
   sort_order: number | null;
   is_active: boolean;
   template_ref_id: number | null;
-  default_variant_axes: string[] | null;
   parsing_note: string | null;
 };
 
@@ -82,7 +81,7 @@ export default async function CategoriesPage({
   const { data: cats } = await supabase
     .from("category")
     .select(
-      "category_id, parent_category_id, category_code, category_name, slug, description, level, sort_order, is_active, template_ref_id, default_variant_axes, parsing_note",
+      "category_id, parent_category_id, category_code, category_name, slug, description, level, sort_order, is_active, template_ref_id, parsing_note",
     )
     .eq("instance_id", instanceId)
     .order("level", { ascending: true })
@@ -498,6 +497,57 @@ async function CategoryDetail({
     arr.push({ value_id: o.value_id as number, value: o.value as string });
     optionsByAttribute.set(o.attribute_id as number, arr);
   }
+
+  /* ------------- Variant axes for this category + ancestors ------------- */
+  const ancestorIds: number[] = [];
+  {
+    const byId = new Map(allCats.map((c) => [c.category_id, c]));
+    let cur: CategoryNode | undefined = byId.get(category.category_id);
+    while (cur) {
+      ancestorIds.unshift(cur.category_id);
+      cur = cur.parent_category_id ? byId.get(cur.parent_category_id) : undefined;
+    }
+  }
+
+  const { data: axisLinks } = await supabase
+    .from("category_product_attribute")
+    .select(
+      `category_id,
+       variant_axis_order,
+       attribute:attribute_id (
+         attribute_id,
+         attribute_code,
+         attribute_name
+       )`,
+    )
+    .eq("instance_id", instanceId)
+    .in("category_id", ancestorIds)
+    .eq("is_variant_axis", true)
+    .order("variant_axis_order", { ascending: true, nullsFirst: false });
+
+  const variantAxisRows: VariantAxisRow[] = (axisLinks ?? []).flatMap((r) => {
+    const attr = normalizeOne(r.attribute);
+    if (!attr) return [];
+    return [
+      {
+        category_id: r.category_id as number,
+        attribute_id: attr.attribute_id as number,
+        attribute_code: attr.attribute_code as string,
+        attribute_name: attr.attribute_name as string,
+        variant_axis_order: r.variant_axis_order as number | null,
+      },
+    ];
+  });
+
+  const resolvedAxes = resolveVariantAxes(
+    category.category_id,
+    variantAxisRows,
+    allCats,
+  );
+
+  const ownAxesCodes = resolvedAxes
+    .filter((r) => r.fromCategoryId === category.category_id)
+    .map((r) => r.axis);
 
   /* ------------- Products in this category ------------- */
   const { data: productLinks } = await supabase
@@ -953,10 +1003,8 @@ async function CategoryDetail({
           </svg>
           <span className="s-acc-title">Configuración de variantes</span>
           {(() => {
-            const resolved = resolveVariantAxes(category.category_id, allCats);
-            const own = (category.default_variant_axes ?? []).length;
-            const inherited = resolved.length - own;
-            if (resolved.length > 0) {
+            const inherited = resolvedAxes.length - ownAxesCodes.length;
+            if (resolvedAxes.length > 0) {
               return (
                 <span
                   style={{
@@ -966,7 +1014,7 @@ async function CategoryDetail({
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  {resolved.length} {resolved.length === 1 ? "eje" : "ejes"}
+                  {resolvedAxes.length} {resolvedAxes.length === 1 ? "eje" : "ejes"}
                   {inherited > 0 && (
                     <span style={{ color: "var(--s-text-muted)" }}>
                       {" "}({inherited} heredado{inherited !== 1 ? "s" : ""})
@@ -991,9 +1039,9 @@ async function CategoryDetail({
         <div className="s-acc-body">
           <VariantAxisConfig
             categoryId={category.category_id}
-            initialAxes={category.default_variant_axes ?? []}
+            initialAxes={ownAxesCodes}
             initialNote={category.parsing_note ?? null}
-            resolvedAxes={resolveVariantAxes(category.category_id, allCats)}
+            resolvedAxes={resolvedAxes}
             categoryName={category.category_name}
           />
         </div>

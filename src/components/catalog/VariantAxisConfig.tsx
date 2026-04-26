@@ -58,6 +58,8 @@ export function VariantAxisConfig({
 }) {
   const t = useTranslations("catalog.variantAxis");
 
+  const axisNameMap = new Map(resolvedAxes.map((r) => [r.axis, r.attributeName]));
+
   const [ownAxes, setOwnAxes] = useState<string[]>(initialAxes);
   const [note, setNote] = useState(initialNote ?? "");
   const [customAxis, setCustomAxis] = useState("");
@@ -94,6 +96,10 @@ export function VariantAxisConfig({
     } catch {
       return axis;
     }
+  }
+
+  function displayName(axis: string): string {
+    return axisNameMap.get(axis) || axisLabel(axis);
   }
 
   function addOwnAxis(value: string) {
@@ -148,7 +154,7 @@ export function VariantAxisConfig({
                 title={t("inheritedFrom", { name: r.fromCategoryName })}
               >
                 <AxisIcon axis={r.axis} />
-                {axisLabel(r.axis)}
+                {r.attributeName || axisLabel(r.axis)}
                 <span
                   style={{
                     fontSize: 9,
@@ -184,7 +190,7 @@ export function VariantAxisConfig({
               title={t("removeHint")}
             >
               <AxisIcon axis={a} />
-              {axisLabel(a)}
+              {displayName(a)}
               <span className="s-axis-remove">×</span>
             </button>
           ))}
@@ -199,7 +205,7 @@ export function VariantAxisConfig({
             title={t("addHint")}
           >
             <AxisIcon axis={k} />
-            {axisLabel(k)}
+            {displayName(k)}
           </button>
         ))}
 
@@ -281,7 +287,7 @@ export function VariantAxisConfig({
             <span style={{ color: "var(--s-text-tertiary)" }}>
               {t("previewAxes")}
             </span>{" "}
-            {fullPool.map((a) => axisLabel(a)).join(", ")}
+            {fullPool.map((a) => displayName(a)).join(", ")}
             {note ? (
               <>
                 <br />

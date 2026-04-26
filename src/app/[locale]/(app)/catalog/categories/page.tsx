@@ -3,7 +3,7 @@ import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { AttributeTypeGlyph } from "@/components/catalog/AttributeTypeGlyph";
-import { VariantAxisConfig } from "@/components/catalog/VariantAxisConfig";
+import { VariantAxisConfig, type AvailableAttribute } from "@/components/catalog/VariantAxisConfig";
 import { resolveVariantAxes, type VariantAxisRow } from "@/lib/resolveVariantAxes";
 import { initialsFromName } from "@/lib/format";
 
@@ -549,6 +549,22 @@ async function CategoryDetail({
     .filter((r) => r.fromCategoryId === category.category_id)
     .map((r) => r.axis);
 
+  /* ------------- Attributes available as variant axes (instance-wide) ------------- */
+  const { data: availableAttrRows } = await supabase
+    .from("product_attribute")
+    .select("attribute_id, attribute_code, attribute_name, data_type")
+    .eq("instance_id", instanceId)
+    .eq("applies_to_variants", true)
+    .eq("is_active", true)
+    .order("attribute_name");
+
+  const availableAttributes: AvailableAttribute[] = (availableAttrRows ?? []).map((a) => ({
+    attribute_id: a.attribute_id as number,
+    attribute_code: a.attribute_code as string,
+    attribute_name: a.attribute_name as string,
+    data_type: a.data_type as string,
+  }));
+
   /* ------------- Products in this category ------------- */
   const { data: productLinks } = await supabase
     .from("product_category_link")
@@ -1038,10 +1054,12 @@ async function CategoryDetail({
         </summary>
         <div className="s-acc-body">
           <VariantAxisConfig
+            key={category.category_id}
             categoryId={category.category_id}
             initialAxes={ownAxesCodes}
             initialNote={category.parsing_note ?? null}
             resolvedAxes={resolvedAxes}
+            availableAttributes={availableAttributes}
             categoryName={category.category_name}
           />
         </div>

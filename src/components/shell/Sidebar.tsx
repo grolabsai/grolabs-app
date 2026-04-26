@@ -63,7 +63,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       items: [
         { href: "/catalog/products", label: "Productos", icon: Package },
         { href: "/catalog/categories" as Route, label: "Categorías", icon: LayoutList },
-        { href: null, label: "Atributos", icon: SlidersHorizontal },
+        { href: "/catalog/attributes" as Route, label: "Atributos", icon: SlidersHorizontal },
         { href: null, label: "Marcas", icon: Building2 },
         { href: null, label: "Tipos de producto", icon: Shapes },
         { href: null, label: "Etiquetas", icon: Tag },

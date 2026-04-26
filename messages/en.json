@@ -22,6 +22,98 @@
     }
   },
   "catalog": {
+    "attributes": {
+      "title": "Attributes",
+      "searchPlaceholder": "Search attributes…",
+      "filters": {
+        "all": "All",
+        "variant": "Variant",
+        "descriptive": "Descriptive"
+      },
+      "groups": {
+        "list": "List",
+        "text": "Text",
+        "number": "Number",
+        "boolean": "Yes / No",
+        "date": "Date",
+        "quantity": "Quantity",
+        "single_ref": "Reference",
+        "other": "Other"
+      },
+      "inactive": "inactive",
+      "empty": {
+        "noAttributes": "No attributes yet.",
+        "noResults": "No results for \"{query}\".",
+        "createFirst": "Create the first one",
+        "selectPrompt": "Select an attribute or create a new one."
+      },
+      "createButton": "New attribute",
+      "form": {
+        "createTitle": "New attribute",
+        "editTitle": "Edit attribute",
+        "sections": {
+          "basic": "Basic info",
+          "type": "Data type",
+          "behavior": "Behavior",
+          "options": "Options"
+        },
+        "fields": {
+          "name": "Name",
+          "namePlaceholder": "E.g.: Color, Flavor, Weight",
+          "code": "Code",
+          "codePlaceholder": "color, flavor, weight",
+          "codeHint": "Lowercase, no spaces.",
+          "description": "Description",
+          "descriptionPlaceholder": "What this attribute is used for…",
+          "dataType": "Data type",
+          "dataTypePlaceholder": "Select type…",
+          "dimension": "Physical dimension",
+          "dimensionPlaceholder": "Select dimension…",
+          "dimensionMass": "Mass (kg, g)",
+          "dimensionVolume": "Volume (L, ml)",
+          "dimensionCount": "Count (units)"
+        },
+        "dataTypes": {
+          "list": "List",
+          "text": "Text",
+          "number": "Number",
+          "boolean": "Yes / No",
+          "date": "Date",
+          "quantity": "Quantity",
+          "single_ref": "Reference"
+        },
+        "behavior": {
+          "isMultivalue": "Multivalue",
+          "isMultivalueDesc": "A product can have multiple values",
+          "isFilterable": "Filterable",
+          "isFilterableDesc": "Appears in search filters",
+          "isSearchable": "Searchable",
+          "isSearchableDesc": "Value is indexed for search",
+          "appliesToVariants": "Variant axis",
+          "appliesToVariantsDesc": "Can differentiate product variants",
+          "isActive": "Active",
+          "isActiveDesc": "Only active attributes are used in imports"
+        },
+        "options": {
+          "addOption": "Add option",
+          "optionValuePlaceholder": "Value…",
+          "deleteOption": "×",
+          "noOptions": "No options yet."
+        }
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "✓ Saved",
+        "delete": "Delete attribute",
+        "deleteLinked": "Linked to {n} category(s) — cannot delete.",
+        "confirmDelete": "Delete this attribute? This action cannot be undone."
+      },
+      "assistant": {
+        "title": "Assistant",
+        "comingSoon": "coming soon"
+      }
+    },
     "variantAxis": {
       "inheritedLabel": "Inherited from parent categories",
       "inheritedDesc": "These axes were defined in parent categories and are automatically available.",

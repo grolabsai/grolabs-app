@@ -15,6 +15,7 @@ export type AttributeDataType =
   | "number"
   | "boolean"
   | "date"
+  | "quantity"
   | "single_ref";
 
 export function AttributeTypeGlyph({
@@ -53,6 +54,8 @@ function glyphClass(dataType?: string | null, multi?: boolean): string {
       return "bool";
     case "date":
       return "date";
+    case "quantity":
+      return "qty";
     case "single_ref":
       return "ref";
     default:
@@ -72,6 +75,8 @@ function ariaLabel(dataType?: string | null, multi?: boolean): string {
       return "Sí / No";
     case "date":
       return "Fecha";
+    case "quantity":
+      return "Cantidad";
     case "single_ref":
       return "Referencia";
     default:
@@ -144,6 +149,20 @@ function renderIcon(
         >
           <rect x="2" y="3" width="12" height="11" rx="1" />
           <path d="M2 6h12M5 1v3M11 1v3" />
+        </svg>
+      );
+    case "quantity":
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke={stroke}
+          strokeWidth={sw}
+        >
+          <path d="M8 2v12M4 6l4-4 4 4" />
+          <path d="M5 14h6" />
         </svg>
       );
     case "single_ref":

@@ -103,3 +103,40 @@ There is no ESLint plugin enforcing this automatically. Code review is the gate.
 - Unauthenticated access is blocked in `src/app/[locale]/(app)/layout.tsx`, not in middleware.
 - Middleware's only job is session-cookie refresh (Supabase) + locale routing (next-intl).
 - `redirect('/login')` and `redirect('/catalog/products')` in server actions use plain `next/navigation` for now; migrate to `@/i18n/routing` when the write paths are built out.
+
+---
+
+## Icons
+
+### Lucide icons — use the `Icon` wrapper
+
+```tsx
+// ✅ Correct — always use the wrapper
+import { Icon } from '@/components/ui/icon';
+import { ChevronRight } from 'lucide-react';
+
+<Icon icon={ChevronRight} />                  // 16px, strokeWidth 1.5 (defaults)
+<Icon icon={ChevronRight} size={12} />        // override size
+```
+
+The wrapper enforces consistent defaults (`size=16`, `strokeWidth=1.5`) and prevents accidental omission of either prop.
+
+```tsx
+// ❌ Forbidden — raw Lucide without explicit size/strokeWidth
+<ChevronRight />
+<ChevronRight className="h-4 w-4" />
+```
+
+### Inline SVGs — always set explicit `width` and `height`
+
+```tsx
+// ✅ Correct
+<svg width="16" height="16" viewBox="0 0 16 16" ...>
+
+// ❌ Forbidden — omitting width/height lets the global safety net (1em × 1em) control size, which may be wrong
+<svg viewBox="0 0 16 16" ...>
+```
+
+### Global safety net
+
+`src/app/globals.css` includes `svg { width: 1em; height: 1em; flex-shrink: 0; }` as a last-resort fallback. This keeps unsized SVGs from blowing up to 300×150 px, but do not rely on it — always set explicit dimensions.

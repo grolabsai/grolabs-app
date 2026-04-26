@@ -334,6 +334,8 @@ export default async function CategoriesPage({
                     >
                       <svg
                         className="s-tree-caret"
+                        width="12"
+                        height="12"
                         viewBox="0 0 12 12"
                         fill="currentColor"
                       >
@@ -341,6 +343,8 @@ export default async function CategoriesPage({
                       </svg>
                       <svg
                         className="s-tree-icon"
+                        width="16"
+                        height="16"
                         viewBox="0 0 16 16"
                         fill="none"
                         stroke="currentColor"
@@ -371,6 +375,8 @@ export default async function CategoriesPage({
                               >
                                 <svg
                                   className="s-tree-icon"
+                                  width="16"
+                                  height="16"
                                   viewBox="0 0 16 16"
                                   fill="none"
                                   stroke="currentColor"

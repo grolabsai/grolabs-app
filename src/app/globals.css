@@ -1136,3 +1136,114 @@ button {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* =============================================================================
+   PAGE LAYOUT HELPERS
+   ========================================================================== */
+
+.s-page-content {
+  padding: 32px;
+  max-width: 640px;
+}
+.s-page-header {
+  margin-bottom: 28px;
+}
+.s-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--s-text);
+  margin: 0 0 6px;
+}
+.s-page-description {
+  font-size: 13px;
+  color: var(--s-text-secondary);
+  margin: 0;
+}
+
+/* =============================================================================
+   CONFIGURATION FORM
+   ========================================================================== */
+
+.s-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Inline row for "key is stored" + replace button */
+.s-field--inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.s-field-stored-label {
+  font-size: 13px;
+  color: var(--s-text-secondary);
+  flex: 1;
+}
+
+/* Password field with eye toggle */
+.s-field--password {
+  position: relative;
+}
+.s-field-eye {
+  position: absolute !important;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--s-text-tertiary);
+}
+
+/* Floating label for Select */
+.s-field-label--select {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--s-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.s-config-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 0.5px solid var(--s-border);
+}
+.s-status-label {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.s-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 99px;
+}
+.s-status-badge--success {
+  background: var(--s-success-bg);
+  color: var(--s-success-text);
+}
+.s-status-badge--danger {
+  background: var(--s-danger-bg);
+  color: var(--s-danger-text);
+}
+.s-status-badge--neutral {
+  background: var(--s-surface-alt);
+  color: var(--s-text-secondary);
+}
+
+.s-config-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}

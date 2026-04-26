@@ -19,5 +19,42 @@
         "save": "Save"
       }
     }
+  },
+  "configuration": {
+    "algolia": {
+      "pageTitle": "Algolia",
+      "pageDescription": "Connect your Algolia account to enable real-time search on your catalog.",
+      "fields": {
+        "appId": "Application ID",
+        "region": "Region",
+        "regionPlaceholder": "Select region",
+        "regionUs": "US (us)",
+        "regionEu": "EU (eu)",
+        "regionDe": "DE (de)",
+        "searchApiKey": "Search API Key",
+        "adminApiKey": "Admin API Key",
+        "adminApiKeyHidden": "Admin API Key saved",
+        "replaceKey": "Replace key",
+        "primaryIndex": "Primary index"
+      },
+      "status": {
+        "label": "Status",
+        "verified": "Verified",
+        "failed": "Verification failed",
+        "notVerified": "Not verified"
+      },
+      "actions": {
+        "test": "Test connection",
+        "save": "Save",
+        "showKey": "Show key",
+        "hideKey": "Hide key"
+      },
+      "toast": {
+        "testSuccess": "Connection successful",
+        "testFailed": "Connection failed",
+        "saveSuccess": "Configuration saved",
+        "saveFailed": "Could not save configuration"
+      }
+    }
   }
 }

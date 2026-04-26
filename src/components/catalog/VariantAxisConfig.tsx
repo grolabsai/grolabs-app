@@ -13,6 +13,7 @@ import {
   Beef,
   Hash,
   Layers,
+  Package,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -21,8 +22,15 @@ import type { LucideIcon } from "lucide-react";
  *
  * Inherited axes (from parent categories) are shown as read-only chips
  * with a source label. Own axes (defined at this level) are editable.
- * Standard axes not yet assigned anywhere in the chain can be added.
+ * All available attributes come from the database — no hardcoded list.
  */
+
+export type AvailableAttribute = {
+  attribute_id: number;
+  attribute_code: string;
+  attribute_name: string;
+  data_type: string;
+};
 
 const AXIS_ICONS: Record<string, LucideIcon> = {
   weight: Scale,
@@ -33,9 +41,8 @@ const AXIS_ICONS: Record<string, LucideIcon> = {
   flavor: Beef,
   count: Hash,
   material: Layers,
+  content: Package,
 };
-
-const STANDARD_AXIS_KEYS = Object.keys(AXIS_ICONS);
 
 function AxisIcon({ axis, size = 14 }: { axis: string; size?: number }) {
   const Icon = AXIS_ICONS[axis];
@@ -48,17 +55,23 @@ export function VariantAxisConfig({
   initialAxes,
   initialNote,
   resolvedAxes,
+  availableAttributes,
   categoryName,
 }: {
   categoryId: number;
   initialAxes: string[];
   initialNote: string | null;
   resolvedAxes: ResolvedAxis[];
+  availableAttributes: AvailableAttribute[];
   categoryName: string;
 }) {
   const t = useTranslations("catalog.variantAxis");
 
-  const axisNameMap = new Map(resolvedAxes.map((r) => [r.axis, r.attributeName]));
+  // Unified name map: DB attribute names win over i18n fallback
+  const nameMap = new Map<string, string>([
+    ...resolvedAxes.map((r): [string, string] => [r.axis, r.attributeName]),
+    ...availableAttributes.map((a): [string, string] => [a.attribute_code, a.attribute_name]),
+  ]);
 
   const [ownAxes, setOwnAxes] = useState<string[]>(initialAxes);
   const [note, setNote] = useState(initialNote ?? "");
@@ -80,9 +93,9 @@ export function VariantAxisConfig({
     ...ownAxes.filter((a) => !inheritedSet.has(a)),
   ];
 
-  // Available to add = standard axes not already in the full pool
-  const availableToAdd = STANDARD_AXIS_KEYS.filter(
-    (k) => !fullPool.includes(k),
+  // Available to add = DB attributes not already in the full pool
+  const availableToAdd = availableAttributes.filter(
+    (attr) => !fullPool.includes(attr.attribute_code),
   );
 
   const dirty =
@@ -98,8 +111,8 @@ export function VariantAxisConfig({
     }
   }
 
-  function displayName(axis: string): string {
-    return axisNameMap.get(axis) || axisLabel(axis);
+  function displayName(code: string): string {
+    return nameMap.get(code) || axisLabel(code);
   }
 
   function addOwnAxis(value: string) {
@@ -195,17 +208,17 @@ export function VariantAxisConfig({
             </button>
           ))}
 
-        {/* Available standard axes — clickable to add */}
-        {availableToAdd.map((k) => (
+        {/* Available attributes from DB — clickable to add */}
+        {availableToAdd.map((attr) => (
           <button
-            key={k}
+            key={attr.attribute_code}
             type="button"
             className="s-axis-chip"
-            onClick={() => addOwnAxis(k)}
+            onClick={() => addOwnAxis(attr.attribute_code)}
             title={t("addHint")}
           >
-            <AxisIcon axis={k} />
-            {displayName(k)}
+            <AxisIcon axis={attr.attribute_code} />
+            {attr.attribute_name}
           </button>
         ))}
 

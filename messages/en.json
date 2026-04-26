@@ -2,7 +2,8 @@
   "nav": {
     "conversion": "Conversion",
     "catalog": "Catalog",
-    "configuration": "Configuration"
+    "configuration": "Configuration",
+    "dashboard": "Dashboard"
   },
   "settings": {
     "algolia": {
@@ -50,6 +51,47 @@
         "count": "Count",
         "material": "Material"
       }
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "noResults": {
+      "title": "Searches without results",
+      "description": "Terms your customers searched for but didn't find. Adding a synonym connects the term to existing products.",
+      "columns": {
+        "query": "Search",
+        "count": "Count",
+        "withFilter": "With filter",
+        "action": "Action"
+      },
+      "actions": {
+        "addSynonym": "Add synonym",
+        "loadMore": "Load more"
+      },
+      "empty": "No searches without results in this period.",
+      "notConfigured": "Algolia is not configured for this instance.",
+      "configureButton": "Configure Algolia",
+      "window": {
+        "label": "Period",
+        "day": "24 hours",
+        "week": "7 days",
+        "month": "30 days"
+      },
+      "withFilterText": "{n}/{total} with filter"
+    },
+    "catalogAlerts": {
+      "title": "Catalog alerts",
+      "placeholder": "Coming soon: catalog alerts from the import engine."
+    },
+    "synonym": {
+      "dialogTitle": "Add synonym",
+      "queryLabel": "Original search",
+      "synonymLabel": "Synonym",
+      "note": "Bidirectional synonym: both terms will find the same products.",
+      "save": "Save synonym",
+      "cancel": "Cancel",
+      "toastSuccess": "Synonym added: {query} ↔ {synonym}",
+      "toastFailed": "Could not save synonym"
     }
   },
   "configuration": {

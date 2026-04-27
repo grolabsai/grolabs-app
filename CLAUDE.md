@@ -400,3 +400,21 @@ Every settings and management screen is designed to accommodate a future natural
 | **SVG dimensions** | All inline `<svg>` elements have explicit `width` and `height`. |
 | **Migration applied** | Any PR that ships a migration must also show the Supabase MCP apply + verification in the PR description. |
 | **Build passes** | `npm run build` and `npm run typecheck` must pass before merge. No exceptions. |
+
+---
+
+## 16. Claude Code permissions
+
+**`.claude/settings.json`** (committed, applies to all sessions on this repo) grants broad approval for common dev commands — git, npm, grep, sed, find, ls, tsc, mkdir, cp, mv, chmod, etc. — so these never prompt during normal work.
+
+**Explicitly denied** (will always prompt/block regardless of other settings):
+- Force pushes: `git push --force`, `git push -f`
+- Push to main directly: `git push origin main`
+- Checkout main directly: `git checkout main`
+- Package publishing: `npm publish`, `yarn publish`
+- Pipe-to-shell: `curl | sh`, `wget | sh`
+- System-level: `sudo`, `rm -rf /`, `rm -rf ~`
+
+**`.githooks/pre-push`** (enforced via `core.hooksPath = .githooks`) hard-blocks direct pushes to `main` at the git layer, independent of Claude Code settings.
+
+To extend the allow/deny lists, edit `.claude/settings.json`. Machine-local overrides (MCP tool approvals, personal preferences) go in `.claude/settings.local.json` — that file is gitignored and never committed.

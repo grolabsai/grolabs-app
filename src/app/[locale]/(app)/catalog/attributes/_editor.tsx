@@ -30,7 +30,6 @@ type FormState = {
   is_multivalue: boolean;
   is_filterable: boolean;
   is_searchable: boolean;
-  applies_to_variants: boolean;
   is_active: boolean;
 };
 
@@ -43,7 +42,6 @@ const DEFAULT_FORM: FormState = {
   is_multivalue: false,
   is_filterable: false,
   is_searchable: false,
-  applies_to_variants: false,
   is_active: true,
 };
 
@@ -61,7 +59,7 @@ export function AttributeEditor({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [codeManuallyEdited, setCodeManuallyEdited] = useState(mode === "edit");
+  const [codeManuallyEdited, setCodeManuallyEdited] = useState(false);
   const [options, setOptions] = useState<OptionRow[]>(initialOptions);
   const [newOptionValue, setNewOptionValue] = useState("");
   const [addingOption, setAddingOption] = useState(false);
@@ -77,7 +75,6 @@ export function AttributeEditor({
           is_multivalue: attribute.is_multivalue,
           is_filterable: attribute.is_filterable,
           is_searchable: attribute.is_searchable,
-          applies_to_variants: attribute.applies_to_variants,
           is_active: attribute.is_active,
         }
       : DEFAULT_FORM,
@@ -96,7 +93,7 @@ export function AttributeEditor({
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setFormState((prev) => {
       const next = { ...prev, [key]: value };
-      if (key === "attribute_name" && !codeManuallyEdited) {
+      if (key === "attribute_name" && !codeManuallyEdited && mode === "create") {
         next.attribute_code = slugify(value as string);
       }
       return next;
@@ -117,7 +114,6 @@ export function AttributeEditor({
         is_multivalue: form.is_multivalue,
         is_filterable: form.is_filterable,
         is_searchable: form.is_searchable,
-        applies_to_variants: form.applies_to_variants,
         is_active: form.is_active,
       };
 
@@ -207,10 +203,18 @@ export function AttributeEditor({
     );
   }
 
+  const isEdit = mode === "edit";
+
+  function codeHint(): string {
+    if (isEdit) return t("form.fields.codeLockedHint");
+    if (codeManuallyEdited) return t("form.fields.codeManualHint");
+    return t("form.fields.codeAutoHint");
+  }
+
   return (
     <div style={{ padding: "24px 28px", overflowY: "auto", height: "100%" }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px", color: "var(--s-text)" }}>
-        {mode === "create" ? t("form.createTitle") : t("form.editTitle")}
+        {isEdit ? t("form.editTitle") : t("form.createTitle")}
       </h2>
 
       {/* Basic info */}
@@ -224,6 +228,7 @@ export function AttributeEditor({
           value={form.attribute_name}
           placeholder={t("form.fields.namePlaceholder")}
           onChange={(e) => setField("attribute_name", e.target.value)}
+          readOnly={isEdit}
         />
       </div>
 
@@ -234,13 +239,16 @@ export function AttributeEditor({
           className="s-input s-input-mono"
           value={form.attribute_code}
           placeholder={t("form.fields.codePlaceholder")}
+          readOnly={isEdit}
           onChange={(e) => {
+            if (isEdit) return;
             setCodeManuallyEdited(true);
             setField("attribute_code", e.target.value);
           }}
+          style={isEdit ? { opacity: 0.6, cursor: "default" } : undefined}
         />
         <div style={{ fontSize: 10, color: "var(--s-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
-          {t("form.fields.codeHint")}
+          {codeHint()}
         </div>
       </div>
 
@@ -263,7 +271,9 @@ export function AttributeEditor({
         <select
           className="s-select"
           value={form.data_type}
+          disabled={isEdit}
           onChange={(e) => setField("data_type", e.target.value)}
+          style={isEdit ? { opacity: 0.6, cursor: "default" } : undefined}
         >
           <option value="" disabled>
             {t("form.fields.dataTypePlaceholder")}
@@ -316,12 +326,6 @@ export function AttributeEditor({
           onChange={(v) => setField("is_searchable", v)}
         />
         <ToggleRow
-          title={t("form.behavior.appliesToVariants")}
-          desc={t("form.behavior.appliesToVariantsDesc")}
-          value={form.applies_to_variants}
-          onChange={(v) => setField("applies_to_variants", v)}
-        />
-        <ToggleRow
           title={t("form.behavior.isActive")}
           desc={t("form.behavior.isActiveDesc")}
           value={form.is_active}
@@ -330,7 +334,7 @@ export function AttributeEditor({
       </div>
 
       {/* Options — list type, edit mode only */}
-      {form.data_type === "list" && mode === "edit" && (
+      {form.data_type === "list" && isEdit && (
         <>
           <SectionHeader style={{ marginTop: 20 }}>{t("form.sections.options")}</SectionHeader>
 
@@ -423,7 +427,7 @@ export function AttributeEditor({
         {error && (
           <span style={{ fontSize: 12, color: "var(--s-danger)" }}>{error}</span>
         )}
-        {mode === "edit" && attribute && (
+        {isEdit && attribute && (
           <button
             type="button"
             onClick={handleDelete}

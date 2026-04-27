@@ -21,14 +21,62 @@
       }
     }
   },
+  "agentPanel": {
+    "title": "Assistant",
+    "noActivity": "No agent activity in this session.",
+    "hint": "Agent narrations will appear here while it works.",
+    "inputPlaceholder": "Ask the assistant something…",
+    "send": "Send"
+  },
   "catalog": {
+    "categoryAttributes": {
+      "sectionTitle": "Attributes",
+      "inherited": {
+        "label": "Inherited from parent categories",
+        "desc": "These attributes are defined in parent categories. You can override their settings here.",
+        "badge": "← {parentName}"
+      },
+      "own": {
+        "label": "Defined in {categoryName}",
+        "empty": "This category has no own attributes."
+      },
+      "variantAxis": {
+        "on": "Variant axis",
+        "off": "Descriptive attribute"
+      },
+      "required": {
+        "on": "Required",
+        "off": "Optional"
+      },
+      "actions": {
+        "override": "Override here",
+        "exclude": "Exclude from this category",
+        "remove": "Remove"
+      },
+      "addButton": "+ Add attribute",
+      "addPopover": {
+        "searchPlaceholder": "Search attribute...",
+        "empty": "No attributes available.",
+        "createNew": "+ Create new attribute"
+      },
+      "note": {
+        "label": "Context note for the agent",
+        "optional": "(optional)",
+        "placeholder": "E.g.: \"Words like Medium, Large refer to breed size, not product size.\""
+      },
+      "save": "Save note",
+      "saving": "Saving…",
+      "saved": "✓ Saved"
+    },
     "attributes": {
       "title": "Attributes",
       "searchPlaceholder": "Search attributes…",
       "filters": {
         "all": "All",
-        "variant": "Variant",
-        "descriptive": "Descriptive"
+        "quantity": "Quantity",
+        "list": "List",
+        "text": "Text",
+        "number": "Number"
       },
       "groups": {
         "list": "List",
@@ -63,6 +111,9 @@
           "code": "Code",
           "codePlaceholder": "color, flavor, weight",
           "codeHint": "Lowercase, no spaces.",
+          "codeAutoHint": "Generated from the name. You can edit it before saving — it locks afterward.",
+          "codeManualHint": "Manually edited. It will lock when saved.",
+          "codeLockedHint": "The code cannot be changed after creating the attribute.",
           "description": "Description",
           "descriptionPlaceholder": "What this attribute is used for…",
           "dataType": "Data type",
@@ -89,8 +140,6 @@
           "isFilterableDesc": "Appears in search filters",
           "isSearchable": "Searchable",
           "isSearchableDesc": "Value is indexed for search",
-          "appliesToVariants": "Variant axis",
-          "appliesToVariantsDesc": "Can differentiate product variants",
           "isActive": "Active",
           "isActiveDesc": "Only active attributes are used in imports"
         },

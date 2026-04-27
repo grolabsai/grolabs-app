@@ -6,11 +6,17 @@ import { useTranslations } from "next-intl";
 import { AttributeTypeGlyph } from "@/components/catalog/AttributeTypeGlyph";
 import type { AttributeRow } from "./_types";
 
-type FilterType = "all" | "variant" | "descriptive";
+type FilterType = "all" | "quantity" | "list" | "text" | "number";
 
 const DATA_TYPE_ORDER = ["list", "text", "number", "boolean", "date", "quantity", "single_ref"];
 
-export function AttributeList({ attributes }: { attributes: AttributeRow[] }) {
+export function AttributeList({
+  attributes,
+  categoryCounts,
+}: {
+  attributes: AttributeRow[];
+  categoryCounts: Record<number, number>;
+}) {
   const t = useTranslations("catalog.attributes");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,14 +39,15 @@ export function AttributeList({ attributes }: { attributes: AttributeRow[] }) {
 
   const FILTER_LABELS: Record<FilterType, string> = {
     all: t("filters.all"),
-    variant: t("filters.variant"),
-    descriptive: t("filters.descriptive"),
+    quantity: t("filters.quantity"),
+    list: t("filters.list"),
+    text: t("filters.text"),
+    number: t("filters.number"),
   };
 
   const filtered = useMemo(() => {
     let list = attributes;
-    if (filter === "variant") list = list.filter((a) => a.applies_to_variants);
-    if (filter === "descriptive") list = list.filter((a) => !a.applies_to_variants);
+    if (filter !== "all") list = list.filter((a) => a.data_type === filter);
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
@@ -108,8 +115,8 @@ export function AttributeList({ attributes }: { attributes: AttributeRow[] }) {
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        <div style={{ display: "flex", gap: 4 }}>
-          {(["all", "variant", "descriptive"] as FilterType[]).map((f) => (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {(["all", "quantity", "list", "text", "number"] as FilterType[]).map((f) => (
             <button
               key={f}
               type="button"
@@ -196,62 +203,81 @@ export function AttributeList({ attributes }: { attributes: AttributeRow[] }) {
             >
               {GROUP_LABELS[dataType] ?? dataType}
             </div>
-            {items.map((attr) => (
-              <button
-                key={attr.attribute_id}
-                type="button"
-                onClick={() => router.push(`?id=${attr.attribute_id}`)}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "7px 10px",
-                  borderRadius: "var(--s-radius-md)",
-                  border: "none",
-                  background:
-                    selectedId === attr.attribute_id
-                      ? "var(--s-surface-hover)"
-                      : "transparent",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontFamily: "var(--s-font)",
-                }}
-              >
-                <AttributeTypeGlyph
-                  dataType={attr.data_type}
-                  isMultivalue={attr.is_multivalue}
-                  size={20}
-                />
-                <span
+            {items.map((attr) => {
+              const catCount = categoryCounts[attr.attribute_id] ?? 0;
+              return (
+                <button
+                  key={attr.attribute_id}
+                  type="button"
+                  onClick={() => router.push(`?id=${attr.attribute_id}`)}
                   style={{
-                    flex: 1,
-                    fontSize: 13,
-                    color: "var(--s-text)",
-                    fontWeight: 500,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "7px 10px",
+                    borderRadius: "var(--s-radius-md)",
+                    border: "none",
+                    background:
+                      selectedId === attr.attribute_id
+                        ? "var(--s-surface-hover)"
+                        : "transparent",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontFamily: "var(--s-font)",
                   }}
                 >
-                  {attr.attribute_name}
-                </span>
-                {!attr.is_active && (
+                  <AttributeTypeGlyph
+                    dataType={attr.data_type}
+                    isMultivalue={attr.is_multivalue}
+                    size={20}
+                  />
                   <span
                     style={{
-                      fontSize: 10,
-                      color: "var(--s-text-tertiary)",
-                      border: "0.5px solid var(--s-border)",
-                      padding: "1px 5px",
-                      borderRadius: 3,
-                      flexShrink: 0,
+                      flex: 1,
+                      fontSize: 13,
+                      color: "var(--s-text)",
+                      fontWeight: 500,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
                     }}
                   >
-                    {t("inactive")}
+                    {attr.attribute_name}
                   </span>
-                )}
-              </button>
-            ))}
+                  {catCount > 0 && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: "var(--s-text-tertiary)",
+                        background: "var(--s-surface)",
+                        border: "0.5px solid var(--s-border)",
+                        padding: "1px 5px",
+                        borderRadius: 3,
+                        flexShrink: 0,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {catCount}
+                    </span>
+                  )}
+                  {!attr.is_active && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: "var(--s-text-tertiary)",
+                        border: "0.5px solid var(--s-border)",
+                        padding: "1px 5px",
+                        borderRadius: 3,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {t("inactive")}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         ))}
       </div>

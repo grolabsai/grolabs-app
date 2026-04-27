@@ -13,7 +13,6 @@ export type AttributeInput = {
   is_multivalue?: boolean;
   is_filterable?: boolean;
   is_searchable?: boolean;
-  applies_to_variants?: boolean;
   is_active?: boolean;
 };
 
@@ -30,7 +29,7 @@ function revalidate() {
 
 export async function createAttribute(input: AttributeInput) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product_attribute")
@@ -44,7 +43,7 @@ export async function createAttribute(input: AttributeInput) {
 
 export async function updateAttribute(attributeId: number, input: Partial<AttributeInput>) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("product_attribute")
@@ -58,7 +57,7 @@ export async function updateAttribute(attributeId: number, input: Partial<Attrib
 
 export async function deleteAttribute(attributeId: number) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { count } = await supabase
     .from("category_product_attribute")
@@ -78,7 +77,7 @@ export async function deleteAttribute(attributeId: number) {
 
 export async function addAttributeOption(attributeId: number, input: OptionInput) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product_attribute_option")
@@ -92,7 +91,7 @@ export async function addAttributeOption(attributeId: number, input: OptionInput
 
 export async function updateAttributeOption(optionId: number, input: Partial<OptionInput>) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("product_attribute_option")
@@ -106,7 +105,7 @@ export async function updateAttributeOption(optionId: number, input: Partial<Opt
 
 export async function deleteAttributeOption(optionId: number) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("product_attribute_option")
@@ -120,7 +119,7 @@ export async function deleteAttributeOption(optionId: number) {
 
 export async function reorderAttributeOptions(attributeId: number, optionIds: number[]) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   for (let i = 0; i < optionIds.length; i++) {
     await supabase

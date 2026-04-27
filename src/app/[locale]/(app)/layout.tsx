@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
+import { AgentPanel } from "@/components/shell/AgentPanel";
 
 /**
  * Protected app layout. Every route under `(app)/` inherits this:
@@ -53,7 +54,10 @@ export default async function AppLayout({
       <Sidebar instanceName={instanceName} />
       <main className="s-main">
         <TopBar initials={initials} userEmail={user.email ?? ""} />
-        {children}
+        <div className="s-shell-body">
+          <div className="s-shell-content">{children}</div>
+          <AgentPanel />
+        </div>
       </main>
     </div>
   );

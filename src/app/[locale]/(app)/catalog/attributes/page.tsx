@@ -21,7 +21,7 @@ export default async function AttributesPage({
   const instanceId = await currentInstanceId();
   const t = await getTranslations("catalog.attributes");
 
-  if (!instanceId) {
+  if (instanceId === null) {
     return (
       <div className="s-content">
         <div className="s-strip warning">
@@ -37,12 +37,23 @@ export default async function AttributesPage({
   const { data: rawAttributes } = await supabase
     .from("product_attribute")
     .select(
-      "attribute_id, attribute_code, attribute_name, description, data_type, dimension, is_multivalue, is_filterable, is_searchable, applies_to_variants, is_active",
+      "attribute_id, attribute_code, attribute_name, description, data_type, dimension, is_multivalue, is_filterable, is_searchable, is_active",
     )
     .eq("instance_id", instanceId)
     .order("attribute_name");
 
   const attributes: AttributeRow[] = (rawAttributes ?? []) as AttributeRow[];
+
+  const { data: catCountRows } = await supabase
+    .from("category_product_attribute")
+    .select("attribute_id")
+    .eq("instance_id", instanceId);
+
+  const categoryCounts: Record<number, number> = {};
+  for (const row of catCountRows ?? []) {
+    const aid = row.attribute_id as number;
+    categoryCounts[aid] = (categoryCounts[aid] ?? 0) + 1;
+  }
 
   let options: OptionRow[] = [];
   if (selectedId) {
@@ -69,7 +80,7 @@ export default async function AttributesPage({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "280px 1fr 320px",
+          gridTemplateColumns: "280px 1fr",
           minHeight: "calc(100vh - 220px)",
           background: "var(--s-surface)",
           border: "0.5px solid var(--s-border)",
@@ -77,7 +88,7 @@ export default async function AttributesPage({
           overflow: "hidden",
         }}
       >
-        <AttributeList attributes={attributes} />
+        <AttributeList attributes={attributes} categoryCounts={categoryCounts} />
 
         <AttributeEditor
           key={selectedId ?? (isCreate ? "create" : "empty")}
@@ -85,28 +96,6 @@ export default async function AttributesPage({
           options={options}
           mode={editorMode}
         />
-
-        {/* Right: assistant placeholder */}
-        <div
-          style={{
-            borderLeft: "0.5px solid var(--s-border)",
-            padding: "20px 18px",
-            background: "var(--s-surface-alt)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
-            }}
-          >
-            {t("assistant.title")}
-            <span style={{ fontWeight: 400, marginLeft: 4 }}>· {t("assistant.comingSoon")}</span>
-          </div>
-        </div>
       </div>
     </div>
   );

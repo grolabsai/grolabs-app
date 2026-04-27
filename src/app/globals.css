@@ -556,7 +556,7 @@ button {
   top: -6px;
   left: 10px;
   padding: 0 6px;
-  background: var(--s-surface);
+  background: #ffffff;
   font-size: 10px;
   color: var(--s-text-secondary);
   text-transform: uppercase;
@@ -572,7 +572,7 @@ button {
 .s-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: var(--s-surface);
+  background: #ffffff;
   border: 0.5px solid var(--s-border);
   border-radius: var(--s-radius-md);
   font-size: 13px;
@@ -580,6 +580,14 @@ button {
   color: var(--s-text);
   outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
+}
+.s-input:disabled,
+.s-select:disabled,
+.s-textarea:disabled {
+  background: #ffffff;
+  color: var(--s-text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 .s-input,
 .s-select {
@@ -1348,7 +1356,7 @@ button {
   width: 100%;
   height: 32px;
   padding: 0 10px 0 30px;
-  background: var(--s-surface);
+  background: #ffffff;
   border: 0.5px solid var(--s-border);
   border-radius: var(--s-radius-md);
   font-size: 12px;

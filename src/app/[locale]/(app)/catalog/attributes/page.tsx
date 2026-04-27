@@ -21,7 +21,7 @@ export default async function AttributesPage({
   const instanceId = await currentInstanceId();
   const t = await getTranslations("catalog.attributes");
 
-  if (!instanceId) {
+  if (instanceId === null) {
     return (
       <div className="s-content">
         <div className="s-strip warning">

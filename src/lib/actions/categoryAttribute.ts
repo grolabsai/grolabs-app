@@ -10,7 +10,7 @@ function revalidate() {
 
 export async function addCategoryAttributeLink(categoryId: number, attributeId: number) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase.from("category_product_attribute").insert({
     instance_id: instanceId,
@@ -31,7 +31,7 @@ export async function updateCategoryAttributeLink(
   input: { is_variant_axis?: boolean; requirement_level?: string },
 ) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("category_product_attribute")
@@ -45,7 +45,7 @@ export async function updateCategoryAttributeLink(
 
 export async function removeCategoryAttributeLink(mappingId: number) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("category_product_attribute")
@@ -63,7 +63,7 @@ export async function createCategoryAttrOverride(
   input: { is_variant_axis: boolean; requirement_level: string },
 ) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
 
   // Upsert: if a row already exists at this category level, update it.
@@ -101,7 +101,7 @@ export async function createCategoryAttrOverride(
 
 export async function updateCategoryParsingNote(categoryId: number, note: string) {
   const instanceId = await currentInstanceId();
-  if (!instanceId) return { error: "No instance" };
+  if (instanceId === null) return { error: "No instance" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("category")

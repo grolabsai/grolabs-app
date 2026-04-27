@@ -57,6 +57,26 @@ The atomic data unit is **instance**, not tenant.
 - The `service-role` Supabase client (bypasses RLS) is reserved for admin flows only: copy-on-signup, bulk imports, reconciliation. Never for normal reads.
 - Template categories/attributes exist for seeding new instances during onboarding. They are never visible to tenants in normal operation.
 
+### Instance ID checking
+
+Scout's template instance has `instance_id = 0`. This is intentional — 0 is a meaningful, queryable database value. JavaScript treats `0` as falsy, which means `if (!instanceId)` silently breaks for any user on the template instance.
+
+**Always use strict null/undefined checks for `instance_id` values:**
+
+```ts
+// ✅ Correct
+if (instanceId === null) { ... }
+if (instanceId === undefined) { ... }
+if (instanceId == null) { ... }    // covers both null and undefined
+
+// ❌ Wrong — evaluates true for instance 0
+if (!instanceId) { ... }
+if (instanceId) { ... }            // same trap, inverted
+const id = instanceId || fallback; // collapses 0 to fallback
+```
+
+This applies to `category_id`, `attribute_id`, and any other database ID that can legitimately be 0. `currentInstanceId()` returns `number | null` — the null case means "unauthenticated or no membership found," not "zero."
+
 ```ts
 // ✅ Correct — RLS handles the instance filter
 const { data } = await supabase.from('category').select('*');

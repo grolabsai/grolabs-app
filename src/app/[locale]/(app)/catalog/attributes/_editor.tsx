@@ -49,10 +49,12 @@ export function AttributeEditor({
   attribute,
   options: initialOptions,
   mode,
+  initialName = "",
 }: {
   attribute: AttributeRow | null;
   options: OptionRow[];
   mode: "empty" | "create" | "edit";
+  initialName?: string;
 }) {
   const t = useTranslations("catalog.attributes");
   const router = useRouter();
@@ -77,7 +79,7 @@ export function AttributeEditor({
           is_searchable: attribute.is_searchable,
           is_active: attribute.is_active,
         }
-      : DEFAULT_FORM,
+      : { ...DEFAULT_FORM, attribute_name: initialName, attribute_code: slugify(initialName) },
   );
 
   const DATA_TYPE_LABELS: Record<string, string> = {

@@ -400,3 +400,48 @@ Every settings and management screen is designed to accommodate a future natural
 | **SVG dimensions** | All inline `<svg>` elements have explicit `width` and `height`. |
 | **Migration applied** | Any PR that ships a migration must also show the Supabase MCP apply + verification in the PR description. |
 | **Build passes** | `npm run build` and `npm run typecheck` must pass before merge. No exceptions. |
+| **Combobox for DB pickers** | Any picker backed by a DB query uses `<Combobox>` — not raw `<select>`, not shadcn `Select`, not custom typeaheads. See §16. |
+
+---
+
+## 16. Pickers from database
+
+Any UI for picking values from a database-backed list (attributes, categories, tags, brands, anything dynamic) **MUST** use the `Combobox` component from `@/components/ui/combobox`. Do not build custom typeaheads. Do not use raw `<select>`. Do not use shadcn `Select` for data-backed pickers — it lacks search.
+
+**Single-select example:**
+```tsx
+<Combobox
+  options={attributes.map(a => ({ value: a.attribute_id, label: a.attribute_name }))}
+  value={selectedAttrId}
+  onChange={(v) => setSelectedAttrId(v as number)}
+  placeholder="Seleccionar atributo..."
+/>
+```
+
+**Multi-select example:**
+```tsx
+<Combobox
+  options={tags.map(t => ({ value: t.id, label: t.name }))}
+  value={selectedTagIds}
+  onChange={(v) => setSelectedTagIds(v as number[])}
+  multiple
+  placeholder="Seleccionar etiquetas..."
+/>
+```
+
+**With create-new affordance** (when user can navigate to a creation screen):
+```tsx
+<Combobox
+  options={...}
+  value={...}
+  onChange={...}
+  onCreateNew={(query) => {
+    const params = new URLSearchParams({ mode: 'create' });
+    if (query.trim()) params.set('name', query.trim());
+    router.push(`/catalog/attributes?${params.toString()}`);
+  }}
+  createNewLabel="+ Crear atributo nuevo"
+/>
+```
+
+**Static enum lists** (e.g. picking `mass`/`volume`/`count` for a quantity attribute's `dimension`) MAY use shadcn `Select` since the values are hardcoded constants. Anything backed by a DB query must use `Combobox`.

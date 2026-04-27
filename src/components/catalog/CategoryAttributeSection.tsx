@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
-import Link from "next/link";
+import { useState, useTransition, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AttributeTypeGlyph } from "@/components/catalog/AttributeTypeGlyph";
+import { Combobox } from "@/components/ui/combobox";
 import {
   addCategoryAttributeLink,
   updateCategoryAttributeLink,
@@ -48,6 +49,7 @@ export function CategoryAttributeSection({
   parsingNote: string | null;
 }) {
   const t = useTranslations("catalog.categoryAttributes");
+  const router = useRouter();
   const [, startTransition] = useTransition();
   const [ownLinks, setOwnLinks] = useState(initialOwnLinks);
   // attribute_ids that have been overridden or excluded at this category level
@@ -55,11 +57,7 @@ export function CategoryAttributeSection({
   const [note, setNote] = useState(parsingNote ?? "");
   const [noteSaved, setNoteSaved] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
-  const [showAddPopover, setShowAddPopover] = useState(false);
-  const [addSearch, setAddSearch] = useState("");
   const [openKebab, setOpenKebab] = useState<number | null>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const addBtnRef = useRef<HTMLButtonElement>(null);
   const _tid = useRef(-1);
 
   const visibleInherited = inheritedLinks.filter((l) => !overriddenIds.has(l.attribute_id));
@@ -70,29 +68,13 @@ export function CategoryAttributeSection({
   ]);
 
   const availableToAdd = allInstanceAttrs.filter((a) => !linkedAttrIds.has(a.attribute_id));
-  const filteredAvailable = addSearch.trim()
-    ? availableToAdd.filter(
-        (a) =>
-          a.attribute_name.toLowerCase().includes(addSearch.toLowerCase()) ||
-          a.attribute_code.toLowerCase().includes(addSearch.toLowerCase()),
-      )
-    : availableToAdd;
 
-  useEffect(() => {
-    if (!showAddPopover) return;
-    function handleClick(e: MouseEvent) {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node) &&
-        !addBtnRef.current?.contains(e.target as Node)
-      ) {
-        setShowAddPopover(false);
-        setAddSearch("");
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showAddPopover]);
+  const addOptions = availableToAdd.map((a) => ({
+    value: a.attribute_id,
+    label: a.attribute_name,
+    description: a.data_type ?? undefined,
+    glyph: <AttributeTypeGlyph dataType={a.data_type} size={16} />,
+  }));
 
   function handleToggleVariantAxis(link: CategoryAttrLink, isOwn: boolean) {
     const newVal = !link.is_variant_axis;
@@ -196,8 +178,6 @@ export function CategoryAttributeSection({
       from_category_name: categoryName,
     };
     setOwnLinks((prev) => [...prev, tempLink]);
-    setShowAddPopover(false);
-    setAddSearch("");
     startTransition(async () => {
       await addCategoryAttributeLink(categoryId, attr.attribute_id);
     });
@@ -303,117 +283,25 @@ export function CategoryAttributeSection({
         )}
       </div>
 
-      {/* Add attribute button + popover */}
-      <div style={{ position: "relative", marginBottom: 20 }}>
-        <button
-          ref={addBtnRef}
-          type="button"
-          onClick={() => setShowAddPopover((v) => !v)}
-          style={{
-            fontSize: 12,
-            color: "var(--scout-accent)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            fontFamily: "var(--s-font)",
+      {/* Add attribute — Combobox picker */}
+      <div style={{ marginBottom: 20 }}>
+        <Combobox
+          options={addOptions}
+          value={undefined}
+          onChange={(val) => {
+            const attr = availableToAdd.find((a) => a.attribute_id === (val as number));
+            if (attr) handleAddAttr(attr);
           }}
-        >
-          {t("addButton")}
-        </button>
-        {showAddPopover && (
-          <div
-            ref={popoverRef}
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              zIndex: 50,
-              width: 280,
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-              marginTop: 4,
-            }}
-          >
-            <div style={{ padding: "8px 8px 4px" }}>
-              <input
-                type="search"
-                className="s-input"
-                style={{ height: 30, fontSize: 12 }}
-                placeholder={t("addPopover.searchPlaceholder")}
-                value={addSearch}
-                onChange={(e) => setAddSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div style={{ maxHeight: 200, overflowY: "auto" }}>
-              {filteredAvailable.length === 0 ? (
-                <div
-                  style={{
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    color: "var(--s-text-tertiary)",
-                  }}
-                >
-                  {t("addPopover.empty")}
-                </div>
-              ) : (
-                filteredAvailable.map((attr) => (
-                  <button
-                    key={attr.attribute_id}
-                    type="button"
-                    onClick={() => handleAddAttr(attr)}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "7px 12px",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      fontFamily: "var(--s-font)",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background =
-                        "var(--s-surface-alt)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "transparent";
-                    }}
-                  >
-                    <AttributeTypeGlyph dataType={attr.data_type} size={18} />
-                    <span style={{ fontSize: 12, color: "var(--s-text)" }}>
-                      {attr.attribute_name}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-            <div
-              style={{
-                borderTop: "0.5px solid var(--s-border)",
-                padding: "4px 8px 8px",
-              }}
-            >
-              <Link
-                href="/catalog/attributes?mode=create"
-                style={{
-                  fontSize: 12,
-                  color: "var(--scout-accent)",
-                  textDecoration: "none",
-                  display: "block",
-                  padding: "6px 4px",
-                }}
-              >
-                {t("addPopover.createNew")}
-              </Link>
-            </div>
-          </div>
-        )}
+          placeholder={t("addButton")}
+          searchPlaceholder={t("addPopover.searchPlaceholder")}
+          emptyMessage={t("addPopover.empty")}
+          onCreateNew={(query) => {
+            const params = new URLSearchParams({ mode: "create" });
+            if (query.trim()) params.set("name", query.trim());
+            router.push(`/catalog/attributes?${params.toString()}`);
+          }}
+          createNewLabel={t("addPopover.createNew")}
+        />
       </div>
 
       {/* Parsing note */}

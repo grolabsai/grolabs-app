@@ -7,14 +7,14 @@ import type { AttributeRow, OptionRow } from "./_types";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = { id?: string; mode?: string };
+type SearchParams = { id?: string; mode?: string; name?: string };
 
 export default async function AttributesPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { id, mode } = await searchParams;
+  const { id, mode, name } = await searchParams;
   const selectedId = id ? parseInt(id, 10) : null;
   const isCreate = mode === "create";
 
@@ -95,6 +95,7 @@ export default async function AttributesPage({
           attribute={selectedAttr}
           options={options}
           mode={editorMode}
+          initialName={isCreate ? (name ?? "") : ""}
         />
       </div>
     </div>

@@ -61,4 +61,7 @@ supabase/.temp/
 *.tsbuildinfo
 
 # Misc
+# .claude/settings.json is committed (project-level Claude Code permissions)
+# .claude/settings.local.json is machine-local (MCP approvals, personal overrides)
 .claude/
+!.claude/settings.json

@@ -21,14 +21,62 @@
       }
     }
   },
+  "agentPanel": {
+    "title": "Asistente",
+    "noActivity": "Sin actividad de agente en esta sesión.",
+    "hint": "Aquí aparecerán las narraciones del agente mientras trabaja.",
+    "inputPlaceholder": "Pídele al asistente algo…",
+    "send": "Enviar"
+  },
   "catalog": {
+    "categoryAttributes": {
+      "sectionTitle": "Atributos",
+      "inherited": {
+        "label": "Heredados de categorías padre",
+        "desc": "Estos atributos se definen en categorías superiores. Puedes sobrescribir su configuración aquí.",
+        "badge": "← {parentName}"
+      },
+      "own": {
+        "label": "Definidos en {categoryName}",
+        "empty": "Esta categoría no tiene atributos propios."
+      },
+      "variantAxis": {
+        "on": "Eje de variante",
+        "off": "Atributo descriptivo"
+      },
+      "required": {
+        "on": "Requerido",
+        "off": "Opcional"
+      },
+      "actions": {
+        "override": "Sobrescribir aquí",
+        "exclude": "Excluir de esta categoría",
+        "remove": "Quitar"
+      },
+      "addButton": "+ Añadir atributo",
+      "addPopover": {
+        "searchPlaceholder": "Buscar atributo...",
+        "empty": "Sin atributos disponibles.",
+        "createNew": "+ Crear nuevo atributo"
+      },
+      "note": {
+        "label": "Nota de contexto para el agente",
+        "optional": "(opcional)",
+        "placeholder": "Ej: \"Palabras como Mediano, Grande se refieren al tamaño de raza, no al tamaño del producto.\""
+      },
+      "save": "Guardar nota",
+      "saving": "Guardando…",
+      "saved": "✓ Guardado"
+    },
     "attributes": {
       "title": "Atributos",
       "searchPlaceholder": "Buscar atributos…",
       "filters": {
         "all": "Todos",
-        "variant": "Variante",
-        "descriptive": "Descriptivo"
+        "quantity": "Cantidad",
+        "list": "Lista",
+        "text": "Texto",
+        "number": "Número"
       },
       "groups": {
         "list": "Lista",
@@ -63,6 +111,9 @@
           "code": "Código",
           "codePlaceholder": "color, sabor, peso",
           "codeHint": "Solo minúsculas, sin espacios.",
+          "codeAutoHint": "Generado a partir del nombre. Puedes editarlo antes de guardar — después se bloquea.",
+          "codeManualHint": "Editado manualmente. Se bloqueará al guardar.",
+          "codeLockedHint": "El código no puede modificarse después de crear el atributo.",
           "description": "Descripción",
           "descriptionPlaceholder": "Para qué sirve este atributo…",
           "dataType": "Tipo de dato",
@@ -89,8 +140,6 @@
           "isFilterableDesc": "Aparece en filtros de búsqueda",
           "isSearchable": "Buscable",
           "isSearchableDesc": "El valor se indexa para búsqueda",
-          "appliesToVariants": "Eje de variante",
-          "appliesToVariantsDesc": "Puede diferenciar variantes de producto",
           "isActive": "Activo",
           "isActiveDesc": "Solo los activos se usan en importaciones"
         },

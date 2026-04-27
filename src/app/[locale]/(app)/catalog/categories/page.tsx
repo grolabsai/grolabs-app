@@ -2,9 +2,11 @@ import { Link } from "@/i18n/routing";
 import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
-import { AttributeTypeGlyph } from "@/components/catalog/AttributeTypeGlyph";
-import { VariantAxisConfig, type AvailableAttribute } from "@/components/catalog/VariantAxisConfig";
-import { resolveVariantAxes, type VariantAxisRow } from "@/lib/resolveVariantAxes";
+import {
+  CategoryAttributeSection,
+  type CategoryAttrLink,
+  type AvailableAttr,
+} from "@/components/catalog/CategoryAttributeSection";
 import { initialsFromName } from "@/lib/format";
 
 /**
@@ -450,55 +452,7 @@ async function CategoryDetail({
     .eq("instance_id", instanceId)
     .eq("category_id", category.category_id);
 
-  /* ------------- Attribute mappings + the attribute itself ------------- */
-  const { data: attrLinks } = await supabase
-    .from("category_product_attribute")
-    .select(
-      `mapping_id,
-       requirement_level,
-       form_order,
-       visible_in_filter,
-       visible_in_product_page,
-       attribute:attribute_id (
-         attribute_id,
-         attribute_code,
-         attribute_name,
-         data_type,
-         is_multivalue,
-         applies_to_variants,
-         suggested_unit,
-         example
-       )`,
-    )
-    .eq("instance_id", instanceId)
-    .eq("category_id", category.category_id)
-    .order("form_order", { ascending: true, nullsFirst: false });
-
-  /* ------------- Options for any list-type attribute on this category ------------- */
-  const attributeIds = (attrLinks ?? [])
-    .map((al) => normalizeOne(al.attribute)?.attribute_id)
-    .filter((x): x is number => typeof x === "number");
-
-  const { data: optionRows } = attributeIds.length
-    ? await supabase
-        .from("product_attribute_option")
-        .select("attribute_id, value_id, value")
-        .eq("instance_id", instanceId)
-        .in("attribute_id", attributeIds)
-        .order("sort_order", { ascending: true, nullsFirst: false })
-    : { data: [] as Array<{ attribute_id: number; value_id: number; value: string }> };
-
-  const optionsByAttribute = new Map<
-    number,
-    Array<{ value_id: number; value: string }>
-  >();
-  for (const o of optionRows ?? []) {
-    const arr = optionsByAttribute.get(o.attribute_id as number) ?? [];
-    arr.push({ value_id: o.value_id as number, value: o.value as string });
-    optionsByAttribute.set(o.attribute_id as number, arr);
-  }
-
-  /* ------------- Variant axes for this category + ancestors ------------- */
+  /* ------------- Ancestor chain (root → current) ------------- */
   const ancestorIds: number[] = [];
   {
     const byId = new Map(allCats.map((c) => [c.category_id, c]));
@@ -509,60 +463,71 @@ async function CategoryDetail({
     }
   }
 
-  const { data: axisLinks } = await supabase
+  /* ------------- All attribute links across ancestor chain ------------- */
+  const { data: allAttrLinksRaw } = await supabase
     .from("category_product_attribute")
     .select(
-      `category_id,
-       variant_axis_order,
+      `mapping_id,
+       category_id,
+       is_variant_axis,
+       requirement_level,
        attribute:attribute_id (
          attribute_id,
          attribute_code,
-         attribute_name
+         attribute_name,
+         data_type,
+         is_multivalue
        )`,
     )
     .eq("instance_id", instanceId)
-    .in("category_id", ancestorIds)
-    .eq("is_variant_axis", true)
-    .order("variant_axis_order", { ascending: true, nullsFirst: false });
+    .in("category_id", ancestorIds);
 
-  const variantAxisRows: VariantAxisRow[] = (axisLinks ?? []).flatMap((r) => {
-    const attr = normalizeOne(r.attribute);
-    if (!attr) return [];
-    return [
-      {
-        category_id: r.category_id as number,
-        attribute_id: attr.attribute_id as number,
+  // Walk root→leaf; leaf's row wins per attribute_id
+  const catNameById = new Map(allCats.map((c) => [c.category_id, c.category_name]));
+  const linkByAttrId = new Map<number, CategoryAttrLink>();
+  for (const catId of ancestorIds) {
+    for (const raw of (allAttrLinksRaw ?? []).filter(
+      (l) => (l.category_id as number) === catId,
+    )) {
+      const attr = normalizeOne(raw.attribute);
+      if (!attr) continue;
+      const attrId = attr.attribute_id as number;
+      linkByAttrId.set(attrId, {
+        mapping_id: raw.mapping_id as number,
+        attribute_id: attrId,
         attribute_code: attr.attribute_code as string,
         attribute_name: attr.attribute_name as string,
-        variant_axis_order: r.variant_axis_order as number | null,
-      },
-    ];
-  });
+        data_type: attr.data_type as string | null,
+        is_multivalue: attr.is_multivalue as boolean,
+        is_variant_axis: raw.is_variant_axis as boolean,
+        requirement_level: raw.requirement_level as string | null,
+        from_category_id: catId,
+        from_category_name: catNameById.get(catId) ?? "",
+      });
+    }
+  }
 
-  const resolvedAxes = resolveVariantAxes(
-    category.category_id,
-    variantAxisRows,
-    allCats,
+  const resolvedLinks = [...linkByAttrId.values()];
+  const ownAttrLinks = resolvedLinks.filter(
+    (l) => l.from_category_id === category.category_id,
+  );
+  const inheritedAttrLinks = resolvedLinks.filter(
+    (l) => l.from_category_id !== category.category_id,
   );
 
-  const ownAxesCodes = resolvedAxes
-    .filter((r) => r.fromCategoryId === category.category_id)
-    .map((r) => r.axis);
-
-  /* ------------- Attributes available as variant axes (instance-wide) ------------- */
-  const { data: availableAttrRows } = await supabase
+  /* ------------- All instance attributes for the add popover ------------- */
+  const { data: allInstanceAttrsRaw } = await supabase
     .from("product_attribute")
     .select("attribute_id, attribute_code, attribute_name, data_type")
     .eq("instance_id", instanceId)
-    .eq("applies_to_variants", true)
     .eq("is_active", true)
     .order("attribute_name");
 
-  const availableAttributes: AvailableAttribute[] = (availableAttrRows ?? []).map((a) => ({
+  const allInstanceAttrs: AvailableAttr[] = (allInstanceAttrsRaw ?? []).map((a) => ({
     attribute_id: a.attribute_id as number,
     attribute_code: a.attribute_code as string,
     attribute_name: a.attribute_name as string,
-    data_type: a.data_type as string,
+    data_type: a.data_type as string | null,
   }));
 
   /* ------------- Products in this category ------------- */
@@ -768,7 +733,7 @@ async function CategoryDetail({
         </div>
       </details>
 
-      {/* ---- Card 3: Atributos — collapsed by default ---- */}
+      {/* ---- Card 3: Atributos (unified — own + inherited, editable) ---- */}
       <details className="s-acc">
         <summary className="s-acc-summary">
           <svg
@@ -787,113 +752,19 @@ async function CategoryDetail({
               fontVariantNumeric: "tabular-nums",
             }}
           >
-            {attrLinks?.length ?? 0}
+            {resolvedLinks.length}
           </span>
         </summary>
         <div className="s-acc-body">
-          {!attrLinks || attrLinks.length === 0 ? (
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--s-text-tertiary)",
-                padding: "8px 0",
-              }}
-            >
-              Esta categoría aún no tiene atributos configurados.
-            </div>
-          ) : (
-            <ul className="s-attr-list">
-              {attrLinks.map((al) => {
-                const attr = normalizeOne(al.attribute);
-                if (!attr) return null;
-
-                const isList =
-                  attr.data_type === "list" || attr.data_type === "single_ref";
-                const opts = optionsByAttribute.get(attr.attribute_id as number) ?? [];
-                const hasExpand =
-                  isList || attr.suggested_unit || attr.example;
-
-                return (
-                  <li key={al.mapping_id as number}>
-                    <details className="s-attr-row">
-                      <summary className="s-attr-summary">
-                        {hasExpand ? (
-                          <svg
-                            className="s-attr-chev"
-                            viewBox="0 0 16 16"
-                            fill="currentColor"
-                          >
-                            <path d="M5 3l5 5-5 5z" />
-                          </svg>
-                        ) : (
-                          <span
-                            className="s-attr-chev empty"
-                            aria-hidden="true"
-                          />
-                        )}
-                        <AttributeTypeGlyph
-                          dataType={attr.data_type as string}
-                          isMultivalue={attr.is_multivalue as boolean}
-                        />
-                        <span
-                          className={`s-req-dot ${
-                            al.requirement_level === "required" ? "req" : "opt"
-                          }`}
-                          aria-label={
-                            al.requirement_level === "required"
-                              ? "Obligatorio"
-                              : "Opcional"
-                          }
-                        />
-                        <span className="s-attr-name">
-                          <span style={{ fontWeight: 500 }}>
-                            {attr.attribute_name}
-                          </span>
-                        </span>
-                      </summary>
-                      <div className="s-attr-body">
-                        {isList && opts.length > 0 ? (
-                          <div className="s-opt-grid">
-                            {opts.map((o) => (
-                              <span key={o.value_id} className="s-opt">
-                                {o.value}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        {attr.suggested_unit ? (
-                          <div className="s-attr-body-label">
-                            <span className="lbl">Unidad:</span>
-                            <span
-                              style={{
-                                fontFamily: "var(--s-font-mono)",
-                                fontSize: 11,
-                              }}
-                            >
-                              {attr.suggested_unit as string}
-                            </span>
-                          </div>
-                        ) : null}
-                        {attr.example ? (
-                          <div className="s-attr-body-label">
-                            <span className="lbl">Ejemplo:</span>
-                            <span
-                              style={{
-                                fontFamily: "var(--s-font-mono)",
-                                fontSize: 11,
-                              }}
-                            >
-                              {attr.example as string}
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
-                    </details>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <CategoryAttributeSection
+            key={category.category_id}
+            categoryId={category.category_id}
+            categoryName={category.category_name}
+            initialOwnLinks={ownAttrLinks}
+            inheritedLinks={inheritedAttrLinks}
+            allInstanceAttrs={allInstanceAttrs}
+            parsingNote={category.parsing_note ?? null}
+          />
         </div>
       </details>
 
@@ -1007,63 +878,6 @@ async function CategoryDetail({
         </div>
       </details>
 
-      {/* ---- Card 5: Variant axis config — collapsed by default ---- */}
-      <details className="s-acc">
-        <summary className="s-acc-summary">
-          <svg
-            className="s-acc-chev"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-          >
-            <path d="M5 3l5 5-5 5z" />
-          </svg>
-          <span className="s-acc-title">Configuración de variantes</span>
-          {(() => {
-            const inherited = resolvedAxes.length - ownAxesCodes.length;
-            if (resolvedAxes.length > 0) {
-              return (
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: 11,
-                    color: "var(--s-text-tertiary)",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {resolvedAxes.length} {resolvedAxes.length === 1 ? "eje" : "ejes"}
-                  {inherited > 0 && (
-                    <span style={{ color: "var(--s-text-muted)" }}>
-                      {" "}({inherited} heredado{inherited !== 1 ? "s" : ""})
-                    </span>
-                  )}
-                </span>
-              );
-            }
-            return (
-              <span
-                style={{
-                  marginLeft: "auto",
-                  fontSize: 11,
-                  color: "var(--s-text-muted)",
-                }}
-              >
-                sin configurar
-              </span>
-            );
-          })()}
-        </summary>
-        <div className="s-acc-body">
-          <VariantAxisConfig
-            key={category.category_id}
-            categoryId={category.category_id}
-            initialAxes={ownAxesCodes}
-            initialNote={category.parsing_note ?? null}
-            resolvedAxes={resolvedAxes}
-            availableAttributes={availableAttributes}
-            categoryName={category.category_name}
-          />
-        </div>
-      </details>
     </>
   );
 }

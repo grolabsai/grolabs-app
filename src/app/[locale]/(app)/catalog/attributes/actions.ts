@@ -13,7 +13,6 @@ export type AttributeInput = {
   is_multivalue?: boolean;
   is_filterable?: boolean;
   is_searchable?: boolean;
-  applies_to_variants?: boolean;
   is_active?: boolean;
 };
 

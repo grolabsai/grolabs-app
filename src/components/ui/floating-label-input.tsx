@@ -45,8 +45,8 @@ const FloatingLabelInput = React.forwardRef<
           "absolute -top-[7px] left-[10px] z-10",
           // Padding cuts a gap through the border visually
           "inline-flex items-center gap-1 px-1.5",
-          // Background must match the card/surface behind the input
-          "bg-background",
+          // Must be white so label visually cuts through the input's border
+          "bg-white",
           // Typography — matches .s-field-label
           "text-[10px] font-medium uppercase tracking-[0.06em]",
           "text-muted-foreground leading-none",

@@ -40,6 +40,7 @@ const FloatingLabelInput = React.forwardRef<
       {/* Label cuts through the top border via z-index + background match */}
       <label
         htmlFor={id}
+        style={{ color: "var(--s-text-tertiary)" }}
         className={cn(
           // Positioning: sits on top of the border line
           "absolute -top-[7px] left-[10px] z-10",
@@ -49,7 +50,7 @@ const FloatingLabelInput = React.forwardRef<
           "bg-white",
           // Typography — matches .s-field-label
           "text-[10px] font-medium uppercase tracking-[0.06em]",
-          "text-muted-foreground leading-none",
+          "leading-none",
           // Disabled state mirrors the input
           "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
         )}

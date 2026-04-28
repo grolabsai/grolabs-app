@@ -19,6 +19,7 @@ import {
   Settings,
   Search,
   Download,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +83,12 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         { href: null, label: "Especies", icon: PawPrint },
         { href: null, label: "Razas", icon: Rabbit },
         { href: null, label: "Atributos de perfil", icon: UserRound },
+      ],
+    },
+    {
+      title: "Sistema",
+      items: [
+        { href: "/styleguide" as Route, label: "Estilo", icon: Palette },
       ],
     },
     {

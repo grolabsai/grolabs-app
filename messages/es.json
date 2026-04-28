@@ -29,6 +29,166 @@
     "send": "Enviar"
   },
   "catalog": {
+    "products": {
+      "title": "Productos",
+      "new": "Nuevo producto",
+      "import": "Importar",
+      "backToList": "Volver a productos",
+      "showing": "Mostrando {shown} de {total} productos",
+      "filters": {
+        "all": "Todos",
+        "active": "Activos",
+        "inactive": "Inactivos",
+        "consignment": "Consignación",
+        "service": "Servicios"
+      },
+      "table": {
+        "product": "Producto",
+        "type": "Tipo",
+        "brand": "Marca",
+        "variants": "Variantes",
+        "price": "Precio desde",
+        "status": "Estado",
+        "updated": "Actualizado"
+      },
+      "summary": {
+        "variants": "Variantes",
+        "active": "Activas",
+        "withSku": "Con SKU",
+        "withBarcode": "Con barcode",
+        "origin": "ID origen"
+      },
+      "status": {
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "readOnly": "Solo lectura"
+      },
+      "empty": {
+        "title": "Sin productos que coincidan con este filtro.",
+        "sub": "Probá ajustar los filtros o crear un producto nuevo."
+      },
+      "form": {
+        "createTitle": "Nuevo producto",
+        "editTitle": "Editar producto",
+        "sections": {
+          "basic": "Información básica",
+          "config": "Configuración",
+          "image": "Imagen"
+        },
+        "fields": {
+          "name": "Nombre del producto",
+          "namePlaceholder": "Ej: Royal Canin Maxi Adult",
+          "slug": "Slug",
+          "slugAutoHint": "Generado a partir del nombre. Editalo antes de guardar.",
+          "slugManualHint": "Editado manualmente.",
+          "slugLockedHint": "El slug no puede modificarse después de crear el producto.",
+          "type": "Tipo de producto",
+          "typePlaceholder": "Seleccionar tipo…",
+          "typeSearch": "Buscar tipo…",
+          "brand": "Marca",
+          "brandPlaceholder": "Seleccionar marca…",
+          "brandSearch": "Buscar marca…",
+          "primaryCategory": "Categoría principal",
+          "categoryPlaceholder": "Seleccionar categoría…",
+          "categorySearch": "Buscar categoría…",
+          "shortDescription": "Descripción corta",
+          "imageUrl": "URL de imagen",
+          "imageUrlPlaceholder": "https://…",
+          "isActive": "Producto activo",
+          "isActiveDesc": "Visible en el catálogo",
+          "isConsignment": "Consignación",
+          "isConsignmentDesc": "El inventario pertenece al proveedor",
+          "trackInventory": "Control de inventario",
+          "trackInventoryDesc": "Se lleva seguimiento de stock"
+        },
+        "validation": {
+          "nameRequired": "El nombre del producto es requerido.",
+          "slugRequired": "El slug es requerido.",
+          "typeRequired": "El tipo de producto es requerido.",
+          "categoryRequired": "La categoría principal es requerida."
+        }
+      },
+      "actions": {
+        "create": "Crear producto",
+        "creating": "Creando…",
+        "save": "Guardar cambios",
+        "saving": "Guardando…",
+        "saved": "✓ Guardado",
+        "deactivate": "Desactivar producto",
+        "confirmDeactivate": "¿Desactivar este producto? Sus variantes quedarán inactivas en el catálogo.",
+        "back": "Cancelar"
+      }
+    },
+    "variants": {
+      "title": "Variantes",
+      "new": "Nueva variante",
+      "empty": {
+        "title": "Este producto aún no tiene variantes.",
+        "sub": "Creá la primera variante para este producto."
+      },
+      "table": {
+        "variant": "Variante",
+        "sku": "SKU",
+        "barcode": "Código de barras",
+        "weight": "Peso",
+        "price": "Precio",
+        "cost": "Costo",
+        "status": "Estado"
+      },
+      "status": {
+        "active": "Activa",
+        "inactive": "Inactiva"
+      },
+      "axes": {
+        "sectionTitle": "Valores de variante",
+        "inheritedFrom": "Heredado de {categoryName}",
+        "noAxes": "Este producto no tiene ejes de variante definidos en su categoría. Podés agregar la variante con solo SKU y precio.",
+        "pickerPlaceholder": "Seleccionar valor…",
+        "freeTextPlaceholder": "Escribir valor…",
+        "freeNumberPlaceholder": "0"
+      },
+      "form": {
+        "createTitle": "Nueva variante",
+        "editTitle": "Editar variante",
+        "sections": {
+          "axes": "Valores de variante",
+          "identity": "Identidad",
+          "pricing": "Precio"
+        },
+        "fields": {
+          "sku": "SKU",
+          "skuPlaceholder": "Ej: RC-MAXI-15KG",
+          "skuHint": "Único por instancia. Requerido.",
+          "barcode": "Código de barras",
+          "imageUrl": "URL de imagen",
+          "variantLabel": "Etiqueta de variante",
+          "variantLabelHint": "Diferenciador corto. Auto-generado desde los ejes, editable.",
+          "variantName": "Nombre completo",
+          "variantNameHint": "Nombre del producto + etiqueta. Editable.",
+          "listPrice": "Precio de lista (GTQ)",
+          "listPricePlaceholder": "0.00",
+          "isActive": "Variante activa",
+          "isActiveDesc": "Visible y vendible"
+        },
+        "validation": {
+          "skuRequired": "El SKU es requerido.",
+          "skuTaken": "Este SKU ya está en uso.",
+          "priceRequired": "El precio de lista es requerido.",
+          "pricePositive": "El precio debe ser mayor a 0.",
+          "axisRequired": "Completá todos los valores de variante."
+        }
+      },
+      "actions": {
+        "create": "Crear variante",
+        "creating": "Creando…",
+        "save": "Guardar cambios",
+        "saving": "Guardando…",
+        "saved": "✓ Guardado",
+        "deactivate": "Desactivar variante",
+        "confirmDeactivate": "¿Desactivar esta variante?",
+        "back": "Volver al producto"
+      }
+    },
     "categoryAttributes": {
       "sectionTitle": "Atributos",
       "inherited": {

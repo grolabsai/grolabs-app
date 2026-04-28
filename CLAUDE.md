@@ -515,3 +515,9 @@ Before any Scout strategy or planning conversation, **first search Notion for "S
 To extend the allow/deny lists, edit `.claude/settings.json`. Machine-local overrides (MCP tool approvals, personal preferences) go in `.claude/settings.local.json` — that file is gitignored and never committed.
 
 **Unattended sessions:** use `claude --dangerously-skip-permissions` to bypass all permission prompts. The deny list in `settings.json` and the `.githooks/pre-push` hook are the safety net when running with bypass mode.
+
+---
+
+## 19. Policy documents
+
+Domain policy lives in `docs/policy/*.md`. These files are the source of truth for product behavior. When implementing a feature in those domains, read the relevant policy file first. When behavior needs to change, edit the policy file in the same commit as the code change.

@@ -49,6 +49,9 @@ export async function createVariant(input: {
   variant_name?: string | null;
   variant_label?: string | null;
   sku?: string | null;
+  barcode?: string | null;
+  weight_grams?: number | null;
+  is_active?: boolean;
 }) {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "No instance" };
@@ -56,8 +59,10 @@ export async function createVariant(input: {
   const supabase = await createClient();
 
   // Insert the variant row first; axis values go into
-  // product_variant_attribute afterwards. Variant name + label + sku are
-  // all optional — the row can be saved with no fields filled.
+  // product_variant_attribute afterwards. Every field is optional —
+  // an empty variant row is allowed (save-anything UI promise). Pricing
+  // is its own concern — call upsertVariantPricing separately if a price
+  // was entered in the same draft row.
   const { data: variant, error: insertError } = await supabase
     .from("product_variant")
     .insert({
@@ -66,6 +71,9 @@ export async function createVariant(input: {
       variant_name: input.variant_name?.trim() || null,
       variant_label: input.variant_label?.trim() || null,
       sku: input.sku?.trim() || null,
+      barcode: input.barcode?.trim() || null,
+      weight_grams: input.weight_grams ?? null,
+      is_active: input.is_active ?? true,
     })
     .select("variant_id")
     .single();

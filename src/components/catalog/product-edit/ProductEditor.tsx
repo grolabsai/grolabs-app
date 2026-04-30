@@ -16,11 +16,12 @@ import {
   InlineText,
   InlineTextarea,
 } from "./InlineFields";
+import { VariantsTable } from "./VariantsTable";
 import {
   deleteProduct,
   updateProductField,
 } from "@/lib/actions/product";
-import { formatGTQ, formatRelative } from "@/lib/format";
+import { formatRelative } from "@/lib/format";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -404,121 +405,11 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
         </div>
       </div>
 
-      {/* ── Variants table (read-only in Pass 3; Pass 4 makes editable) ── */}
-      <div className="s-card" style={{ marginBottom: 16 }}>
-        <div className="s-card-header">
-          <div>
-            <h3 className="s-card-h">Variantes</h3>
-            <p className="s-card-sub">
-              Presentaciones, SKUs y precios por variante.
-            </p>
-          </div>
-          <button className="s-btn s-btn-ghost" type="button" disabled>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M7 2v10M2 7h10" />
-            </svg>
-            Nueva variante
-          </button>
-        </div>
-        <div className="s-table-wrap">
-          <table className="s-table">
-            <thead>
-              <tr>
-                <th>Variante</th>
-                <th>SKU</th>
-                <th>Código de barras</th>
-                <th>Peso</th>
-                <th className="text-right">Precio</th>
-                <th className="text-right">Costo</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {variants.length === 0 ? (
-                <tr>
-                  <td colSpan={7}>
-                    <div className="s-empty" style={{ padding: "32px 20px" }}>
-                      <div className="s-empty-sub">
-                        Este producto aún no tiene variantes.
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                variants.map((v) => {
-                  const retail = v.product_pricing?.find(
-                    (p) => p.channel === "retail",
-                  );
-                  return (
-                    <tr key={v.variant_id}>
-                      <td>
-                        <div style={{ fontSize: 13, fontWeight: 500 }}>
-                          {v.variant_name ?? "—"}
-                        </div>
-                        {v.variant_label && v.variant_label !== v.variant_name ? (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "var(--s-text-tertiary)",
-                            }}
-                          >
-                            {v.variant_label}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td>
-                        {v.sku ? <span className="s-sku">{v.sku}</span> : "—"}
-                      </td>
-                      <td>
-                        {v.barcode ? (
-                          <span className="s-barcode">{v.barcode}</span>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                      <td>
-                        {v.weight_grams ? (
-                          <span className="s-size-pill">
-                            {formatWeight(v.weight_grams)}
-                          </span>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                      <td className="text-right tabular">
-                        {formatGTQ(retail?.list_price)}
-                      </td>
-                      <td
-                        className="text-right tabular"
-                        style={{ color: "var(--s-text-secondary)" }}
-                      >
-                        {formatGTQ(retail?.cost_price)}
-                      </td>
-                      <td>
-                        <div className="s-dot-row">
-                          <div
-                            className={`s-dot ${v.is_active ? "success" : "neutral"}`}
-                          />
-                          <span style={{ fontSize: 12 }}>
-                            {v.is_active ? "Activa" : "Inactiva"}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <VariantsTable
+        productId={product.product_id}
+        variants={variants}
+        onSaved={onSaved}
+      />
     </>
   );
 }
@@ -705,12 +596,3 @@ function SummaryRow({
   );
 }
 
-function formatWeight(grams: string | number): string {
-  const n = typeof grams === "number" ? grams : Number(grams);
-  if (!Number.isFinite(n)) return "—";
-  if (n >= 1000) {
-    const kg = n / 1000;
-    return `${kg % 1 === 0 ? kg.toFixed(0) : kg.toFixed(1)} kg`;
-  }
-  return `${n} g`;
-}

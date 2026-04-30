@@ -101,8 +101,126 @@ is rendered with `disabled`. There is no `lib/actions/product*` file.
 
 **Last touched:** PR #11 (read-only screen). PR #24 (CRUD) is open.
 
-(See "Catalog → Products — variants + manufacturer detail" below for the
-deeper sub-sections that scope the next slice of work.)
+### Catalog → Products — variants + manufacturer detail
+
+This expanded section is the foundation for the next feature work
+(products + variants CRUD). PR #24 (open) builds on what's described
+here.
+
+#### Variants
+
+**Variant axes resolution.** `src/lib/resolveVariantAxes.ts` walks a
+category's ancestor chain root → leaf using a precomputed flat list of
+categories and a list of `category_product_attribute` rows the caller
+has already filtered to "this category and its ancestors." For each
+ancestor level, attributes are deduplicated by `attribute_code` so that
+the closest definition wins (leaf-closest override) — a child category
+can replace an inherited axis simply by linking the same attribute code
+on its own row. The function is pure: no Supabase calls inside; it
+expects pre-fetched `VariantAxisRow[]` and the flat `CategoryNode[]` to
+be passed in by the page. The returned set drives the variant table
+headers and populates the agent context note shown on the categories
+detail card. The single source of truth for "is this attribute a variant
+axis on this category?" is the join row
+(`category_product_attribute.is_variant_axis`), not a column on
+`category`. The `category.default_variant_axes` column was dropped in
+migration `20260426000003`.
+
+**Variant table component.** Rendered inline inside
+[`src/app/[locale]/(app)/catalog/products/[id]/page.tsx`](src/app/[locale]/(app)/catalog/products/[id]/page.tsx#L485-L599),
+spanning the full width below the two-column layout. There is no
+extracted component file for the variant table on `main` — it's a single
+`<table className="s-table">` inside the product editor with seven
+columns (Variante / SKU / Código de barras / Peso / Precio / Costo /
+Estado). The "Nueva variante" button next to the table title is rendered
+but `disabled`. PR #24 adds an extracted `VariantTable` component plus
+per-variant CRUD; not yet merged.
+
+**Existing field set per variant** (rendered on the product detail page,
+fetched by the same `select` that loads the product):
+
+| Column | Source | Display |
+|---|---|---|
+| Variante | `variant_name` (+ `variant_label` as sub-line when different) | text + sub-line |
+| SKU | `sku` | monospace pill |
+| Código de barras | `barcode` | monospace pill, "—" if null |
+| Peso | `weight_grams` | `formatWeight(g)` → "500 g" / "3 kg" |
+| Precio | `product_pricing.list_price` (channel = `retail`) | right-aligned, GTQ |
+| Costo | `product_pricing.cost_price` (channel = `retail`) | right-aligned, GTQ, secondary text colour |
+| Estado | `is_active` | dot + "Activa" / "Inactiva" |
+
+Fields that exist on `product_variant` but are **not** rendered:
+`upc`, `pack_unit`, `is_pack`, `inv_rotation_type`, `image_url`,
+`wazudb1_id`. Variant attribute values (`product_variant_attribute`) are
+not in the SELECT — variant axes are not displayed on the table at all.
+
+There is no per-variant detail / edit screen (no
+`/catalog/products/[id]/variants/[variantId]` route exists on `main`).
+All variant data lives in the row of the inline table.
+
+**What "read-only" means concretely** for the product detail page:
+
+| Element | State |
+|---|---|
+| `name`, `short_desc`, `long_desc`, `slug`, `type` inputs | `disabled` with `defaultValue` |
+| `brand`, `manufacturer`, `category` inputs | `disabled` with `defaultValue` |
+| `is_active`, `track_inventory`, `is_consignment` toggles | rendered as `<div>` with `opacity: 0.6; cursor: not-allowed` |
+| Atributos del producto card | renders as label/value `<div>` rows, not editable |
+| Galería | static "Sin imagen principal" placeholder, "Subir nueva" button `disabled` |
+| Volver button | works (locale-aware Link) |
+| Guardar cambios button | `disabled title="Edición — próximamente"` |
+| Nueva variante button | `disabled` |
+| Variant rows | rendered as `<td>` text — no edit / delete affordance, no row click handler |
+
+No `updateProduct`, `updateVariant`, `deleteVariant`, `setVariantPricing`,
+`addVariantImage`, or any other product/variant mutation server action
+exists on `main`. There is no `src/lib/actions/product.ts`,
+`src/lib/actions/productVariant.ts`, or co-located `actions.ts` in the
+products route folder.
+
+#### Manufacturer field
+
+**Where it renders.** As a disabled `<input>` on the product detail page
+at [page.tsx:321-330](src/app/[locale]/(app)/catalog/products/[id]/page.tsx#L321-L330),
+inside the "Configuración y proveedor" card, immediately below the brand
+field. It is not rendered on the products list, the categories detail,
+or any other route.
+
+**Where it's edited.** Nowhere on `main`. There is no `updateManufacturer`
+action; no other route writes the column; no import flow populates it.
+The column is read-only by virtue of the entire detail page being
+read-only.
+
+**Existing `product_attribute` named "manufacturer"?** No. The seed
+migrations (`20260422*` initial schema + the catalog seeds) do not insert
+a row with `attribute_code = 'manufacturer'` on `product_attribute`. The
+column is structurally a free-form text column on `product`, not an
+attribute. Any migration that introduces an attribute-based manufacturer
+concept would need to either (a) keep the column for legacy compatibility
+and dual-write or (b) backfill from the column into a new attribute and
+drop the column.
+
+**`brand` has a manufacturer column?** No. The `brand` table has only
+six columns: `brand_id`, `instance_id`, `brand_name`, `wazudb1_id`,
+`created_at`, `updated_at`. There is no `brand.manufacturer`, no
+`brand.manufacturer_brand_id`, no link table connecting brand to
+manufacturer. If "manufacturer" is meant to be a separate normalised
+entity (i.e., one manufacturer can have many brands), neither the table
+nor the FK exists yet.
+
+**Implications for the upcoming PR.** If the goal is to normalise
+manufacturer:
+1. Decide whether manufacturer is its own table (separate from `brand`)
+   or a column on `brand`. The current free-text column on `product`
+   gives no signal either way.
+2. If introducing a new table or column, the migration is straightforward
+   (add the table or column, RLS policy, FK on `product`). Backfilling
+   from the existing free-text strings will require deduplication —
+   names like "ACME Inc." vs "ACME Inc" vs "Acme inc." need a normalise
+   step.
+3. The `product.manufacturer` column should stay during transition; the
+   editor can dual-write or read-prefer the new path. Drop only after
+   the backfill verifies coverage.
 
 ---
 

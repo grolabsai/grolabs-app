@@ -1,9 +1,20 @@
 {
   "nav": {
     "conversion": "Conversión",
+    "funnel": "Embudo",
     "catalog": "Catálogo",
     "configuration": "Configuración",
     "dashboard": "Dashboard"
+  },
+  "funnel": {
+    "title": "Embudo de conversión",
+    "subtitle": "Etapas, transiciones y datasets de benchmark.",
+    "placeholder": "Próximamente",
+    "tabs": {
+      "diagram": "Diagrama",
+      "dataStructure": "Estructura de datos",
+      "maintenance": "Mantenimiento"
+    }
   },
   "settings": {
     "algolia": {

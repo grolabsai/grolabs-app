@@ -1,9 +1,20 @@
 {
   "nav": {
     "conversion": "Conversion",
+    "funnel": "Funnel",
     "catalog": "Catalog",
     "configuration": "Configuration",
     "dashboard": "Dashboard"
+  },
+  "funnel": {
+    "title": "Conversion funnel",
+    "subtitle": "Stages, transitions, and benchmark datasets.",
+    "placeholder": "Coming soon",
+    "tabs": {
+      "diagram": "Diagram",
+      "dataStructure": "Data structure",
+      "maintenance": "Maintenance"
+    }
   },
   "settings": {
     "algolia": {

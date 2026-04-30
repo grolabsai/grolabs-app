@@ -20,7 +20,10 @@ import {
   Search,
   Download,
   Palette,
+  Workflow,
+  type LucideIcon,
 } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,7 +42,10 @@ import { cn } from "@/lib/utils";
 type NavItem = {
   href: Route | null; // null = not yet implemented
   label: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
+  // When true, render through the shared <Icon> wrapper. New entries opt in;
+  // legacy entries stay raw until the whole-file migration ships.
+  useIconWrapper?: boolean;
 };
 
 type NavGroup = {
@@ -57,6 +63,12 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       title: tNav("dashboard"),
       items: [
         { href: "/dashboard" as Route, label: tNav("dashboard"), icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: tNav("conversion"),
+      items: [
+        { href: "/funnel" as Route, label: tNav("funnel"), icon: Workflow, useIconWrapper: true },
       ],
     },
     {
@@ -114,11 +126,29 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
           <p className="s-nav-section">{group.title}</p>
 
           {group.items.map((item) => {
-            const Icon = item.icon;
+            const ItemIcon = item.icon;
             const isActive = item.href
               ? pathname === item.href ||
                 pathname.startsWith(item.href + "/")
               : false;
+
+            // New entries route through the shared <Icon> wrapper; legacy
+            // entries render the lucide component directly until the
+            // whole-sidebar migration lands. Visual output matches.
+            const iconNode = item.useIconWrapper ? (
+              <Icon
+                icon={ItemIcon}
+                className="s-nav-icon"
+                size={14}
+                strokeWidth={1.5}
+              />
+            ) : (
+              <ItemIcon
+                className="s-nav-icon"
+                size={14}
+                strokeWidth={1.5}
+              />
+            );
 
             if (!item.href) {
               return (
@@ -128,11 +158,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
                   style={{ opacity: 0.45, cursor: "not-allowed" }}
                   title="Próximamente"
                 >
-                  <Icon
-                    className="s-nav-icon"
-                    size={14}
-                    strokeWidth={1.5}
-                  />
+                  {iconNode}
                   {item.label}
                   <span className="s-nav-badge">···</span>
                 </div>
@@ -145,11 +171,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
                 href={item.href}
                 className={cn("s-nav-item", isActive && "active")}
               >
-                <Icon
-                  className="s-nav-icon"
-                  size={14}
-                  strokeWidth={1.5}
-                />
+                {iconNode}
                 {item.label}
               </Link>
             );

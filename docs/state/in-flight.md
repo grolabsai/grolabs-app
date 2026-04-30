@@ -153,3 +153,27 @@ branch name + most recent commit message.
 - **`product.wazudb1_id` and `product_variant.wazudb1_id`** are migration
   refs from the old WazuDB1 system. Once the migration is fully cut over,
   these can be dropped.
+
+---
+
+## Open architectural decisions
+
+Decisions that aren't blocking current work but will shape future design.
+Each entry: the question, the trade-off, and the trigger condition for
+revisiting.
+
+- **Catalog template-fork pattern.** Catalog data is currently fully
+  tenant-generated — every category, attribute, and product belongs to a
+  specific instance and there is no shared starter content visible to
+  customers. The funnel feature (PR #25) introduced template instances
+  under `instance_id = 0` that are visible to every authenticated user
+  via the `tenant_read` policy with template fallthrough on SELECT.
+  Decide whether catalog should adopt the same template-fork model
+  (likely beneficial for pet-retail onboarding: starter category trees,
+  starter attributes, starter species/breeds, possibly starter brands
+  and product types). If yes, port the funnel pattern (`tenant_read`
+  with `instance_id = 0 OR membership` on SELECT, `tenant_write_all`
+  with no template fallthrough on writes) to the catalog tables. Not
+  blocking current work. **Trigger to revisit:** when the next new
+  customer instance is provisioned and we observe how much manual
+  seeding it needs.

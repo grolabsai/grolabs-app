@@ -418,3 +418,15 @@ Every settings and management screen is designed to accommodate a future natural
 **`.githooks/pre-push`** (enforced via `core.hooksPath = .githooks`) hard-blocks direct pushes to `main` at the git layer, independent of Claude Code settings.
 
 To extend the allow/deny lists, edit `.claude/settings.json`. Machine-local overrides (MCP tool approvals, personal preferences) go in `.claude/settings.local.json` — that file is gitignored and never committed.
+
+---
+
+## 17. Known schema debt
+
+Items here are intentional shortcuts or pre-rename artifacts that need follow-up. Update this list as debt is added or paid down.
+
+- **`instance.instance_id` sequence still named `tenant_tenant_id_seq`** — pre-rename artifact in the column default. Functional but misnamed. Fix via `ALTER SEQUENCE … RENAME TO instance_instance_id_seq` next time we touch the `instance` table for another reason.
+
+- **`instance.kind` is `text`, not an enum** — accepts `'customer'` and `'template'` by convention but with no DB-level enforcement. The funnel uses the `funnel_instance_type` enum for the same concept. Promote `instance.kind` to a real enum (`instance_kind`?) next time the `instance` table is migrated.
+
+- **Catalog vs funnel template visibility asymmetry** — funnel per-tenant tables use `tenant_read` with template fallthrough on SELECT (`instance_id = 0` is visible to all authenticated users). Catalog tables use the older `instance_isolation_*` pattern with no template fallthrough — `instance_id = 0` rows in `category`, `product_attribute`, etc. are reachable only via `service_role`. If catalog template-forking becomes a feature (starter category trees, starter attributes for new tenants on signup), port the funnel pattern (`tenant_read` with template fallthrough on SELECT) to the catalog tables. Tracked in `docs/state/in-flight.md` → "Open architectural decisions".

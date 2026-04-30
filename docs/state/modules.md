@@ -7,42 +7,64 @@ in `main` (HEAD = `b43157a`).
 
 ## Authentication (`/login`)
 
-**State:** scaffolded only
+**State:** functional — email + password sign-in.
 
 **Routes:**
-- `/login` — Supabase email-link authentication landing.
+- `/login` — public route at
+  [`src/app/[locale]/login/page.tsx`](src/app/[locale]/login/page.tsx)
+  (outside the `(app)` protected group). Centred-card layout via
+  `s-auth-shell`; no sidebar/topbar chrome. Already-authenticated users
+  hit `redirect("/dashboard")` on render. Surface error via the
+  `?error=…` query param.
 
-**Server actions:** none. Auth handshake goes through `@supabase/ssr`
-client/server helpers in `src/lib/supabase/`.
+**Server actions:** inline `'use server'` action in the same file:
+- `login(formData)` — reads `email` + `password` from FormData, calls
+  `supabase.auth.signInWithPassword`, redirects to `/login?error=…` on
+  failure or `/dashboard` on success. Errors are not echoed verbatim
+  (the page renders a generic Spanish message); the raw Supabase error
+  is in the URL only.
 
-**Tables involved:** `auth.users` (Supabase-managed), `instance_member` (read in
-`(app)/layout.tsx` to resolve the active instance and surface its name in
-the sidebar).
+**Tables involved:** `auth.users` (Supabase-managed), `instance_member`
+(read in `(app)/layout.tsx` after auth to resolve the active instance
+and surface its name in the sidebar).
 
 **Known gaps:**
-- No password reset UI; password resets happen via the Supabase admin API
-  (used out-of-band by ops).
-- No SSO/Google login wired.
+- Email + password only. No SSO/Google login, no magic link, no
+  passwordless flow (D17 noted this).
+- No public sign-up flow — users are provisioned out-of-band
+  (`auth.users` row + `instance_member` row created directly via the
+  Supabase admin API).
+- No password reset UI; resets happen via the admin API.
 
-**Last touched:** PR #1 (initial scaffold).
+**Last touched:** PR #1 (initial scaffold); login itself unchanged
+since.
 
 ---
 
 ## Dashboard (`/dashboard`)
 
-**State:** read-only
+**State:** read-only analytics + synonym-creation server action.
 
 **Routes:**
 - `/dashboard` — Algolia "no-results" analytics; surfaces top zero-result
-  searches over a configurable window (24h / 7d / 30d) and offers a
+  searches over a configurable window (24h / 7d / 30d) and a
   "create synonym" dialog.
 
-**Server actions:** present inline in the route folder (synonym creation
-posts to the Algolia REST API; not a DB write). No file in
-`src/lib/actions/` for dashboard.
+**Server actions**
+([`src/app/[locale]/(app)/dashboard/actions.ts`](src/app/[locale]/(app)/dashboard/actions.ts)):
+- `addSynonym(query, synonym)` →
+  `SynonymResult { ok, objectId?, taskId?, error? }`. **Server action
+  (not an inline route handler).** Resolves the user's instance via
+  `instance_member`, reads `instance.integrations_config.algolia` for
+  `app_id` + `primary_index`, fetches the admin key from Vault via the
+  `algolia_get_admin_key` RPC, then PUTs a new synonym to
+  `https://<app_id>.algolia.net/1/indexes/<primary_index>/synonyms/<objectID>?forwardToReplicas=true`
+  with a generated `scout_<timestamp>_<uuid8>` objectID and `type:
+  "synonym"`, `synonyms: [query, synonym]`. Surfaces the Algolia task ID
+  on success and the API error message on failure.
 
-**Tables involved:** `instance.integrations_config` (read to resolve the
-Algolia App ID + key + index for the current tenant).
+**Tables involved:** `instance_member` (read to resolve user's instance),
+`instance.integrations_config` (read for Algolia config).
 
 **Known gaps:**
 - The synonym dialog is wired but the analytics subdomain mapping has a
@@ -53,6 +75,10 @@ Algolia App ID + key + index for the current tenant).
 - The Algolia request fires from the server with the admin key in plain
   HTTP — fine because it never crosses to the browser, but worth
   documenting for any future review of the request path.
+- `addSynonym` reads the user's first active membership via
+  `maybeSingle`; for a user who is a member of multiple instances it
+  silently picks one. Not a problem today (Phase 1: one-membership-per-user)
+  but worth flagging when multi-instance lands.
 
 **Last touched:** PR #15 / #16 (Algolia analytics + synonym dialog).
 
@@ -320,33 +346,51 @@ no admin UI has been built.
 
 ## Datos → Import (`/import`)
 
-**State:** partial — text-paste path active; Excel and migration paths
-are placeholder cards.
+**State:** scaffolded only. The recent-jobs list reads `import_job` rows,
+but no import path is functional — text, Excel, and migration are all
+placeholder cards. (The earlier draft of this file claimed the
+text-paste path was active; verifying
+[`/import/text/page.tsx`](src/app/[locale]/(app)/import/text/page.tsx)
+shows the input + Parsear button are both `disabled` and the page
+explicitly states "se habilitará cuando se complete CI-11".)
 
 **Routes:**
 - `/import` — landing with three method cards (text / Excel / migration).
-  Excel and migration cards are disabled. Recent imports list reads
-  `import_job` rows.
-- `/import/text` — paste-and-go form. Submitting calls the parser and
-  promotes rows into staging.
+  All three are disabled. Recent imports list reads `import_job` rows.
+- `/import/text` — placeholder form: a `disabled` text input + a
+  `disabled` Parsear button + a grey "se habilitará cuando se complete
+  CI-11 (fn_parse_product_text)" callout. No fields are interactive.
 
-**Server actions:** present inline in the `/import/text` route folder
-(parser actions). No file in `src/lib/actions/`.
+**Server actions:** none. There is no `actions.ts` in the `/import` or
+`/import/text` route folders, no `src/lib/actions/import*.ts`, and no
+inline `'use server'` actions on either page. The CI-11 parser
+(`fn_parse_product_text`) is referenced in the placeholder copy but no
+DB function with that name has been verified to exist on
+`ixbbhwtpnebrhquunege` — a forward-looking comment, not a wired call.
 
-**Tables involved:** `import_job`, `import_staging`, `catalog_suggestion`
-(write); reads `category` for the target-category picker.
+**Tables involved:**
+- Read: `import_job` (recent-jobs list on `/import`).
+- Write: none from this module on `main`.
 
 **Known gaps:**
-- Excel/CSV upload UI is a `disabled` card — no file picker, no column
-  mapping screen.
-- Migration import (WooCommerce, Shopify) is also a `disabled` card.
-- No promotion UI for staged rows — once the parser writes to
-  `import_staging` you can see them on the recent-jobs list, but there's
-  no review/approve screen yet.
-- `catalog_suggestion` is populated by parsing but has no UI to triage
-  pending suggestions (no `/import/suggestions` route).
+- Text-paste parser is not wired. The placeholder mentions
+  `default_variant_axes` for variant detection, which was dropped from
+  `category` in migration `20260426000003` — the comment is stale.
+- Excel/CSV upload: no file picker, no column mapping screen.
+- Migration import (WooCommerce, Shopify): disabled card with no body.
+- No promotion UI for staged rows; if `import_staging` is ever populated
+  out-of-band, there's no review/approve screen.
+- `catalog_suggestion` has no triage UI.
+- `import_job` query on the landing page selects columns
+  (`import_job_id`, `source_label`, `total_rows`, `rows_promoted`,
+  `rows_rejected`) that **don't exist** on the live table — the live
+  table has `job_id`, no `source_label`, and no `rows_promoted` /
+  `rows_rejected`. This will throw a Supabase error if any rows exist.
+  As of now, the table is empty so the failure is invisible. Schema
+  drift between `/import/page.tsx` and the actual table — needs
+  reconciliation before the table gets data.
 
-**Last touched:** PR #11 / CI-11 (text-paste parser).
+**Last touched:** PR #11 (initial scaffold). CI-11 was never delivered.
 
 ---
 

@@ -235,6 +235,55 @@
       "toastFailed": "Could not save synonym"
     }
   },
+  "product": {
+    "list": {
+      "newProduct": "New product"
+    },
+    "create": {
+      "title": "New product",
+      "subhead": "Just the name for now. Fill in the rest later.",
+      "nameLabel": "Product name",
+      "cancel": "Cancel",
+      "submit": "Create",
+      "success": "Product created",
+      "error": "Could not create product"
+    },
+    "detail": {
+      "savedJustNow": "Saved",
+      "savedAgo": "Saved {time} ago",
+      "saveError": "Save failed",
+      "empty": "— empty —",
+      "delete": "Delete product",
+      "deleteConfirm": "Delete this product?",
+      "deleteConfirmYes": "Confirm",
+      "deleteConfirmNo": "Cancel",
+      "deleteSuccess": "Product deleted"
+    },
+    "fields": {
+      "name": "Product name",
+      "shortDescription": "Short description",
+      "longDescription": "Long description",
+      "slug": "Slug",
+      "type": "Type",
+      "brand": "Brand",
+      "category": "Primary category",
+      "active": "Product active",
+      "activeSub": "Visible in the catalog",
+      "trackInventory": "Track inventory",
+      "trackInventorySub": "Stock is tracked",
+      "consignment": "Consignment",
+      "consignmentSub": "Inventory belongs to the supplier",
+      "noBrand": "No brand"
+    },
+    "variants": {
+      "add": "Add variant",
+      "delete": "Delete",
+      "deleteConfirm": "Delete variant?",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "deleteSuccess": "Variant deleted"
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

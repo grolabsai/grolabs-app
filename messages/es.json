@@ -235,6 +235,55 @@
       "toastFailed": "No se pudo guardar el sinónimo"
     }
   },
+  "product": {
+    "list": {
+      "newProduct": "Nuevo producto"
+    },
+    "create": {
+      "title": "Nuevo producto",
+      "subhead": "Sólo el nombre por ahora. El resto se llena después.",
+      "nameLabel": "Nombre del producto",
+      "cancel": "Cancelar",
+      "submit": "Crear",
+      "success": "Producto creado",
+      "error": "No se pudo crear el producto"
+    },
+    "detail": {
+      "savedJustNow": "Guardado",
+      "savedAgo": "Guardado hace {time}",
+      "saveError": "Error al guardar",
+      "empty": "— vacío —",
+      "delete": "Eliminar producto",
+      "deleteConfirm": "¿Eliminar este producto?",
+      "deleteConfirmYes": "Confirmar",
+      "deleteConfirmNo": "Cancelar",
+      "deleteSuccess": "Producto eliminado"
+    },
+    "fields": {
+      "name": "Nombre del producto",
+      "shortDescription": "Descripción corta",
+      "longDescription": "Descripción larga",
+      "slug": "Slug",
+      "type": "Tipo",
+      "brand": "Marca",
+      "category": "Categoría principal",
+      "active": "Producto activo",
+      "activeSub": "Visible en el catálogo",
+      "trackInventory": "Control de inventario",
+      "trackInventorySub": "Se lleva seguimiento de stock",
+      "consignment": "Consignación",
+      "consignmentSub": "El inventario pertenece al proveedor",
+      "noBrand": "Sin marca"
+    },
+    "variants": {
+      "add": "Agregar variante",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar variante?",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "deleteSuccess": "Variante eliminada"
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

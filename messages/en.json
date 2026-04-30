@@ -35,6 +35,16 @@
       "diagram": "Diagram",
       "dataStructure": "Data structure",
       "maintenance": "Maintenance"
+    },
+    "controls": {
+      "showLabels": "Show labels",
+      "hideLabels": "Hide labels",
+      "clear": "Clear"
+    },
+    "node": {
+      "percentOfTotal": "{pct}% of total",
+      "outputs": "{count, plural, one {# output} other {# outputs}}",
+      "lossCollector": "Loss collector"
     }
   },
   "settings": {

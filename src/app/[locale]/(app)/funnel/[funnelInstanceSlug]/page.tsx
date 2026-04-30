@@ -7,6 +7,7 @@ import {
 import { FunnelTabs } from "@/components/funnel/FunnelTabs";
 import { InstanceSelector } from "@/components/funnel/InstanceSelector";
 import { DiagramTab } from "@/components/funnel/DiagramTab";
+import { DataStructureTab } from "@/components/funnel/DataStructureTab";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function FunnelInstancePage({
   if (!data) notFound();
   const {
     instance,
+    flow,
     dataset,
     stages,
     transitions,
@@ -75,7 +77,18 @@ export default async function FunnelInstancePage({
             frictionFindings={frictionFindings}
           />
         }
-        dataStructure={<TabPlaceholder label={t("placeholder")} />}
+        dataStructure={
+          <DataStructureTab
+            instance={instance}
+            flow={flow}
+            dataset={dataset}
+            stages={stages}
+            transitions={transitions}
+            values={values}
+            frictionPoints={frictionPoints}
+            frictionFindings={frictionFindings}
+          />
+        }
         maintenance={<TabPlaceholder label={t("placeholder")} />}
       />
     </div>

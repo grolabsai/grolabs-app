@@ -83,6 +83,25 @@
       "medium": "Medium",
       "high": "High",
       "critical": "Critical"
+    },
+    "dataStructure": {
+      "instance": "Instance",
+      "flow": "Flow",
+      "dataset": "Dataset",
+      "frictionModel": "Friction model",
+      "flowMeta": "{stages} stages · {transitions} transitions",
+      "datasetMeta": "{count} values",
+      "frictionMeta": "{points} points · {findings} findings on this instance",
+      "stages": "Stages",
+      "transitions": "Transitions and dataset values",
+      "stageId": "ID",
+      "stageLabel": "Label",
+      "stageReach": "Reach",
+      "transition": "Transition",
+      "transitionType": "Type",
+      "conversion": "Conversion",
+      "total": "Total",
+      "noDataset": "No active dataset"
     }
   },
   "settings": {

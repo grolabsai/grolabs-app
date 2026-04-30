@@ -149,6 +149,59 @@
           "backward": "Backward"
         }
       },
+      "datasetValues": {
+        "title": "Dataset transition values",
+        "noDataset": "This instance has no active dataset.",
+        "editTitle": "Edit value",
+        "outOfTolerance": "Sum {total}% — outside tolerance [99.5, 100.5]",
+        "inTolerance": "Sum {total}% — OK",
+        "fields": {
+          "conversionPct": "Conversion %",
+          "sourceType": "Source type",
+          "notes": "Notes"
+        }
+      },
+      "benchmarks": {
+        "title": "Benchmark sources",
+        "add": "Add source",
+        "editTitle": "Benchmark source",
+        "newTitle": "New source",
+        "noValues": "The dataset has no values yet. Create values before adding sources.",
+        "fields": {
+          "transition": "Transition",
+          "title": "Title",
+          "url": "URL",
+          "sourceName": "Source name",
+          "notes": "Notes",
+          "observedValue": "Observed value",
+          "confidenceScore": "Confidence (0–1)"
+        }
+      },
+      "frictionPoints": {
+        "title": "Friction points",
+        "platformManagedNote": "Friction-point definitions are managed at the platform level. Read-only here.",
+        "fields": {
+          "stage": "Stage",
+          "name": "Name",
+          "category": "Category",
+          "description": "Description"
+        }
+      },
+      "frictionFindings": {
+        "title": "Friction findings",
+        "add": "Add finding",
+        "editTitle": "Edit finding",
+        "newTitle": "New finding",
+        "templateReadOnly": "This instance is a template. Findings are read-only.",
+        "fields": {
+          "frictionPoint": "Friction point",
+          "severity": "Severity",
+          "evidence": "Evidence",
+          "sourceSystem": "Source system",
+          "observedAt": "Observed at (YYYY-MM-DD)",
+          "slug": "Slug (optional)"
+        }
+      },
       "actions": {
         "save": "Save",
         "saving": "Saving…",

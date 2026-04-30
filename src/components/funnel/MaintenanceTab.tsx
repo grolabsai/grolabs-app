@@ -5,35 +5,68 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { StageMaintenance } from "./maintenance/StageMaintenance";
 import { TransitionMaintenance } from "./maintenance/TransitionMaintenance";
+import { DatasetValuesMaintenance } from "./maintenance/DatasetValuesMaintenance";
+import { BenchmarkSourceMaintenance } from "./maintenance/BenchmarkSourceMaintenance";
+import { FrictionPointSection } from "./maintenance/FrictionPointSection";
+import { FrictionFindingMaintenance } from "./maintenance/FrictionFindingMaintenance";
 import {
   validateFlowStructure,
   type FlowStructureWarning,
 } from "@/lib/funnel/validation";
 import type {
+  FunnelBenchmarkSource,
+  FunnelDataset,
+  FunnelDatasetTransitionValue,
   FunnelFlow,
+  FunnelFrictionFinding,
+  FunnelFrictionPoint,
+  FunnelInstance,
   FunnelStage,
   FunnelTransition,
 } from "@/lib/funnel/types";
 
 type Props = {
+  instance: FunnelInstance;
   flow: FunnelFlow;
+  dataset: FunnelDataset | null;
   stages: FunnelStage[];
   transitions: FunnelTransition[];
+  values: FunnelDatasetTransitionValue[];
+  benchmarks: FunnelBenchmarkSource[];
+  frictionPoints: FunnelFrictionPoint[];
+  frictionFindings: FunnelFrictionFinding[];
 };
 
 /**
- * Maintenance tab — Pass 6a wires the shared-table sections (stages and
- * transitions). Pass 6b adds the per-tenant sections: dataset transition
- * values, benchmark sources, friction findings, plus the shared-but-
- * read-only friction point list.
+ * Maintenance tab — composes:
+ *   - Flow validation panel (validateFlowStructure)
+ *   - Stage CRUD (shared, service-role)
+ *   - Transition CRUD (shared, service-role)
+ *   - Dataset transition values CRUD (per-tenant)
+ *   - Benchmark source CRUD (per-tenant)
+ *   - Friction point read-only list (shared, platform-managed note)
+ *   - Friction finding CRUD (per-tenant; locked when on a template
+ *     because RLS denies writes for instance_id = 0).
  */
-export function MaintenanceTab({ flow, stages, transitions }: Props) {
+export function MaintenanceTab({
+  instance,
+  flow,
+  dataset,
+  stages,
+  transitions,
+  values,
+  benchmarks,
+  frictionPoints,
+  frictionFindings,
+}: Props) {
   const t = useTranslations("funnel.maintenance");
 
   const warnings = useMemo(
     () => validateFlowStructure({ stages, transitions }),
     [stages, transitions],
   );
+
+  const isTemplate = instance.instance_id === 0;
 
   return (
     <div style={{ paddingTop: 12, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -50,6 +83,33 @@ export function MaintenanceTab({ flow, stages, transitions }: Props) {
         funnelFlowId={flow.funnel_flow_id}
         stages={stages}
         transitions={transitions}
+      />
+
+      <DatasetValuesMaintenance
+        dataset={dataset}
+        stages={stages}
+        transitions={transitions}
+        values={values}
+      />
+
+      <BenchmarkSourceMaintenance
+        benchmarks={benchmarks}
+        values={values}
+        transitions={transitions}
+        stages={stages}
+        readOnly={isTemplate}
+      />
+
+      <FrictionPointSection
+        frictionPoints={frictionPoints}
+        stages={stages}
+      />
+
+      <FrictionFindingMaintenance
+        funnelInstanceId={instance.funnel_instance_id}
+        frictionPoints={frictionPoints}
+        frictionFindings={frictionFindings}
+        readOnly={isTemplate}
       />
     </div>
   );

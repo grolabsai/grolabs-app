@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type {
+  FunnelBenchmarkSource,
   FunnelFlow,
   FunnelStage,
   FunnelTransition,
@@ -80,6 +81,7 @@ export type FunnelInstanceFull = {
   transitions: FunnelTransition[];
   dataset: FunnelDataset | null;
   values: FunnelDatasetTransitionValue[];
+  benchmarks: FunnelBenchmarkSource[];
   frictionPoints: FunnelFrictionPoint[];
   frictionFindings: FunnelFrictionFinding[];
 };
@@ -215,6 +217,19 @@ export async function getFunnelInstanceBySlug(
   );
   const frictionFindings = (findingsRes.data ?? []) as FunnelFrictionFinding[];
 
+  // Benchmark sources hang off dataset_transition_value. Fetch only the
+  // ones attached to the active dataset's values; .in([-1]) keeps the
+  // query well-formed when the dataset has no values yet.
+  const valueIds = values.map((v) => v.funnel_dataset_transition_value_id);
+  const { data: benchmarksData } = await supabase
+    .from("funnel_benchmark_source")
+    .select(
+      `funnel_benchmark_source_id, instance_id, funnel_dataset_transition_value_id,
+       title, url, source_name, notes, observed_value, confidence_score`,
+    )
+    .in("funnel_dataset_transition_value_id", valueIds.length ? valueIds : [-1]);
+  const benchmarks = (benchmarksData ?? []) as FunnelBenchmarkSource[];
+
   return {
     instance,
     flow,
@@ -222,6 +237,7 @@ export async function getFunnelInstanceBySlug(
     transitions,
     dataset,
     values,
+    benchmarks,
     frictionPoints,
     frictionFindings,
   };

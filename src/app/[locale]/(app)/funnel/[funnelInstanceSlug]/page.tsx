@@ -41,6 +41,7 @@ export default async function FunnelInstancePage({
     stages,
     transitions,
     values,
+    benchmarks,
     frictionPoints,
     frictionFindings,
   } = data;
@@ -92,9 +93,15 @@ export default async function FunnelInstancePage({
         }
         maintenance={
           <MaintenanceTab
+            instance={instance}
             flow={flow}
+            dataset={dataset}
             stages={stages}
             transitions={transitions}
+            values={values}
+            benchmarks={benchmarks}
+            frictionPoints={frictionPoints}
+            frictionFindings={frictionFindings}
           />
         }
       />

@@ -149,6 +149,59 @@
           "backward": "Retroceso"
         }
       },
+      "datasetValues": {
+        "title": "Valores de transición del dataset",
+        "noDataset": "Esta instancia no tiene un dataset activo.",
+        "editTitle": "Editar valor",
+        "outOfTolerance": "Suma {total}% — fuera de tolerancia [99.5, 100.5]",
+        "inTolerance": "Suma {total}% — OK",
+        "fields": {
+          "conversionPct": "% conversión",
+          "sourceType": "Tipo de fuente",
+          "notes": "Notas"
+        }
+      },
+      "benchmarks": {
+        "title": "Fuentes de benchmark",
+        "add": "Agregar fuente",
+        "editTitle": "Fuente de benchmark",
+        "newTitle": "Nueva fuente",
+        "noValues": "El dataset no tiene valores aún. Crea valores antes de agregar fuentes.",
+        "fields": {
+          "transition": "Transición",
+          "title": "Título",
+          "url": "URL",
+          "sourceName": "Nombre de la fuente",
+          "notes": "Notas",
+          "observedValue": "Valor observado",
+          "confidenceScore": "Confianza (0–1)"
+        }
+      },
+      "frictionPoints": {
+        "title": "Puntos de fricción",
+        "platformManagedNote": "Las definiciones de puntos de fricción se gestionan a nivel de plataforma. Sólo lectura aquí.",
+        "fields": {
+          "stage": "Etapa",
+          "name": "Nombre",
+          "category": "Categoría",
+          "description": "Descripción"
+        }
+      },
+      "frictionFindings": {
+        "title": "Hallazgos de fricción",
+        "add": "Agregar hallazgo",
+        "editTitle": "Editar hallazgo",
+        "newTitle": "Nuevo hallazgo",
+        "templateReadOnly": "Esta instancia es una plantilla. Los hallazgos son sólo lectura.",
+        "fields": {
+          "frictionPoint": "Punto de fricción",
+          "severity": "Severidad",
+          "evidence": "Evidencia",
+          "sourceSystem": "Sistema fuente",
+          "observedAt": "Observado en (YYYY-MM-DD)",
+          "slug": "Slug (opcional)"
+        }
+      },
       "actions": {
         "save": "Guardar",
         "saving": "Guardando…",

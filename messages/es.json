@@ -10,6 +10,27 @@
     "title": "Embudo de conversión",
     "subtitle": "Etapas, transiciones y datasets de benchmark.",
     "placeholder": "Próximamente",
+    "noInstance": "No hay instancia disponible.",
+    "instanceSelector": {
+      "placeholder": "Seleccionar instancia",
+      "ownGroup": "Tus instancias",
+      "templateGroup": "Plantillas"
+    },
+    "instanceMeta": {
+      "industry": "Industria",
+      "type": "Tipo",
+      "monthlyTraffic": "Tráfico mensual",
+      "averageOrderValue": "Valor de orden promedio",
+      "averageCartSkus": "SKUs promedio por carrito",
+      "stages": "Etapas",
+      "transitions": "Transiciones",
+      "datasetValues": "Valores en dataset"
+    },
+    "instanceTypes": {
+      "template": "Plantilla",
+      "customer": "Cliente",
+      "scenario": "Escenario"
+    },
     "tabs": {
       "diagram": "Diagrama",
       "dataStructure": "Estructura de datos",

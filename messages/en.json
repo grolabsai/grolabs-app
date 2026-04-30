@@ -10,6 +10,27 @@
     "title": "Conversion funnel",
     "subtitle": "Stages, transitions, and benchmark datasets.",
     "placeholder": "Coming soon",
+    "noInstance": "No instance available.",
+    "instanceSelector": {
+      "placeholder": "Select instance",
+      "ownGroup": "Your instances",
+      "templateGroup": "Templates"
+    },
+    "instanceMeta": {
+      "industry": "Industry",
+      "type": "Type",
+      "monthlyTraffic": "Monthly traffic",
+      "averageOrderValue": "Average order value",
+      "averageCartSkus": "Average cart SKUs",
+      "stages": "Stages",
+      "transitions": "Transitions",
+      "datasetValues": "Dataset values"
+    },
+    "instanceTypes": {
+      "template": "Template",
+      "customer": "Customer",
+      "scenario": "Scenario"
+    },
     "tabs": {
       "diagram": "Diagram",
       "dataStructure": "Data structure",

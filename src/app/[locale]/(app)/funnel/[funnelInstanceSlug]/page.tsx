@@ -8,6 +8,7 @@ import { FunnelTabs } from "@/components/funnel/FunnelTabs";
 import { InstanceSelector } from "@/components/funnel/InstanceSelector";
 import { DiagramTab } from "@/components/funnel/DiagramTab";
 import { DataStructureTab } from "@/components/funnel/DataStructureTab";
+import { MaintenanceTab } from "@/components/funnel/MaintenanceTab";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +90,13 @@ export default async function FunnelInstancePage({
             frictionFindings={frictionFindings}
           />
         }
-        maintenance={<TabPlaceholder label={t("placeholder")} />}
+        maintenance={
+          <MaintenanceTab
+            flow={flow}
+            stages={stages}
+            transitions={transitions}
+          />
+        }
       />
     </div>
   );

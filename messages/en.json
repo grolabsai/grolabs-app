@@ -102,6 +102,66 @@
       "conversion": "Conversion",
       "total": "Total",
       "noDataset": "No active dataset"
+    },
+    "maintenance": {
+      "title": "Flow maintenance",
+      "description": "Edit the shared flow definitions. Changes affect every instance using this flow.",
+      "flowWarnings": {
+        "title": "Flow validation",
+        "healthy": "Flow is complete. All required stages are present and every transition references valid endpoints.",
+        "missingStage": "Missing required stage \"{slug}\".",
+        "transitionSourceMissing": "Transition \"{slug}\" has a missing source.",
+        "transitionTargetMissing": "Transition \"{slug}\" has a missing target."
+      },
+      "stages": {
+        "title": "Stages",
+        "add": "Add stage",
+        "editTitle": "Edit stage",
+        "newTitle": "New stage",
+        "fields": {
+          "slug": "Slug",
+          "label": "Label",
+          "stageOrder": "Order",
+          "color": "Color (hex)",
+          "positionX": "Position X",
+          "positionY": "Position Y",
+          "iconKey": "Icon (lucide PascalCase)",
+          "isTerminal": "Terminal",
+          "isDropoff": "Is dropoff"
+        }
+      },
+      "transitions": {
+        "title": "Transitions",
+        "add": "Add transition",
+        "editTitle": "Edit transition",
+        "newTitle": "New transition",
+        "deleteWarning": "Deleting the transition will also remove its values from every dataset (cascade).",
+        "fields": {
+          "source": "Source stage",
+          "target": "Target stage",
+          "slug": "Slug",
+          "transitionType": "Type",
+          "isActive": "Active"
+        },
+        "types": {
+          "forward": "Forward",
+          "dropoff": "Dropoff",
+          "backward": "Backward"
+        }
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleting": "Deleting…",
+        "confirmDelete": "Delete this record? This action cannot be undone."
+      },
+      "toasts": {
+        "saved": "Saved",
+        "deleted": "Deleted",
+        "error": "Could not complete the operation"
+      }
     }
   },
   "settings": {

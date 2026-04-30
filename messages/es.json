@@ -102,6 +102,66 @@
       "conversion": "Conversión",
       "total": "Total",
       "noDataset": "Sin dataset activo"
+    },
+    "maintenance": {
+      "title": "Mantenimiento del flujo",
+      "description": "Edita las definiciones compartidas del flujo. Los cambios afectan a todas las instancias que usan este flujo.",
+      "flowWarnings": {
+        "title": "Validación del flujo",
+        "healthy": "El flujo está completo. Todas las etapas requeridas están presentes y todas las transiciones tienen extremos válidos.",
+        "missingStage": "Falta la etapa requerida \"{slug}\".",
+        "transitionSourceMissing": "La transición \"{slug}\" tiene un origen inexistente.",
+        "transitionTargetMissing": "La transición \"{slug}\" tiene un destino inexistente."
+      },
+      "stages": {
+        "title": "Etapas",
+        "add": "Agregar etapa",
+        "editTitle": "Editar etapa",
+        "newTitle": "Nueva etapa",
+        "fields": {
+          "slug": "Slug",
+          "label": "Etiqueta",
+          "stageOrder": "Orden",
+          "color": "Color (hex)",
+          "positionX": "Posición X",
+          "positionY": "Posición Y",
+          "iconKey": "Icono (PascalCase de lucide)",
+          "isTerminal": "Terminal",
+          "isDropoff": "Es abandono"
+        }
+      },
+      "transitions": {
+        "title": "Transiciones",
+        "add": "Agregar transición",
+        "editTitle": "Editar transición",
+        "newTitle": "Nueva transición",
+        "deleteWarning": "Eliminar la transición también eliminará sus valores en todos los datasets (cascade).",
+        "fields": {
+          "source": "Etapa de origen",
+          "target": "Etapa de destino",
+          "slug": "Slug",
+          "transitionType": "Tipo",
+          "isActive": "Activa"
+        },
+        "types": {
+          "forward": "Avance",
+          "dropoff": "Abandono",
+          "backward": "Retroceso"
+        }
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "deleting": "Eliminando…",
+        "confirmDelete": "¿Eliminar este registro? Esta acción no se puede deshacer."
+      },
+      "toasts": {
+        "saved": "Guardado",
+        "deleted": "Eliminado",
+        "error": "No se pudo completar la operación"
+      }
     }
   },
   "settings": {

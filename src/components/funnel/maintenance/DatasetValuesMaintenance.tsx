@@ -156,7 +156,7 @@ export function DatasetValuesMaintenance({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Transition
+                  {t("columns.transition")}
                 </TableHead>
                 <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                   {t("fields.conversionPct")}
@@ -165,7 +165,7 @@ export function DatasetValuesMaintenance({
                   {t("fields.sourceType")}
                 </TableHead>
                 <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Source Σ
+                  {t("columns.sourceSum")}
                 </TableHead>
               </TableRow>
             </TableHeader>

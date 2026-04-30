@@ -118,6 +118,11 @@
         "add": "Agregar etapa",
         "editTitle": "Editar etapa",
         "newTitle": "Nueva etapa",
+        "columns": {
+          "icon": "Icono",
+          "positionX": "X",
+          "positionY": "Y"
+        },
         "fields": {
           "slug": "Slug",
           "label": "Etiqueta",
@@ -155,6 +160,10 @@
         "editTitle": "Editar valor",
         "outOfTolerance": "Suma {total}% — fuera de tolerancia [99.5, 100.5]",
         "inTolerance": "Suma {total}% — OK",
+        "columns": {
+          "transition": "Transición",
+          "sourceSum": "Σ origen"
+        },
         "fields": {
           "conversionPct": "% conversión",
           "sourceType": "Tipo de fuente",

@@ -418,3 +418,13 @@ Every settings and management screen is designed to accommodate a future natural
 **`.githooks/pre-push`** (enforced via `core.hooksPath = .githooks`) hard-blocks direct pushes to `main` at the git layer, independent of Claude Code settings.
 
 To extend the allow/deny lists, edit `.claude/settings.json`. Machine-local overrides (MCP tool approvals, personal preferences) go in `.claude/settings.local.json` — that file is gitignored and never committed.
+
+---
+
+## 17. Known schema debt
+
+Items here are intentional shortcuts that need follow-up before broader rollout. Update this list as debt is added or paid down.
+
+- **Funnel per-tenant write policies** — currently use `tenant_write_all` (any authenticated `instance_member` can INSERT/UPDATE/DELETE on their instance's funnel data). Tighten to role-gated policies when `instance_member.role` gating is wired up across Scout. Affected tables: `funnel_instance`, `funnel_dataset`, `funnel_dataset_transition_value`, `funnel_benchmark_source`, `funnel_friction_finding`.
+
+- **Funnel shared-table writes via service-role** — mutations to `funnel_flow`, `funnel_stage`, `funnel_transition`, `funnel_friction_point` go through the service-role client (RLS allows only `service_role`). There is no app-level admin gate yet — any authenticated user calling a shared-write server action will succeed. Add an admin/owner role check in those actions when role taxonomy lands. Affected actions live in `src/lib/actions/funnel.ts` and reference this section in their TODO comments.

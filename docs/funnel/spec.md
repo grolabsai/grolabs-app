@@ -1,5 +1,7 @@
 # Funnel Flow Map — Production Spec for Next.js
 
+> **Note:** the SQL schema block below is historical and predates the Scout-conventions reconciliation. The live schema is at `supabase/migrations/20260430000001_funnel_schema.sql`. See PR #25 for the reconciliation log. The spec's product rules (visual language, highlight rules, formulas, validation rules) remain canonical. The seeded counts are **17 stages, 44 transitions, 132 dataset values** (44 transitions × 3 templates).
+
 ## Purpose
 
 This document defines the production implementation for the Funnel Flow Map application.

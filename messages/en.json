@@ -118,6 +118,11 @@
         "add": "Add stage",
         "editTitle": "Edit stage",
         "newTitle": "New stage",
+        "columns": {
+          "icon": "Icon",
+          "positionX": "X",
+          "positionY": "Y"
+        },
         "fields": {
           "slug": "Slug",
           "label": "Label",
@@ -155,6 +160,10 @@
         "editTitle": "Edit value",
         "outOfTolerance": "Sum {total}% — outside tolerance [99.5, 100.5]",
         "inTolerance": "Sum {total}% — OK",
+        "columns": {
+          "transition": "Transition",
+          "sourceSum": "Source Σ"
+        },
         "fields": {
           "conversionPct": "Conversion %",
           "sourceType": "Source type",

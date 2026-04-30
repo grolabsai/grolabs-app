@@ -131,13 +131,13 @@ export function StageMaintenance({ funnelFlowId, stages }: Props) {
                   {tDS("stageLabel")}
                 </TableHead>
                 <TableHead className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Icon
+                  {t("columns.icon")}
                 </TableHead>
                 <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  X
+                  {t("columns.positionX")}
                 </TableHead>
                 <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Y
+                  {t("columns.positionY")}
                 </TableHead>
               </TableRow>
             </TableHeader>

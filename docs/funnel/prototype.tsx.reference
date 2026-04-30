@@ -1,0 +1,1037 @@
+import React, { useMemo, useState, useCallback } from "react";
+import {
+  ReactFlow,
+  Controls,
+  MiniMap,
+  Handle,
+  Position,
+  BaseEdge,
+  EdgeLabelRenderer,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+const nodeWidth = 190;
+const nodeHeight = 92;
+const totalTrafficDefault = 10000;
+
+const iconText = {
+  traffic: "T",
+  organic: "S",
+  social: "M",
+  paid: "$",
+  direct: "D",
+  email: "E",
+  aeo: "AI",
+  home: "H",
+  cat: "C",
+  search: "S",
+  plp_cat: "PC",
+  plp_search: "PS",
+  pdp: "D",
+  cart: "C",
+  checkout: "$",
+  purchase: "✓",
+  drop: "↓",
+};
+
+function NodeIcon({ id, className = "h-4 w-4" }) {
+  return (
+    <span
+      className={`${className} inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[9px] font-black text-slate-500`}
+    >
+      {iconText[id] || "!"}
+    </span>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600">
+      !
+    </span>
+  );
+}
+
+const flow = {
+  id: "flow_ecommerce_standard",
+  name: "Standard E-commerce Funnel",
+  stages: [
+    { id: "traffic", label: "Traffic", color: "#2563eb", position: { x: 0, y: 330 } },
+    { id: "organic", label: "Organic Search", color: "#f97316", position: { x: 290, y: 0 } },
+    { id: "social", label: "Paid Social", color: "#22c55e", position: { x: 290, y: 118 } },
+    { id: "paid", label: "Paid Search", color: "#ef4444", position: { x: 290, y: 236 } },
+    { id: "direct", label: "Direct", color: "#8b5cf6", position: { x: 290, y: 354 } },
+    { id: "email", label: "Email", color: "#92400e", position: { x: 290, y: 472 } },
+    { id: "aeo", label: "AEO (AI)", color: "#ec4899", position: { x: 290, y: 590 } },
+    { id: "home", label: "Homepage", color: "#64748b", position: { x: 600, y: 170 } },
+    { id: "cat", label: "Category Nav", color: "#84cc16", position: { x: 900, y: 60 } },
+    { id: "search", label: "Site Search", color: "#06b6d4", position: { x: 900, y: 245 } },
+    { id: "plp_cat", label: "PLP Cat Nav", color: "#fb923c", position: { x: 1210, y: 140 } },
+    { id: "plp_search", label: "PLP Search", color: "#f59e0b", position: { x: 1210, y: 320 } },
+    { id: "pdp", label: "PDP", color: "#86efac", position: { x: 1510, y: 215 } },
+    { id: "cart", label: "Cart", color: "#fca5a5", position: { x: 1810, y: 235 } },
+    { id: "checkout", label: "Checkout", color: "#c4b5fd", position: { x: 2110, y: 255 } },
+    { id: "purchase", label: "Purchase", color: "#16a34a", position: { x: 2410, y: 275 } },
+    { id: "drop", label: "Drop-off", color: "#dc2626", position: { x: 2410, y: 735 } },
+  ],
+  transitions: [
+    ["traffic", "organic"], ["traffic", "social"], ["traffic", "paid"], ["traffic", "direct"], ["traffic", "email"], ["traffic", "aeo"],
+    ["organic", "home"], ["organic", "pdp"], ["organic", "drop"],
+    ["paid", "home"], ["paid", "pdp"], ["paid", "drop"],
+    ["social", "home"], ["social", "pdp"], ["social", "drop"],
+    ["direct", "home"], ["direct", "pdp"], ["direct", "drop"],
+    ["email", "pdp"], ["email", "home"], ["email", "drop"],
+    ["aeo", "home"], ["aeo", "drop"],
+    ["home", "cat"], ["home", "search"], ["home", "drop"],
+    ["cat", "plp_cat"], ["cat", "drop"],
+    ["search", "plp_search"], ["search", "pdp"], ["search", "drop"],
+    ["plp_cat", "pdp"], ["plp_cat", "cart"], ["plp_cat", "drop"],
+    ["plp_search", "pdp"], ["plp_search", "cart"], ["plp_search", "search"], ["plp_search", "drop"],
+    ["pdp", "cart"], ["pdp", "drop"],
+    ["cart", "checkout"], ["cart", "drop"],
+    ["checkout", "purchase"], ["checkout", "drop"],
+  ].map(([source, target]) => ({ id: `${source}__${target}`, source, target })),
+};
+
+const stages = flow.stages;
+const transitions = flow.transitions;
+
+const instances = [
+  {
+    id: "template_jewelry",
+    name: "Jewelry Benchmark Template",
+    type: "template",
+    industry: "Jewelry",
+    monthlyTraffic: 10000,
+    averageOrderValue: 180,
+    averageCartSkus: 1.6,
+    dataset: {
+      id: "dataset_jewelry_benchmark_v1",
+      name: "Jewelry benchmark dataset",
+      values: {
+        traffic__organic: 30, traffic__social: 25, traffic__paid: 25, traffic__direct: 10, traffic__email: 7, traffic__aeo: 3,
+        organic__home: 65, organic__pdp: 25, organic__drop: 10,
+        paid__home: 50, paid__pdp: 30, paid__drop: 20,
+        social__home: 58, social__pdp: 12, social__drop: 30,
+        direct__home: 65, direct__pdp: 15, direct__drop: 20,
+        email__pdp: 55, email__home: 25, email__drop: 20,
+        aeo__home: 70, aeo__drop: 30,
+        home__cat: 50, home__search: 30, home__drop: 20,
+        cat__plp_cat: 70, cat__drop: 30,
+        search__plp_search: 22, search__pdp: 12, search__drop: 66,
+        plp_cat__pdp: 58, plp_cat__cart: 12, plp_cat__drop: 30,
+        plp_search__pdp: 52, plp_search__cart: 8, plp_search__search: 10, plp_search__drop: 30,
+        pdp__cart: 28, pdp__drop: 72,
+        cart__checkout: 50, cart__drop: 50,
+        checkout__purchase: 60, checkout__drop: 40,
+      },
+    },
+  },
+  {
+    id: "template_clothing",
+    name: "Clothing Benchmark Template",
+    type: "template",
+    industry: "Clothing",
+    monthlyTraffic: 10000,
+    averageOrderValue: 100,
+    averageCartSkus: 2.3,
+    dataset: {
+      id: "dataset_clothing_benchmark_v1",
+      name: "Clothing benchmark dataset",
+      values: {
+        traffic__organic: 35, traffic__social: 25, traffic__paid: 20, traffic__direct: 10, traffic__email: 7, traffic__aeo: 3,
+        organic__home: 70, organic__pdp: 20, organic__drop: 10,
+        paid__home: 60, paid__pdp: 20, paid__drop: 20,
+        social__home: 60, social__pdp: 10, social__drop: 30,
+        direct__home: 70, direct__pdp: 10, direct__drop: 20,
+        email__pdp: 50, email__home: 30, email__drop: 20,
+        aeo__home: 70, aeo__drop: 30,
+        home__cat: 55, home__search: 25, home__drop: 20,
+        cat__plp_cat: 75, cat__drop: 25,
+        search__plp_search: 20, search__pdp: 10, search__drop: 70,
+        plp_cat__pdp: 65, plp_cat__cart: 17, plp_cat__drop: 18,
+        plp_search__pdp: 58, plp_search__cart: 10, plp_search__search: 7, plp_search__drop: 25,
+        pdp__cart: 40, pdp__drop: 60,
+        cart__checkout: 55, cart__drop: 45,
+        checkout__purchase: 65, checkout__drop: 35,
+      },
+    },
+  },
+  {
+    id: "template_electronics",
+    name: "Electronics Benchmark Template",
+    type: "template",
+    industry: "Electronics",
+    monthlyTraffic: 10000,
+    averageOrderValue: 250,
+    averageCartSkus: 1.4,
+    dataset: {
+      id: "dataset_electronics_benchmark_v1",
+      name: "Electronics benchmark dataset",
+      values: {
+        traffic__organic: 32, traffic__social: 15, traffic__paid: 30, traffic__direct: 13, traffic__email: 7, traffic__aeo: 3,
+        organic__home: 55, organic__pdp: 35, organic__drop: 10,
+        paid__home: 45, paid__pdp: 40, paid__drop: 15,
+        social__home: 55, social__pdp: 15, social__drop: 30,
+        direct__home: 55, direct__pdp: 25, direct__drop: 20,
+        email__pdp: 60, email__home: 20, email__drop: 20,
+        aeo__home: 60, aeo__drop: 40,
+        home__cat: 45, home__search: 35, home__drop: 20,
+        cat__plp_cat: 72, cat__drop: 28,
+        search__plp_search: 28, search__pdp: 22, search__drop: 50,
+        plp_cat__pdp: 70, plp_cat__cart: 12, plp_cat__drop: 18,
+        plp_search__pdp: 60, plp_search__cart: 6, plp_search__search: 10, plp_search__drop: 24,
+        pdp__cart: 32, pdp__drop: 68,
+        cart__checkout: 60, cart__drop: 40,
+        checkout__purchase: 70, checkout__drop: 30,
+      },
+    },
+  },
+];
+
+const benchmarkSources = {
+  jewelry__search__plp_search: [
+    { title: "Internal jewelry search benchmark", url: "https://example.com/jewelry-search-benchmark" },
+    { title: "Luxury UX study", url: "https://example.com/luxury-search-ux" },
+  ],
+  clothing__pdp__cart: [{ title: "Fashion PDP benchmark", url: "https://example.com/fashion-pdp-cart" }],
+  electronics__pdp__cart: [{ title: "Electronics comparison benchmark", url: "https://example.com/electronics-pdp-cart" }],
+};
+
+const frictionPoints = [
+  { id: "fp_search_no_results", stageId: "search", name: "Search with no results", description: "A query returns zero products or no useful result clicks." },
+  { id: "fp_search_synonyms", stageId: "search", name: "Weak synonym handling", description: "Catalog terms and shopper language do not match." },
+  { id: "fp_forced_account", stageId: "checkout", name: "Forced account creation", description: "User must create an account before completing checkout." },
+  { id: "fp_unexpected_costs", stageId: "cart", name: "Unexpected costs", description: "Shipping, taxes, or fees appear late." },
+  { id: "fp_variant_friction", stageId: "pdp", name: "Variant selection friction", description: "Size/color/model selection creates uncertainty." },
+];
+
+const frictionFindings = [
+  { id: "ff_001", frictionPointId: "fp_search_no_results", instanceId: "template_clothing", severity: "High", evidence: "Algolia extraction found query 'cuckoo' returned zero results.", sourceSystem: "Algolia API", observedAt: "2026-04-29" },
+  { id: "ff_002", frictionPointId: "fp_search_synonyms", instanceId: "template_clothing", severity: "High", evidence: "Users searching 'sneakers' do not consistently reach 'tennis shoes' products.", sourceSystem: "Algolia API", observedAt: "2026-04-29" },
+  { id: "ff_003", frictionPointId: "fp_forced_account", instanceId: "template_electronics", severity: "Medium", evidence: "Checkout recording shows users abandoning when account creation is required.", sourceSystem: "Session Recording", observedAt: "2026-04-29" },
+  { id: "ff_004", frictionPointId: "fp_variant_friction", instanceId: "template_jewelry", severity: "Medium", evidence: "PDP users hesitate on ring size and metal selection before cart.", sourceSystem: "GA4 + UX Review", observedAt: "2026-04-29" },
+];
+
+function edgeId(edge) {
+  return `${edge.source}__${edge.target}`;
+}
+
+function getStage(id) {
+  return stages.find((stage) => stage.id === id);
+}
+
+function isDrop(edge) {
+  return edge.target === "drop";
+}
+
+function isForwardTransition(edge) {
+  if (isDrop(edge)) return false;
+  const s = getStage(edge.source);
+  const t = getStage(edge.target);
+  return Boolean(s && t && t.position.x > s.position.x);
+}
+
+function buildInstanceEdges(instance) {
+  return transitions
+    .map((transition) => {
+      const pctSource = instance.dataset.values[transition.id] ?? 0;
+      const sourceKey = `${instance.industry.toLowerCase()}__${transition.id}`;
+      return {
+        ...transition,
+        pctSource,
+        datasetId: instance.dataset.id,
+        sourceType: instance.type === "template" ? "Benchmark" : "Customer actual",
+        metric: instance.type === "template" ? `${instance.industry} template benchmark` : "Customer-measured transition",
+        benchmarkSources: benchmarkSources[sourceKey] || [],
+      };
+    })
+    .filter((edge) => edge.pctSource > 0);
+}
+
+function computeModel(edges) {
+  const reach = Object.fromEntries(stages.map((stage) => [stage.id, 0]));
+  reach.traffic = 100;
+  const computedEdges = edges.map((edge) => {
+    const pctTotal = (reach[edge.source] || 0) * (edge.pctSource / 100);
+    reach[edge.target] = (reach[edge.target] || 0) + pctTotal;
+    return { ...edge, pctTotal };
+  });
+  return { edges: computedEdges, reach };
+}
+
+function portTop(index, count) {
+  if (count <= 1) return "50%";
+  return `${22 + (index * 56) / (count - 1)}%`;
+}
+
+function buildPortMap(edges) {
+  const map = Object.fromEntries(stages.map((stage) => [stage.id, { incoming: [], outgoing: [], dropOutgoing: [] }]));
+  edges.forEach((edge) => {
+    const id = edgeId(edge);
+    map[edge.target]?.incoming.push({ ...edge, id });
+    if (edge.target === "drop") map[edge.source]?.dropOutgoing.push({ ...edge, id });
+    else map[edge.source]?.outgoing.push({ ...edge, id });
+  });
+  return map;
+}
+
+function FunnelNode({ data }) {
+  const incoming = data.ports.incoming;
+  const outgoing = data.ports.outgoing;
+  const dropOutgoing = data.ports.dropOutgoing;
+  const nodeIsDrop = data.id === "drop";
+
+  return (
+    <div
+      className={`relative rounded-2xl border bg-white shadow-lg transition-all ${
+        data.focused ? "scale-[1.03] border-slate-900" : data.connected ? "border-slate-400" : data.dimmed ? "opacity-25" : "border-slate-200"
+      }`}
+      style={{ width: nodeWidth, minHeight: nodeHeight }}
+    >
+      <div className="absolute left-0 top-0 h-full w-2 rounded-l-2xl" style={{ background: data.color }} />
+      {incoming.map((edge, i) => (
+        <Handle key={`in-${edge.id}`} id={`in-${edge.id}`} type="target" position={Position.Left} className="!h-2.5 !w-2.5 !bg-slate-400" style={{ top: portTop(i, incoming.length) }} />
+      ))}
+      {outgoing.map((edge, i) => (
+        <Handle key={`out-${edge.id}`} id={`out-${edge.id}`} type="source" position={Position.Right} className="!h-2.5 !w-2.5 !bg-slate-500" style={{ top: portTop(i, outgoing.length) }} />
+      ))}
+      {dropOutgoing.map((edge, i) => (
+        <Handle key={`drop-${edge.id}`} id={`drop-${edge.id}`} type="source" position={Position.Bottom} className="!h-3 !w-3 !bg-red-600" style={{ left: portTop(i, dropOutgoing.length) }} />
+      ))}
+      {nodeIsDrop && <Handle id="drop-target" type="target" position={Position.Left} className="!h-4 !w-4 !bg-red-600" />}
+      <div className="pl-5 pr-4 py-3">
+        <div className="flex items-center gap-1 truncate text-sm font-black text-slate-900">
+          <NodeIcon id={data.id} /> {data.label}
+        </div>
+        <div className="mt-1 text-xs font-bold text-slate-500">{data.pct.toFixed(1)}% of total</div>
+        <div className="mt-2 text-[11px] text-slate-400">{!nodeIsDrop ? `${outgoing.length + dropOutgoing.length} transitions out` : "loss collector"}</div>
+      </div>
+    </div>
+  );
+}
+
+function getBox(id) {
+  const stage = getStage(id);
+  if (!stage) return null;
+  return {
+    left: stage.position.x,
+    right: stage.position.x + nodeWidth,
+    top: stage.position.y,
+    bottom: stage.position.y + nodeHeight,
+  };
+}
+
+function segmentCrossesBox(x1, y1, x2, y2, box, padding = 22) {
+  const steps = 32;
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const x = x1 + (x2 - x1) * t;
+    const y = y1 + (y2 - y1) * t;
+    if (x >= box.left - padding && x <= box.right + padding && y >= box.top - padding && y <= box.bottom + padding) return true;
+  }
+  return false;
+}
+
+function routeCrossesStage(points, source, target) {
+  const boxes = stages
+    .filter((stage) => stage.id !== source && stage.id !== target && stage.id !== "drop")
+    .map((stage) => getBox(stage.id))
+    .filter(Boolean);
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (boxes.some((box) => segmentCrossesBox(a.x, a.y, b.x, b.y, box))) return true;
+  }
+  return false;
+}
+
+function pointsToPath(points) {
+  return points.map((p, index) => `${index === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+}
+
+function chooseLane(sourceX, sourceY, targetX, targetY, source, target) {
+  const candidates = [
+    Math.min(sourceY, targetY) - 150,
+    Math.max(sourceY, targetY) + 150,
+    40,
+    720,
+    Math.min(sourceY, targetY) - 240,
+    Math.max(sourceY, targetY) + 240,
+  ];
+
+  for (const raw of candidates) {
+    const laneY = Math.max(30, Math.min(780, raw));
+    const points = [
+      { x: sourceX, y: sourceY },
+      { x: sourceX + 60, y: sourceY },
+      { x: sourceX + 60, y: laneY },
+      { x: targetX - 60, y: laneY },
+      { x: targetX - 60, y: targetY },
+      { x: targetX, y: targetY },
+    ];
+    if (!routeCrossesStage(points, source, target)) return points;
+  }
+
+  const fallbackY = Math.max(30, Math.min(780, Math.max(sourceY, targetY) + 200));
+  return [
+    { x: sourceX, y: sourceY },
+    { x: sourceX + 60, y: sourceY },
+    { x: sourceX + 60, y: fallbackY },
+    { x: targetX - 60, y: fallbackY },
+    { x: targetX - 60, y: targetY },
+    { x: targetX, y: targetY },
+  ];
+}
+
+function SmartEdge({ id, sourceX, sourceY, targetX, targetY, style = {}, label, labelStyle, data }) {
+  const edge = data;
+  const source = edge?.source;
+  const target = edge?.target;
+  const drop = target === "drop";
+  const backward = edge ? !drop && !isForwardTransition(edge) : false;
+  let path;
+  let labelX = sourceX + 38;
+  let labelY = sourceY - 14;
+
+  if (drop) {
+    const laneY = 720;
+    path = pointsToPath([
+      { x: sourceX, y: sourceY },
+      { x: sourceX, y: laneY },
+      { x: targetX - 140, y: laneY },
+      { x: targetX, y: targetY },
+    ]);
+    labelY = sourceY + 22;
+  } else {
+    const straight = [
+      { x: sourceX, y: sourceY },
+      { x: targetX, y: targetY },
+    ];
+
+    if (backward || routeCrossesStage(straight, source, target)) {
+      path = pointsToPath(chooseLane(sourceX, sourceY, targetX, targetY, source, target));
+      labelY = sourceY - 18;
+    } else {
+      const midX = (sourceX + targetX) / 2;
+      path = `M ${sourceX} ${sourceY} C ${midX} ${sourceY}, ${midX} ${targetY}, ${targetX} ${targetY}`;
+    }
+  }
+
+  return (
+    <>
+      <BaseEdge id={id} path={path} style={style} />
+      {label ? (
+        <EdgeLabelRenderer>
+          <div
+            className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-black shadow-sm"
+            style={{
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: "none",
+            }}
+          >
+            <span style={labelStyle}>{label}</span>
+          </div>
+        </EdgeLabelRenderer>
+      ) : null}
+    </>
+  );
+}
+
+const nodeTypes = { funnelNode: FunnelNode };
+const edgeTypes = { smart: SmartEdge };
+
+function getForwardPurchasePathFrom(stageId, edges) {
+  const highlightedEdges = new Set();
+  const highlightedStages = new Set([stageId]);
+  const visited = new Set();
+
+  function walk(fromStage) {
+    if (visited.has(fromStage)) return;
+    visited.add(fromStage);
+    edges
+      .filter((edge) => edge.source === fromStage && isForwardTransition(edge))
+      .forEach((edge) => {
+        highlightedEdges.add(edgeId(edge));
+        highlightedStages.add(edge.source);
+        highlightedStages.add(edge.target);
+        if (edge.target !== "purchase") walk(edge.target);
+      });
+  }
+
+  walk(stageId);
+  return { highlightedEdges, highlightedStages };
+}
+
+function getHighlightSets(activeStageId, activeEdgeId, model) {
+  const highlightedEdges = new Set();
+  const highlightedStages = new Set();
+
+  if (activeEdgeId) {
+    const edge = model.edges.find((e) => edgeId(e) === activeEdgeId);
+    if (edge) {
+      highlightedEdges.add(edgeId(edge));
+      highlightedStages.add(edge.source);
+      highlightedStages.add(edge.target);
+    }
+    return { highlightedEdges, highlightedStages };
+  }
+
+  if (!activeStageId) return { highlightedEdges, highlightedStages };
+
+  highlightedStages.add(activeStageId);
+
+  model.edges
+    .filter((edge) => edge.target === activeStageId)
+    .forEach((edge) => {
+      highlightedEdges.add(edgeId(edge));
+      highlightedStages.add(edge.source);
+      highlightedStages.add(edge.target);
+    });
+
+  const outgoing = model.edges.filter((edge) => edge.source === activeStageId);
+  outgoing.forEach((edge) => {
+    highlightedEdges.add(edgeId(edge));
+    highlightedStages.add(edge.source);
+    highlightedStages.add(edge.target);
+  });
+
+  outgoing
+    .filter((edge) => isForwardTransition(edge))
+    .forEach((edge) => {
+      const downstream = getForwardPurchasePathFrom(edge.target, model.edges);
+      downstream.highlightedEdges.forEach((id) => highlightedEdges.add(id));
+      downstream.highlightedStages.forEach((id) => highlightedStages.add(id));
+    });
+
+  return { highlightedEdges, highlightedStages };
+}
+
+function buildNodes(activeStageId, activeEdgeId, model) {
+  const portMap = buildPortMap(model.edges);
+  const { highlightedStages } = getHighlightSets(activeStageId, activeEdgeId, model);
+  const hasHighlight = Boolean(activeStageId || activeEdgeId);
+
+  return stages.map((stage) => {
+    const highlighted = highlightedStages.has(stage.id);
+    return {
+      id: stage.id,
+      type: "funnelNode",
+      position: stage.position,
+      data: {
+        ...stage,
+        pct: model.reach[stage.id] || 0,
+        ports: portMap[stage.id],
+        focused: activeStageId === stage.id || highlighted,
+        connected: highlighted && activeStageId !== stage.id,
+        dimmed: hasHighlight && !highlighted,
+      },
+    };
+  });
+}
+
+function buildEdges(activeStageId, activeEdgeId, showLabels, model) {
+  const { highlightedEdges } = getHighlightSets(activeStageId, activeEdgeId, model);
+  const hasHighlight = Boolean(activeStageId || activeEdgeId);
+
+  return model.edges.map((edge) => {
+    const id = edgeId(edge);
+    const highlighted = highlightedEdges.has(id);
+    const drop = isDrop(edge);
+    const backward = !drop && !isForwardTransition(edge);
+
+    let stroke = "#d1d5db";
+    if (drop) stroke = "#dc2626";
+    else if (backward) stroke = "#9ca3af";
+    else stroke = "#16a34a";
+    if (activeEdgeId === id) stroke = drop ? "#dc2626" : "#0f172a";
+
+    return {
+      id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: drop ? `drop-${id}` : `out-${id}`,
+      targetHandle: drop ? "drop-target" : `in-${id}`,
+      type: "smart",
+      label: hasHighlight ? (highlighted ? `${edge.pctSource.toFixed(0)}%` : "") : showLabels ? `${edge.pctSource.toFixed(0)}%` : "",
+      data: { ...edge },
+      animated: highlighted,
+      style: {
+        stroke,
+        strokeWidth: !drop && highlighted ? 3.5 : 1.15,
+        opacity: hasHighlight ? (highlighted ? 0.96 : 0.18) : 0.28,
+      },
+      labelStyle: { fill: drop ? "#991b1b" : "#0f172a", fontWeight: 900 },
+    };
+  });
+}
+
+function revenueFromStage(stageId, model, monthlyTraffic, aov, averageCartSkus) {
+  const stageReach = model.reach[stageId] || 0;
+  const purchaseReach = model.reach.purchase || 0;
+  const convertsPct = stageId === "drop" ? 0 : stageId === "purchase" ? 100 : stageReach > 0 ? (purchaseReach / stageReach) * 100 : 0;
+  const lostPct = 100 - convertsPct;
+  const convertsQty = Math.round(monthlyTraffic * (convertsPct / 100));
+  const lostQty = Math.round(monthlyTraffic * (lostPct / 100));
+
+  return {
+    convertsPct,
+    lostPct,
+    convertsQty,
+    lostQty,
+    revenue: convertsQty * aov,
+    lostRevenue: lostQty * aov,
+    skuItemsPurchased: Math.round(convertsQty * averageCartSkus),
+    skuItemsLost: Math.round(lostQty * averageCartSkus),
+  };
+}
+
+function DataSourceBadge({ type }) {
+  const cls = type === "Benchmark" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700";
+  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${cls}`}>{type}</span>;
+}
+
+function DiagramInspector({
+  activeStageId,
+  instance,
+  model,
+  monthlyTraffic,
+  setMonthlyTraffic,
+  averageOrderValue,
+  setAverageOrderValue,
+  averageCartSkus,
+  setAverageCartSkus,
+}) {
+  const stage = getStage(activeStageId);
+
+  if (!stage) {
+    return (
+      <div className="grid h-full grid-cols-3 gap-4 p-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm font-black">Instance</div>
+            <p className="mt-2 text-sm text-slate-500">{instance.name}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm font-black">Dataset</div>
+            <p className="mt-2 text-sm text-slate-500">{instance.dataset.name}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm font-black">Final conversion</div>
+            <div className="mt-2 text-2xl font-black text-emerald-700">{(model.reach.purchase || 0).toFixed(2)}%</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const incoming = model.edges.filter((edge) => edge.target === activeStageId);
+  const outgoing = model.edges.filter((edge) => edge.source === activeStageId && edge.target !== "drop");
+  const losses = model.edges.filter((edge) => edge.source === activeStageId && edge.target === "drop");
+  const stats = revenueFromStage(activeStageId, model, monthlyTraffic, averageOrderValue, averageCartSkus);
+  const outputRows = [...outgoing, ...losses].map((edge) => ({
+    ...edge,
+    targetStage: getStage(edge.target),
+    qty: Math.round((edge.pctTotal / 100) * monthlyTraffic),
+    isDrop: edge.target === "drop",
+  }));
+  const relatedFrictionPoints = frictionPoints.filter((fp) => fp.stageId === activeStageId);
+  const relatedFindings = frictionFindings.filter((finding) => finding.instanceId === instance.id && relatedFrictionPoints.some((fp) => fp.id === finding.frictionPointId));
+
+  return (
+    <div className="grid h-full grid-cols-3 gap-4 overflow-auto p-4">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs font-black uppercase text-slate-500">Output from stage</div>
+              <div className="mt-1 flex items-center gap-1 text-lg font-black">
+                <NodeIcon id={stage.id} /> {stage.label}
+              </div>
+            </div>
+            <Badge variant={stage.id === "drop" ? "destructive" : "secondary"}>{(model.reach[stage.id] || 0).toFixed(1)}%</Badge>
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[10px] font-black uppercase text-slate-500">Monthly traffic</label>
+              <Input className="mt-1 h-8" type="number" value={monthlyTraffic} onChange={(e) => setMonthlyTraffic(Number(e.target.value) || 0)} />
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase text-slate-500">Average order value</label>
+              <Input className="mt-1 h-8" type="number" value={averageOrderValue} onChange={(e) => setAverageOrderValue(Number(e.target.value) || 0)} />
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase text-slate-500">Avg cart SKUs</label>
+              <Input className="mt-1 h-8" type="number" step="0.1" value={averageCartSkus} onChange={(e) => setAverageCartSkus(Number(e.target.value) || 0)} />
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-emerald-50 p-2">
+              <div className="text-[10px] font-black uppercase text-emerald-700">Converts onward</div>
+              <div className="text-sm font-black text-emerald-900">{stats.convertsPct.toFixed(1)}%</div>
+              <div className="text-xs text-emerald-900">{stats.convertsQty.toLocaleString()} users · ${stats.revenue.toLocaleString()}</div>
+              <div className="text-xs text-emerald-900">{stats.skuItemsPurchased.toLocaleString()} SKU items</div>
+            </div>
+            <div className="rounded-xl bg-red-50 p-2">
+              <div className="text-[10px] font-black uppercase text-red-700">Lost onward</div>
+              <div className="text-sm font-black text-red-900">{stats.lostPct.toFixed(1)}%</div>
+              <div className="text-xs text-red-900">{stats.lostQty.toLocaleString()} users · ${stats.lostRevenue.toLocaleString()}</div>
+              <div className="text-xs text-red-900">{stats.skuItemsLost.toLocaleString()} SKU items</div>
+            </div>
+          </div>
+
+          <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="px-3 py-2 text-left">Destination</th>
+                  <th className="px-3 py-2 text-right">%</th>
+                  <th className="px-3 py-2 text-right">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {outputRows.map((row) => (
+                  <tr key={edgeId(row)} className={row.isDrop ? "bg-red-50 text-red-800" : "border-t border-slate-100"}>
+                    <td className="px-3 py-2 font-bold">
+                      <NodeIcon id={row.targetStage.id} className="mr-1 inline-block h-3.5 w-3.5" />
+                      {row.targetStage.label}
+                    </td>
+                    <td className="px-3 py-2 text-right font-black">{row.pctSource.toFixed(0)}%</td>
+                    <td className="px-3 py-2 text-right">{row.qty.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-xs font-black uppercase text-blue-700">Incoming transitions</div>
+          <div className="mt-2 space-y-2 text-sm">
+            {incoming.length ? (
+              incoming.map((edge) => {
+                const sourceStage = getStage(edge.source);
+                const qty = Math.round((edge.pctTotal / 100) * monthlyTraffic);
+                return (
+                  <div key={edgeId(edge)} className="rounded-xl border p-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <NodeIcon id={sourceStage.id} className="mr-1 inline-block h-3.5 w-3.5" />
+                        {sourceStage.label} → <b>{edge.pctSource.toFixed(0)}%</b> · {qty.toLocaleString()}
+                      </div>
+                      <DataSourceBadge type={edge.sourceType} />
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">{edge.metric}</div>
+                    {edge.benchmarkSources?.length > 0 && <div className="mt-1 text-[11px] text-slate-500">Sources: {edge.benchmarkSources.length}</div>}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-slate-400">No incoming transitions</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-black uppercase text-slate-500">Friction findings</div>
+            <Badge variant="secondary">{relatedFindings.length} findings</Badge>
+          </div>
+          <div className="mt-3 space-y-2">
+            {relatedFrictionPoints.map((fp) => (
+              <div key={fp.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="flex gap-2">
+                  <AlertIcon />
+                  <div>
+                    <div className="text-sm font-black text-slate-900">{fp.name}</div>
+                    <p className="text-xs text-slate-600">{fp.description}</p>
+                    {relatedFindings
+                      .filter((f) => f.frictionPointId === fp.id)
+                      .map((finding) => (
+                        <div key={finding.id} className="mt-2 rounded-lg bg-white p-2 text-xs text-slate-700">
+                          <b>{finding.severity}:</b> {finding.evidence}
+                          <div className="text-slate-400">
+                            {finding.sourceSystem} · {finding.observedAt}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DataStructureTab({ instance, model }) {
+  const stageRows = stages.map((stage) => ({ ...stage, reach: model.reach[stage.id] || 0 }));
+  const frictionRows = frictionFindings.filter((f) => f.instanceId === instance.id);
+
+  return (
+    <div className="h-full overflow-auto p-4">
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="p-4"><div className="text-xs font-black uppercase text-slate-500">Instance</div><div className="mt-1 text-lg font-black">{instance.name}</div><div className="text-sm text-slate-500">{instance.type} · {instance.industry}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs font-black uppercase text-slate-500">Flow</div><div className="mt-1 text-lg font-black">{flow.name}</div><div className="text-sm text-slate-500">{stages.length} stages · {transitions.length} transitions</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs font-black uppercase text-slate-500">Dataset</div><div className="mt-1 text-lg font-black">{instance.dataset.name}</div><div className="text-sm text-slate-500">Transition values vary by dataset</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs font-black uppercase text-slate-500">Friction model</div><div className="mt-1 text-lg font-black">{frictionPoints.length} points</div><div className="text-sm text-slate-500">{frictionRows.length} findings for this instance</div></CardContent></Card>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm font-black">Stages</div>
+            <div className="mt-3 overflow-hidden rounded-xl border">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr><th className="px-3 py-2 text-left">Stage ID</th><th className="px-3 py-2 text-left">Name</th><th className="px-3 py-2 text-right">Reach %</th></tr>
+                </thead>
+                <tbody>
+                  {stageRows.map((row) => (
+                    <tr key={row.id} className="border-t">
+                      <td className="px-3 py-2 font-mono text-xs">{row.id}</td>
+                      <td className="px-3 py-2">{row.label}</td>
+                      <td className="px-3 py-2 text-right font-black">{row.reach.toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm font-black">Transitions + Dataset Values</div>
+            <div className="mt-3 overflow-hidden rounded-xl border">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr><th className="px-3 py-2 text-left">Transition</th><th className="px-3 py-2 text-right">Conv %</th><th className="px-3 py-2 text-right">Total %</th><th className="px-3 py-2 text-right">Sources</th></tr>
+                </thead>
+                <tbody>
+                  {model.edges.map((edge) => (
+                    <tr key={edgeId(edge)} className="border-t">
+                      <td className="px-3 py-2 font-mono text-xs">{edge.source} → {edge.target}</td>
+                      <td className="px-3 py-2 text-right font-black">{edge.pctSource.toFixed(0)}%</td>
+                      <td className="px-3 py-2 text-right">{edge.pctTotal.toFixed(2)}%</td>
+                      <td className="px-3 py-2 text-right">{edge.benchmarkSources?.length || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value }) {
+  return (
+    <div>
+      <label className="text-[10px] font-black uppercase text-slate-500">{label}</label>
+      <Input className="mt-1 h-8" value={value || ""} readOnly />
+    </div>
+  );
+}
+
+function ConfigTable({ title, rows, columns }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-sm font-black">{title}</div>
+          <Button size="sm" variant="outline">+ Add</Button>
+        </div>
+        <div className="overflow-hidden rounded-xl border">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>{columns.map((c) => <th key={c.key} className="px-3 py-2 text-left">{c.label}</th>)}</tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => (
+                <tr key={row.id || idx} className="border-t">
+                  {columns.map((c) => <td key={c.key} className="px-3 py-2 font-mono text-xs">{String(row[c.key] ?? "")}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MaintenanceTab({ instance }) {
+  const stageRows = stages.map((s) => ({ id: s.id, label: s.label, color: s.color, x: s.position.x, y: s.position.y }));
+  const transitionRows = transitions.map((t) => ({ id: t.id, source: t.source, target: t.target }));
+  const datasetRows = Object.entries(instance.dataset.values).map(([transitionId, conversion]) => ({ transitionId, conversion }));
+  const sourceRows = Object.entries(benchmarkSources).flatMap(([key, sources]) => sources.map((s, i) => ({ id: `${key}_${i}`, transitionSourceKey: key, title: s.title, url: s.url })));
+
+  return (
+    <div className="h-full overflow-auto p-4">
+      <div className="mb-4 grid grid-cols-3 gap-4">
+        <Card className="col-span-2">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div><div className="text-xs font-black uppercase text-slate-500">Example: Add transition</div><div className="text-lg font-black">AEO → PDP</div></div>
+              <Badge variant="secondary">Mock form</Badge>
+            </div>
+            <div className="mt-4 grid grid-cols-4 gap-3">
+              <Field label="Transition ID" value="aeo__pdp" />
+              <Field label="Source stage" value="aeo" />
+              <Field label="Target stage" value="pdp" />
+              <Field label="Default conversion %" value="15" />
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              <Field label="Dataset" value={instance.dataset.id} />
+              <Field label="Source type" value={instance.type === "template" ? "Benchmark" : "Customer actual"} />
+              <Field label="Status" value="Draft / unsaved" />
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button>Add transition to flow</Button>
+              <Button variant="outline">Add conversion to dataset</Button>
+              <Button variant="outline">Attach benchmark source</Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card><CardContent className="p-4"><div className="text-sm font-black">Entity maintenance</div><p className="mt-2 text-sm text-slate-500">Mock admin configuration for the graph and the values feeding it.</p></CardContent></Card>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <ConfigTable title="Stages maintenance" rows={stageRows} columns={[{ key: "id", label: "ID" }, { key: "label", label: "Label" }, { key: "color", label: "Color" }, { key: "x", label: "X" }, { key: "y", label: "Y" }]} />
+        <ConfigTable title="Transitions maintenance" rows={transitionRows} columns={[{ key: "id", label: "ID" }, { key: "source", label: "Source" }, { key: "target", label: "Target" }]} />
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <ConfigTable title="Dataset transition values" rows={datasetRows} columns={[{ key: "transitionId", label: "Transition ID" }, { key: "conversion", label: "Conv %" }]} />
+        <ConfigTable title="Benchmark source links" rows={sourceRows} columns={[{ key: "transitionSourceKey", label: "Industry + transition" }, { key: "title", label: "Title" }, { key: "url", label: "URL" }]} />
+      </div>
+    </div>
+  );
+}
+
+export default function FunnelReactFlowWhatIf() {
+  const [activeStageId, setActiveStageId] = useState(null);
+  const [activeEdgeId, setActiveEdgeId] = useState(null);
+  const [showLabels, setShowLabels] = useState(false);
+  const [selectedInstanceId, setSelectedInstanceId] = useState("template_clothing");
+  const [activeTab, setActiveTab] = useState("diagram");
+
+  const selectedInstance = instances.find((instance) => instance.id === selectedInstanceId) || instances[0];
+  const [monthlyTraffic, setMonthlyTraffic] = useState(selectedInstance.monthlyTraffic || totalTrafficDefault);
+  const [averageOrderValue, setAverageOrderValue] = useState(selectedInstance.averageOrderValue || 100);
+  const [averageCartSkus, setAverageCartSkus] = useState(selectedInstance.averageCartSkus || 2);
+
+  const model = useMemo(() => computeModel(buildInstanceEdges(selectedInstance)), [selectedInstance]);
+  const nodes = useMemo(() => buildNodes(activeStageId, activeEdgeId, model), [activeStageId, activeEdgeId, model]);
+  const edges = useMemo(() => buildEdges(activeStageId, activeEdgeId, showLabels, model), [activeStageId, activeEdgeId, showLabels, model]);
+
+  const selectNode = useCallback((_, node) => {
+    setActiveEdgeId(null);
+    setActiveStageId(node.id);
+  }, []);
+
+  function handleInstanceChange(id) {
+    const next = instances.find((instance) => instance.id === id);
+    setSelectedInstanceId(id);
+    if (next) {
+      setMonthlyTraffic(next.monthlyTraffic);
+      setAverageOrderValue(next.averageOrderValue);
+      setAverageCartSkus(next.averageCartSkus || 2);
+    }
+    setActiveStageId(null);
+    setActiveEdgeId(null);
+  }
+
+  return (
+    <div className="flex h-screen w-full flex-col bg-gradient-to-br from-blue-50 via-slate-50 to-white">
+      <div className="flex items-center justify-between gap-4 px-6 py-3">
+        <div>
+          <h1 className="text-xl font-black tracking-tight">Funnel Flow Map</h1>
+          <p className="text-sm text-slate-500">
+            Stages + transitions stay fixed by flow. Instance datasets change traffic, AOV, average cart SKUs, and transition conversion values.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            className="h-10 rounded-xl border bg-white px-3 text-sm font-bold shadow-sm"
+            value={selectedInstanceId}
+            onChange={(e) => handleInstanceChange(e.target.value)}
+          >
+            {instances.map((instance) => (
+              <option key={instance.id} value={instance.id}>
+                {instance.industry} · {instance.type}
+              </option>
+            ))}
+          </select>
+          <Button variant={activeTab === "diagram" ? "default" : "outline"} onClick={() => setActiveTab("diagram")}>Diagram</Button>
+          <Button variant={activeTab === "data" ? "default" : "outline"} onClick={() => setActiveTab("data")}>Data structure</Button>
+          <Button variant={activeTab === "maintenance" ? "default" : "outline"} onClick={() => setActiveTab("maintenance")}>Maintenance</Button>
+          <Button variant={showLabels ? "default" : "outline"} onClick={() => setShowLabels((v) => !v)}>{showLabels ? "Hide labels" : "Show labels"}</Button>
+          <Button variant="outline" onClick={() => { setActiveStageId(null); setActiveEdgeId(null); }}>Clear</Button>
+        </div>
+      </div>
+
+      {activeTab === "diagram" ? (
+        <>
+          <div className="mx-4 h-[72%] overflow-hidden rounded-3xl border bg-white shadow-2xl">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              fitView
+              onNodeMouseEnter={selectNode}
+              onNodeClick={selectNode}
+              onPaneClick={() => { setActiveStageId(null); setActiveEdgeId(null); }}
+              onEdgeMouseEnter={(_, edge) => setActiveEdgeId(edge.id)}
+              onEdgeMouseLeave={() => setActiveEdgeId(null)}
+              nodesDraggable
+              nodesConnectable={false}
+            >
+              <Controls />
+              <MiniMap />
+            </ReactFlow>
+          </div>
+          <div className="h-[28%] border-t bg-white">
+            <DiagramInspector
+              activeStageId={activeStageId}
+              instance={selectedInstance}
+              model={model}
+              monthlyTraffic={monthlyTraffic}
+              setMonthlyTraffic={setMonthlyTraffic}
+              averageOrderValue={averageOrderValue}
+              setAverageOrderValue={setAverageOrderValue}
+              averageCartSkus={averageCartSkus}
+              setAverageCartSkus={setAverageCartSkus}
+            />
+          </div>
+        </>
+      ) : activeTab === "data" ? (
+        <div className="mx-4 mb-4 min-h-0 flex-1 overflow-hidden rounded-3xl border bg-white shadow-2xl">
+          <DataStructureTab instance={selectedInstance} model={model} />
+        </div>
+      ) : (
+        <div className="mx-4 mb-4 min-h-0 flex-1 overflow-hidden rounded-3xl border bg-white shadow-2xl">
+          <MaintenanceTab instance={selectedInstance} />
+        </div>
+      )}
+    </div>
+  );
+}

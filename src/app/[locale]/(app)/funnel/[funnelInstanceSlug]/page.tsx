@@ -32,7 +32,15 @@ export default async function FunnelInstancePage({
   ]);
 
   if (!data) notFound();
-  const { instance, stages, transitions, values } = data;
+  const {
+    instance,
+    dataset,
+    stages,
+    transitions,
+    values,
+    frictionPoints,
+    frictionFindings,
+  } = data;
 
   return (
     <div className="s-content">
@@ -58,9 +66,13 @@ export default async function FunnelInstancePage({
       <FunnelTabs
         diagram={
           <DiagramTab
+            instance={instance}
+            dataset={dataset}
             stages={stages}
             transitions={transitions}
             values={values}
+            frictionPoints={frictionPoints}
+            frictionFindings={frictionFindings}
           />
         }
         dataStructure={<TabPlaceholder label={t("placeholder")} />}

@@ -45,6 +45,44 @@
       "percentOfTotal": "{pct}% del total",
       "outputs": "{count, plural, one {# salida} other {# salidas}}",
       "lossCollector": "Colector de pérdidas"
+    },
+    "inputs": {
+      "monthlyTraffic": "Tráfico mensual",
+      "averageOrderValue": "Valor de orden promedio",
+      "averageCartSkus": "SKUs promedio por carrito"
+    },
+    "inspector": {
+      "outputFromStage": "Salida desde la etapa",
+      "incomingTransitions": "Transiciones entrantes",
+      "frictionFindings": "Hallazgos de fricción",
+      "convertsOnward": "Convierte hacia adelante",
+      "lostOnward": "Pérdida hacia adelante",
+      "destination": "Destino",
+      "percentage": "%",
+      "quantity": "Cant.",
+      "users": "{count, plural, one {# usuario} other {# usuarios}}",
+      "skuItems": "{count, plural, one {# SKU} other {# SKUs}}",
+      "sources": "Fuentes: {count}",
+      "noIncoming": "Sin transiciones entrantes",
+      "noFindings": "Sin hallazgos para esta etapa",
+      "findingsCount": "{count, plural, one {# hallazgo} other {# hallazgos}}",
+      "summaryInstance": "Instancia",
+      "summaryDataset": "Dataset",
+      "summaryFinalConversion": "Conversión final",
+      "summarySelectStage": "Selecciona una etapa para ver detalles."
+    },
+    "badges": {
+      "benchmark": "Benchmark",
+      "customer_actual": "Datos del cliente",
+      "manual_estimate": "Estimación manual",
+      "api_extraction": "Extracción API",
+      "template": "Plantilla"
+    },
+    "severity": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "critical": "Crítica"
     }
   },
   "settings": {

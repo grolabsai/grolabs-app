@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ReactFlow,
   Controls,
@@ -14,18 +14,13 @@ import "@xyflow/react/dist/style.css";
 
 import { FunnelNode, type FunnelNodeType } from "./FunnelNode";
 import { SmartEdge, type SmartEdgeType } from "./SmartEdge";
-import { computeModel } from "@/lib/funnel/computeModel";
 import { buildPortMap, type StagePositions } from "@/lib/funnel/edgeRouting";
 import {
   getHighlightSets,
   isDrop,
   isForwardTransition,
 } from "@/lib/funnel/highlightRules";
-import type {
-  FunnelDatasetTransitionValue,
-  FunnelStage,
-  FunnelTransition,
-} from "@/lib/funnel/types";
+import type { ComputedModel, FunnelStage } from "@/lib/funnel/types";
 
 // Edge stroke colors from spec §"Visual language".
 const COLOR_FORWARD = "#16a34a";
@@ -45,24 +40,27 @@ const edgeTypes = { smart: SmartEdge };
 
 type Props = {
   stages: FunnelStage[];
-  transitions: FunnelTransition[];
-  values: FunnelDatasetTransitionValue[];
-  showLabels?: boolean;
+  model: ComputedModel;
+  activeStageSlug: string | null;
+  activeEdgeSlug: string | null;
+  onActiveStageChange: (slug: string | null) => void;
+  onActiveEdgeChange: (slug: string | null) => void;
+  showLabels: boolean;
 };
 
 /**
- * The diagram canvas. Owns the active-stage / active-edge highlight state.
- * Pure render — does not persist any state to the DB.
+ * Controlled diagram canvas — the parent owns highlight state so the
+ * inspector can read the same activeStageSlug and react to it.
  */
 export function FunnelCanvas({
   stages,
-  transitions,
-  values,
-  showLabels = false,
+  model,
+  activeStageSlug,
+  activeEdgeSlug,
+  onActiveStageChange,
+  onActiveEdgeChange,
+  showLabels,
 }: Props) {
-  const [activeStageSlug, setActiveStageSlug] = useState<string | null>(null);
-  const [activeEdgeSlug, setActiveEdgeSlug] = useState<string | null>(null);
-
   const stagePositions = useMemo<StagePositions>(() => {
     const map: StagePositions = {};
     for (const s of stages) {
@@ -72,11 +70,6 @@ export function FunnelCanvas({
   }, [stages]);
 
   const stageSlugs = useMemo(() => stages.map((s) => s.slug), [stages]);
-
-  const model = useMemo(
-    () => computeModel({ stages, transitions, values }),
-    [stages, transitions, values],
-  );
 
   const portMap = useMemo(
     () => buildPortMap(model.edges, stageSlugs),
@@ -182,28 +175,37 @@ export function FunnelCanvas({
     showLabels,
   ]);
 
-  const onNodeMouseEnter = useCallback<NodeMouseHandler<Node>>((_e, node) => {
-    setActiveEdgeSlug(null);
-    setActiveStageSlug(node.id);
-  }, []);
+  const onNodeMouseEnter = useCallback<NodeMouseHandler<Node>>(
+    (_e, node) => {
+      onActiveEdgeChange(null);
+      onActiveStageChange(node.id);
+    },
+    [onActiveEdgeChange, onActiveStageChange],
+  );
 
-  const onNodeClick = useCallback<NodeMouseHandler<Node>>((_e, node) => {
-    setActiveEdgeSlug(null);
-    setActiveStageSlug(node.id);
-  }, []);
+  const onNodeClick = useCallback<NodeMouseHandler<Node>>(
+    (_e, node) => {
+      onActiveEdgeChange(null);
+      onActiveStageChange(node.id);
+    },
+    [onActiveEdgeChange, onActiveStageChange],
+  );
 
   const onPaneClick = useCallback(() => {
-    setActiveStageSlug(null);
-    setActiveEdgeSlug(null);
-  }, []);
+    onActiveStageChange(null);
+    onActiveEdgeChange(null);
+  }, [onActiveStageChange, onActiveEdgeChange]);
 
-  const onEdgeMouseEnter = useCallback<EdgeMouseHandler<Edge>>((_e, edge) => {
-    setActiveEdgeSlug(edge.id);
-  }, []);
+  const onEdgeMouseEnter = useCallback<EdgeMouseHandler<Edge>>(
+    (_e, edge) => {
+      onActiveEdgeChange(edge.id);
+    },
+    [onActiveEdgeChange],
+  );
 
   const onEdgeMouseLeave = useCallback(() => {
-    setActiveEdgeSlug(null);
-  }, []);
+    onActiveEdgeChange(null);
+  }, [onActiveEdgeChange]);
 
   return (
     <ReactFlow

@@ -45,6 +45,44 @@
       "percentOfTotal": "{pct}% of total",
       "outputs": "{count, plural, one {# output} other {# outputs}}",
       "lossCollector": "Loss collector"
+    },
+    "inputs": {
+      "monthlyTraffic": "Monthly traffic",
+      "averageOrderValue": "Average order value",
+      "averageCartSkus": "Average cart SKUs"
+    },
+    "inspector": {
+      "outputFromStage": "Output from stage",
+      "incomingTransitions": "Incoming transitions",
+      "frictionFindings": "Friction findings",
+      "convertsOnward": "Converts onward",
+      "lostOnward": "Lost onward",
+      "destination": "Destination",
+      "percentage": "%",
+      "quantity": "Qty",
+      "users": "{count, plural, one {# user} other {# users}}",
+      "skuItems": "{count, plural, one {# SKU} other {# SKUs}}",
+      "sources": "Sources: {count}",
+      "noIncoming": "No incoming transitions",
+      "noFindings": "No findings for this stage",
+      "findingsCount": "{count, plural, one {# finding} other {# findings}}",
+      "summaryInstance": "Instance",
+      "summaryDataset": "Dataset",
+      "summaryFinalConversion": "Final conversion",
+      "summarySelectStage": "Select a stage to see details."
+    },
+    "badges": {
+      "benchmark": "Benchmark",
+      "customer_actual": "Customer actual",
+      "manual_estimate": "Manual estimate",
+      "api_extraction": "API extraction",
+      "template": "Template"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
     }
   },
   "settings": {

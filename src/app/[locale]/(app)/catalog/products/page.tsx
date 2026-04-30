@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/routing";
 import { createClient } from "@/lib/supabase/server";
 import { formatGTQ, formatRelative, initialsFromName } from "@/lib/format";
+import { NewProductDrawer } from "@/components/catalog/product-edit/NewProductDrawer";
 
 /**
  * Products list screen. Mirror of Bloom's `screen-products` visually,
@@ -163,24 +164,7 @@ export default async function ProductsPage({
           <button className="s-btn s-btn-ghost" type="button">
             Importar
           </button>
-          <button
-            className="s-btn s-btn-primary"
-            type="button"
-            title="Crear producto — próximamente"
-            disabled
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M7 2v10M2 7h10" />
-            </svg>
-            Nuevo producto
-          </button>
+          <NewProductDrawer />
         </div>
       </div>
 

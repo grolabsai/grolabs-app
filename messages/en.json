@@ -1,9 +1,230 @@
 {
   "nav": {
     "conversion": "Conversion",
+    "funnel": "Funnel",
     "catalog": "Catalog",
     "configuration": "Configuration",
     "dashboard": "Dashboard"
+  },
+  "funnel": {
+    "title": "Conversion funnel",
+    "subtitle": "Stages, transitions, and benchmark datasets.",
+    "placeholder": "Coming soon",
+    "noInstance": "No instance available.",
+    "instanceSelector": {
+      "placeholder": "Select instance",
+      "ownGroup": "Your instances",
+      "templateGroup": "Templates"
+    },
+    "instanceMeta": {
+      "industry": "Industry",
+      "type": "Type",
+      "monthlyTraffic": "Monthly traffic",
+      "averageOrderValue": "Average order value",
+      "averageCartSkus": "Average cart SKUs",
+      "stages": "Stages",
+      "transitions": "Transitions",
+      "datasetValues": "Dataset values"
+    },
+    "instanceTypes": {
+      "template": "Template",
+      "customer": "Customer",
+      "scenario": "Scenario"
+    },
+    "tabs": {
+      "diagram": "Diagram",
+      "dataStructure": "Data structure",
+      "maintenance": "Maintenance"
+    },
+    "controls": {
+      "showLabels": "Show labels",
+      "hideLabels": "Hide labels",
+      "clear": "Clear"
+    },
+    "node": {
+      "percentOfTotal": "{pct}% of total",
+      "outputs": "{count, plural, one {# output} other {# outputs}}",
+      "lossCollector": "Loss collector"
+    },
+    "inputs": {
+      "monthlyTraffic": "Monthly traffic",
+      "averageOrderValue": "Average order value",
+      "averageCartSkus": "Average cart SKUs"
+    },
+    "inspector": {
+      "outputFromStage": "Output from stage",
+      "incomingTransitions": "Incoming transitions",
+      "frictionFindings": "Friction findings",
+      "convertsOnward": "Converts onward",
+      "lostOnward": "Lost onward",
+      "destination": "Destination",
+      "percentage": "%",
+      "quantity": "Qty",
+      "users": "{count, plural, one {# user} other {# users}}",
+      "skuItems": "{count, plural, one {# SKU} other {# SKUs}}",
+      "sources": "Sources: {count}",
+      "noIncoming": "No incoming transitions",
+      "noFindings": "No findings for this stage",
+      "findingsCount": "{count, plural, one {# finding} other {# findings}}",
+      "summaryInstance": "Instance",
+      "summaryDataset": "Dataset",
+      "summaryFinalConversion": "Final conversion",
+      "summarySelectStage": "Select a stage to see details."
+    },
+    "badges": {
+      "benchmark": "Benchmark",
+      "customer_actual": "Customer actual",
+      "manual_estimate": "Manual estimate",
+      "api_extraction": "API extraction",
+      "template": "Template"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "dataStructure": {
+      "instance": "Instance",
+      "flow": "Flow",
+      "dataset": "Dataset",
+      "frictionModel": "Friction model",
+      "flowMeta": "{stages} stages · {transitions} transitions",
+      "datasetMeta": "{count} values",
+      "frictionMeta": "{points} points · {findings} findings on this instance",
+      "stages": "Stages",
+      "transitions": "Transitions and dataset values",
+      "stageId": "ID",
+      "stageLabel": "Label",
+      "stageReach": "Reach",
+      "transition": "Transition",
+      "transitionType": "Type",
+      "conversion": "Conversion",
+      "total": "Total",
+      "noDataset": "No active dataset"
+    },
+    "maintenance": {
+      "title": "Flow maintenance",
+      "description": "Edit the shared flow definitions. Changes affect every instance using this flow.",
+      "flowWarnings": {
+        "title": "Flow validation",
+        "healthy": "Flow is complete. All required stages are present and every transition references valid endpoints.",
+        "missingStage": "Missing required stage \"{slug}\".",
+        "transitionSourceMissing": "Transition \"{slug}\" has a missing source.",
+        "transitionTargetMissing": "Transition \"{slug}\" has a missing target."
+      },
+      "stages": {
+        "title": "Stages",
+        "add": "Add stage",
+        "editTitle": "Edit stage",
+        "newTitle": "New stage",
+        "columns": {
+          "icon": "Icon",
+          "positionX": "X",
+          "positionY": "Y"
+        },
+        "fields": {
+          "slug": "Slug",
+          "label": "Label",
+          "stageOrder": "Order",
+          "color": "Color (hex)",
+          "positionX": "Position X",
+          "positionY": "Position Y",
+          "iconKey": "Icon (lucide PascalCase)",
+          "isTerminal": "Terminal",
+          "isDropoff": "Is dropoff"
+        }
+      },
+      "transitions": {
+        "title": "Transitions",
+        "add": "Add transition",
+        "editTitle": "Edit transition",
+        "newTitle": "New transition",
+        "deleteWarning": "Deleting the transition will also remove its values from every dataset (cascade).",
+        "fields": {
+          "source": "Source stage",
+          "target": "Target stage",
+          "slug": "Slug",
+          "transitionType": "Type",
+          "isActive": "Active"
+        },
+        "types": {
+          "forward": "Forward",
+          "dropoff": "Dropoff",
+          "backward": "Backward"
+        }
+      },
+      "datasetValues": {
+        "title": "Dataset transition values",
+        "noDataset": "This instance has no active dataset.",
+        "editTitle": "Edit value",
+        "outOfTolerance": "Sum {total}% — outside tolerance [99.5, 100.5]",
+        "inTolerance": "Sum {total}% — OK",
+        "columns": {
+          "transition": "Transition",
+          "sourceSum": "Source Σ"
+        },
+        "fields": {
+          "conversionPct": "Conversion %",
+          "sourceType": "Source type",
+          "notes": "Notes"
+        }
+      },
+      "benchmarks": {
+        "title": "Benchmark sources",
+        "add": "Add source",
+        "editTitle": "Benchmark source",
+        "newTitle": "New source",
+        "noValues": "The dataset has no values yet. Create values before adding sources.",
+        "fields": {
+          "transition": "Transition",
+          "title": "Title",
+          "url": "URL",
+          "sourceName": "Source name",
+          "notes": "Notes",
+          "observedValue": "Observed value",
+          "confidenceScore": "Confidence (0–1)"
+        }
+      },
+      "frictionPoints": {
+        "title": "Friction points",
+        "platformManagedNote": "Friction-point definitions are managed at the platform level. Read-only here.",
+        "fields": {
+          "stage": "Stage",
+          "name": "Name",
+          "category": "Category",
+          "description": "Description"
+        }
+      },
+      "frictionFindings": {
+        "title": "Friction findings",
+        "add": "Add finding",
+        "editTitle": "Edit finding",
+        "newTitle": "New finding",
+        "templateReadOnly": "This instance is a template. Findings are read-only.",
+        "fields": {
+          "frictionPoint": "Friction point",
+          "severity": "Severity",
+          "evidence": "Evidence",
+          "sourceSystem": "Source system",
+          "observedAt": "Observed at (YYYY-MM-DD)",
+          "slug": "Slug (optional)"
+        }
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleting": "Deleting…",
+        "confirmDelete": "Delete this record? This action cannot be undone."
+      },
+      "toasts": {
+        "saved": "Saved",
+        "deleted": "Deleted",
+        "error": "Could not complete the operation"
+      }
+    }
   },
   "settings": {
     "algolia": {

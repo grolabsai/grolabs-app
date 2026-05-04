@@ -1,9 +1,230 @@
 {
   "nav": {
     "conversion": "Conversión",
+    "funnel": "Embudo",
     "catalog": "Catálogo",
     "configuration": "Configuración",
     "dashboard": "Dashboard"
+  },
+  "funnel": {
+    "title": "Embudo de conversión",
+    "subtitle": "Etapas, transiciones y datasets de benchmark.",
+    "placeholder": "Próximamente",
+    "noInstance": "No hay instancia disponible.",
+    "instanceSelector": {
+      "placeholder": "Seleccionar instancia",
+      "ownGroup": "Tus instancias",
+      "templateGroup": "Plantillas"
+    },
+    "instanceMeta": {
+      "industry": "Industria",
+      "type": "Tipo",
+      "monthlyTraffic": "Tráfico mensual",
+      "averageOrderValue": "Valor de orden promedio",
+      "averageCartSkus": "SKUs promedio por carrito",
+      "stages": "Etapas",
+      "transitions": "Transiciones",
+      "datasetValues": "Valores en dataset"
+    },
+    "instanceTypes": {
+      "template": "Plantilla",
+      "customer": "Cliente",
+      "scenario": "Escenario"
+    },
+    "tabs": {
+      "diagram": "Diagrama",
+      "dataStructure": "Estructura de datos",
+      "maintenance": "Mantenimiento"
+    },
+    "controls": {
+      "showLabels": "Mostrar etiquetas",
+      "hideLabels": "Ocultar etiquetas",
+      "clear": "Limpiar"
+    },
+    "node": {
+      "percentOfTotal": "{pct}% del total",
+      "outputs": "{count, plural, one {# salida} other {# salidas}}",
+      "lossCollector": "Colector de pérdidas"
+    },
+    "inputs": {
+      "monthlyTraffic": "Tráfico mensual",
+      "averageOrderValue": "Valor de orden promedio",
+      "averageCartSkus": "SKUs promedio por carrito"
+    },
+    "inspector": {
+      "outputFromStage": "Salida desde la etapa",
+      "incomingTransitions": "Transiciones entrantes",
+      "frictionFindings": "Hallazgos de fricción",
+      "convertsOnward": "Convierte hacia adelante",
+      "lostOnward": "Pérdida hacia adelante",
+      "destination": "Destino",
+      "percentage": "%",
+      "quantity": "Cant.",
+      "users": "{count, plural, one {# usuario} other {# usuarios}}",
+      "skuItems": "{count, plural, one {# SKU} other {# SKUs}}",
+      "sources": "Fuentes: {count}",
+      "noIncoming": "Sin transiciones entrantes",
+      "noFindings": "Sin hallazgos para esta etapa",
+      "findingsCount": "{count, plural, one {# hallazgo} other {# hallazgos}}",
+      "summaryInstance": "Instancia",
+      "summaryDataset": "Dataset",
+      "summaryFinalConversion": "Conversión final",
+      "summarySelectStage": "Selecciona una etapa para ver detalles."
+    },
+    "badges": {
+      "benchmark": "Benchmark",
+      "customer_actual": "Datos del cliente",
+      "manual_estimate": "Estimación manual",
+      "api_extraction": "Extracción API",
+      "template": "Plantilla"
+    },
+    "severity": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
+    "dataStructure": {
+      "instance": "Instancia",
+      "flow": "Flujo",
+      "dataset": "Dataset",
+      "frictionModel": "Modelo de fricción",
+      "flowMeta": "{stages} etapas · {transitions} transiciones",
+      "datasetMeta": "{count} valores",
+      "frictionMeta": "{points} puntos · {findings} hallazgos en esta instancia",
+      "stages": "Etapas",
+      "transitions": "Transiciones y valores del dataset",
+      "stageId": "ID",
+      "stageLabel": "Etiqueta",
+      "stageReach": "Alcance",
+      "transition": "Transición",
+      "transitionType": "Tipo",
+      "conversion": "Conversión",
+      "total": "Total",
+      "noDataset": "Sin dataset activo"
+    },
+    "maintenance": {
+      "title": "Mantenimiento del flujo",
+      "description": "Edita las definiciones compartidas del flujo. Los cambios afectan a todas las instancias que usan este flujo.",
+      "flowWarnings": {
+        "title": "Validación del flujo",
+        "healthy": "El flujo está completo. Todas las etapas requeridas están presentes y todas las transiciones tienen extremos válidos.",
+        "missingStage": "Falta la etapa requerida \"{slug}\".",
+        "transitionSourceMissing": "La transición \"{slug}\" tiene un origen inexistente.",
+        "transitionTargetMissing": "La transición \"{slug}\" tiene un destino inexistente."
+      },
+      "stages": {
+        "title": "Etapas",
+        "add": "Agregar etapa",
+        "editTitle": "Editar etapa",
+        "newTitle": "Nueva etapa",
+        "columns": {
+          "icon": "Icono",
+          "positionX": "X",
+          "positionY": "Y"
+        },
+        "fields": {
+          "slug": "Slug",
+          "label": "Etiqueta",
+          "stageOrder": "Orden",
+          "color": "Color (hex)",
+          "positionX": "Posición X",
+          "positionY": "Posición Y",
+          "iconKey": "Icono (PascalCase de lucide)",
+          "isTerminal": "Terminal",
+          "isDropoff": "Es abandono"
+        }
+      },
+      "transitions": {
+        "title": "Transiciones",
+        "add": "Agregar transición",
+        "editTitle": "Editar transición",
+        "newTitle": "Nueva transición",
+        "deleteWarning": "Eliminar la transición también eliminará sus valores en todos los datasets (cascade).",
+        "fields": {
+          "source": "Etapa de origen",
+          "target": "Etapa de destino",
+          "slug": "Slug",
+          "transitionType": "Tipo",
+          "isActive": "Activa"
+        },
+        "types": {
+          "forward": "Avance",
+          "dropoff": "Abandono",
+          "backward": "Retroceso"
+        }
+      },
+      "datasetValues": {
+        "title": "Valores de transición del dataset",
+        "noDataset": "Esta instancia no tiene un dataset activo.",
+        "editTitle": "Editar valor",
+        "outOfTolerance": "Suma {total}% — fuera de tolerancia [99.5, 100.5]",
+        "inTolerance": "Suma {total}% — OK",
+        "columns": {
+          "transition": "Transición",
+          "sourceSum": "Σ origen"
+        },
+        "fields": {
+          "conversionPct": "% conversión",
+          "sourceType": "Tipo de fuente",
+          "notes": "Notas"
+        }
+      },
+      "benchmarks": {
+        "title": "Fuentes de benchmark",
+        "add": "Agregar fuente",
+        "editTitle": "Fuente de benchmark",
+        "newTitle": "Nueva fuente",
+        "noValues": "El dataset no tiene valores aún. Crea valores antes de agregar fuentes.",
+        "fields": {
+          "transition": "Transición",
+          "title": "Título",
+          "url": "URL",
+          "sourceName": "Nombre de la fuente",
+          "notes": "Notas",
+          "observedValue": "Valor observado",
+          "confidenceScore": "Confianza (0–1)"
+        }
+      },
+      "frictionPoints": {
+        "title": "Puntos de fricción",
+        "platformManagedNote": "Las definiciones de puntos de fricción se gestionan a nivel de plataforma. Sólo lectura aquí.",
+        "fields": {
+          "stage": "Etapa",
+          "name": "Nombre",
+          "category": "Categoría",
+          "description": "Descripción"
+        }
+      },
+      "frictionFindings": {
+        "title": "Hallazgos de fricción",
+        "add": "Agregar hallazgo",
+        "editTitle": "Editar hallazgo",
+        "newTitle": "Nuevo hallazgo",
+        "templateReadOnly": "Esta instancia es una plantilla. Los hallazgos son sólo lectura.",
+        "fields": {
+          "frictionPoint": "Punto de fricción",
+          "severity": "Severidad",
+          "evidence": "Evidencia",
+          "sourceSystem": "Sistema fuente",
+          "observedAt": "Observado en (YYYY-MM-DD)",
+          "slug": "Slug (opcional)"
+        }
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "deleting": "Eliminando…",
+        "confirmDelete": "¿Eliminar este registro? Esta acción no se puede deshacer."
+      },
+      "toasts": {
+        "saved": "Guardado",
+        "deleted": "Eliminado",
+        "error": "No se pudo completar la operación"
+      }
+    }
   },
   "settings": {
     "algolia": {

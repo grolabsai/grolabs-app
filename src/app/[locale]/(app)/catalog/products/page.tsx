@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/routing";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { formatGTQ, formatRelative, initialsFromName } from "@/lib/format";
-import { NewProductDrawer } from "@/components/catalog/product-edit/NewProductDrawer";
 
 /**
  * Products list screen. Mirror of Bloom's `screen-products` visually,
@@ -54,6 +54,7 @@ export default async function ProductsPage({
 }) {
   const sp = await searchParams;
   const active: FilterKey = (sp.filter as FilterKey) || "all";
+  const t = await getTranslations("product.list");
 
   const supabase = await createClient();
 
@@ -164,7 +165,13 @@ export default async function ProductsPage({
           <button className="s-btn s-btn-ghost" type="button">
             Importar
           </button>
-          <NewProductDrawer />
+          <Link
+            href={"/catalog/products/new"}
+            className="s-btn s-btn-primary"
+            style={{ textDecoration: "none" }}
+          >
+            + {t("newProduct")}
+          </Link>
         </div>
       </div>
 

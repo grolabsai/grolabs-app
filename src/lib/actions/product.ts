@@ -132,6 +132,205 @@ export async function updateProductField(input: {
   return { ok: true as const };
 }
 
+export type CreateProductFullAttributeValue = {
+  attributeId: number;
+  // Exactly one of these is non-null per row, matching how
+  // product_attribute_value already stores list/text-typed values.
+  // Quantity descriptive attributes aren't supported here yet — that
+  // belongs to the variant editor where unit_of_measure is in scope.
+  valueId?: number | null;
+  valueText?: string | null;
+};
+
+export type CreateProductFullPhoto = {
+  url: string;
+  isPrimary: boolean;
+};
+
+export type CreateProductFullVariantAxis = {
+  attributeId: number;
+  valueId?: number | null;
+  valueText?: string | null;
+  valueNumber?: number | null;
+  unitId?: number | null;
+};
+
+export type CreateProductFullVariant = {
+  name: string | null;
+  sku: string | null;
+  barcode: string | null;
+  weightGrams: number | null;
+  listPrice: number | null;
+  costPrice: number | null;
+  isActive: boolean;
+  axes: CreateProductFullVariantAxis[];
+};
+
+export type CreateProductFullInput = {
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  longDescription: string | null;
+  productTypeId: number;
+  brandId: number | null;
+  categoryIds: number[];
+  isActive: boolean;
+  trackInventory: boolean;
+  isConsignment: boolean;
+  variants: CreateProductFullVariant[];
+  attributeValues: CreateProductFullAttributeValue[];
+  photos: CreateProductFullPhoto[];
+};
+
+export async function createProductFull(input: CreateProductFullInput) {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { error: "No instance" };
+
+  const name = input.name.trim();
+  if (!name) return { error: "Name is required" };
+  const slug = (input.slug || "").trim() || slugify(name) || `producto-${Date.now()}`;
+  if (!Number.isFinite(input.productTypeId)) return { error: "Product type is required" };
+
+  const supabase = await createClient();
+
+  const { data: product, error: productError } = await supabase
+    .from("product")
+    .insert({
+      instance_id: instanceId,
+      product_name: name,
+      slug,
+      short_description: input.shortDescription?.trim() || null,
+      long_description: input.longDescription?.trim() || null,
+      product_type_id: input.productTypeId,
+      brand_id: input.brandId ?? null,
+      is_active: input.isActive,
+      track_inventory: input.trackInventory,
+      is_consignment: input.isConsignment,
+    })
+    .select("product_id")
+    .single();
+
+  if (productError) return { error: productError.message };
+  const productId = product.product_id as number;
+
+  // Best-effort cleanup helper: if any child insert fails we delete the
+  // product row and propagate the error. The Supabase JS client doesn't
+  // expose transactions; an RPC would be the next step if we ever need
+  // strict atomicity. For now: cascading FKs do most of the cleanup.
+  const rollback = async (msg: string) => {
+    await supabase
+      .from("product")
+      .delete()
+      .eq("product_id", productId)
+      .eq("instance_id", instanceId);
+    return { error: msg };
+  };
+
+  if (input.categoryIds.length > 0) {
+    const linkRows = input.categoryIds.map((categoryId, idx) => ({
+      instance_id: instanceId,
+      product_id: productId,
+      category_id: categoryId,
+      is_primary: idx === 0,
+    }));
+    const { error: linkError } = await supabase
+      .from("product_category_link")
+      .insert(linkRows);
+    if (linkError) return rollback(linkError.message);
+  }
+
+  for (const v of input.variants) {
+    const { data: variant, error: variantError } = await supabase
+      .from("product_variant")
+      .insert({
+        instance_id: instanceId,
+        product_id: productId,
+        variant_name: v.name?.trim() || null,
+        sku: v.sku?.trim() || null,
+        barcode: v.barcode?.trim() || null,
+        weight_grams: v.weightGrams ?? null,
+        is_active: v.isActive,
+      })
+      .select("variant_id")
+      .single();
+    if (variantError) return rollback(variantError.message);
+    const variantId = variant.variant_id as number;
+
+    if (v.axes.length > 0) {
+      const axisRows = v.axes.map((a) => ({
+        instance_id: instanceId,
+        variant_id: variantId,
+        attribute_id: a.attributeId,
+        value_id: a.valueId ?? null,
+        value_text: a.valueText ?? null,
+        value_number: a.valueNumber ?? null,
+        unit_id: a.unitId ?? null,
+      }));
+      const { error: axisError } = await supabase
+        .from("product_variant_attribute")
+        .insert(axisRows);
+      if (axisError) return rollback(axisError.message);
+    }
+
+    if (v.listPrice !== null && Number.isFinite(v.listPrice) && v.listPrice >= 0) {
+      const { error: priceError } = await supabase
+        .from("product_pricing")
+        .insert({
+          instance_id: instanceId,
+          variant_id: variantId,
+          channel: "retail",
+          currency: "GTQ",
+          min_quantity: 1,
+          list_price: v.listPrice,
+          cost_price: v.costPrice ?? null,
+        });
+      if (priceError) return rollback(priceError.message);
+    }
+  }
+
+  // Descriptive attributes: one row per attribute via product_attribute_value
+  // (UNIQUE on instance_id, product_id, attribute_id). Anything missing
+  // both valueId and valueText is dropped — empty entries shouldn't
+  // trip the schema's NOT NULL on either of the value columns.
+  const attrRows = input.attributeValues
+    .filter((a) => a.valueId !== null && a.valueId !== undefined ? true : !!a.valueText?.trim())
+    .map((a) => ({
+      instance_id: instanceId,
+      product_id: productId,
+      attribute_id: a.attributeId,
+      value_id: a.valueId ?? null,
+      value_text: a.valueText?.trim() || null,
+    }));
+  if (attrRows.length > 0) {
+    const { error: attrError } = await supabase
+      .from("product_attribute_value")
+      .insert(attrRows);
+    if (attrError) return rollback(attrError.message);
+  }
+
+  // Photos go into product_media (FK product_id; variant_id null for a
+  // product-level image). sort_order preserves the user's drag order;
+  // is_primary is enforced single-true at the form level.
+  const photoRows = input.photos
+    .filter((p) => p.url.trim().length > 0)
+    .map((p, idx) => ({
+      instance_id: instanceId,
+      product_id: productId,
+      image_url: p.url.trim(),
+      is_primary: p.isPrimary,
+      sort_order: idx,
+    }));
+  if (photoRows.length > 0) {
+    const { error: photoError } = await supabase
+      .from("product_media")
+      .insert(photoRows);
+    if (photoError) return rollback(photoError.message);
+  }
+
+  revalidatePath("/catalog/products", "page");
+  return { ok: true as const, productId };
+}
+
 export async function deleteProduct(input: { productId: number }) {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "No instance" };

@@ -423,7 +423,15 @@ To extend the allow/deny lists, edit `.claude/settings.json`. Machine-local over
 
 ## 17. Known schema debt
 
-Items here are intentional shortcuts that need follow-up before broader rollout. Update this list as debt is added or paid down.
+Items here are intentional shortcuts or pre-rename artifacts that need follow-up. Update this list as debt is added or paid down.
+
+- **`instance.instance_id` sequence still named `tenant_tenant_id_seq`** — pre-rename artifact in the column default. Functional but misnamed. Fix via `ALTER SEQUENCE … RENAME TO instance_instance_id_seq` next time we touch the `instance` table for another reason.
+
+- **`instance.kind` is `text`, not an enum** — accepts `'customer'` and `'template'` by convention but with no DB-level enforcement. The funnel uses the `funnel_instance_type` enum for the same concept. Promote `instance.kind` to a real enum (`instance_kind`?) next time the `instance` table is migrated.
+
+- **Catalog vs funnel template visibility asymmetry** — funnel per-tenant tables use `tenant_read` with template fallthrough on SELECT (`instance_id = 0` is visible to all authenticated users). Catalog tables use the older `instance_isolation_*` pattern with no template fallthrough — `instance_id = 0` rows in `category`, `product_attribute`, etc. are reachable only via `service_role`. If catalog template-forking becomes a feature (starter category trees, starter attributes for new tenants on signup), port the funnel pattern (`tenant_read` with template fallthrough on SELECT) to the catalog tables. Tracked in `docs/state/in-flight.md` → "Open architectural decisions".
+
+- **Quantity attribute dimension filtering** — variant editor shows all units (mass, volume, count) in every quantity dropdown. No filtering by attribute dimension. To enable filtering: add a `dimension` column on `product_attribute` (`mass | volume | count`, nullable for non-quantity attributes — column already exists per migration `20260426000005_product_attribute_dimension.sql`, just unused by the editor), wire the variant editor to filter `unit_of_measure` rows by matching dimension. Cleanup of wrong-unit values entered before the migration is also required.
 
 - **Funnel per-tenant write policies** — currently use `tenant_write_all` (any authenticated `instance_member` can INSERT/UPDATE/DELETE on their instance's funnel data). Tighten to role-gated policies when `instance_member.role` gating is wired up across Scout. Affected tables: `funnel_instance`, `funnel_dataset`, `funnel_dataset_transition_value`, `funnel_benchmark_source`, `funnel_friction_finding`.
 

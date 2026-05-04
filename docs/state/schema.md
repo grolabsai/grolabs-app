@@ -1,6 +1,7 @@
 # Scout — Schema (current state)
 
-Generated 2026-04-30 against Supabase project `ixbbhwtpnebrhquunege`. One
+Generated 2026-04-30 (updated for `brand.manufacturer` move) against
+Supabase project `ixbbhwtpnebrhquunege`. One
 section per table, ordered by domain. Reflects the live database — read
 via `information_schema`, `pg_policies`, `pg_constraint`, `pg_indexes`,
 and `pg_trigger`. Where the DB and the migration files diverge, the DB
@@ -175,12 +176,13 @@ and a variant axis on another.
 ### `product`
 **Tenancy:** per-tenant. **RLS:** `instance_isolation_*`.
 **Columns:** `product_id` PK, `instance_id`, `product_name`, `slug`,
-`product_type_id` FK, `brand_id` FK (nullable),
-`short_description`, `long_description`, `manufacturer` (nullable text —
-free-form, not normalized; see modules.md "Manufacturer field" for the
-debt note), `is_consignment`, `track_inventory`, `is_active`, `image_url`
-(nullable, deprecated in favour of `product_media`), `wazudb1_id` (uuid,
-legacy migration ref), timestamps.
+`product_type_id` FK, `brand_id` FK (nullable), `short_description`,
+`long_description`, `is_consignment`, `track_inventory`, `is_active`,
+`image_url` (nullable, deprecated in favour of `product_media`),
+`wazudb1_id` (uuid, legacy migration ref), timestamps.
+**Note:** `manufacturer` was dropped in
+`20260430000005_brand_manufacturer.sql` and re-added on `brand` — see
+the `brand` section below.
 
 ### `product_translation`
 **Tenancy:** per-tenant. **Columns:** `id` PK, `instance_id`,
@@ -276,8 +278,11 @@ timestamps.
 
 ### `brand`
 **Tenancy:** per-tenant. **Columns:** `brand_id` PK, `instance_id`,
-`brand_name`, `wazudb1_id`, timestamps. Six columns total — no
-manufacturer link, no description, no logo.
+`brand_name`, `manufacturer` (nullable text, added in
+`20260430000005_brand_manufacturer.sql` — moved from `product` because
+manufacturers create brands, not individual products; the brand CRUD UI
+that exposes this field for editing is not in this PR), `wazudb1_id`,
+timestamps. Seven columns total — still no description, no logo.
 
 ### `commercial_tag`
 **Tenancy:** per-tenant. **Columns:** `tag_id` PK, `instance_id`,

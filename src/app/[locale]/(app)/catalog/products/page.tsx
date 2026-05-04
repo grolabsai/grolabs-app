@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/routing";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { formatGTQ, formatRelative, initialsFromName } from "@/lib/format";
 
@@ -53,6 +54,7 @@ export default async function ProductsPage({
 }) {
   const sp = await searchParams;
   const active: FilterKey = (sp.filter as FilterKey) || "all";
+  const t = await getTranslations("product.list");
 
   const supabase = await createClient();
 
@@ -163,24 +165,13 @@ export default async function ProductsPage({
           <button className="s-btn s-btn-ghost" type="button">
             Importar
           </button>
-          <button
+          <Link
+            href={"/catalog/products/new"}
             className="s-btn s-btn-primary"
-            type="button"
-            title="Crear producto — próximamente"
-            disabled
+            style={{ textDecoration: "none" }}
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M7 2v10M2 7h10" />
-            </svg>
-            Nuevo producto
-          </button>
+            + {t("newProduct")}
+          </Link>
         </div>
       </div>
 

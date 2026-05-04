@@ -92,20 +92,44 @@ since.
 
 ## Catalog → Products
 
-**State:** read-only (list + detail), variants rendered but not editable.
+**State:** full CRUD on products + variants (Pass 4a). Dynamic axis
+columns on the variant table are deferred to a follow-up.
 
 **Routes:**
-- `/catalog/products` — paginated list with filter chips
-  (all / active / inactive / consignment / service). Reads `product` joined
-  with `product_type`, `brand`, and `product_variant + product_pricing`.
-- `/catalog/products/[id]` — product detail. Two-column layout
-  (Información básica / Configuración / Atributos on the left;
-  gallery placeholder + summary card on the right). Variants table
-  spans the bottom.
+- `/catalog/products` — list with filter chips (all / active / inactive /
+  consignment / service) and a "+ Nuevo producto" button at the
+  top-right that opens a drawer.
+- `/catalog/products/[id]` — product detail with inline-edit on every
+  field (no edit-mode toggle).
 
-**Server actions:** none for products. Save/edit is not wired —
-`/catalog/products/[id]` displays a "Solo lectura" strip and every input
-is rendered with `disabled`. There is no `lib/actions/product*` file.
+**Server actions** (`src/lib/actions/product.ts` + `variant.ts`):
+- `createProduct({ name })` → `{ ok, productId }` — creates a row with
+  just the name; picks the first active `product_type` as default
+  (save-anything UI promise: only `name` is required from the user).
+- `updateProductField({ productId, field, value })` — single-field
+  update with allowlist (9 fields: `product_name`, `slug`,
+  `product_type_id`, `brand_id`, `short_description`,
+  `long_description`, `is_consignment`, `track_inventory`, `is_active`).
+- `deleteProduct({ productId })` — RLS-aware delete; FK cascade handles
+  variants.
+- `createVariant({ productId, axes?, variant_name?, variant_label?,
+  sku?, barcode?, weight_grams?, is_active? })` — inserts a row +
+  optional axis values into `product_variant_attribute`.
+- `updateVariantField({ variantId, field, value })` — allowlist (10
+  fields).
+- `updateVariantAxisValue({ variantId, attributeId, value_id?,
+  value_text?, value_number?, unit_id? })` — upsert against
+  `(instance_id, variant_id, attribute_id)`. Handles categorical and
+  quantity attributes.
+- `deleteVariant({ variantId })`
+- `upsertVariantPricing({ variantId, listPrice, costPrice?, channel?,
+  currency?, minQuantity? })` — upsert against
+  `(instance_id, variant_id, channel, min_quantity)`. Defaults retail
+  / GTQ / 1.
+
+All actions return `{ ok: true } | { error: string }` (or `{ ok, ...data }`
+for actions that return generated IDs). All use `createClient` (RLS-aware)
+and `currentInstanceId` with strict `=== null` guards.
 
 **Tables involved:**
 - Read: `product`, `product_translation`, `product_type`,
@@ -113,25 +137,49 @@ is rendered with `disabled`. There is no `lib/actions/product*` file.
   `product_variant_attribute`, `product_pricing`, `product_media`,
   `product_attribute_value`, `product_attribute`, `product_attribute_option`,
   `product_category_link`, `category`.
-- Write: none from this module on `main`. (PR #24 adds CRUD; not yet
-  merged.)
+- Write: `product` (insert / update / delete), `product_variant` (insert
+  / update / delete), `product_variant_attribute` (upsert),
+  `product_pricing` (upsert).
+
+**UI pattern** — inline edit:
+- Click a field → swap to input. Blur or Enter → save (Cmd+Enter for
+  textareas). Escape → cancel.
+- Optimistic UI via React 19's `useOptimistic`. On error: auto-revert +
+  sonner toast.
+- Page-level "Guardado hace Xs" indicator near the title row, driven by
+  `useSyncExternalStore` to keep render pure.
+- Delete: inline confirm pattern (no modals). Trash2 icon → row swaps to
+  Confirmar / Cancelar.
+- New variant: draft row at the bottom with editable inputs;
+  `createVariant` fires on first blur once any field has content;
+  Escape clears the draft.
+- New product: drawer (shadcn Sheet, right side) with a single name
+  field. On Crear → `createProduct` + navigate to the detail page.
 
 **Known gaps:**
-- Save buttons render but are `disabled title="Edición — próximamente"`.
-- "Nueva variante" button is `disabled`.
-- "Nueva categoría" / "Importar" buttons on the list are `disabled`.
-- No image upload — gallery is a static "Sin imagen principal" placeholder.
-- `product.manufacturer` is rendered as a disabled `<input>` next to the
-  brand picker but never editable from the UI; see Sub-section: Manufacturer
-  field below.
+- **Dynamic variant axis columns are not rendered yet.** Variant
+  attribute axes (categorical text, quantity composites) are not yet
+  wired into the variant table. The action surface
+  (`updateVariantAxisValue`) exists; the UI columns + cell editors are
+  the deferred "Pass 4b" follow-up.
+- "Nueva categoría" / "Importar" buttons on the list page are still
+  disabled (out of scope for this PR).
+- No image upload — gallery is still a static "Sin imagen principal"
+  placeholder. Image upload is its own future PR.
+- Atributos del producto card on the detail page is read-only — there's
+  no `updateProductAttributeValue` action yet.
+- Per-species overrides (`category_species`) are not editable from the
+  product detail (that lives on the categories detail page and is
+  read-only there too).
 
-**Last touched:** PR #11 (read-only screen). PR #24 (CRUD) is open.
+**Last touched:** PR following up on PR #26 — this branch's commits.
 
 ### Catalog → Products — variants + manufacturer detail
 
-This expanded section is the foundation for the next feature work
-(products + variants CRUD). PR #24 (open) builds on what's described
-here.
+This expanded section was the foundation for the products + variants
+CRUD work. The current state (post-Pass 5) supersedes the read-only
+descriptions in the original sub-sections; the live notes are in the
+"State / Server actions / Known gaps" sections above.
 
 #### Variants
 
@@ -206,47 +254,19 @@ products route folder.
 
 #### Manufacturer field
 
-**Where it renders.** As a disabled `<input>` on the product detail page
-at [page.tsx:321-330](src/app/[locale]/(app)/catalog/products/[id]/page.tsx#L321-L330),
-inside the "Configuración y proveedor" card, immediately below the brand
-field. It is not rendered on the products list, the categories detail,
-or any other route.
+**Resolved as of migration `20260430000005_brand_manufacturer.sql`** —
+the `product.manufacturer` column was dropped and a nullable
+`manufacturer text` column was added to `brand`. The product detail UI
+no longer renders the field; the brand CRUD UI that exposes it for
+editing is a future PR (brand-edit screen). Existing data was test/seed
+only and was not migrated.
 
-**Where it's edited.** Nowhere on `main`. There is no `updateManufacturer`
-action; no other route writes the column; no import flow populates it.
-The column is read-only by virtue of the entire detail page being
-read-only.
-
-**Existing `product_attribute` named "manufacturer"?** No. The seed
-migrations (`20260422*` initial schema + the catalog seeds) do not insert
-a row with `attribute_code = 'manufacturer'` on `product_attribute`. The
-column is structurally a free-form text column on `product`, not an
-attribute. Any migration that introduces an attribute-based manufacturer
-concept would need to either (a) keep the column for legacy compatibility
-and dual-write or (b) backfill from the column into a new attribute and
-drop the column.
-
-**`brand` has a manufacturer column?** No. The `brand` table has only
-six columns: `brand_id`, `instance_id`, `brand_name`, `wazudb1_id`,
-`created_at`, `updated_at`. There is no `brand.manufacturer`, no
-`brand.manufacturer_brand_id`, no link table connecting brand to
-manufacturer. If "manufacturer" is meant to be a separate normalised
-entity (i.e., one manufacturer can have many brands), neither the table
-nor the FK exists yet.
-
-**Implications for the upcoming PR.** If the goal is to normalise
-manufacturer:
-1. Decide whether manufacturer is its own table (separate from `brand`)
-   or a column on `brand`. The current free-text column on `product`
-   gives no signal either way.
-2. If introducing a new table or column, the migration is straightforward
-   (add the table or column, RLS policy, FK on `product`). Backfilling
-   from the existing free-text strings will require deduplication —
-   names like "ACME Inc." vs "ACME Inc" vs "Acme inc." need a normalise
-   step.
-3. The `product.manufacturer` column should stay during transition; the
-   editor can dual-write or read-prefer the new path. Drop only after
-   the backfill verifies coverage.
+The original investigation that led to the migration (kept here for
+reference): the column was a free-form text duplicated across every
+product of a given brand with inevitable spelling drift. There was no
+existing `product_attribute` row with `attribute_code = 'manufacturer'`,
+and the `brand` table didn't have a manufacturer column or link, so the
+move to `brand.manufacturer` was the cleanest normalisation.
 
 ---
 

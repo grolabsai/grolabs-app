@@ -235,6 +235,137 @@
       "toastFailed": "No se pudo guardar el sinónimo"
     }
   },
+  "product": {
+    "list": {
+      "newProduct": "Nuevo producto"
+    },
+    "create": {
+      "title": "Nuevo producto",
+      "subhead": "Marca, categoría, variantes y precios — todo en una pantalla.",
+      "nameLabel": "Nombre del producto",
+      "cancel": "Cancelar",
+      "save": "Guardar producto",
+      "submit": "Crear",
+      "success": "Producto creado",
+      "error": "No se pudo crear el producto",
+      "sections": {
+        "basic": "Información básica",
+        "descriptions": "Descripciones",
+        "variants": "Variantes",
+        "attributes": "Atributos del producto",
+        "photos": "Fotos del producto"
+      },
+      "variantsHelp": "Cree variantes usando ejes (peso, tamaño) o manualmente",
+      "modeAxis": "Generación por ejes",
+      "modeManual": "Entrada manual",
+      "manualEmpty": "Aún no hay variantes. Agregue una manualmente.",
+      "addVariant": "Agregar variante",
+      "placeholders": {
+        "brand": "Seleccionar marca…",
+        "categories": "Seleccionar categorías…",
+        "name": "Ej: Royal Canin Adult",
+        "slug": "royal-canin-adult",
+        "type": "Seleccionar tipo…",
+        "shortDescriptionEmpty": "Sin descripción corta",
+        "longDescriptionEmpty": "Sin descripción larga"
+      },
+      "errors": {
+        "nameRequired": "Requerido",
+        "slugRequired": "Requerido",
+        "typeRequired": "Requerido",
+        "required": "Requerido",
+        "summary": "Por favor complete los campos requeridos"
+      },
+      "attributes": {
+        "subhead": "Complete los atributos específicos para las categorías seleccionadas.",
+        "placeholder": "Ingrese {name}",
+        "selectPlaceholder": "Seleccionar…",
+        "yes": "Sí",
+        "no": "No"
+      },
+      "photos": {
+        "subhead": "Agregue URLs de fotos. Arrastre para reordenar. La primera foto es la principal por defecto.",
+        "urlPlaceholder": "https://ejemplo.com/imagen.jpg",
+        "addBtn": "Agregar",
+        "primaryBadge": "Principal",
+        "primaryAria": "Marcar como principal",
+        "removeAria": "Eliminar foto",
+        "emptyTitle": "Sin fotos",
+        "emptySub": "Agregue URLs de imágenes para este producto",
+        "errorLoading": "Error al cargar",
+        "techDebtLabel": "Nota técnica:",
+        "techDebtBody": "La carga de archivos directos está planificada para una fase futura. Por ahora, use URLs de imágenes alojadas."
+      },
+      "axes": {
+        "available": "Ejes disponibles",
+        "none": "No hay atributos definidos. Cree atributos primero.",
+        "allAdded": "Todos los ejes ya fueron agregados.",
+        "remove": "Quitar eje",
+        "removeValue": "Quitar valor",
+        "addQuantity": "Agregar cantidad",
+        "addValue": "Agregar valor",
+        "preview": "{count, plural, one {# variante} other {# variantes}}",
+        "more": "más"
+      },
+      "table": {
+        "variant": "Variante",
+        "sku": "SKU",
+        "barcode": "Código de barras",
+        "weight": "Peso (g)",
+        "price": "Precio (Q)",
+        "cost": "Costo (Q)",
+        "active": "Activo",
+        "delete": "Eliminar",
+        "variantPlaceholder": "Nombre de la variante"
+      },
+      "sidebar": {
+        "guideTitle": "Guía rápida",
+        "guide1": "Comienza con el nombre y selecciona el tipo de producto. La marca y las categorías ayudan a clasificar.",
+        "guide2": "Las variantes se generan combinando los valores de los ejes que elijas. También puedes agregarlas manualmente.",
+        "guide3": "Después de guardar, podrás editar imágenes, atributos detallados e inventario.",
+        "summaryTitle": "Resumen",
+        "summaryVariants": "Variantes",
+        "summaryActive": "Activas",
+        "summaryWithSku": "Con SKU",
+        "summaryWithPrice": "Con precio"
+      }
+    },
+    "detail": {
+      "savedJustNow": "Guardado",
+      "savedAgo": "Guardado hace {time}",
+      "saveError": "Error al guardar",
+      "empty": "— vacío —",
+      "delete": "Eliminar producto",
+      "deleteConfirm": "¿Eliminar este producto?",
+      "deleteConfirmYes": "Confirmar",
+      "deleteConfirmNo": "Cancelar",
+      "deleteSuccess": "Producto eliminado"
+    },
+    "fields": {
+      "name": "Nombre del producto",
+      "shortDescription": "Descripción corta",
+      "longDescription": "Descripción larga",
+      "slug": "Slug",
+      "type": "Tipo",
+      "brand": "Marca",
+      "category": "Categoría principal",
+      "active": "Producto activo",
+      "activeSub": "Visible en el catálogo",
+      "trackInventory": "Control de inventario",
+      "trackInventorySub": "Se lleva seguimiento de stock",
+      "consignment": "Consignación",
+      "consignmentSub": "El inventario pertenece al proveedor",
+      "noBrand": "Sin marca"
+    },
+    "variants": {
+      "add": "Agregar variante",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar variante?",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "deleteSuccess": "Variante eliminada"
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

@@ -66,7 +66,7 @@ export default async function NewProductPage() {
       .returns<BrandOption[]>(),
     supabase
       .from("category")
-      .select("category_id, category_name, slug, level")
+      .select("category_id, category_name, slug, level, parent_category_id")
       .eq("is_active", true)
       .order("category_name")
       .returns<CategoryOption[]>(),

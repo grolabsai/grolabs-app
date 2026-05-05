@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/routing";
 import { Icon } from "@/components/ui/icon";
-import { ChevronDown, Plus, Save, Trash2, X, Check, Minus, Star, ImageIcon } from "lucide-react";
+import { ChevronDown, Plus, Save, Trash2, Minus, Star, ImageIcon } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
+import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import {
   createProductFull,
   type CreateProductFullAttributeValue,
@@ -29,6 +31,7 @@ export type CategoryOption = {
   category_name: string;
   slug: string;
   level: number;
+  parent_category_id: number | null;
 };
 
 export type AttributeOptionRow = {
@@ -297,6 +300,7 @@ export function NewProductForm({
   const t = useTranslations("product.create");
   const tFields = useTranslations("product.fields");
   const tDetail = useTranslations("product.detail");
+  const tCommon = useTranslations("product.common");
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -624,7 +628,7 @@ export function NewProductForm({
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <FieldRow>
                 <FieldWrap label={tFields("brand")}>
-                  <SearchableCombobox
+                  <Combobox
                     placeholder={t("placeholders.brand")}
                     value={brandId}
                     onChange={setBrandId}
@@ -632,11 +636,18 @@ export function NewProductForm({
                   />
                 </FieldWrap>
                 <FieldWrap label={tFields("category")}>
-                  <MultiSelectCombobox
+                  <TreeMultiSelectCombobox
                     placeholder={t("placeholders.categories")}
                     value={categoryIds}
                     onChange={setCategoryIds}
-                    options={categories.map((c) => ({ id: c.category_id, label: c.category_name }))}
+                    nodes={categories.map((c) => ({
+                      id: c.category_id,
+                      label: c.category_name,
+                      parentId: c.parent_category_id,
+                    }))}
+                    searchPlaceholder={tCommon("search")}
+                    emptyText={t("placeholders.categoriesEmpty")}
+                    removeTagAriaLabel={tCommon("removeTag")}
                   />
                 </FieldWrap>
               </FieldRow>
@@ -663,7 +674,7 @@ export function NewProductForm({
 
               <FieldRow>
                 <FieldWrap label={tFields("type")} required error={errors.productType}>
-                  <SearchableCombobox
+                  <Combobox
                     placeholder={t("placeholders.type")}
                     value={productTypeId}
                     onChange={(v) => {
@@ -1007,328 +1018,6 @@ function ToggleField({
   );
 }
 
-// ─── Searchable single-select ───────────────────────────────────────────────
-
-type ComboOption = { id: number; label: string };
-
-function SearchableCombobox({
-  placeholder,
-  value,
-  onChange,
-  options,
-  invalid = false,
-}: {
-  placeholder: string;
-  value: number | null;
-  onChange: (v: number | null) => void;
-  options: ComboOption[];
-  invalid?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const wrap = useRef<HTMLDivElement>(null);
-
-  const selected = value === null ? null : options.find((o) => o.id === value) ?? null;
-
-  // Close on outside click — single source of truth instead of relying
-  // on input blur (which fights with click-on-option).
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (!wrap.current) return;
-      if (!wrap.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    }
-    if (open) document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
-
-  const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  return (
-    <div ref={wrap} style={{ position: "relative" }}>
-      <input
-        type="text"
-        readOnly={!open}
-        value={open ? query : selected?.label ?? ""}
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => {
-          setOpen(true);
-          setQuery("");
-        }}
-        placeholder={placeholder}
-        style={{
-          width: "100%",
-          height: 40,
-          padding: "10px 32px 10px 12px",
-          fontSize: 15,
-          fontWeight: 500,
-          border: `0.5px solid ${invalid ? "var(--s-danger)" : "var(--s-border)"}`,
-          borderRadius: "var(--s-radius-md)",
-          background: "white",
-          color: "var(--s-text)",
-          outline: "none",
-          cursor: "pointer",
-        }}
-      />
-      <span
-        style={{
-          position: "absolute",
-          right: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          color: "var(--s-text-tertiary)",
-          pointerEvents: "none",
-        }}
-      >
-        <Icon icon={ChevronDown} size={12} />
-      </span>
-      {open ? (
-        <ComboDropdown>
-          {filtered.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 12, color: "var(--s-text-tertiary)", textAlign: "center" }}>
-              —
-            </div>
-          ) : (
-            filtered.map((o) => {
-              const isSelected = o.id === value;
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    onChange(o.id);
-                    setOpen(false);
-                    setQuery("");
-                  }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "8px 12px",
-                    fontSize: 13,
-                    textAlign: "left",
-                    background: isSelected ? "var(--scout-accent-50)" : "transparent",
-                    color: isSelected ? "var(--scout-accent-800)" : "var(--s-text)",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = "var(--s-surface-alt)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  {o.label}
-                </button>
-              );
-            })
-          )}
-        </ComboDropdown>
-      ) : null}
-    </div>
-  );
-}
-
-// ─── Multi-select with tags ─────────────────────────────────────────────────
-
-function MultiSelectCombobox({
-  placeholder,
-  value,
-  onChange,
-  options,
-}: {
-  placeholder: string;
-  value: number[];
-  onChange: (v: number[]) => void;
-  options: ComboOption[];
-}) {
-  const tCommon = useTranslations("product.common");
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const wrap = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (!wrap.current) return;
-      if (!wrap.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    }
-    if (open) document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
-
-  const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  function toggle(id: number) {
-    if (value.includes(id)) onChange(value.filter((x) => x !== id));
-    else onChange([...value, id]);
-  }
-
-  const selected = value
-    .map((id) => options.find((o) => o.id === id))
-    .filter((x): x is ComboOption => Boolean(x));
-
-  return (
-    <div ref={wrap} style={{ position: "relative" }}>
-      <div
-        onClick={() => setOpen((x) => !x)}
-        style={{
-          minHeight: 40,
-          padding: "8px 12px",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
-          background: "white",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 6,
-          alignItems: "center",
-          cursor: "pointer",
-        }}
-      >
-        {selected.length === 0 ? (
-          <span style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>{placeholder}</span>
-        ) : (
-          selected.map((s) => (
-            <span
-              key={s.id}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "2px 8px",
-                background: "var(--scout-accent-50)",
-                color: "var(--scout-accent-800)",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 500,
-              }}
-            >
-              {s.label}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggle(s.id);
-                }}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 14,
-                  height: 14,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "transparent",
-                  color: "inherit",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-                aria-label={tCommon("removeTag")}
-              >
-                <Icon icon={X} size={10} />
-              </button>
-            </span>
-          ))
-        )}
-      </div>
-      {open ? (
-        <ComboDropdown>
-          <div style={{ padding: 8, borderBottom: "0.5px solid var(--s-border)" }}>
-            <input
-              autoFocus
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={tCommon("search")}
-              style={{
-                width: "100%",
-                height: 32,
-                padding: "6px 10px",
-                fontSize: 13,
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-sm)",
-                outline: "none",
-              }}
-            />
-          </div>
-          {filtered.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 12, color: "var(--s-text-tertiary)", textAlign: "center" }}>
-              —
-            </div>
-          ) : (
-            filtered.map((o) => {
-              const isSelected = value.includes(o.id);
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    toggle(o.id);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 8,
-                    width: "100%",
-                    padding: "8px 12px",
-                    fontSize: 13,
-                    textAlign: "left",
-                    background: isSelected ? "var(--scout-accent-50)" : "transparent",
-                    color: isSelected ? "var(--scout-accent-800)" : "var(--s-text)",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = "var(--s-surface-alt)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  <span>{o.label}</span>
-                  {isSelected ? <Icon icon={Check} size={14} /> : null}
-                </button>
-              );
-            })
-          )}
-        </ComboDropdown>
-      ) : null}
-    </div>
-  );
-}
-
-function ComboDropdown({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "calc(100% + 4px)",
-        left: 0,
-        right: 0,
-        background: "white",
-        border: "0.5px solid var(--s-border-strong)",
-        borderRadius: "var(--s-radius-md)",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-        maxHeight: 240,
-        overflowY: "auto",
-        zIndex: 100,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
 
 // ─── Collapsible textarea ───────────────────────────────────────────────────
 

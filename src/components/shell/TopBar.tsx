@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Search, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import { cn } from "@/lib/utils";
 
 /**
@@ -36,6 +38,7 @@ export function TopBar({
   initials: string;
   userEmail: string;
 }) {
+  const t = useTranslations("topbar");
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -65,7 +68,7 @@ export function TopBar({
           />
           <Input
             type="text"
-            placeholder="Buscar productos, SKUs…"
+            placeholder={t("searchPlaceholder")}
             disabled
             // Override shadcn Input styles to match the existing s-search input
             className={cn(
@@ -97,13 +100,15 @@ export function TopBar({
           </kbd>
         </div>
 
+        <LocaleSwitcher />
+
         {/* User avatar → DropdownMenu */}
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <button
               className="s-user"
               title={userEmail}
-              aria-label={`Menú de usuario: ${userEmail}`}
+              aria-label={t("userMenu", { email: userEmail })}
             >
               {initials}
             </button>
@@ -136,7 +141,7 @@ export function TopBar({
               style={{ color: "var(--s-text-secondary)" }}
             >
               <LogOut size={13} strokeWidth={1.5} />
-              Cerrar sesión
+              {t("signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

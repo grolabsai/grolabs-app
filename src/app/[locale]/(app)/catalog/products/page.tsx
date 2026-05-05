@@ -39,13 +39,7 @@ type ProductRow = {
 // more sophisticated faceting (species, category tree, tag) comes later.
 type FilterKey = "all" | "active" | "inactive" | "consignment" | "service";
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "Todos" },
-  { key: "active", label: "Activos" },
-  { key: "inactive", label: "Inactivos" },
-  { key: "consignment", label: "Consignación" },
-  { key: "service", label: "Servicios" },
-];
+const FILTER_KEYS: FilterKey[] = ["all", "active", "inactive", "consignment", "service"];
 
 export default async function ProductsPage({
   searchParams,
@@ -55,6 +49,7 @@ export default async function ProductsPage({
   const sp = await searchParams;
   const active: FilterKey = (sp.filter as FilterKey) || "all";
   const t = await getTranslations("product.list");
+  const tCrumb = await getTranslations("product.breadcrumb");
 
   const supabase = await createClient();
 
@@ -149,21 +144,23 @@ export default async function ProductsPage({
         }}
       >
         <div className="s-breadcrumb">
-          <span>Productos</span>
+          <span>{tCrumb("products")}</span>
         </div>
       </div>
 
       <div className="s-title-row">
         <div className="s-title-inner">
-          <h1 className="s-title">Productos</h1>
+          <h1 className="s-title">{t("title")}</h1>
           <p className="s-meta">
-            {totalProducts.toLocaleString("es-GT")} productos · {totalVariants}{" "}
-            variantes mostradas
+            {t("meta", {
+              products: totalProducts.toLocaleString("es-GT"),
+              variants: totalVariants,
+            })}
           </p>
         </div>
         <div className="s-title-actions">
           <button className="s-btn s-btn-ghost" type="button">
-            Importar
+            {t("import")}
           </button>
           <Link
             href={"/catalog/products/new"}
@@ -177,24 +174,24 @@ export default async function ProductsPage({
 
       {error ? (
         <div className="s-strip warning">
-          <span className="s-strip-title">Error</span>
+          <span className="s-strip-title">{t("error")}</span>
           <span className="s-strip-text">{error.message}</span>
         </div>
       ) : null}
 
       <div className="s-filter-row">
-        {FILTERS.map((f) => {
-          const n = counts[f.key];
+        {FILTER_KEYS.map((key) => {
+          const n = counts[key];
           const href =
-            f.key === "all" ? "/catalog/products" : `/catalog/products?filter=${f.key}`;
+            key === "all" ? "/catalog/products" : `/catalog/products?filter=${key}`;
           return (
             <Link
-              key={f.key}
+              key={key}
               href={href}
-              className={`s-filter${active === f.key ? " active" : ""}`}
+              className={`s-filter${active === key ? " active" : ""}`}
               style={{ textDecoration: "none" }}
             >
-              {f.label}
+              {t(`filters.${key}`)}
               {typeof n === "number" ? (
                 <span className="s-filter-count">
                   {n.toLocaleString("es-GT")}
@@ -210,13 +207,13 @@ export default async function ProductsPage({
           <table className="s-table">
             <thead>
               <tr>
-                <th style={{ paddingLeft: 20 }}>Producto</th>
-                <th>Tipo</th>
-                <th>Marca</th>
-                <th className="text-center">Variantes</th>
-                <th>Precio desde</th>
-                <th>Estado</th>
-                <th>Actualizado</th>
+                <th style={{ paddingLeft: 20 }}>{t("table.product")}</th>
+                <th>{t("table.type")}</th>
+                <th>{t("table.brand")}</th>
+                <th className="text-center">{t("table.variants")}</th>
+                <th>{t("table.priceFrom")}</th>
+                <th>{t("table.status")}</th>
+                <th>{t("table.updated")}</th>
               </tr>
             </thead>
             <tbody>
@@ -225,10 +222,10 @@ export default async function ProductsPage({
                   <td colSpan={7}>
                     <div className="s-empty">
                       <div className="s-empty-title">
-                        No hay productos que coincidan con este filtro.
+                        {t("empty.title")}
                       </div>
                       <div className="s-empty-sub">
-                        Probá ajustar los filtros o crear un producto nuevo.
+                        {t("empty.sub")}
                       </div>
                     </div>
                   </td>
@@ -256,8 +253,8 @@ export default async function ProductsPage({
                     : fallbackPrices;
                   const minPrice = priceSet.length ? Math.min(...priceSet) : null;
                   const status = p.is_active
-                    ? { dot: "success", label: "Activo" }
-                    : { dot: "neutral", label: "Inactivo" };
+                    ? { dot: "success", label: t("statusActive") }
+                    : { dot: "neutral", label: t("statusInactive") };
 
                   return (
                     <tr key={p.product_id} className="clickable">
@@ -318,8 +315,10 @@ export default async function ProductsPage({
         </div>
         <div className="s-pagination">
           <span className="s-page-info">
-            Mostrando {filtered.length} de {totalProducts.toLocaleString("es-GT")}{" "}
-            productos
+            {t("pagination", {
+              shown: filtered.length,
+              total: totalProducts.toLocaleString("es-GT"),
+            })}
           </span>
           {/* Pagination controls visual-only this pass — we return
               everything for the tenant (Wazu has 6 products, it's fine).

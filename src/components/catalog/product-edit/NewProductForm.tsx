@@ -1147,6 +1147,7 @@ function MultiSelectCombobox({
   onChange: (v: number[]) => void;
   options: ComboOption[];
 }) {
+  const tCommon = useTranslations("product.common");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const wrap = useRef<HTMLDivElement>(null);
@@ -1231,7 +1232,7 @@ function MultiSelectCombobox({
                   cursor: "pointer",
                   padding: 0,
                 }}
-                aria-label="Quitar"
+                aria-label={tCommon("removeTag")}
               >
                 <Icon icon={X} size={10} />
               </button>
@@ -1247,7 +1248,7 @@ function MultiSelectCombobox({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar…"
+              placeholder={tCommon("search")}
               style={{
                 width: "100%",
                 height: 32,

@@ -4,7 +4,36 @@
     "funnel": "Embudo",
     "catalog": "Catálogo",
     "configuration": "Configuración",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "products": "Productos",
+    "categories": "Categorías",
+    "attributes": "Atributos",
+    "brands": "Marcas",
+    "productTypes": "Tipos de producto",
+    "tags": "Etiquetas",
+    "matchingRules": "Reglas de coincidencia",
+    "data": "Datos",
+    "import": "Importar",
+    "references": "Referencias",
+    "species": "Especies",
+    "breeds": "Razas",
+    "profileAttributes": "Atributos de perfil",
+    "system": "Sistema",
+    "styleguide": "Estilo",
+    "storeSettings": "Ajustes de la tienda",
+    "comingSoon": "Próximamente",
+    "instance": "Instancia",
+    "version": "Versión"
+  },
+  "topbar": {
+    "searchPlaceholder": "Buscar productos, SKUs…",
+    "userMenu": "Menú de usuario: {email}",
+    "signOut": "Cerrar sesión"
+  },
+  "localeSwitcher": {
+    "label": "Idioma",
+    "es": "Español",
+    "en": "English"
   },
   "funnel": {
     "title": "Embudo de conversión",
@@ -458,7 +487,34 @@
   },
   "product": {
     "list": {
-      "newProduct": "Nuevo producto"
+      "newProduct": "Nuevo producto",
+      "title": "Productos",
+      "meta": "{products} productos · {variants} variantes mostradas",
+      "import": "Importar",
+      "error": "Error",
+      "filters": {
+        "all": "Todos",
+        "active": "Activos",
+        "inactive": "Inactivos",
+        "consignment": "Consignación",
+        "service": "Servicios"
+      },
+      "table": {
+        "product": "Producto",
+        "type": "Tipo",
+        "brand": "Marca",
+        "variants": "Variantes",
+        "priceFrom": "Precio desde",
+        "status": "Estado",
+        "updated": "Actualizado"
+      },
+      "statusActive": "Activo",
+      "statusInactive": "Inactivo",
+      "empty": {
+        "title": "No hay productos que coincidan con este filtro.",
+        "sub": "Probá ajustar los filtros o crear un producto nuevo."
+      },
+      "pagination": "Mostrando {shown} de {total} productos"
     },
     "create": {
       "title": "Nuevo producto",
@@ -560,7 +616,34 @@
       "deleteConfirm": "¿Eliminar este producto?",
       "deleteConfirmYes": "Confirmar",
       "deleteConfirmNo": "Cancelar",
-      "deleteSuccess": "Producto eliminado"
+      "deleteSuccess": "Producto eliminado",
+      "back": "Volver",
+      "meta": "ID {id} · creado {created} · actualizado {updated}",
+      "tags": {
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "consignment": "Consignación"
+      },
+      "sections": {
+        "basicInfo": "Información básica",
+        "config": "Configuración y proveedor",
+        "attributes": "Atributos del producto",
+        "gallery": "Galería",
+        "summary": "Resumen"
+      },
+      "gallery": {
+        "noPrimary": "Sin imagen principal",
+        "uploadNew": "Subir nueva"
+      },
+      "summary": {
+        "variants": "Variantes",
+        "active": "Activas",
+        "withSku": "Con SKU",
+        "withBarcode": "Con barcode",
+        "sourceId": "ID origen"
+      },
+      "attributesEmpty": "Sin atributos asignados.",
+      "loadError": "Error al cargar"
     },
     "fields": {
       "name": "Nombre del producto",
@@ -585,6 +668,14 @@
       "confirm": "Confirmar",
       "cancel": "Cancelar",
       "deleteSuccess": "Variante eliminada"
+    },
+    "breadcrumb": {
+      "products": "Productos",
+      "newProduct": "Nuevo producto"
+    },
+    "common": {
+      "removeTag": "Quitar",
+      "search": "Buscar…"
     }
   },
   "configuration": {

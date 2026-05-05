@@ -134,23 +134,26 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
           <h1 className="s-title">
             {product.product_name}
             {product.is_active ? (
-              <span className="s-tag s-tag-success">Activo</span>
+              <span className="s-tag s-tag-success">{t("tags.active")}</span>
             ) : (
-              <span className="s-tag s-tag-neutral">Inactivo</span>
+              <span className="s-tag s-tag-neutral">{t("tags.inactive")}</span>
             )}
             {product.is_consignment ? (
-              <span className="s-tag s-tag-neutral">Consignación</span>
+              <span className="s-tag s-tag-neutral">{t("tags.consignment")}</span>
             ) : null}
           </h1>
           <p className="s-meta">
-            ID {product.product_id} · creado {formatRelative(product.created_at)}{" "}
-            · actualizado {formatRelative(product.updated_at)}
+            {t("meta", {
+              id: product.product_id,
+              created: formatRelative(product.created_at),
+              updated: formatRelative(product.updated_at),
+            })}
           </p>
         </div>
         <div className="s-title-actions" style={{ alignItems: "center" }}>
           <SaveIndicator lastSavedAt={lastSavedAt} now={now} />
           <Link href={"/catalog/products"} className="s-btn s-btn-secondary">
-            Volver
+            {t("back")}
           </Link>
           <DeleteProductButton
             productId={product.product_id}
@@ -163,7 +166,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
         <div className="s-col-stack">
           {/* ── Información básica (editable) ── */}
           <div className="s-card">
-            <p className="s-card-label">{tFields("name")}</p>
+            <p className="s-card-label">{t("sections.basicInfo")}</p>
             <div className="s-field">
               <label className="s-field-label">{tFields("name")}</label>
               <InlineText
@@ -222,7 +225,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
 
           {/* ── Configuración y proveedor (editable) ── */}
           <div className="s-card">
-            <p className="s-card-label">Configuración y proveedor</p>
+            <p className="s-card-label">{t("sections.config")}</p>
             <div className="s-row-pair">
               <div>
                 <ToggleRow
@@ -277,10 +280,10 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
 
           {/* ── Atributos del producto (read-only) ── */}
           <div className="s-card">
-            <p className="s-card-label">Atributos del producto</p>
+            <p className="s-card-label">{t("sections.attributes")}</p>
             {product.product_attribute_value.length === 0 ? (
               <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
-                Sin atributos asignados.
+                {t("attributesEmpty")}
               </p>
             ) : (
               <div>
@@ -330,10 +333,10 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
           <div className="s-card">
             <div className="s-card-header">
               <p className="s-card-label" style={{ margin: 0 }}>
-                Galería
+                {t("sections.gallery")}
               </p>
               <button className="s-card-link" type="button" disabled>
-                Subir nueva
+                {t("gallery.uploadNew")}
               </button>
             </div>
             <div className="s-gallery-main">
@@ -350,7 +353,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
                   <circle cx="9" cy="11" r="2" />
                   <path d="M21 16l-5-5-8 8" />
                 </svg>
-                <span>Sin imagen principal</span>
+                <span>{t("gallery.noPrimary")}</span>
               </div>
             </div>
             <div className="s-gallery-thumbs">
@@ -379,24 +382,24 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
                 fontWeight: 500,
               }}
             >
-              Resumen
+              {t("sections.summary")}
             </div>
-            <SummaryRow label="Variantes" value={`${variants.length}`} />
+            <SummaryRow label={t("summary.variants")} value={`${variants.length}`} />
             <SummaryRow
-              label="Activas"
+              label={t("summary.active")}
               value={`${variants.filter((v) => v.is_active).length}`}
             />
             <SummaryRow
-              label="Con SKU"
+              label={t("summary.withSku")}
               value={`${variants.filter((v) => v.sku).length}`}
             />
             <SummaryRow
-              label="Con barcode"
+              label={t("summary.withBarcode")}
               value={`${variants.filter((v) => v.barcode).length}`}
             />
             {product.wazudb1_id ? (
               <SummaryRow
-                label="ID origen"
+                label={t("summary.sourceId")}
                 value={product.wazudb1_id.slice(0, 8) + "…"}
                 mono
               />

@@ -540,6 +540,7 @@
       "placeholders": {
         "brand": "Select brand…",
         "categories": "Select categories…",
+        "categoriesEmpty": "No categories",
         "name": "E.g. Royal Canin Adult",
         "slug": "royal-canin-adult",
         "type": "Select type…",

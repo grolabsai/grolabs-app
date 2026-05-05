@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/routing";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   NewProductForm,
@@ -43,6 +44,7 @@ type CpaRow = {
 
 export default async function NewProductPage() {
   const supabase = await createClient();
+  const tCrumb = await getTranslations("product.breadcrumb");
 
   const [
     { data: productTypes },
@@ -123,9 +125,9 @@ export default async function NewProductPage() {
         }}
       >
         <div className="s-breadcrumb">
-          <Link href={"/catalog/products"}>Productos</Link>
+          <Link href={"/catalog/products"}>{tCrumb("products")}</Link>
           <span className="s-breadcrumb-sep">/</span>
-          <span>Nuevo producto</span>
+          <span>{tCrumb("newProduct")}</span>
         </div>
       </div>
 

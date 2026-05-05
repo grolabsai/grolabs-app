@@ -4,7 +4,36 @@
     "funnel": "Funnel",
     "catalog": "Catalog",
     "configuration": "Configuration",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "categories": "Categories",
+    "attributes": "Attributes",
+    "brands": "Brands",
+    "productTypes": "Product types",
+    "tags": "Tags",
+    "matchingRules": "Matching rules",
+    "data": "Data",
+    "import": "Import",
+    "references": "References",
+    "species": "Species",
+    "breeds": "Breeds",
+    "profileAttributes": "Profile attributes",
+    "system": "System",
+    "styleguide": "Style",
+    "storeSettings": "Store settings",
+    "comingSoon": "Coming soon",
+    "instance": "Instance",
+    "version": "Version"
+  },
+  "topbar": {
+    "searchPlaceholder": "Search products, SKUs…",
+    "userMenu": "User menu: {email}",
+    "signOut": "Sign out"
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "es": "Español",
+    "en": "English"
   },
   "funnel": {
     "title": "Conversion funnel",
@@ -458,7 +487,34 @@
   },
   "product": {
     "list": {
-      "newProduct": "New product"
+      "newProduct": "New product",
+      "title": "Products",
+      "meta": "{products} products · {variants} variants shown",
+      "import": "Import",
+      "error": "Error",
+      "filters": {
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive",
+        "consignment": "Consignment",
+        "service": "Services"
+      },
+      "table": {
+        "product": "Product",
+        "type": "Type",
+        "brand": "Brand",
+        "variants": "Variants",
+        "priceFrom": "Price from",
+        "status": "Status",
+        "updated": "Updated"
+      },
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "empty": {
+        "title": "No products match this filter.",
+        "sub": "Try adjusting the filters or creating a new product."
+      },
+      "pagination": "Showing {shown} of {total} products"
     },
     "create": {
       "title": "New product",
@@ -560,7 +616,34 @@
       "deleteConfirm": "Delete this product?",
       "deleteConfirmYes": "Confirm",
       "deleteConfirmNo": "Cancel",
-      "deleteSuccess": "Product deleted"
+      "deleteSuccess": "Product deleted",
+      "back": "Back",
+      "meta": "ID {id} · created {created} · updated {updated}",
+      "tags": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "consignment": "Consignment"
+      },
+      "sections": {
+        "basicInfo": "Basic information",
+        "config": "Configuration & supplier",
+        "attributes": "Product attributes",
+        "gallery": "Gallery",
+        "summary": "Summary"
+      },
+      "gallery": {
+        "noPrimary": "No primary image",
+        "uploadNew": "Upload new"
+      },
+      "summary": {
+        "variants": "Variants",
+        "active": "Active",
+        "withSku": "With SKU",
+        "withBarcode": "With barcode",
+        "sourceId": "Source ID"
+      },
+      "attributesEmpty": "No attributes assigned.",
+      "loadError": "Failed to load"
     },
     "fields": {
       "name": "Product name",
@@ -585,6 +668,14 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "deleteSuccess": "Variant deleted"
+    },
+    "breadcrumb": {
+      "products": "Products",
+      "newProduct": "New product"
+    },
+    "common": {
+      "removeTag": "Remove",
+      "search": "Search…"
     }
   },
   "configuration": {

@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/routing";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   ProductEditor,
@@ -27,6 +28,8 @@ export default async function ProductEditorPage({
   if (!Number.isFinite(productId)) notFound();
 
   const supabase = await createClient();
+  const tCrumb = await getTranslations("product.breadcrumb");
+  const tDetail = await getTranslations("product.detail");
 
   const { data, error } = await supabase
     .from("product")
@@ -71,7 +74,7 @@ export default async function ProductEditorPage({
     return (
       <div className="s-content">
         <div className="s-strip warning">
-          <span className="s-strip-title">Error al cargar</span>
+          <span className="s-strip-title">{tDetail("loadError")}</span>
           <span className="s-strip-text">{error.message}</span>
         </div>
       </div>
@@ -111,7 +114,7 @@ export default async function ProductEditorPage({
         }}
       >
         <div className="s-breadcrumb">
-          <Link href={"/catalog/products"}>Productos</Link>
+          <Link href={"/catalog/products"}>{tCrumb("products")}</Link>
           {primaryCategory ? (
             <>
               <span className="s-breadcrumb-sep">/</span>

@@ -72,42 +72,42 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       ],
     },
     {
-      title: "Catálogo",
+      title: tNav("catalog"),
       items: [
-        { href: "/catalog/products", label: "Productos", icon: Package },
-        { href: "/catalog/categories" as Route, label: "Categorías", icon: LayoutList },
-        { href: "/catalog/attributes" as Route, label: "Atributos", icon: SlidersHorizontal },
-        { href: null, label: "Marcas", icon: Building2 },
-        { href: null, label: "Tipos de producto", icon: Shapes },
-        { href: null, label: "Etiquetas", icon: Tag },
-        { href: null, label: "Reglas de coincidencia", icon: GitMerge },
+        { href: "/catalog/products", label: tNav("products"), icon: Package },
+        { href: "/catalog/categories" as Route, label: tNav("categories"), icon: LayoutList },
+        { href: "/catalog/attributes" as Route, label: tNav("attributes"), icon: SlidersHorizontal },
+        { href: null, label: tNav("brands"), icon: Building2 },
+        { href: null, label: tNav("productTypes"), icon: Shapes },
+        { href: null, label: tNav("tags"), icon: Tag },
+        { href: null, label: tNav("matchingRules"), icon: GitMerge },
       ],
     },
     {
-      title: "Datos",
+      title: tNav("data"),
       items: [
-        { href: "/import" as Route, label: "Importar", icon: Download },
+        { href: "/import" as Route, label: tNav("import"), icon: Download },
       ],
     },
     {
-      title: "Referencias",
+      title: tNav("references"),
       items: [
-        { href: null, label: "Especies", icon: PawPrint },
-        { href: null, label: "Razas", icon: Rabbit },
-        { href: null, label: "Atributos de perfil", icon: UserRound },
+        { href: null, label: tNav("species"), icon: PawPrint },
+        { href: null, label: tNav("breeds"), icon: Rabbit },
+        { href: null, label: tNav("profileAttributes"), icon: UserRound },
       ],
     },
     {
-      title: "Sistema",
+      title: tNav("system"),
       items: [
-        { href: "/styleguide" as Route, label: "Estilo", icon: Palette },
+        { href: "/styleguide" as Route, label: tNav("styleguide"), icon: Palette },
       ],
     },
     {
-      title: "Configuración",
+      title: tNav("configuration"),
       items: [
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
-        { href: null, label: "Ajustes de la tienda", icon: Settings },
+        { href: null, label: tNav("storeSettings"), icon: Settings },
       ],
     },
   ];
@@ -156,7 +156,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
                   key={item.label}
                   className="s-nav-item"
                   style={{ opacity: 0.45, cursor: "not-allowed" }}
-                  title="Próximamente"
+                  title={tNav("comingSoon")}
                 >
                   {iconNode}
                   {item.label}
@@ -190,7 +190,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
             marginBottom: 4,
           }}
         >
-          Instancia
+          {tNav("instance")}
         </div>
         <div style={{ fontSize: 13, color: "var(--s-text)" }}>{instanceName}</div>
       </div>
@@ -206,7 +206,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
             marginBottom: 2,
           }}
         >
-          Versión
+          {tNav("version")}
         </div>
         <div
           style={{

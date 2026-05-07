@@ -158,6 +158,13 @@ export type WizardState = {
   // Step 2
   brand: BrandPick;
   columns: ColumnPick;
+  /**
+   * Categories the user picks as the search scope before running analysis.
+   * The agent's candidate set is the union of these picks and all of their
+   * descendants. When that union resolves to a single category the agent
+   * is skipped and every row is assigned to it directly.
+   */
+  candidateCategoryIds: number[];
   categoryAssignments: CategoryAssignment[];
   /** True while Step 2's "Analizar con IA" call is in flight. */
   analyzingCategories: boolean;

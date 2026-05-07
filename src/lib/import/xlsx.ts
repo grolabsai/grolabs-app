@@ -58,7 +58,10 @@ export async function parseSpreadsheetFile(
     };
   }
 
-  const maxCols = Math.max(...aoa.map((r) => r.length));
+  // reduce, not Math.max(...spread): V8 caps spread args around ~100k and
+  // throws RangeError on larger files.
+  let maxCols = 0;
+  for (const r of aoa) if (r.length > maxCols) maxCols = r.length;
   // Normalise every row to maxCols length so the table is rectangular.
   const norm = aoa.map((r) => {
     const out: string[] = new Array(maxCols).fill("");

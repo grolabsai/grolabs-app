@@ -21,6 +21,8 @@ import {
   Download,
   Palette,
   Workflow,
+  RefreshCw,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
@@ -87,6 +89,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       title: tNav("data"),
       items: [
         { href: "/import" as Route, label: tNav("import"), icon: Download },
+        { href: "/sync" as Route, label: tNav("sync"), icon: RefreshCw },
       ],
     },
     {
@@ -107,6 +110,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       title: tNav("configuration"),
       items: [
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
+        { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
         { href: null, label: tNav("storeSettings"), icon: Settings },
       ],
     },

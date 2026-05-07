@@ -31,8 +31,15 @@ type ProductRow = {
   product_variant: Array<{
     variant_id: number;
     is_active: boolean;
-    product_pricing: Array<{ list_price: string | null; channel: string }>;
+    updated_at: string;
+    product_pricing: Array<{ list_price: string | null; channel: string; updated_at: string }>;
   }>;
+};
+
+type SyncStatusRow = {
+  product_id: number;
+  platform: "algolia" | "woocommerce";
+  last_synced_at: string | null;
 };
 
 // Map the filter chip to a server-side query predicate. Kept simple —
@@ -69,7 +76,7 @@ export default async function ProductsPage({
       updated_at,
       product_type:product_type_id ( type_name, type_code, kind ),
       brand:brand_id ( brand_name ),
-      product_variant ( variant_id, is_active, product_pricing ( list_price, channel ) )
+      product_variant ( variant_id, is_active, updated_at, product_pricing ( list_price, channel, updated_at ) )
     `,
     )
     .order("updated_at", { ascending: false });
@@ -124,6 +131,31 @@ export default async function ProductsPage({
     if (active === "service") return r.product_type?.type_code?.startsWith("service");
     return true;
   });
+
+  // ── Sync status per platform per visible product ─────────────────────────
+  const filteredIds = filtered.map((r) => r.product_id);
+  const { data: syncStatuses } = filteredIds.length
+    ? await supabase
+        .from("product_sync_status")
+        .select("product_id, platform, last_synced_at")
+        .in("product_id", filteredIds)
+        .returns<SyncStatusRow[]>()
+    : { data: [] as SyncStatusRow[] };
+  const lastSyncByPair = new Map<string, string | null>();
+  for (const s of syncStatuses ?? []) {
+    lastSyncByPair.set(`${s.product_id}:${s.platform}`, s.last_synced_at);
+  }
+  function deriveStatusFor(p: ProductRow, platform: "algolia" | "woocommerce"): "synced" | "pending" | "never" {
+    const last = lastSyncByPair.get(`${p.product_id}:${platform}`);
+    if (!last) return "never";
+    const candidates: number[] = [new Date(p.updated_at).getTime()];
+    for (const v of p.product_variant ?? []) {
+      candidates.push(new Date(v.updated_at).getTime());
+      for (const pr of v.product_pricing ?? []) candidates.push(new Date(pr.updated_at).getTime());
+    }
+    const eff = Math.max(...candidates);
+    return eff <= new Date(last).getTime() ? "synced" : "pending";
+  }
 
   const totalProducts = counts.all ?? 0;
   const totalVariants = filtered.reduce(
@@ -213,13 +245,15 @@ export default async function ProductsPage({
                 <th className="text-center">{t("table.variants")}</th>
                 <th>{t("table.priceFrom")}</th>
                 <th>{t("table.status")}</th>
+                <th className="text-center" title="Algolia">A</th>
+                <th className="text-center" title="WooCommerce">{t("table.tienda")}</th>
                 <th>{t("table.updated")}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={9}>
                     <div className="s-empty">
                       <div className="s-empty-title">
                         {t("empty.title")}
@@ -303,6 +337,12 @@ export default async function ProductsPage({
                           <span style={{ fontSize: 12 }}>{status.label}</span>
                         </div>
                       </td>
+                      <td className="text-center">
+                        <SyncDot status={deriveStatusFor(p, "algolia")} />
+                      </td>
+                      <td className="text-center">
+                        <SyncDot status={deriveStatusFor(p, "woocommerce")} />
+                      </td>
                       <td style={{ fontSize: 12, color: "var(--s-text-muted)" }}>
                         {formatRelative(p.updated_at)}
                       </td>
@@ -326,5 +366,32 @@ export default async function ProductsPage({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Tiny sync-status dot for the table ────────────────────────────────────
+
+function SyncDot({ status }: { status: "synced" | "pending" | "never" }) {
+  const colors = {
+    synced: "var(--s-success)",
+    pending: "var(--s-warning)",
+    never: "var(--s-text-muted)",
+  } as const;
+  const titles = {
+    synced: "Sincronizado",
+    pending: "Pendiente",
+    never: "Nunca sincronizado",
+  } as const;
+  return (
+    <span
+      title={titles[status]}
+      style={{
+        display: "inline-block",
+        width: 10,
+        height: 10,
+        borderRadius: "50%",
+        background: colors[status],
+      }}
+    />
   );
 }

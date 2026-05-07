@@ -23,7 +23,9 @@
     "storeSettings": "Ajustes de la tienda",
     "comingSoon": "Próximamente",
     "instance": "Instancia",
-    "version": "Versión"
+    "version": "Versión",
+    "sync": "Sincronización",
+    "woocommerce": "WooCommerce"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -506,7 +508,8 @@
         "variants": "Variantes",
         "priceFrom": "Precio desde",
         "status": "Estado",
-        "updated": "Actualizado"
+        "updated": "Actualizado",
+        "tienda": "Tienda"
       },
       "statusActive": "Activo",
       "statusInactive": "Inactivo",
@@ -726,6 +729,103 @@
         "saveSuccess": "Configuración guardada",
         "saveFailed": "No se pudo guardar"
       }
+    },
+    "woocommerce": {
+      "pageTitle": "WooCommerce",
+      "pageDescription": "Conecta tu tienda WooCommerce para enviar productos al storefront.",
+      "fields": {
+        "siteUrl": "URL del sitio",
+        "siteUrlHint": "Ej: https://tutienda.com (sin /wp-admin). El sitio debe servir HTTPS y tener el plugin WooCommerce activo.",
+        "consumerKey": "Consumer key (ck_…)",
+        "consumerSecret": "Consumer secret (cs_…)",
+        "consumerSecretHidden": "Consumer secret guardado en Vault",
+        "consumerSecretHint": "Genera un par key/secret en WooCommerce → Ajustes → Avanzado → API REST con permisos de lectura/escritura."
+      },
+      "actions": {
+        "test": "Probar conexión",
+        "save": "Guardar",
+        "showKey": "Mostrar clave",
+        "hideKey": "Ocultar clave",
+        "replaceKey": "Reemplazar consumer secret",
+        "cancelReplace": "Cancelar"
+      },
+      "status": {
+        "verifiedNow": "Conexión OK · {latency} ms",
+        "failedNow": "Falló la verificación (HTTP {status})",
+        "verifiedAgo": "Verificado hace {time} · {latency} ms",
+        "notVerified": "Sin verificar"
+      },
+      "toast": {
+        "testSuccess": "Conexión exitosa",
+        "testFailed": "Error de conexión",
+        "saveSuccess": "Configuración guardada y verificada",
+        "saveButFailedVerify": "Configuración guardada, pero la verificación falló",
+        "saveFailed": "No se pudo guardar",
+        "missingFields": "URL y consumer key son requeridos",
+        "missingSecret": "Ingresa el consumer secret o usa Cancelar para mantener el guardado",
+        "testNeedsSecret": "Para probar, ingresa el secret o usa Reemplazar"
+      }
+    }
+  },
+  "sync": {
+    "breadcrumb": "Sincronización",
+    "title": "Sincronización de productos",
+    "subtitle": "Envía productos a Algolia (búsqueda) y WooCommerce (storefront).",
+    "history": "Historial",
+    "mappingButton": "Configurar mapeo",
+    "badges": {
+      "algoliaSynced": "Algolia: {n} OK",
+      "algoliaPending": "Algolia: {n} pendientes",
+      "woocommerceSynced": "Tienda: {n} OK",
+      "woocommercePending": "Tienda: {n} pendientes"
+    },
+    "notConfigured": {
+      "algolia": "Algolia no está configurado para esta instancia.",
+      "woocommerce": "WooCommerce no está configurado para esta instancia.",
+      "cta": "Configurar"
+    },
+    "filter": {
+      "label": "Filtrar:",
+      "all": "Todos ({n})",
+      "algoliaPending": "Algolia pendiente",
+      "woocommercePending": "Tienda pendiente",
+      "anyPending": "Cualquier pendiente"
+    },
+    "bulk": {
+      "selected": "{n, plural, one {# producto seleccionado} other {# productos seleccionados}}",
+      "syncAlgolia": "Sincronizar con Algolia",
+      "syncWooCommerce": "Sincronizar con la tienda",
+      "clear": "Cancelar"
+    },
+    "col": {
+      "product": "Producto",
+      "localUpdated": "Última actualización local",
+      "tienda": "Tienda",
+      "variantsWithSku": "variantes con SKU"
+    },
+    "empty": {
+      "title": "Sin productos visibles",
+      "sub": "Ajusta los filtros o crea productos primero."
+    },
+    "log": {
+      "title": "Historial de sincronizaciones",
+      "subtitle": "Últimas 25 corridas, las más recientes primero.",
+      "empty": "Aún no hay corridas registradas.",
+      "summary": "{ok} ok · {failed} fallaron · {total} totales",
+      "statusSuccess": "Éxito",
+      "statusPartial": "Parcial",
+      "statusError": "Error",
+      "statusRunning": "En curso"
+    },
+    "mappingModal": {
+      "title": "Mapeo de campos",
+      "subtitle": "Cómo Scout proyecta cada producto/variante hacia Algolia y WooCommerce. Para v1 el mapeo es de solo lectura.",
+      "close": "Cerrar"
+    },
+    "toast": {
+      "syncSuccess": "{platform}: {n} producto(s) sincronizados.",
+      "syncPartial": "{platform}: {ok} ok, {failed} fallaron.",
+      "syncError": "Error al sincronizar con {platform}"
     }
   }
 }

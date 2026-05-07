@@ -105,8 +105,12 @@ export default async function ImportPage() {
           <div className="s-import-card-status active">Disponible</div>
         </Link>
 
-        {/* Excel/CSV — disabled */}
-        <div className="s-import-card disabled">
+        {/* Excel/CSV — wizard */}
+        <Link
+          href={"/import/wizard" as Route}
+          className="s-import-card"
+          style={{ textDecoration: "none" }}
+        >
           <div className="s-import-card-icon">
             <Sheet size={24} strokeWidth={1.5} />
           </div>
@@ -117,8 +121,8 @@ export default async function ImportPage() {
               asistido por IA.
             </div>
           </div>
-          <div className="s-import-card-status pending">Próximamente</div>
-        </div>
+          <div className="s-import-card-status active">Disponible</div>
+        </Link>
 
         {/* Migration — disabled */}
         <div className="s-import-card disabled">

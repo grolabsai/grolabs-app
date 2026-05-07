@@ -679,6 +679,148 @@
       "search": "Search…"
     }
   },
+  "import": {
+    "wizard": {
+      "title": "Import products from a file",
+      "subtitle": "Upload an Excel or CSV. The agent classifies, groups and proposes variants; you review and confirm.",
+      "breadcrumb": {
+        "import": "Import",
+        "excel": "Excel / CSV"
+      },
+      "step1": {
+        "label": "File",
+        "title": "Source file",
+        "subtitle": "Accepts .xlsx, .xls and .csv (max 10 MB). The agent processes the first sheet.",
+        "dropZone": "Drop a file here or click to choose",
+        "dropHint": ".xlsx · .xls · .csv  ·  first sheet",
+        "parsing": "Parsing…",
+        "parseError": "Could not read the file",
+        "fileMeta": "{columns} columns · {rows} rows",
+        "hasHeaders": "First row contains headers",
+        "previewTitle": "Preview",
+        "previewFooter": "Showing {shown} of {total} rows",
+        "continue": "Continue"
+      },
+      "step2": {
+        "label": "Brand & category",
+        "brandTitle": "Brand",
+        "brandHint": "Applies to every product in the file. If the brand doesn't exist yet, create it in Catalog → Brands first.",
+        "brandPlaceholder": "Select brand…",
+        "columnsTitle": "Source file columns",
+        "nameColumnLabel": "Column with the product name",
+        "photoColumnLabel": "Column with the photo URL (optional)",
+        "llmExtractionLabel": "Names contain variants (e.g. \"Royal Canin Adult 1kg\")",
+        "llmExtractionHint": "If on, the agent extracts axes (weight, flavor) in the next step.",
+        "analysisTitle": "Suggest categories with AI",
+        "analysisHint": "For each product, the agent proposes the best matching category along with a confidence level.",
+        "analyzeButton": "Analyze categories",
+        "analyzing": "Analyzing…",
+        "analysisError": "Analysis failed",
+        "analysisSuccess": "Analyzed {n} products.",
+        "noNamesFound": "No valid names in the selected column.",
+        "noSuggestion": "The agent did not propose a category for this product.",
+        "nameColumnRequired": "Pick the name column before analyzing.",
+        "tableTitle": "Suggestions per product",
+        "col": {
+          "product": "Product",
+          "suggested": "Agent suggestion",
+          "confidence": "Confidence",
+          "category": "Category",
+          "categoryPlaceholder": "Select…"
+        },
+        "back": "Back",
+        "continue": "Continue"
+      },
+      "step3": {
+        "label": "Group variants",
+        "title": "Group products into bases + variants",
+        "subtitle": "The agent reads each category's vocabulary (axes and attributes) and groups rows into base products with their variants.",
+        "groupButton": "Group with AI",
+        "grouping": "Grouping…",
+        "groupingError": "Grouping failed",
+        "groupingSuccess": "Identified {bases} base products with {variants} variants.",
+        "successAlert": "{bases} base products · {variants} variants. Axis columns are highlighted; every cell is editable.",
+        "noCategoriesPicked": "No categories were assigned in the previous step.",
+        "filterAll": "All",
+        "col": {
+          "base": "Base product",
+          "label": "Variant label"
+        },
+        "back": "Back",
+        "continue": "Continue"
+      },
+      "step4": {
+        "label": "Mapping",
+        "title": "Map columns to Scout fields",
+        "subtitle": "Pick which file column feeds each field. Axes and attributes were already extracted in the previous step.",
+        "noColumn": "— no column —",
+        "group": {
+          "base": "Base product",
+          "variant": "Variant"
+        },
+        "field": {
+          "slug": "Slug",
+          "shortDescription": "Short description",
+          "longDescription": "Long description",
+          "sku": "SKU",
+          "barcode": "Barcode",
+          "weightGrams": "Weight (g)",
+          "listPrice": "List price (Q)",
+          "costPrice": "Cost price (Q)",
+          "stockQty": "Initial stock"
+        },
+        "back": "Back",
+        "continue": "Continue"
+      },
+      "step5": {
+        "label": "Review",
+        "title": "Final review",
+        "summary": "{bases} base products · {variants} variants in total.",
+        "variantOne": "variant",
+        "variantMany": "variants",
+        "col": {
+          "label": "Label",
+          "sku": "SKU",
+          "barcode": "Barcode",
+          "weight": "Weight (g)",
+          "listPrice": "Price (Q)",
+          "costPrice": "Cost (Q)",
+          "stock": "Stock"
+        },
+        "err": {
+          "title": "There {n, plural, one {is # error} other {are # errors}} to fix before continuing:",
+          "more": "… and {n} more",
+          "priceMissing": "{base} ({label}): list price is missing.",
+          "duplicateSku": "Duplicate SKU: {sku}"
+        },
+        "back": "Back",
+        "continue": "Import"
+      },
+      "step6": {
+        "label": "Import",
+        "title": "Ready to import",
+        "ready": "Will create {bases} products with {variants} variants total.",
+        "startButton": "Import products",
+        "importing": "Importing…",
+        "importingHint": "Don't close this window.",
+        "successTitle": "Import complete!",
+        "successSummary": "{bases} products created · {variants} variants.",
+        "partialTitle": "Partial import",
+        "partialSummary": "{created} products created · {failed} failed.",
+        "errorsTitle": "Errors",
+        "err": {
+          "col": {
+            "base": "Product",
+            "message": "Message"
+          }
+        },
+        "noProductType": "No product type configured for this instance. Create one in Catalog → Product types before importing.",
+        "nothingToImport": "No products are assigned to a category.",
+        "backToImport": "Import more",
+        "viewProducts": "View imported products"
+      }
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

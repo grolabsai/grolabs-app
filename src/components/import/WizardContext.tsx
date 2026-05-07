@@ -32,6 +32,7 @@ const INITIAL: WizardState = {
   parsedFile: null,
   brand: { brandId: null },
   columns: { productNameColumn: null, productPhotoColumn: null, llmExtraction: true },
+  candidateCategoryIds: [],
   categoryAssignments: [],
   analyzingCategories: false,
   categoriesAnalyzed: false,
@@ -50,6 +51,7 @@ type Action =
   | { type: "SET_PARSED_FILE"; file: ParsedFile | null }
   | { type: "SET_BRAND"; brandId: number | null }
   | { type: "SET_COLUMNS"; cols: Partial<ColumnPick> }
+  | { type: "SET_CANDIDATE_CATEGORIES"; ids: number[] }
   | { type: "SET_ANALYZING_CATEGORIES"; on: boolean }
   | { type: "SET_CATEGORY_ASSIGNMENTS"; assignments: CategoryAssignment[] }
   | { type: "UPDATE_CATEGORY_ASSIGNMENT"; rowIndex: number; categoryId: number | null; categoryName: string | null }
@@ -70,6 +72,15 @@ function reducer(state: WizardState, action: Action): WizardState {
       return { ...state, brand: { brandId: action.brandId } };
     case "SET_COLUMNS":
       return { ...state, columns: { ...state.columns, ...action.cols }, categoriesAnalyzed: false, productBases: [], grouped: false };
+    case "SET_CANDIDATE_CATEGORIES":
+      return {
+        ...state,
+        candidateCategoryIds: action.ids,
+        categoryAssignments: [],
+        categoriesAnalyzed: false,
+        productBases: [],
+        grouped: false,
+      };
     case "SET_ANALYZING_CATEGORIES":
       return { ...state, analyzingCategories: action.on };
     case "SET_CATEGORY_ASSIGNMENTS":

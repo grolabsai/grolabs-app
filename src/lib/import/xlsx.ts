@@ -17,6 +17,10 @@ import * as XLSX from "xlsx";
 import type { ParsedFile } from "@/lib/import/types";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+// Excel pads sheets out to ~1.05M rows; without an upper bound a real file
+// with a few hundred data rows can present as 1M rows of empty strings and
+// crash the browser. 50k is generous for a wizard import.
+const MAX_DATA_ROWS = 50_000;
 
 /**
  * Read a File from a drop / input change event into a ParsedFile.
@@ -44,10 +48,13 @@ export async function parseSpreadsheetFile(
   }
   const sheet = wb.Sheets[firstSheetName];
   // header: 1 → array-of-arrays. defval ensures undefined cells become "".
+  // blankrows: false drops fully-empty rows during parse so an Excel sheet
+  // padded to 1M rows doesn't allocate 1M arrays here.
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
     header: 1,
     defval: "",
     raw: false,
+    blankrows: false,
   });
   if (aoa.length === 0) {
     return {
@@ -58,7 +65,16 @@ export async function parseSpreadsheetFile(
     };
   }
 
-  const maxCols = Math.max(...aoa.map((r) => r.length));
+  if (aoa.length > MAX_DATA_ROWS) {
+    throw new Error(
+      `File has ${aoa.length.toLocaleString()} non-empty rows; the wizard supports up to ${MAX_DATA_ROWS.toLocaleString()}. Split the file or use a server-side import.`,
+    );
+  }
+
+  // reduce, not Math.max(...spread): V8 caps spread args around ~100k and
+  // throws RangeError on larger files.
+  let maxCols = 0;
+  for (const r of aoa) if (r.length > maxCols) maxCols = r.length;
   // Normalise every row to maxCols length so the table is rectangular.
   const norm = aoa.map((r) => {
     const out: string[] = new Array(maxCols).fill("");

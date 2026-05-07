@@ -23,7 +23,9 @@
     "storeSettings": "Store settings",
     "comingSoon": "Coming soon",
     "instance": "Instance",
-    "version": "Version"
+    "version": "Version",
+    "sync": "Sync",
+    "woocommerce": "WooCommerce"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -506,7 +508,8 @@
         "variants": "Variants",
         "priceFrom": "Price from",
         "status": "Status",
-        "updated": "Updated"
+        "updated": "Updated",
+        "tienda": "Store"
       },
       "statusActive": "Active",
       "statusInactive": "Inactive",
@@ -868,6 +871,103 @@
         "saveSuccess": "Configuration saved",
         "saveFailed": "Could not save configuration"
       }
+    },
+    "woocommerce": {
+      "pageTitle": "WooCommerce",
+      "pageDescription": "Connect your WooCommerce store to push products to the storefront.",
+      "fields": {
+        "siteUrl": "Site URL",
+        "siteUrlHint": "E.g. https://yourstore.com (no /wp-admin). Site must serve HTTPS with the WooCommerce plugin active.",
+        "consumerKey": "Consumer key (ck_…)",
+        "consumerSecret": "Consumer secret (cs_…)",
+        "consumerSecretHidden": "Consumer secret stored in Vault",
+        "consumerSecretHint": "Generate a key/secret pair in WooCommerce → Settings → Advanced → REST API with read/write permissions."
+      },
+      "actions": {
+        "test": "Test connection",
+        "save": "Save",
+        "showKey": "Show key",
+        "hideKey": "Hide key",
+        "replaceKey": "Replace consumer secret",
+        "cancelReplace": "Cancel"
+      },
+      "status": {
+        "verifiedNow": "Connection OK · {latency} ms",
+        "failedNow": "Verification failed (HTTP {status})",
+        "verifiedAgo": "Verified {time} ago · {latency} ms",
+        "notVerified": "Not verified"
+      },
+      "toast": {
+        "testSuccess": "Connection successful",
+        "testFailed": "Connection failed",
+        "saveSuccess": "Configuration saved and verified",
+        "saveButFailedVerify": "Configuration saved, but verification failed",
+        "saveFailed": "Could not save configuration",
+        "missingFields": "URL and consumer key are required",
+        "missingSecret": "Enter the consumer secret or click Cancel to keep the saved one",
+        "testNeedsSecret": "To test, enter the secret or click Replace"
+      }
+    }
+  },
+  "sync": {
+    "breadcrumb": "Sync",
+    "title": "Product sync",
+    "subtitle": "Push products to Algolia (search) and WooCommerce (storefront).",
+    "history": "History",
+    "mappingButton": "Configure mapping",
+    "badges": {
+      "algoliaSynced": "Algolia: {n} OK",
+      "algoliaPending": "Algolia: {n} pending",
+      "woocommerceSynced": "Store: {n} OK",
+      "woocommercePending": "Store: {n} pending"
+    },
+    "notConfigured": {
+      "algolia": "Algolia is not configured for this instance.",
+      "woocommerce": "WooCommerce is not configured for this instance.",
+      "cta": "Configure"
+    },
+    "filter": {
+      "label": "Filter:",
+      "all": "All ({n})",
+      "algoliaPending": "Algolia pending",
+      "woocommercePending": "Store pending",
+      "anyPending": "Any pending"
+    },
+    "bulk": {
+      "selected": "{n, plural, one {# product selected} other {# products selected}}",
+      "syncAlgolia": "Sync to Algolia",
+      "syncWooCommerce": "Sync to store",
+      "clear": "Cancel"
+    },
+    "col": {
+      "product": "Product",
+      "localUpdated": "Last local update",
+      "tienda": "Store",
+      "variantsWithSku": "variants with SKU"
+    },
+    "empty": {
+      "title": "No products visible",
+      "sub": "Adjust the filters or create products first."
+    },
+    "log": {
+      "title": "Sync history",
+      "subtitle": "Last 25 runs, most recent first.",
+      "empty": "No runs recorded yet.",
+      "summary": "{ok} ok · {failed} failed · {total} total",
+      "statusSuccess": "Success",
+      "statusPartial": "Partial",
+      "statusError": "Error",
+      "statusRunning": "Running"
+    },
+    "mappingModal": {
+      "title": "Field mapping",
+      "subtitle": "How Scout projects each product/variant onto Algolia and WooCommerce. For v1 the mapping is read-only.",
+      "close": "Close"
+    },
+    "toast": {
+      "syncSuccess": "{platform}: {n} product(s) synced.",
+      "syncPartial": "{platform}: {ok} ok, {failed} failed.",
+      "syncError": "Error syncing with {platform}"
     }
   }
 }

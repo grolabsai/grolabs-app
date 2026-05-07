@@ -1,14 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { ImageOff } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Brand, Category } from "@/components/import/ImportWizard";
+import { ProductThumbnail } from "@/components/import/ProductThumbnail";
 import { useWizard } from "@/components/import/WizardContext";
 import { Combobox } from "@/components/ui/combobox";
-import { Icon } from "@/components/ui/icon";
 import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import { analyzeImportCategories } from "@/lib/actions/import";
 import { makeAgentMessage } from "@/lib/import/agent-message";
@@ -493,42 +492,6 @@ function ColumnPicker({
 
 function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
-}
-
-function ProductThumbnail({ url, alt }: { url: string | undefined; alt: string }) {
-  const [errored, setErrored] = useState(false);
-  const showImage = Boolean(url) && !errored;
-  return (
-    <div
-      style={{
-        width: 40,
-        height: 40,
-        flexShrink: 0,
-        borderRadius: "var(--s-radius-sm)",
-        background: "var(--s-surface-alt)",
-        border: "0.5px solid var(--s-border)",
-        overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "var(--s-text-tertiary)",
-      }}
-    >
-      {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt={alt}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={() => setErrored(true)}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      ) : (
-        <Icon icon={ImageOff} size={16} />
-      )}
-    </div>
-  );
 }
 
 function ConfidencePill({

@@ -679,6 +679,148 @@
       "search": "Buscar…"
     }
   },
+  "import": {
+    "wizard": {
+      "title": "Importar productos desde archivo",
+      "subtitle": "Sube un Excel o CSV. El agente clasifica, agrupa y propone variantes; tú revisás y confirmás.",
+      "breadcrumb": {
+        "import": "Importar",
+        "excel": "Excel / CSV"
+      },
+      "step1": {
+        "label": "Archivo",
+        "title": "Archivo de origen",
+        "subtitle": "Acepta .xlsx, .xls y .csv (máx. 10 MB). El agente trabaja sobre la primera hoja.",
+        "dropZone": "Arrastra un archivo aquí o haz clic para elegirlo",
+        "dropHint": ".xlsx · .xls · .csv  ·  primera hoja",
+        "parsing": "Procesando…",
+        "parseError": "No se pudo leer el archivo",
+        "fileMeta": "{columns} columnas · {rows} filas",
+        "hasHeaders": "Primera fila contiene encabezados",
+        "previewTitle": "Vista previa",
+        "previewFooter": "Mostrando {shown} de {total} filas",
+        "continue": "Continuar"
+      },
+      "step2": {
+        "label": "Marca y categoría",
+        "brandTitle": "Marca",
+        "brandHint": "Aplica a todos los productos del archivo. Si la marca aún no existe, créala antes en Catálogo → Marcas.",
+        "brandPlaceholder": "Seleccionar marca…",
+        "columnsTitle": "Columnas del archivo",
+        "nameColumnLabel": "Columna con el nombre del producto",
+        "photoColumnLabel": "Columna con la URL de la foto (opcional)",
+        "llmExtractionLabel": "Los nombres contienen variantes (ej.: \"Royal Canin Adult 1kg\")",
+        "llmExtractionHint": "Si está activo, el agente extraerá ejes (peso, sabor) en el siguiente paso.",
+        "analysisTitle": "Sugerir categorías con IA",
+        "analysisHint": "Por cada producto, el agente propone la mejor categoría disponible junto con un nivel de confianza.",
+        "analyzeButton": "Analizar categorías",
+        "analyzing": "Analizando…",
+        "analysisError": "Error en el análisis",
+        "analysisSuccess": "Se analizaron {n} productos.",
+        "noNamesFound": "No hay nombres válidos en la columna seleccionada.",
+        "noSuggestion": "El agente no propuso una categoría para este producto.",
+        "nameColumnRequired": "Selecciona la columna del nombre antes de analizar.",
+        "tableTitle": "Sugerencias por producto",
+        "col": {
+          "product": "Producto",
+          "suggested": "Sugerencia del agente",
+          "confidence": "Confianza",
+          "category": "Categoría",
+          "categoryPlaceholder": "Seleccionar…"
+        },
+        "back": "Atrás",
+        "continue": "Continuar"
+      },
+      "step3": {
+        "label": "Agrupar variantes",
+        "title": "Agrupar productos por base + variantes",
+        "subtitle": "El agente lee cada categoría con su vocabulario (ejes y atributos definidos) y agrupa las filas en productos base con sus variantes.",
+        "groupButton": "Agrupar con IA",
+        "grouping": "Agrupando…",
+        "groupingError": "Error agrupando productos",
+        "groupingSuccess": "Se identificaron {bases} productos base con {variants} variantes.",
+        "successAlert": "{bases} productos base · {variants} variantes. Los ejes están resaltados; cualquier celda es editable.",
+        "noCategoriesPicked": "No hay categorías asignadas en el paso anterior.",
+        "filterAll": "Todos",
+        "col": {
+          "base": "Producto base",
+          "label": "Etiqueta de variante"
+        },
+        "back": "Atrás",
+        "continue": "Continuar"
+      },
+      "step4": {
+        "label": "Mapeo",
+        "title": "Mapear columnas a campos de Scout",
+        "subtitle": "Selecciona qué columna del archivo alimenta cada campo. Los ejes y atributos ya fueron extraídos en el paso anterior.",
+        "noColumn": "— sin columna —",
+        "group": {
+          "base": "Producto base",
+          "variant": "Variante"
+        },
+        "field": {
+          "slug": "Slug",
+          "shortDescription": "Descripción corta",
+          "longDescription": "Descripción larga",
+          "sku": "SKU",
+          "barcode": "Código de barras",
+          "weightGrams": "Peso (g)",
+          "listPrice": "Precio de lista (Q)",
+          "costPrice": "Precio de costo (Q)",
+          "stockQty": "Stock inicial"
+        },
+        "back": "Atrás",
+        "continue": "Continuar"
+      },
+      "step5": {
+        "label": "Revisión",
+        "title": "Revisión final",
+        "summary": "{bases} productos base · {variants} variantes en total.",
+        "variantOne": "variante",
+        "variantMany": "variantes",
+        "col": {
+          "label": "Etiqueta",
+          "sku": "SKU",
+          "barcode": "Barcode",
+          "weight": "Peso (g)",
+          "listPrice": "Precio (Q)",
+          "costPrice": "Costo (Q)",
+          "stock": "Stock"
+        },
+        "err": {
+          "title": "Hay {n, plural, one {# error} other {# errores}} que debés corregir antes de continuar:",
+          "more": "… y {n} más",
+          "priceMissing": "{base} ({label}): falta el precio de lista.",
+          "duplicateSku": "SKU duplicado: {sku}"
+        },
+        "back": "Atrás",
+        "continue": "Importar"
+      },
+      "step6": {
+        "label": "Importar",
+        "title": "Listo para importar",
+        "ready": "Se crearán {bases} productos con {variants} variantes en total.",
+        "startButton": "Importar productos",
+        "importing": "Importando…",
+        "importingHint": "No cierres esta ventana.",
+        "successTitle": "¡Importación completada!",
+        "successSummary": "{bases} productos creados · {variants} variantes.",
+        "partialTitle": "Importación parcial",
+        "partialSummary": "{created} productos creados · {failed} fallaron.",
+        "errorsTitle": "Errores",
+        "err": {
+          "col": {
+            "base": "Producto",
+            "message": "Mensaje"
+          }
+        },
+        "noProductType": "No hay un tipo de producto configurado para esta instancia. Crea uno en Catálogo → Tipos de producto antes de importar.",
+        "nothingToImport": "No hay productos asignados a una categoría.",
+        "backToImport": "Importar más",
+        "viewProducts": "Ver productos importados"
+      }
+    }
+  },
   "configuration": {
     "algolia": {
       "navLabel": "Algolia",

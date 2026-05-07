@@ -11,6 +11,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Icon } from "@/components/ui/icon";
 import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import { analyzeImportCategories } from "@/lib/actions/import";
+import { makeAgentMessage } from "@/lib/import/agent-message";
 import type { CategoryAssignment } from "@/lib/import/types";
 
 export function Step2Categories({
@@ -119,6 +120,14 @@ export function Step2Categories({
         userSelected: false,
       }));
       dispatch({ type: "SET_CATEGORY_ASSIGNMENTS", assignments });
+      dispatch({
+        type: "APPEND_AGENT_MESSAGE",
+        message: makeAgentMessage({
+          kind: "info",
+          title: t("agentTitleSkipped"),
+          body: t("agentBodySkipped", { n: assignments.length, category: only.category_name }),
+        }),
+      });
       toast.success(t("analysisSuccess", { n: assignments.length }));
       return;
     }
@@ -130,11 +139,28 @@ export function Step2Categories({
     }));
 
     dispatch({ type: "SET_ANALYZING_CATEGORIES", on: true });
+    dispatch({
+      type: "APPEND_AGENT_MESSAGE",
+      message: makeAgentMessage({
+        kind: "thinking",
+        title: t("agentTitleAnalyzing"),
+        body: t("agentBodyAnalyzing", { n: products.length, c: candidates.length }),
+      }),
+    });
     startTransition(async () => {
       const r = await analyzeImportCategories({ products, candidates });
       dispatch({ type: "SET_ANALYZING_CATEGORIES", on: false });
       if ("error" in r) {
         toast.error(t("analysisError"), { description: r.error });
+        dispatch({
+          type: "APPEND_AGENT_MESSAGE",
+          message: makeAgentMessage({
+            kind: "error",
+            title: t("agentTitleAnalyzeError"),
+            body: r.error,
+            raw: r.error,
+          }),
+        });
         return;
       }
       // Map response → CategoryAssignment[]
@@ -175,6 +201,27 @@ export function Step2Categories({
         };
       });
       dispatch({ type: "SET_CATEGORY_ASSIGNMENTS", assignments });
+      const tiers = { high: 0, medium: 0, low: 0, unmatched: 0 };
+      for (const a of assignments) {
+        if (a.suggestedCategoryId === null) tiers.unmatched += 1;
+        else tiers[a.confidenceTier] += 1;
+      }
+      dispatch({
+        type: "APPEND_AGENT_MESSAGE",
+        message: makeAgentMessage({
+          kind: tiers.unmatched > 0 ? "warning" : "success",
+          title: t("agentTitleAnalyzed"),
+          body: t("agentBodyAnalyzed", {
+            n: assignments.length,
+            high: tiers.high,
+            medium: tiers.medium,
+            low: tiers.low,
+            unmatched: tiers.unmatched,
+            model: r.data.model_used,
+          }),
+          raw: r.data,
+        }),
+      });
       toast.success(t("analysisSuccess", { n: assignments.length }));
     });
   }

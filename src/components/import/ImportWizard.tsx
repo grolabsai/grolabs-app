@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { AgentPanel } from "@/components/import/AgentPanel";
 import { Step1Upload } from "@/components/import/Step1Upload";
 import { Step2Categories } from "@/components/import/Step2Categories";
 import { Step3Grouping } from "@/components/import/Step3Grouping";
@@ -117,14 +118,28 @@ function Inner({ brands, categories, defaultProductTypeId }: SharedProps) {
         })}
       </div>
 
-      {/* Active step */}
-      <div>
-        {state.step === 1 && <Step1Upload />}
-        {state.step === 2 && <Step2Categories brands={brands} categories={categories} />}
-        {state.step === 3 && <Step3Grouping categories={categories} />}
-        {state.step === 4 && <Step4Mapping />}
-        {state.step === 5 && <Step5Review categories={categories} />}
-        {state.step === 6 && <Step6Import defaultProductTypeId={defaultProductTypeId} />}
+      {/* Active step + agent narrative panel.
+          Two-column on wide viewports; the agent panel stacks below on
+          narrow ones so step content keeps full width when space is tight. */}
+      <div
+        style={{
+          display: "grid",
+          gap: 20,
+          gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 340px)",
+          alignItems: "start",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          {state.step === 1 && <Step1Upload />}
+          {state.step === 2 && <Step2Categories brands={brands} categories={categories} />}
+          {state.step === 3 && <Step3Grouping categories={categories} />}
+          {state.step === 4 && <Step4Mapping />}
+          {state.step === 5 && <Step5Review categories={categories} />}
+          {state.step === 6 && <Step6Import defaultProductTypeId={defaultProductTypeId} />}
+        </div>
+        <div style={{ position: "sticky", top: 16 }}>
+          <AgentPanel />
+        </div>
       </div>
     </>
   );

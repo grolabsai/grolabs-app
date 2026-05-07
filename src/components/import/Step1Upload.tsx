@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { Upload, FileText } from "lucide-react";
 
 import { useWizard } from "@/components/import/WizardContext";
+import { makeAgentMessage } from "@/lib/import/agent-message";
 import { parseSpreadsheetFile } from "@/lib/import/xlsx";
 
 export function Step1Upload() {
@@ -20,8 +21,29 @@ export function Step1Upload() {
     try {
       const parsed = await parseSpreadsheetFile(file, hasHeaders);
       dispatch({ type: "SET_PARSED_FILE", file: parsed });
+      dispatch({
+        type: "APPEND_AGENT_MESSAGE",
+        message: makeAgentMessage({
+          kind: "info",
+          title: t("agentTitleParsed"),
+          body: t("agentBodyParsed", {
+            file: parsed.fileName,
+            cols: parsed.columns.length,
+            rows: parsed.rows.length,
+          }),
+        }),
+      });
     } catch (e) {
-      toast.error(t("parseError"), { description: e instanceof Error ? e.message : String(e) });
+      const description = e instanceof Error ? e.message : String(e);
+      toast.error(t("parseError"), { description });
+      dispatch({
+        type: "APPEND_AGENT_MESSAGE",
+        message: makeAgentMessage({
+          kind: "error",
+          title: t("agentTitleParseError"),
+          body: description,
+        }),
+      });
     }
   }
 

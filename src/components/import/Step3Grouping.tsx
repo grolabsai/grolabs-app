@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { Category } from "@/components/import/ImportWizard";
 import { useWizard } from "@/components/import/WizardContext";
 import { groupImportProducts } from "@/lib/actions/import";
+import { makeAgentMessage } from "@/lib/import/agent-message";
 import type {
   ProposedAttributeCell,
   ProposedAxisCell,
@@ -42,6 +43,14 @@ export function Step3Grouping({ categories }: { categories: Category[] }) {
     }
 
     dispatch({ type: "SET_GROUPING", on: true });
+    dispatch({
+      type: "APPEND_AGENT_MESSAGE",
+      message: makeAgentMessage({
+        kind: "thinking",
+        title: t("agentTitleGrouping"),
+        body: t("agentBodyGrouping", { categories: selectedCategoryIds.length }),
+      }),
+    });
     startTransition(async () => {
       const allBases: ProposedProductBaseRow[] = [];
       // One GLPIM call per category (the agent expects all products to be in
@@ -53,11 +62,33 @@ export function Step3Grouping({ categories }: { categories: Category[] }) {
           .filter((p) => p.name);
         if (products.length === 0) continue;
 
+        const cat = categoryById.get(categoryId);
         const r = await groupImportProducts({ products, categoryId });
         if ("error" in r) {
           toast.error(t("groupingError"), { description: r.error });
+          dispatch({
+            type: "APPEND_AGENT_MESSAGE",
+            message: makeAgentMessage({
+              kind: "error",
+              title: t("agentTitleGroupError", { category: cat?.category_name ?? `#${categoryId}` }),
+              body: r.error,
+              raw: r.error,
+            }),
+          });
           continue;
         }
+        dispatch({
+          type: "APPEND_AGENT_MESSAGE",
+          message: makeAgentMessage({
+            kind: r.data.bases.length > 0 ? "success" : "warning",
+            title: t("agentTitleGroupedFor", { category: cat?.category_name ?? `#${categoryId}` }),
+            body: t("agentBodyGroupedFor", {
+              bases: r.data.bases.length,
+              variants: r.data.bases.reduce((n, b) => n + b.variants.length, 0),
+            }),
+            raw: r.data,
+          }),
+        });
 
         for (const base of r.data.bases) {
           const cat = categoryById.get(categoryId);

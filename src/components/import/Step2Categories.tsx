@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
+import { ImageOff } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Brand, Category } from "@/components/import/ImportWizard";
 import { useWizard } from "@/components/import/WizardContext";
 import { Combobox } from "@/components/ui/combobox";
+import { Icon } from "@/components/ui/icon";
 import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import { analyzeImportCategories } from "@/lib/actions/import";
 import type { CategoryAssignment } from "@/lib/import/types";
@@ -30,6 +32,33 @@ export function Step2Categories({
     return m;
   }, [categories]);
 
+  const childrenByParent = useMemo(() => {
+    const m = new Map<number | null, Category[]>();
+    for (const c of categories) {
+      const arr = m.get(c.parent_category_id) ?? [];
+      arr.push(c);
+      m.set(c.parent_category_id, arr);
+    }
+    return m;
+  }, [categories]);
+
+  const rootDescendants = useMemo(() => {
+    if (state.rootCategoryId === null) return [];
+    const out: Category[] = [];
+    const queue: number[] = [state.rootCategoryId];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      const kids = childrenByParent.get(id) ?? [];
+      for (const k of kids) {
+        out.push(k);
+        queue.push(k.category_id);
+      }
+    }
+    return out;
+  }, [state.rootCategoryId, childrenByParent]);
+
+  const rootIsLeaf = state.rootCategoryId !== null && rootDescendants.length === 0;
+
   if (!file) return null;
 
   function setNameColumn(idx: number | null) {
@@ -46,6 +75,10 @@ export function Step2Categories({
 
   function runAnalysis() {
     if (!file) return;
+    if (state.rootCategoryId === null) {
+      toast.error(t("rootCategoryRequired"));
+      return;
+    }
     if (state.columns.productNameColumn === null) {
       toast.error(t("nameColumnRequired"));
       return;
@@ -65,9 +98,37 @@ export function Step2Categories({
       return;
     }
 
+    // Root has no children → skip the agent; assign every row to root directly.
+    if (rootIsLeaf) {
+      const root = categoryById.get(state.rootCategoryId)!;
+      const assignments: CategoryAssignment[] = products.map((p) => ({
+        rowIndex: parseInt(p.product_ref.replace("row-", ""), 10),
+        productName: p.name,
+        brand: p.brand ?? undefined,
+        photoUrl: p.photo_url ?? undefined,
+        suggestedCategoryId: root.category_id,
+        suggestedCategoryName: root.category_name,
+        confidence: 1,
+        confidenceTier: "high",
+        reasoning: t("rootIsLeafReasoning"),
+        categoryId: root.category_id,
+        categoryName: root.category_name,
+        userSelected: false,
+      }));
+      dispatch({ type: "SET_CATEGORY_ASSIGNMENTS", assignments });
+      toast.success(t("analysisSuccess", { n: assignments.length }));
+      return;
+    }
+
+    const candidates = rootDescendants.map((c) => ({
+      category_id: c.category_id,
+      name: c.category_name,
+      parent_id: c.parent_category_id,
+    }));
+
     dispatch({ type: "SET_ANALYZING_CATEGORIES", on: true });
     startTransition(async () => {
-      const r = await analyzeImportCategories({ products });
+      const r = await analyzeImportCategories({ products, candidates });
       dispatch({ type: "SET_ANALYZING_CATEGORIES", on: false });
       if ("error" in r) {
         toast.error(t("analysisError"), { description: r.error });
@@ -189,19 +250,64 @@ export function Step2Categories({
         </p>
       </div>
 
-      {/* Analyze button */}
+      {/* Root category + analyze */}
       <div className="s-card">
         <p className="s-card-label">{t("analysisTitle")}</p>
         <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 12px" }}>
           {t("analysisHint")}
         </p>
+
+        <div style={{ marginBottom: 14, maxWidth: 480 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: "var(--s-text-tertiary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              marginBottom: 6,
+            }}
+          >
+            {t("rootCategoryLabel")}
+            <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span>
+          </div>
+          <Combobox
+            placeholder={t("rootCategoryPlaceholder")}
+            value={state.rootCategoryId}
+            onChange={(id) => dispatch({ type: "SET_ROOT_CATEGORY", categoryId: id })}
+            options={categories.map((c) => ({ id: c.category_id, label: c.category_name }))}
+          />
+          {state.rootCategoryId !== null ? (
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--s-text-tertiary)",
+                marginTop: 6,
+              }}
+            >
+              {rootIsLeaf
+                ? t("rootIsLeafHint")
+                : t("rootHasChildrenHint", { n: rootDescendants.length })}
+            </p>
+          ) : null}
+        </div>
+
         <button
           type="button"
           className="s-btn s-btn-primary"
-          disabled={pending || state.analyzingCategories || state.columns.productNameColumn === null}
+          disabled={
+            pending ||
+            state.analyzingCategories ||
+            state.columns.productNameColumn === null ||
+            state.rootCategoryId === null
+          }
           onClick={runAnalysis}
         >
-          {state.analyzingCategories ? t("analyzing") : t("analyzeButton")}
+          {state.analyzingCategories
+            ? t("analyzing")
+            : rootIsLeaf
+            ? t("assignToRootButton")
+            : t("analyzeButton")}
         </button>
       </div>
 
@@ -225,12 +331,10 @@ export function Step2Categories({
                 {state.categoryAssignments.map((a) => (
                   <tr key={a.rowIndex}>
                     <td style={{ paddingLeft: 20 }}>
-                      <div style={{ fontWeight: 500 }}>{a.productName}</div>
-                      {a.photoUrl ? (
-                        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
-                          {a.photoUrl}
-                        </div>
-                      ) : null}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <ProductThumbnail url={a.photoUrl} alt={a.productName} />
+                        <div style={{ fontWeight: 500 }}>{a.productName}</div>
+                      </div>
                     </td>
                     <td>
                       <div style={{ fontSize: 12 }}>{a.suggestedCategoryName ?? "—"}</div>
@@ -343,6 +447,42 @@ function ColumnPicker({
 
 function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+function ProductThumbnail({ url, alt }: { url: string | undefined; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  const showImage = Boolean(url) && !errored;
+  return (
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        flexShrink: 0,
+        borderRadius: "var(--s-radius-sm)",
+        background: "var(--s-surface-alt)",
+        border: "0.5px solid var(--s-border)",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--s-text-tertiary)",
+      }}
+    >
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt={alt}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setErrored(true)}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        <Icon icon={ImageOff} size={16} />
+      )}
+    </div>
+  );
 }
 
 function ConfidencePill({

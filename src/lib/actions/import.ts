@@ -19,11 +19,23 @@ import {
 
 /**
  * Step 2 of the wizard: get the agent's category suggestion per product.
- * Wraps GLPIM's /agents/analyze-categories with the user's instance id
- * so GLPIM can fetch the candidate category set itself.
+ *
+ * Wraps GLPIM's /agents/analyze-categories. Two shapes:
+ *  - omit `candidates` and the agent picks from every active category for
+ *    the user's instance (GLPIM does the DB lookup).
+ *  - pass `candidates` and the agent only chooses from that exact set —
+ *    used by the wizard to scope the search to the descendants of a
+ *    parent category the user picked.
  */
 export async function analyzeImportCategories(input: {
   products: ProductIn[];
+  candidates?: Array<{
+    category_id: number;
+    name: string;
+    parent_id?: number | null;
+    slug?: string | null;
+    parsing_hint?: string | null;
+  }>;
   parsingHint?: string;
 }): Promise<{ ok: true; data: AnalyzeCategoriesResponse } | { error: string }> {
   const instanceId = await currentInstanceId();
@@ -32,6 +44,7 @@ export async function analyzeImportCategories(input: {
     const data = await glpimAnalyzeCategories({
       products: input.products,
       instanceId,
+      candidates: input.candidates,
       parsingHint: input.parsingHint,
     });
     return { ok: true, data };

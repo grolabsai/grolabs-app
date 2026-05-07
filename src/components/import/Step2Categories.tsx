@@ -286,6 +286,7 @@ export function Step2Categories({
             searchPlaceholder={t("candidatesSearch")}
             emptyText={t("candidatesEmpty")}
             removeTagAriaLabel={t("candidatesRemoveTag")}
+            sortByLabel={false}
           />
           {candidateCategories.length > 0 ? (
             <p

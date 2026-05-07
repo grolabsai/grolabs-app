@@ -65,8 +65,14 @@ export async function analyzeCategories(input: {
   const body: Record<string, unknown> = {
     products: input.products,
   };
-  if (input.instanceId !== undefined) body.instance_id = input.instanceId;
-  if (input.candidates !== undefined) body.candidates = input.candidates;
+  // GLPIM's validator requires *exactly one* of `candidates` or `instance_id`.
+  // Caller-supplied candidates win; instance_id is only used when no inline
+  // candidate set is provided (the agent then fetches them by instance).
+  if (input.candidates !== undefined) {
+    body.candidates = input.candidates;
+  } else if (input.instanceId !== undefined) {
+    body.instance_id = input.instanceId;
+  }
   if (input.parsingHint) body.parsing_hint = input.parsingHint;
 
   const res = await fetch(url, {
@@ -175,7 +181,26 @@ async function glpimError(res: Response, where: string): Promise<Error> {
   let detail = "";
   try {
     const j = await res.json();
-    detail = typeof j === "object" && j !== null && "detail" in j ? String((j as { detail: unknown }).detail) : JSON.stringify(j);
+    if (j && typeof j === "object" && "detail" in j) {
+      const d = (j as { detail: unknown }).detail;
+      if (typeof d === "string") {
+        detail = d;
+      } else if (Array.isArray(d)) {
+        // FastAPI Pydantic 422 returns detail as Array<{ loc, msg, type, ... }>.
+        // Stringifying directly gives "[object Object]" — extract messages instead.
+        detail = d
+          .map((e) =>
+            e && typeof e === "object" && "msg" in e
+              ? String((e as { msg: unknown }).msg)
+              : JSON.stringify(e),
+          )
+          .join("; ");
+      } else {
+        detail = JSON.stringify(d);
+      }
+    } else {
+      detail = JSON.stringify(j);
+    }
   } catch {
     try {
       detail = await res.text();

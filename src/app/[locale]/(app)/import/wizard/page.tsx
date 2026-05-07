@@ -52,7 +52,10 @@ export default async function ImportWizardPage() {
       .select("category_id, category_name, parent_category_id")
       .eq("instance_id", instanceId)
       .eq("is_active", true)
-      .order("category_name")
+      // Definition order (sort_order primary, category_id tiebreak) so the
+      // Step-2 tree picker renders categories the way the user laid them out.
+      .order("sort_order", { ascending: true, nullsFirst: false })
+      .order("category_id", { ascending: true })
       .returns<CategoryRow[]>(),
     supabase
       .from("product_type")

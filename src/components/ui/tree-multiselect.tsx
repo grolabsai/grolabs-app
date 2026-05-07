@@ -39,6 +39,13 @@ type Props = {
   emptyText: string;
   /** Aria label for the X button on each tag. */
   removeTagAriaLabel: string;
+  /**
+   * Sort each tree level alphabetically by label. Default true for
+   * backwards compatibility. Pass false when the caller has already
+   * sorted `nodes` (e.g. by a domain `sort_order`) and wants that
+   * preserved root → leaf.
+   */
+  sortByLabel?: boolean;
 };
 
 type IndexedNode = TreeNode & {
@@ -46,7 +53,7 @@ type IndexedNode = TreeNode & {
   depth: number;
 };
 
-function indexTree(nodes: TreeNode[]): IndexedNode[] {
+function indexTree(nodes: TreeNode[], sortByLabel: boolean): IndexedNode[] {
   // Root + child wiring in a single pass. Orphans (parent missing) are
   // promoted to roots so a partial dataset still renders.
   const byId = new Map<number, IndexedNode>();
@@ -54,6 +61,9 @@ function indexTree(nodes: TreeNode[]): IndexedNode[] {
     byId.set(n.id, { ...n, children: [], depth: 0 });
   }
   const roots: IndexedNode[] = [];
+  // Iteration order of byId.values() is insertion order, so children inside
+  // each parent come out in the same order as `nodes`. When sortByLabel is
+  // false this preserves the caller's intended ordering at every level.
   for (const n of byId.values()) {
     if (n.parentId !== null && byId.has(n.parentId)) {
       const parent = byId.get(n.parentId)!;
@@ -65,12 +75,13 @@ function indexTree(nodes: TreeNode[]): IndexedNode[] {
       roots.push(n);
     }
   }
-  // Sort each level by label for predictable order.
-  const sortRec = (list: IndexedNode[]) => {
-    list.sort((a, b) => a.label.localeCompare(b.label));
-    list.forEach((c) => sortRec(c.children));
-  };
-  sortRec(roots);
+  if (sortByLabel) {
+    const sortRec = (list: IndexedNode[]) => {
+      list.sort((a, b) => a.label.localeCompare(b.label));
+      list.forEach((c) => sortRec(c.children));
+    };
+    sortRec(roots);
+  }
   return roots;
 }
 
@@ -82,13 +93,14 @@ export function TreeMultiSelectCombobox({
   searchPlaceholder,
   emptyText,
   removeTagAriaLabel,
+  sortByLabel = true,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const wrap = useRef<HTMLDivElement>(null);
 
-  const tree = useMemo(() => indexTree(nodes), [nodes]);
+  const tree = useMemo(() => indexTree(nodes, sortByLabel), [nodes, sortByLabel]);
   const byId = useMemo(() => {
     const m = new Map<number, TreeNode>();
     for (const n of nodes) m.set(n.id, n);

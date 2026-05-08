@@ -3,6 +3,7 @@
 import { createContext, useContext, useReducer, type ReactNode } from "react";
 
 import type {
+  AgentMessage,
   CategoryAssignment,
   ColumnMapping,
   ColumnPick,
@@ -42,6 +43,7 @@ const INITIAL: WizardState = {
   columnMapping: DEFAULT_MAPPING,
   importing: false,
   importResult: null,
+  agentMessages: [],
 };
 
 // ─── Actions ───────────────────────────────────────────────────────────────
@@ -60,14 +62,24 @@ type Action =
   | { type: "UPDATE_VARIANT_FIELD"; baseId: string; variantId: string; field: keyof Pick<import("@/lib/import/types").ProposedVariantRow, "label" | "sku" | "barcode" | "weightGrams" | "listPrice" | "costPrice" | "stockQty">; value: string }
   | { type: "SET_COLUMN_MAPPING_FIELD"; field: ScoutFieldId; mapping: ColumnMapping[ScoutFieldId] }
   | { type: "SET_IMPORTING"; on: boolean }
-  | { type: "SET_IMPORT_RESULT"; result: ImportResult | null };
+  | { type: "SET_IMPORT_RESULT"; result: ImportResult | null }
+  | { type: "APPEND_AGENT_MESSAGE"; message: AgentMessage }
+  | { type: "CLEAR_AGENT_MESSAGES" };
 
 function reducer(state: WizardState, action: Action): WizardState {
   switch (action.type) {
     case "GO_TO_STEP":
       return { ...state, step: action.step };
     case "SET_PARSED_FILE":
-      return { ...state, parsedFile: action.file, categoryAssignments: [], categoriesAnalyzed: false, productBases: [], grouped: false };
+      return {
+        ...state,
+        parsedFile: action.file,
+        categoryAssignments: [],
+        categoriesAnalyzed: false,
+        productBases: [],
+        grouped: false,
+        agentMessages: [],
+      };
     case "SET_BRAND":
       return { ...state, brand: { brandId: action.brandId } };
     case "SET_COLUMNS":
@@ -124,6 +136,10 @@ function reducer(state: WizardState, action: Action): WizardState {
       return { ...state, importing: action.on };
     case "SET_IMPORT_RESULT":
       return { ...state, importResult: action.result };
+    case "APPEND_AGENT_MESSAGE":
+      return { ...state, agentMessages: [...state.agentMessages, action.message] };
+    case "CLEAR_AGENT_MESSAGES":
+      return { ...state, agentMessages: [] };
     default:
       return state;
   }

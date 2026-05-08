@@ -690,6 +690,15 @@
         "import": "Importar",
         "excel": "Excel / CSV"
       },
+      "agentPanel": {
+        "title": "Conversación con el agente",
+        "clear": "Limpiar",
+        "emptyState": "Aquí verás lo que el agente está haciendo y lo que va respondiendo en cada paso.",
+        "copy": "Copiar respuesta",
+        "copyHint": "Copiar la respuesta completa al portapapeles",
+        "copied": "Respuesta copiada al portapapeles.",
+        "copyFailed": "No se pudo copiar al portapapeles."
+      },
       "step1": {
         "label": "Archivo",
         "title": "Archivo de origen",
@@ -702,7 +711,10 @@
         "hasHeaders": "Primera fila contiene encabezados",
         "previewTitle": "Vista previa",
         "previewFooter": "Mostrando {shown} de {total} filas",
-        "continue": "Continuar"
+        "continue": "Continuar",
+        "agentTitleParsed": "Archivo cargado",
+        "agentBodyParsed": "Leí «{file}»: {cols} columnas, {rows} filas. Cuando estés listo, en el siguiente paso elegimos las categorías.",
+        "agentTitleParseError": "No pude leer el archivo"
       },
       "step2": {
         "label": "Marca y categoría",
@@ -741,6 +753,13 @@
           "category": "Categoría",
           "categoryPlaceholder": "Seleccionar…"
         },
+        "agentTitleSkipped": "Asignación directa",
+        "agentBodySkipped": "Solo había una categoría candidata («{category}»). Asigné los {n} productos directamente, sin pedirle nada al agente.",
+        "agentTitleAnalyzing": "Analizando categorías",
+        "agentBodyAnalyzing": "Le pedí al agente que clasifique {n} productos eligiendo entre {c} categorías candidatas.",
+        "agentTitleAnalyzed": "Categorías sugeridas",
+        "agentBodyAnalyzed": "Listo: {n} productos analizados — {high} alta confianza, {medium} media, {low} baja, {unmatched} sin sugerencia. Modelo: {model}.",
+        "agentTitleAnalyzeError": "Error analizando categorías",
         "back": "Atrás",
         "continue": "Continuar"
       },
@@ -759,6 +778,11 @@
           "base": "Producto base",
           "label": "Etiqueta de variante"
         },
+        "agentTitleGrouping": "Agrupando productos",
+        "agentBodyGrouping": "Le pedí al agente que agrupe los productos en bases con sus variantes para {categories} categorías.",
+        "agentTitleGroupedFor": "Variantes extraídas — {category}",
+        "agentBodyGroupedFor": "{bases} productos base · {variants} variantes.",
+        "agentTitleGroupError": "Error agrupando — {category}",
         "back": "Atrás",
         "continue": "Continuar"
       },

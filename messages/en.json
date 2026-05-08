@@ -690,6 +690,15 @@
         "import": "Import",
         "excel": "Excel / CSV"
       },
+      "agentPanel": {
+        "title": "Agent conversation",
+        "clear": "Clear",
+        "emptyState": "You'll see what the agent is doing and what it returns at each step here.",
+        "copy": "Copy response",
+        "copyHint": "Copy the full response to clipboard",
+        "copied": "Response copied to clipboard.",
+        "copyFailed": "Couldn't copy to clipboard."
+      },
       "step1": {
         "label": "File",
         "title": "Source file",
@@ -702,7 +711,10 @@
         "hasHeaders": "First row contains headers",
         "previewTitle": "Preview",
         "previewFooter": "Showing {shown} of {total} rows",
-        "continue": "Continue"
+        "continue": "Continue",
+        "agentTitleParsed": "File loaded",
+        "agentBodyParsed": "Read «{file}»: {cols} columns, {rows} rows. When you're ready, pick categories in the next step.",
+        "agentTitleParseError": "Couldn't read the file"
       },
       "step2": {
         "label": "Brand & category",
@@ -741,6 +753,13 @@
           "category": "Category",
           "categoryPlaceholder": "Select…"
         },
+        "agentTitleSkipped": "Direct assignment",
+        "agentBodySkipped": "Only one candidate category («{category}»). Assigned all {n} products directly without calling the agent.",
+        "agentTitleAnalyzing": "Analyzing categories",
+        "agentBodyAnalyzing": "Asked the agent to classify {n} products against {c} candidate categories.",
+        "agentTitleAnalyzed": "Categories suggested",
+        "agentBodyAnalyzed": "Done: {n} products analyzed — {high} high confidence, {medium} medium, {low} low, {unmatched} no suggestion. Model: {model}.",
+        "agentTitleAnalyzeError": "Category analysis failed",
         "back": "Back",
         "continue": "Continue"
       },
@@ -759,6 +778,11 @@
           "base": "Base product",
           "label": "Variant label"
         },
+        "agentTitleGrouping": "Grouping products",
+        "agentBodyGrouping": "Asked the agent to group products into bases with their variants for {categories} categories.",
+        "agentTitleGroupedFor": "Variants extracted — {category}",
+        "agentBodyGroupedFor": "{bases} base products · {variants} variants.",
+        "agentTitleGroupError": "Grouping failed — {category}",
         "back": "Back",
         "continue": "Continue"
       },

@@ -147,6 +147,35 @@ export type ImportResult = {
   errors: Array<{ baseName: string; error: string }>;
 };
 
+// ─── Agent panel ───────────────────────────────────────────────────────────
+
+/**
+ * One entry in the right-side agent log. The wizard's agent calls (and
+ * hand-rolled status updates) drop these in chronologically; the panel
+ * renders them as a running narrative.
+ *
+ * Today this is one-way (system → user). The shape is intentionally chat-
+ * like so that a future iteration can add user-side messages without a
+ * data-model migration.
+ */
+export type AgentMessage = {
+  /** Stable client-side id for keying. */
+  id: string;
+  /** ms since epoch (UTC). Display formatted client-side. */
+  timestamp: number;
+  /** Visual + semantic role. Drives icon and color. */
+  kind: "info" | "thinking" | "success" | "warning" | "error";
+  /** One-line headline (e.g. "Analyze categories"). */
+  title: string;
+  /** Free-form prose body — what the agent did or what went wrong. */
+  body: string;
+  /**
+   * Optional structured payload for the user to inspect or copy. The panel
+   * shows a "Copy" button when this is set; the value is JSON-stringified.
+   */
+  raw?: unknown;
+};
+
 // ─── Wizard state aggregate ────────────────────────────────────────────────
 
 export type WizardState = {
@@ -182,6 +211,13 @@ export type WizardState = {
   // Step 6
   importing: boolean;
   importResult: ImportResult | null;
+
+  /**
+   * Right-side agent narrative. Append-only chronological log of what the
+   * agent did and what came back, surfaced in `AgentPanel`. Cleared when
+   * the user uploads a new file.
+   */
+  agentMessages: AgentMessage[];
 };
 
 // ─── Submission shape (what Step 6 sends to createProductsBulk) ────────────

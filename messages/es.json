@@ -783,6 +783,7 @@
         "agentTitleGroupedFor": "Variantes extraídas — {category}",
         "agentBodyGroupedFor": "{bases} productos base · {variants} variantes.",
         "agentTitleGroupError": "Error agrupando — {category}",
+        "sourceNameTooltip": "Nombre original tal como vino en el archivo. Sirve para verificar que la interpretación del agente sea correcta.",
         "back": "Atrás",
         "continue": "Continuar"
       },

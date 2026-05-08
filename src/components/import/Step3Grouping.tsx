@@ -62,6 +62,18 @@ export function Step3Grouping({
     return Array.from(ids);
   }, [state.categoryAssignments]);
 
+  // Source row → original product name from the uploaded file. Lets each
+  // variant row display the raw text the agent worked from, so the user can
+  // verify that "Hills Adult 7 kg" really did break down into a base of
+  // "Hills Adult" with content=7 kg (vs e.g. 7 lb being mis-parsed).
+  const sourceNameByRowIndex = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const a of state.categoryAssignments) {
+      m.set(a.rowIndex, a.productName);
+    }
+    return m;
+  }, [state.categoryAssignments]);
+
   function runGrouping() {
     if (selectedCategoryIds.length === 0) {
       toast.error(t("noCategoriesPicked"));
@@ -312,6 +324,25 @@ export function Step3Grouping({
                               }
                               style={cellInput()}
                             />
+                            {v.sourceRowIndices.length > 0 ? (
+                              <div
+                                style={{
+                                  marginTop: 4,
+                                  fontSize: 11,
+                                  fontStyle: "italic",
+                                  color: "var(--s-text-tertiary)",
+                                  lineHeight: 1.3,
+                                  fontFamily:
+                                    "ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+                                }}
+                                title={t("sourceNameTooltip")}
+                              >
+                                {v.sourceRowIndices
+                                  .map((ri) => sourceNameByRowIndex.get(ri))
+                                  .filter(Boolean)
+                                  .join(" · ") || "—"}
+                              </div>
+                            ) : null}
                           </td>
                           {axisCodes.map((code) => {
                             const ax = v.axes.find((a) => a.attributeCode === code);

@@ -783,6 +783,7 @@
         "agentTitleGroupedFor": "Variants extracted — {category}",
         "agentBodyGroupedFor": "{bases} base products · {variants} variants.",
         "agentTitleGroupError": "Grouping failed — {category}",
+        "sourceNameTooltip": "Original name as it came in the source file. Use it to verify the agent's interpretation.",
         "back": "Back",
         "continue": "Continue"
       },

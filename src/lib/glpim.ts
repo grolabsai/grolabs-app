@@ -95,6 +95,8 @@ export type AxisValue = {
   value_number?: number | null;
   unit_id?: number | string | null;
   unit_code?: string | null;
+  /** Literal substring of the source name that triggered this value. */
+  extracted_from?: string | null;
 };
 
 export type AttributeValue = {
@@ -102,6 +104,7 @@ export type AttributeValue = {
   attribute_code: string;
   value_id?: number | string | null;
   value_text?: string | null;
+  extracted_from?: string | null;
 };
 
 export type GroupedVariant = {

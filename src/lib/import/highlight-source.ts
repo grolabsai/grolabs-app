@@ -65,8 +65,11 @@ function buildCandidates(
 
   for (const ax of axes) {
     const needles: string[] = [];
+    // Prefer the agent's literal source span when present — it's
+    // authoritative and handles cases where the value text doesn't
+    // string-match the source ("Adulto" matched from "Adult").
+    if (ax.extractedFrom) needles.push(ax.extractedFrom.toLowerCase());
     if (ax.dataType === "quantity" && ax.valueNumber !== null) {
-      // "7 kg" with optional space; also try "7kg" and the bare number.
       const num = formatNumber(ax.valueNumber);
       const unit = (ax.unitCode ?? "").toLowerCase();
       if (unit) {
@@ -88,6 +91,7 @@ function buildCandidates(
 
   for (const at of attributes) {
     const needles: string[] = [];
+    if (at.extractedFrom) needles.push(at.extractedFrom.toLowerCase());
     if (at.valueText && !isBooleanish(at.valueText)) {
       needles.push(at.valueText.toLowerCase());
     } else if (at.valueId !== null && at.valueId !== undefined) {
@@ -95,7 +99,8 @@ function buildCandidates(
       const label = optionLabelById.get(numId);
       if (label) needles.push(label.toLowerCase());
     }
-    // Booleans: skip — no source span to highlight.
+    // Booleans without an extractedFrom hint stay un-highlighted (the
+    // agent inferred them with no quotable trigger phrase).
     if (needles.length > 0) {
       out.push({ attributeId: at.attributeId, needles });
     }

@@ -68,6 +68,14 @@ export type ProposedAxisCell = {
   valueNumber: number | null;
   unitId: number | string | null;
   unitCode: string | null;
+  /**
+   * Literal substring of the source product name that produced this value
+   * (as the agent reported it). Used by Step 3's source-name highlighter
+   * to color the exact span the agent pulled from. May differ in casing
+   * or wording from `valueText` (e.g. source "Adult" → option "Adulto").
+   * Null when the value was inferred from context with no quotable trigger.
+   */
+  extractedFrom: string | null;
 };
 
 export type ProposedAttributeCell = {
@@ -77,6 +85,8 @@ export type ProposedAttributeCell = {
   dataType: string;
   valueId: number | string | null;
   valueText: string | null;
+  /** See ProposedAxisCell.extractedFrom. */
+  extractedFrom: string | null;
 };
 
 export type ProposedVariantRow = {

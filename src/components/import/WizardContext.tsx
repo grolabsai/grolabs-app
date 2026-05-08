@@ -59,6 +59,7 @@ type Action =
   | { type: "UPDATE_CATEGORY_ASSIGNMENT"; rowIndex: number; categoryId: number | null; categoryName: string | null }
   | { type: "SET_GROUPING"; on: boolean }
   | { type: "SET_PRODUCT_BASES"; bases: ProposedProductBaseRow[] }
+  | { type: "APPEND_PRODUCT_BASES"; bases: ProposedProductBaseRow[] }
   | { type: "UPDATE_VARIANT_FIELD"; baseId: string; variantId: string; field: keyof Pick<import("@/lib/import/types").ProposedVariantRow, "label" | "sku" | "barcode" | "weightGrams" | "listPrice" | "costPrice" | "stockQty">; value: string }
   | { type: "UPSERT_VARIANT_AXIS"; baseId: string; variantId: string; cell: ProposedAxisCell }
   | { type: "REMOVE_VARIANT_AXIS"; baseId: string; variantId: string; attributeId: number | string }
@@ -117,6 +118,12 @@ function reducer(state: WizardState, action: Action): WizardState {
       return { ...state, grouping: action.on };
     case "SET_PRODUCT_BASES":
       return { ...state, productBases: action.bases, grouped: true };
+    case "APPEND_PRODUCT_BASES":
+      return {
+        ...state,
+        productBases: [...state.productBases, ...action.bases],
+        grouped: true,
+      };
     case "UPDATE_VARIANT_FIELD":
       return {
         ...state,

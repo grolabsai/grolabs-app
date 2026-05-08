@@ -360,20 +360,29 @@ export function Step3Grouping({
       ) : (
         <>
           {/* Math summary — explicit triple so the user can verify nothing
-              fell silently between Step 2 and Step 3. */}
+              fell silently between Step 2 and Step 3. While grouping is
+              still in flight, suppress the unaccounted count (everything
+              looks "missing" until each category's bases stream in) and
+              switch the strip to a neutral color. */}
           <div
             style={{
               padding: "12px 16px",
               borderRadius: "var(--s-radius-md)",
-              background:
-                unaccountedRows.length > 0
+              background: state.grouping
+                ? "var(--scout-accent-50)"
+                : unaccountedRows.length > 0
                   ? "var(--s-warning-bg)"
                   : "var(--s-success-bg)",
               border: `0.5px solid ${
-                unaccountedRows.length > 0 ? "var(--s-warning)" : "var(--s-success)"
+                state.grouping
+                  ? "var(--scout-accent)"
+                  : unaccountedRows.length > 0
+                    ? "var(--s-warning)"
+                    : "var(--s-success)"
               }`,
-              color:
-                unaccountedRows.length > 0
+              color: state.grouping
+                ? "var(--scout-accent-800)"
+                : unaccountedRows.length > 0
                   ? "var(--s-warning-text)"
                   : "var(--s-success-text)",
               marginBottom: 16,
@@ -385,7 +394,20 @@ export function Step3Grouping({
             }}
           >
             {state.grouping ? (
-              <span>{t("groupingInProgress")}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    border: "2px solid var(--scout-accent)",
+                    borderTopColor: "transparent",
+                    animation: "spin 0.8s linear infinite",
+                  }}
+                  aria-hidden
+                />
+                {t("groupingInProgress")}
+              </span>
             ) : null}
             <span>
               <strong>{sourceRowCount}</strong> {t("statRows")}
@@ -398,7 +420,7 @@ export function Step3Grouping({
             <span>
               <strong>{totalVariants}</strong> {t("statVariants")}
             </span>
-            {unaccountedRows.length > 0 ? (
+            {!state.grouping && unaccountedRows.length > 0 ? (
               <>
                 <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
                 <button
@@ -423,7 +445,7 @@ export function Step3Grouping({
 
           {/* Unaccounted rows list — collapsible. Each row shows what we
               know about it + why the wizard skipped it. */}
-          {showUnaccounted && unaccountedRows.length > 0 ? (
+          {showUnaccounted && !state.grouping && unaccountedRows.length > 0 ? (
             <div className="s-card" style={{ marginBottom: 16, padding: "12px 16px" }}>
               <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>
                 {t("unaccountedTitle", { n: unaccountedRows.length })}

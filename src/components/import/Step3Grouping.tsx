@@ -51,6 +51,7 @@ export function Step3Grouping({
   const { append: logAgent } = useAgentLog();
   const [pending, startTransition] = useTransition();
   const [activeCategoryId, setActiveCategoryId] = useState<number | "all">("all");
+  const [showUnaccounted, setShowUnaccounted] = useState(false);
 
   const categoryById = useMemo(() => {
     const m = new Map<number, Category>();
@@ -122,12 +123,70 @@ export function Step3Grouping({
     return m;
   }, [selectedCategoryIds, categories, categoryAttributes, attributes]);
 
+  // Per-category bases + variants count, so the filter pills can show both
+  // numbers ("18b/38v") instead of one ambiguous count.
+  const totalsByCategory = useMemo(() => {
+    const m = new Map<number, { bases: number; variants: number }>();
+    for (const b of state.productBases) {
+      if (b.categoryId === null) continue;
+      const cur = m.get(b.categoryId) ?? { bases: 0, variants: 0 };
+      cur.bases += 1;
+      cur.variants += b.variants.length;
+      m.set(b.categoryId, cur);
+    }
+    return m;
+  }, [state.productBases]);
+
+  const totalBases = state.productBases.length;
+  const totalVariants = state.productBases.reduce((n, b) => n + b.variants.length, 0);
+  const sourceRowCount = state.parsedFile?.rows.length ?? 0;
+
+  // Source rows that didn't end up in any variant. Could be: empty product
+  // name in the source, no category assigned in Step 2, or the agent
+  // dropped them in Step 3 (lenient parsing). Surfaced so the math adds up
+  // and the user can see exactly which rows are missing.
+  const unaccountedRows = useMemo(() => {
+    if (!state.parsedFile) return [];
+    const accounted = new Set<number>();
+    for (const b of state.productBases) {
+      for (const v of b.variants) {
+        for (const ri of v.sourceRowIndices) accounted.add(ri);
+      }
+    }
+    const out: Array<{
+      rowIndex: number;
+      productName: string;
+      reasonKey: "emptyName" | "noCategory" | "notExtracted";
+    }> = [];
+    const assignByRow = new Map(state.categoryAssignments.map((a) => [a.rowIndex, a]));
+    for (let i = 0; i < sourceRowCount; i++) {
+      if (accounted.has(i)) continue;
+      const a = assignByRow.get(i);
+      if (!a) {
+        // No assignment row — the Step-2 product mapper filtered it out
+        // (almost always: the source name was empty/whitespace).
+        out.push({ rowIndex: i, productName: "", reasonKey: "emptyName" });
+        continue;
+      }
+      out.push({
+        rowIndex: i,
+        productName: a.productName,
+        reasonKey: a.categoryId === null ? "noCategory" : "notExtracted",
+      });
+    }
+    return out;
+  }, [state.parsedFile, state.productBases, state.categoryAssignments, sourceRowCount]);
+
   function runGrouping() {
     if (selectedCategoryIds.length === 0) {
       toast.error(t("noCategoriesPicked"));
       return;
     }
 
+    // Wipe any previous run, then mark grouping in progress. APPEND adds
+    // each category's bases as soon as its GLPIM call returns, so the user
+    // sees results stream in instead of waiting for the whole batch.
+    dispatch({ type: "SET_PRODUCT_BASES", bases: [] });
     dispatch({ type: "SET_GROUPING", on: true });
     logAgent(
       makeAgentMessage({
@@ -137,7 +196,8 @@ export function Step3Grouping({
       }),
     );
     startTransition(async () => {
-      const allBases: ProposedProductBaseRow[] = [];
+      let totalBasesAdded = 0;
+      let totalVariantsAdded = 0;
       // One GLPIM call per category (the agent expects all products to be in
       // the same category for the vocabulary to match).
       for (const categoryId of selectedCategoryIds) {
@@ -173,57 +233,58 @@ export function Step3Grouping({
           }),
         );
 
-        for (const base of r.data.bases) {
-          const cat = categoryById.get(categoryId);
-          allBases.push({
-            id: `base-${categoryId}-${base.base_name.replace(/\W+/g, "-")}-${Math.random().toString(36).slice(2, 6)}`,
-            baseName: base.base_name,
-            categoryId,
-            categoryName: cat?.category_name ?? null,
-            confidence: base.confidence,
-            reasoning: base.reasoning,
-            variants: base.variants.map((v, vi): ProposedVariantRow => ({
-              id: `v-${vi}-${Math.random().toString(36).slice(2, 6)}`,
-              sourceRowIndices: v.source_refs.map((r) => parseInt(r.replace("row-", ""), 10)),
-              axes: v.axis_values.map((av): ProposedAxisCell => {
-                const attrName = av.attribute_code; // We don't have name here from GLPIM; could enrich later
-                return {
-                  attributeId: av.attribute_id,
-                  attributeCode: av.attribute_code,
-                  attributeName: attrName,
-                  // GLPIM returns attribute data_type implicitly via which value field is set
-                  dataType: av.unit_code ? "quantity" : av.value_id !== null && av.value_id !== undefined ? "list" : "text",
-                  valueId: av.value_id ?? null,
-                  valueText: av.value_text ?? null,
-                  valueNumber: av.value_number ?? null,
-                  unitId: av.unit_id ?? null,
-                  unitCode: av.unit_code ?? null,
-                  extractedFrom: av.extracted_from ?? null,
-                };
-              }),
-              attributes: v.attribute_values.map((av): ProposedAttributeCell => ({
-                attributeId: av.attribute_id,
-                attributeCode: av.attribute_code,
-                attributeName: av.attribute_code,
-                dataType: av.value_id !== null && av.value_id !== undefined ? "list" : "text",
-                valueId: av.value_id ?? null,
-                valueText: av.value_text ?? null,
-                extractedFrom: av.extracted_from ?? null,
-              })),
-              label: v.label,
-              sku: "",
-              barcode: "",
-              weightGrams: "",
-              listPrice: "",
-              costPrice: "",
-              stockQty: "",
+        const basesForCat: ProposedProductBaseRow[] = r.data.bases.map((base) => ({
+          id: `base-${categoryId}-${base.base_name.replace(/\W+/g, "-")}-${Math.random().toString(36).slice(2, 6)}`,
+          baseName: base.base_name,
+          categoryId,
+          categoryName: cat?.category_name ?? null,
+          confidence: base.confidence,
+          reasoning: base.reasoning,
+          variants: base.variants.map((v, vi): ProposedVariantRow => ({
+            id: `v-${vi}-${Math.random().toString(36).slice(2, 6)}`,
+            sourceRowIndices: v.source_refs.map((r) => parseInt(r.replace("row-", ""), 10)),
+            axes: v.axis_values.map((av): ProposedAxisCell => ({
+              attributeId: av.attribute_id,
+              attributeCode: av.attribute_code,
+              attributeName: av.attribute_code,
+              // GLPIM returns attribute data_type implicitly via which value field is set
+              dataType: av.unit_code ? "quantity" : av.value_id !== null && av.value_id !== undefined ? "list" : "text",
+              valueId: av.value_id ?? null,
+              valueText: av.value_text ?? null,
+              valueNumber: av.value_number ?? null,
+              unitId: av.unit_id ?? null,
+              unitCode: av.unit_code ?? null,
+              extractedFrom: av.extracted_from ?? null,
             })),
-          });
-        }
+            attributes: v.attribute_values.map((av): ProposedAttributeCell => ({
+              attributeId: av.attribute_id,
+              attributeCode: av.attribute_code,
+              attributeName: av.attribute_code,
+              dataType: av.value_id !== null && av.value_id !== undefined ? "list" : "text",
+              valueId: av.value_id ?? null,
+              valueText: av.value_text ?? null,
+              extractedFrom: av.extracted_from ?? null,
+            })),
+            label: v.label,
+            sku: "",
+            barcode: "",
+            weightGrams: "",
+            listPrice: "",
+            costPrice: "",
+            stockQty: "",
+          })),
+        }));
+
+        // Stream this category's results into state so the user sees
+        // progress immediately instead of waiting for the whole loop.
+        dispatch({ type: "APPEND_PRODUCT_BASES", bases: basesForCat });
+        totalBasesAdded += basesForCat.length;
+        totalVariantsAdded += basesForCat.reduce((n, b) => n + b.variants.length, 0);
       }
-      dispatch({ type: "SET_PRODUCT_BASES", bases: allBases });
       dispatch({ type: "SET_GROUPING", on: false });
-      toast.success(t("groupingSuccess", { bases: allBases.length, variants: allBases.reduce((n, b) => n + b.variants.length, 0) }));
+      toast.success(
+        t("groupingSuccess", { bases: totalBasesAdded, variants: totalVariantsAdded }),
+      );
     });
   }
 
@@ -267,11 +328,21 @@ export function Step3Grouping({
     return out;
   }, [activeCategoryId, selectedCategoryIds, vocabByCategory]);
 
-  const totalVariants = state.productBases.reduce((n, b) => n + b.variants.length, 0);
+  // Empty-vocabulary warning: when the active category has no axes and no
+  // descriptive attributes (own or inherited), the user has nothing to fill
+  // in. Tell them where to define attributes for that category.
+  const activeCategoryEmptyVocab = useMemo(() => {
+    if (activeCategoryId === "all") return null;
+    const v = vocabByCategory.get(activeCategoryId);
+    if (!v) return null;
+    if (v.axes.length > 0 || v.descriptive.length > 0) return null;
+    const c = categoryById.get(activeCategoryId);
+    return c?.category_name ?? `#${activeCategoryId}`;
+  }, [activeCategoryId, vocabByCategory, categoryById]);
 
   return (
     <div>
-      {!state.grouped ? (
+      {!state.grouped && !state.grouping ? (
         <div className="s-card">
           <p className="s-card-label">{t("title")}</p>
           <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 16px" }}>
@@ -288,35 +359,145 @@ export function Step3Grouping({
         </div>
       ) : (
         <>
+          {/* Math summary — explicit triple so the user can verify nothing
+              fell silently between Step 2 and Step 3. */}
           <div
             style={{
               padding: "12px 16px",
               borderRadius: "var(--s-radius-md)",
-              background: "var(--s-success-bg)",
-              border: "0.5px solid var(--s-success)",
-              color: "var(--s-success-text)",
+              background:
+                unaccountedRows.length > 0
+                  ? "var(--s-warning-bg)"
+                  : "var(--s-success-bg)",
+              border: `0.5px solid ${
+                unaccountedRows.length > 0 ? "var(--s-warning)" : "var(--s-success)"
+              }`,
+              color:
+                unaccountedRows.length > 0
+                  ? "var(--s-warning-text)"
+                  : "var(--s-success-text)",
               marginBottom: 16,
               fontSize: 13,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 16,
             }}
           >
-            {t("successAlert", { bases: state.productBases.length, variants: totalVariants })}
+            {state.grouping ? (
+              <span>{t("groupingInProgress")}</span>
+            ) : null}
+            <span>
+              <strong>{sourceRowCount}</strong> {t("statRows")}
+            </span>
+            <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
+            <span>
+              <strong>{totalBases}</strong> {t("statBases")}
+            </span>
+            <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
+            <span>
+              <strong>{totalVariants}</strong> {t("statVariants")}
+            </span>
+            {unaccountedRows.length > 0 ? (
+              <>
+                <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
+                <button
+                  type="button"
+                  onClick={() => setShowUnaccounted((s) => !s)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    color: "var(--s-warning-text)",
+                    fontWeight: 500,
+                    textDecoration: "underline",
+                    padding: 0,
+                  }}
+                >
+                  {t("statUnaccounted", { n: unaccountedRows.length })}
+                </button>
+              </>
+            ) : null}
           </div>
 
-          {/* Category navigator */}
+          {/* Unaccounted rows list — collapsible. Each row shows what we
+              know about it + why the wizard skipped it. */}
+          {showUnaccounted && unaccountedRows.length > 0 ? (
+            <div className="s-card" style={{ marginBottom: 16, padding: "12px 16px" }}>
+              <p style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>
+                {t("unaccountedTitle", { n: unaccountedRows.length })}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {unaccountedRows.map((u) => (
+                  <div
+                    key={u.rowIndex}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      fontSize: 12,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "ui-monospace, monospace",
+                        color: "var(--s-text-tertiary)",
+                        minWidth: 60,
+                      }}
+                    >
+                      row-{u.rowIndex}
+                    </span>
+                    <span style={{ flex: 1, fontStyle: u.productName ? "normal" : "italic", color: u.productName ? "var(--s-text)" : "var(--s-text-tertiary)" }}>
+                      {u.productName || t("unaccountedEmptyName")}
+                    </span>
+                    <span style={{ color: "var(--s-text-secondary)", fontSize: 11 }}>
+                      {u.reasonKey === "emptyName"
+                        ? t("unaccountedReasonEmptyName")
+                        : u.reasonKey === "noCategory"
+                          ? t("unaccountedReasonNoCategory")
+                          : t("unaccountedReasonNotExtracted")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Empty-vocabulary warning when viewing a category with nothing
+              defined. The fallback created singleton bases so rows still
+              show up, but there are no columns to capture details. */}
+          {activeCategoryEmptyVocab ? (
+            <div
+              style={{
+                padding: "10px 14px",
+                borderRadius: "var(--s-radius-md)",
+                background: "var(--s-warning-bg)",
+                border: "0.5px solid var(--s-warning)",
+                color: "var(--s-warning-text)",
+                marginBottom: 16,
+                fontSize: 12,
+              }}
+            >
+              {t("emptyVocabHint", { category: activeCategoryEmptyVocab })}
+            </div>
+          ) : null}
+
+          {/* Category navigator — pills now show bases/variants, no ambiguity. */}
           {selectedCategoryIds.length > 1 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
               <CatPill
-                label={`${t("filterAll")} (${state.productBases.length})`}
+                label={`${t("filterAll")} · ${totalBases}b/${totalVariants}v`}
                 active={activeCategoryId === "all"}
                 onClick={() => setActiveCategoryId("all")}
               />
               {selectedCategoryIds.map((cid) => {
                 const c = categoryById.get(cid);
-                const count = state.productBases.filter((b) => b.categoryId === cid).length;
+                const totals = totalsByCategory.get(cid) ?? { bases: 0, variants: 0 };
                 return (
                   <CatPill
                     key={cid}
-                    label={`${c?.category_name ?? cid} (${count})`}
+                    label={`${c?.category_name ?? cid} · ${totals.bases}b/${totals.variants}v`}
                     active={activeCategoryId === cid}
                     onClick={() => setActiveCategoryId(cid)}
                   />
@@ -481,7 +662,7 @@ export function Step3Grouping({
         <button
           type="button"
           className="s-btn s-btn-primary"
-          disabled={!state.grouped || state.productBases.length === 0}
+          disabled={!state.grouped || state.grouping || state.productBases.length === 0}
           onClick={() => dispatch({ type: "GO_TO_STEP", step: 4 })}
         >
           {t("continue")}

@@ -121,7 +121,16 @@ export function AxisCellEditor({
       );
     }
     case "quantity": {
-      const num = cell?.valueNumber ?? "";
+      // Bullet-proof number-input value derivation. Bug seen in the wild
+      // where a quantity cell renders the unit dropdown filled but the
+      // number input empty even though the agent emits value_number. The
+      // explicit `typeof === number && isFinite` guard rules out string,
+      // null, undefined, and NaN; the key forces React to remount the
+      // input when the cell's number changes (controlled-input quirk
+      // when the value transitions through the empty-string state).
+      const cellNum = cell?.valueNumber;
+      const numValue =
+        typeof cellNum === "number" && Number.isFinite(cellNum) ? String(cellNum) : "";
       const unitId = cell?.unitId != null ? String(cell.unitId) : "";
       const allowedUnits = units.filter(
         (u) => attribute.dimension == null || u.dimension === attribute.dimension,
@@ -129,9 +138,10 @@ export function AxisCellEditor({
       return (
         <div style={{ display: "flex", gap: 4 }}>
           <input
+            key={`${cell?.attributeId ?? "?"}-${numValue}`}
             type="number"
             inputMode="decimal"
-            value={num === null ? "" : String(num)}
+            value={numValue}
             onChange={(e) => {
               const v = e.target.value;
               if (v === "") return onRemove();

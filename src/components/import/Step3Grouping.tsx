@@ -198,6 +198,7 @@ export function Step3Grouping({
                   valueNumber: av.value_number ?? null,
                   unitId: av.unit_id ?? null,
                   unitCode: av.unit_code ?? null,
+                  extractedFrom: av.extracted_from ?? null,
                 };
               }),
               attributes: v.attribute_values.map((av): ProposedAttributeCell => ({
@@ -207,6 +208,7 @@ export function Step3Grouping({
                 dataType: av.value_id !== null && av.value_id !== undefined ? "list" : "text",
                 valueId: av.value_id ?? null,
                 valueText: av.value_text ?? null,
+                extractedFrom: av.extracted_from ?? null,
               })),
               label: v.label,
               sku: "",

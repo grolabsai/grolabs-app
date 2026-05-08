@@ -68,6 +68,10 @@ export function AxisCellEditor({
       valueNumber: partial.valueNumber ?? null,
       unitId: partial.unitId ?? null,
       unitCode: partial.unitCode ?? null,
+      // User edits don't carry a source span; clear the agent's hint so
+      // the highlighter doesn't keep coloring an old span for a value
+      // the user has since changed.
+      extractedFrom: null,
     };
   }
 
@@ -231,6 +235,7 @@ export function AttributeCellEditor({
       dataType: attribute.data_type,
       valueId: partial.valueId ?? null,
       valueText: partial.valueText ?? null,
+      extractedFrom: null,
     };
   }
 

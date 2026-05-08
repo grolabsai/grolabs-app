@@ -4,7 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import type { Category } from "@/components/import/ImportWizard";
+import type { AttributeOption, Category } from "@/components/import/ImportWizard";
+import { ProductThumbnail } from "@/components/import/ProductThumbnail";
 import { useWizard } from "@/components/import/WizardContext";
 import { groupImportProducts } from "@/lib/actions/import";
 import { makeAgentMessage } from "@/lib/import/agent-message";
@@ -15,7 +16,13 @@ import type {
   ProposedVariantRow,
 } from "@/lib/import/types";
 
-export function Step3Grouping({ categories }: { categories: Category[] }) {
+export function Step3Grouping({
+  categories,
+  attributeOptions,
+}: {
+  categories: Category[];
+  attributeOptions: AttributeOption[];
+}) {
   const t = useTranslations("import.wizard.step3");
   const { state, dispatch } = useWizard();
   const [pending, startTransition] = useTransition();
@@ -26,6 +33,25 @@ export function Step3Grouping({ categories }: { categories: Category[] }) {
     for (const c of categories) m.set(c.category_id, c);
     return m;
   }, [categories]);
+
+  // value_id → option label, so list-typed axis/attribute cells can render
+  // "Adulto" instead of "#94". Built once from the page-level fetch.
+  const optionLabelById = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const o of attributeOptions) m.set(o.value_id, o.value);
+    return m;
+  }, [attributeOptions]);
+
+  // Source-row → photo URL, so a variant can show the thumbnail of the
+  // original CSV row that produced it (helpful for spotting bad groupings
+  // when the same SKU was picked up twice with slightly different names).
+  const photoByRowIndex = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const a of state.categoryAssignments) {
+      if (a.photoUrl) m.set(a.rowIndex, a.photoUrl);
+    }
+    return m;
+  }, [state.categoryAssignments]);
 
   // Distinct selected categories from Step 2
   const selectedCategoryIds = useMemo(() => {
@@ -246,72 +272,78 @@ export function Step3Grouping({ categories }: { categories: Category[] }) {
                 </thead>
                 <tbody>
                   {visibleBases.flatMap((base) =>
-                    base.variants.map((v, vi) => (
-                      <tr key={v.id}>
-                        <td style={{ paddingLeft: 20, position: "sticky", left: 0, background: "white" }}>
-                          {vi === 0 ? (
-                            <div>
-                              <div style={{ fontWeight: 500 }}>{base.baseName}</div>
-                              <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
-                                {base.categoryName}
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ color: "var(--s-text-tertiary)", fontSize: 11 }}>
-                              {base.variants.length > 1 ? "↳" : ""}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={v.label}
-                            onChange={(e) =>
-                              dispatch({
-                                type: "UPDATE_VARIANT_FIELD",
-                                baseId: base.id,
-                                variantId: v.id,
-                                field: "label",
-                                value: e.target.value,
-                              })
-                            }
-                            style={cellInput()}
-                          />
-                        </td>
-                        {axisCodes.map((code) => {
-                          const ax = v.axes.find((a) => a.attributeCode === code);
-                          return (
-                            <td key={`ax-${code}`} style={{ background: "var(--scout-accent-50)" }}>
-                              {ax ? (
-                                <div style={{ fontSize: 12, fontWeight: 500, color: "var(--scout-accent-800)" }}>
-                                  {ax.dataType === "quantity"
-                                    ? `${ax.valueNumber ?? "—"} ${ax.unitCode ?? ""}`.trim()
-                                    : ax.dataType === "list"
-                                      ? (ax.valueText ?? `#${ax.valueId}`)
-                                      : (ax.valueText ?? "—")}
+                    base.variants.map((v, vi) => {
+                      // Photo URL of the source row that produced this variant.
+                      // First sourceRowIndex is the canonical pick — if multiple
+                      // source rows collapsed into one variant they share a SKU
+                      // anyway, so any photo is representative.
+                      const photoUrl = photoByRowIndex.get(v.sourceRowIndices[0] ?? -1);
+                      return (
+                        <tr key={v.id}>
+                          <td style={{ paddingLeft: 20, position: "sticky", left: 0, background: "white" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <ProductThumbnail url={photoUrl} alt={base.baseName} />
+                              {vi === 0 ? (
+                                <div>
+                                  <div style={{ fontWeight: 500 }}>{base.baseName}</div>
+                                  <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+                                    {base.categoryName}
+                                  </div>
                                 </div>
                               ) : (
-                                <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        {attributeCodes.map((code) => {
-                          const at = v.attributes.find((a) => a.attributeCode === code);
-                          return (
-                            <td key={`at-${code}`}>
-                              {at ? (
-                                <div style={{ fontSize: 12 }}>
-                                  {at.valueText ?? (at.valueId !== null ? `#${at.valueId}` : "—")}
+                                <div style={{ color: "var(--s-text-tertiary)", fontSize: 11 }}>
+                                  {base.variants.length > 1 ? "↳" : ""}
                                 </div>
-                              ) : (
-                                <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
                               )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    )),
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={v.label}
+                              onChange={(e) =>
+                                dispatch({
+                                  type: "UPDATE_VARIANT_FIELD",
+                                  baseId: base.id,
+                                  variantId: v.id,
+                                  field: "label",
+                                  value: e.target.value,
+                                })
+                              }
+                              style={cellInput()}
+                            />
+                          </td>
+                          {axisCodes.map((code) => {
+                            const ax = v.axes.find((a) => a.attributeCode === code);
+                            return (
+                              <td key={`ax-${code}`} style={{ background: "var(--scout-accent-50)" }}>
+                                {ax ? (
+                                  <div style={{ fontSize: 12, fontWeight: 500, color: "var(--scout-accent-800)" }}>
+                                    {renderAxisValue(ax, optionLabelById)}
+                                  </div>
+                                ) : (
+                                  <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          {attributeCodes.map((code) => {
+                            const at = v.attributes.find((a) => a.attributeCode === code);
+                            return (
+                              <td key={`at-${code}`}>
+                                {at ? (
+                                  <div style={{ fontSize: 12 }}>
+                                    {renderAttributeValue(at, optionLabelById)}
+                                  </div>
+                                ) : (
+                                  <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    }),
                   )}
                 </tbody>
               </table>
@@ -352,6 +384,41 @@ function cellInput(): React.CSSProperties {
     background: "white",
     outline: "none",
   };
+}
+
+function renderAxisValue(
+  ax: ProposedAxisCell,
+  optionLabelById: Map<number, string>,
+): string {
+  if (ax.dataType === "quantity") {
+    return `${ax.valueNumber ?? "—"} ${ax.unitCode ?? ""}`.trim();
+  }
+  if (ax.dataType === "list" || ax.dataType === "multiselect") {
+    return resolveOption(ax.valueId, ax.valueText, optionLabelById);
+  }
+  return ax.valueText ?? "—";
+}
+
+function renderAttributeValue(
+  at: ProposedAttributeCell,
+  optionLabelById: Map<number, string>,
+): string {
+  if (at.dataType === "list" || at.dataType === "multiselect") {
+    return resolveOption(at.valueId, at.valueText, optionLabelById);
+  }
+  return at.valueText ?? "—";
+}
+
+function resolveOption(
+  valueId: number | string | null,
+  valueText: string | null,
+  optionLabelById: Map<number, string>,
+): string {
+  if (valueText) return valueText;
+  if (valueId === null || valueId === undefined) return "—";
+  const numId = typeof valueId === "number" ? valueId : Number(valueId);
+  const label = optionLabelById.get(numId);
+  return label ?? `#${valueId}`;
 }
 
 function CatPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {

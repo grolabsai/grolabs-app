@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
 type BrandRow = { brand_id: number; brand_name: string };
 type CategoryRow = { category_id: number; category_name: string; parent_category_id: number | null };
 type ProductTypeRow = { product_type_id: number; type_name: string };
+type AttributeOptionRow = { value_id: number; value: string };
 
 export default async function ImportWizardPage() {
   const supabase = await createClient();
@@ -40,7 +41,12 @@ export default async function ImportWizardPage() {
     );
   }
 
-  const [{ data: brands }, { data: categories }, { data: productTypes }] = await Promise.all([
+  const [
+    { data: brands },
+    { data: categories },
+    { data: productTypes },
+    { data: attributeOptions },
+  ] = await Promise.all([
     supabase
       .from("brand")
       .select("brand_id, brand_name")
@@ -63,6 +69,15 @@ export default async function ImportWizardPage() {
       .eq("is_active", true)
       .order("sort_order", { ascending: true, nullsFirst: false })
       .returns<ProductTypeRow[]>(),
+    // Step 3 needs to render `value_id` references as their human label
+    // (e.g. "Adulto" instead of "#94"). Fetch all active list-option rows
+    // for the instance up front — typically dozens, fine to ship in full.
+    supabase
+      .from("product_attribute_option")
+      .select("value_id, value")
+      .eq("instance_id", instanceId)
+      .eq("is_active", true)
+      .returns<AttributeOptionRow[]>(),
   ]);
 
   const defaultProductTypeId = productTypes?.[0]?.product_type_id ?? null;
@@ -89,6 +104,7 @@ export default async function ImportWizardPage() {
       <ImportWizard
         brands={brands ?? []}
         categories={categories ?? []}
+        attributeOptions={attributeOptions ?? []}
         defaultProductTypeId={defaultProductTypeId}
       />
     </div>

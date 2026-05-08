@@ -13,10 +13,12 @@ import { WizardProvider, useWizard } from "@/components/import/WizardContext";
 
 export type Brand = { brand_id: number; brand_name: string };
 export type Category = { category_id: number; category_name: string; parent_category_id: number | null };
+export type AttributeOption = { value_id: number; value: string };
 
 export type SharedProps = {
   brands: Brand[];
   categories: Category[];
+  attributeOptions: AttributeOption[];
   defaultProductTypeId: number | null;
 };
 
@@ -28,7 +30,7 @@ export function ImportWizard(props: SharedProps) {
   );
 }
 
-function Inner({ brands, categories, defaultProductTypeId }: SharedProps) {
+function Inner({ brands, categories, attributeOptions, defaultProductTypeId }: SharedProps) {
   const t = useTranslations("import.wizard");
   const { state, dispatch } = useWizard();
 
@@ -132,7 +134,7 @@ function Inner({ brands, categories, defaultProductTypeId }: SharedProps) {
         <div style={{ minWidth: 0 }}>
           {state.step === 1 && <Step1Upload />}
           {state.step === 2 && <Step2Categories brands={brands} categories={categories} />}
-          {state.step === 3 && <Step3Grouping categories={categories} />}
+          {state.step === 3 && <Step3Grouping categories={categories} attributeOptions={attributeOptions} />}
           {state.step === 4 && <Step4Mapping />}
           {state.step === 5 && <Step5Review categories={categories} />}
           {state.step === 6 && <Step6Import defaultProductTypeId={defaultProductTypeId} />}

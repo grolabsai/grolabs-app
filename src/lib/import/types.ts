@@ -211,13 +211,6 @@ export type WizardState = {
   // Step 6
   importing: boolean;
   importResult: ImportResult | null;
-
-  /**
-   * Right-side agent narrative. Append-only chronological log of what the
-   * agent did and what came back, surfaced in `AgentPanel`. Cleared when
-   * the user uploads a new file.
-   */
-  agentMessages: AgentMessage[];
 };
 
 // ─── Submission shape (what Step 6 sends to createProductsBulk) ────────────

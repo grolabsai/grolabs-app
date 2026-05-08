@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 
-import { AgentPanel } from "@/components/import/AgentPanel";
 import { Step1Upload } from "@/components/import/Step1Upload";
 import { Step2Categories } from "@/components/import/Step2Categories";
 import { Step3Grouping } from "@/components/import/Step3Grouping";
@@ -13,12 +12,36 @@ import { WizardProvider, useWizard } from "@/components/import/WizardContext";
 
 export type Brand = { brand_id: number; brand_name: string };
 export type Category = { category_id: number; category_name: string; parent_category_id: number | null };
-export type AttributeOption = { value_id: number; value: string };
+export type AttributeOption = { value_id: number; attribute_id: number; value: string };
+export type Attribute = {
+  attribute_id: number;
+  attribute_code: string;
+  attribute_name: string;
+  data_type: "text" | "number" | "list" | "multiselect" | "boolean" | "quantity" | "url";
+  dimension: "mass" | "volume" | "count" | "length" | null;
+};
+export type CategoryAttributeLink = {
+  category_id: number;
+  attribute_id: number;
+  is_variant_axis: boolean;
+  variant_axis_order: number | null;
+  form_order: number | null;
+  requirement_level: "required" | "optional" | null;
+};
+export type Unit = {
+  unit_id: number;
+  code: string;
+  name: string;
+  dimension: "mass" | "volume" | "count" | "length";
+};
 
 export type SharedProps = {
   brands: Brand[];
   categories: Category[];
   attributeOptions: AttributeOption[];
+  attributes: Attribute[];
+  categoryAttributes: CategoryAttributeLink[];
+  units: Unit[];
   defaultProductTypeId: number | null;
 };
 
@@ -30,7 +53,15 @@ export function ImportWizard(props: SharedProps) {
   );
 }
 
-function Inner({ brands, categories, attributeOptions, defaultProductTypeId }: SharedProps) {
+function Inner({
+  brands,
+  categories,
+  attributeOptions,
+  attributes,
+  categoryAttributes,
+  units,
+  defaultProductTypeId,
+}: SharedProps) {
   const t = useTranslations("import.wizard");
   const { state, dispatch } = useWizard();
 
@@ -120,28 +151,24 @@ function Inner({ brands, categories, attributeOptions, defaultProductTypeId }: S
         })}
       </div>
 
-      {/* Active step + agent narrative panel.
-          Two-column on wide viewports; the agent panel stacks below on
-          narrow ones so step content keeps full width when space is tight. */}
-      <div
-        style={{
-          display: "grid",
-          gap: 20,
-          gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 340px)",
-          alignItems: "start",
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          {state.step === 1 && <Step1Upload />}
-          {state.step === 2 && <Step2Categories brands={brands} categories={categories} />}
-          {state.step === 3 && <Step3Grouping categories={categories} attributeOptions={attributeOptions} />}
-          {state.step === 4 && <Step4Mapping />}
-          {state.step === 5 && <Step5Review categories={categories} />}
-          {state.step === 6 && <Step6Import defaultProductTypeId={defaultProductTypeId} />}
-        </div>
-        <div style={{ position: "sticky", top: 16 }}>
-          <AgentPanel />
-        </div>
+      {/* Active step. Agent narrative is surfaced in the global Assistant
+          panel on the app's right rail (shell/AgentPanel) — single-column
+          here so the working area gets every available pixel. */}
+      <div>
+        {state.step === 1 && <Step1Upload />}
+        {state.step === 2 && <Step2Categories brands={brands} categories={categories} />}
+        {state.step === 3 && (
+          <Step3Grouping
+            categories={categories}
+            attributeOptions={attributeOptions}
+            attributes={attributes}
+            categoryAttributes={categoryAttributes}
+            units={units}
+          />
+        )}
+        {state.step === 4 && <Step4Mapping />}
+        {state.step === 5 && <Step5Review categories={categories} />}
+        {state.step === 6 && <Step6Import defaultProductTypeId={defaultProductTypeId} />}
       </div>
     </>
   );

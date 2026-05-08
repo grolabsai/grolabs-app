@@ -278,7 +278,13 @@
     "noActivity": "Sin actividad de agente en esta sesión.",
     "hint": "Aquí aparecerán las narraciones del agente mientras trabaja.",
     "inputPlaceholder": "Pídele al asistente algo…",
-    "send": "Enviar"
+    "send": "Enviar",
+    "clear": "Limpiar",
+    "collapseTitle": "Colapsar",
+    "copy": "Copiar respuesta",
+    "copyHint": "Copiar la respuesta completa al portapapeles",
+    "copied": "Respuesta copiada al portapapeles.",
+    "copyFailed": "No se pudo copiar al portapapeles."
   },
   "catalog": {
     "categoryAttributes": {

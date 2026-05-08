@@ -3,12 +3,13 @@
 import { createContext, useContext, useReducer, type ReactNode } from "react";
 
 import type {
-  AgentMessage,
   CategoryAssignment,
   ColumnMapping,
   ColumnPick,
   ImportResult,
   ParsedFile,
+  ProposedAttributeCell,
+  ProposedAxisCell,
   ProposedProductBaseRow,
   ScoutFieldId,
   WizardState,
@@ -43,7 +44,6 @@ const INITIAL: WizardState = {
   columnMapping: DEFAULT_MAPPING,
   importing: false,
   importResult: null,
-  agentMessages: [],
 };
 
 // ─── Actions ───────────────────────────────────────────────────────────────
@@ -60,11 +60,13 @@ type Action =
   | { type: "SET_GROUPING"; on: boolean }
   | { type: "SET_PRODUCT_BASES"; bases: ProposedProductBaseRow[] }
   | { type: "UPDATE_VARIANT_FIELD"; baseId: string; variantId: string; field: keyof Pick<import("@/lib/import/types").ProposedVariantRow, "label" | "sku" | "barcode" | "weightGrams" | "listPrice" | "costPrice" | "stockQty">; value: string }
+  | { type: "UPSERT_VARIANT_AXIS"; baseId: string; variantId: string; cell: ProposedAxisCell }
+  | { type: "REMOVE_VARIANT_AXIS"; baseId: string; variantId: string; attributeId: number | string }
+  | { type: "UPSERT_VARIANT_ATTRIBUTE"; baseId: string; variantId: string; cell: ProposedAttributeCell }
+  | { type: "REMOVE_VARIANT_ATTRIBUTE"; baseId: string; variantId: string; attributeId: number | string }
   | { type: "SET_COLUMN_MAPPING_FIELD"; field: ScoutFieldId; mapping: ColumnMapping[ScoutFieldId] }
   | { type: "SET_IMPORTING"; on: boolean }
-  | { type: "SET_IMPORT_RESULT"; result: ImportResult | null }
-  | { type: "APPEND_AGENT_MESSAGE"; message: AgentMessage }
-  | { type: "CLEAR_AGENT_MESSAGES" };
+  | { type: "SET_IMPORT_RESULT"; result: ImportResult | null };
 
 function reducer(state: WizardState, action: Action): WizardState {
   switch (action.type) {
@@ -78,7 +80,6 @@ function reducer(state: WizardState, action: Action): WizardState {
         categoriesAnalyzed: false,
         productBases: [],
         grouped: false,
-        agentMessages: [],
       };
     case "SET_BRAND":
       return { ...state, brand: { brandId: action.brandId } };
@@ -130,16 +131,97 @@ function reducer(state: WizardState, action: Action): WizardState {
             : b,
         ),
       };
+    case "UPSERT_VARIANT_AXIS":
+      return {
+        ...state,
+        productBases: state.productBases.map((b) =>
+          b.id === action.baseId
+            ? {
+                ...b,
+                variants: b.variants.map((v) => {
+                  if (v.id !== action.variantId) return v;
+                  const exists = v.axes.some((a) => a.attributeId === action.cell.attributeId);
+                  return {
+                    ...v,
+                    axes: exists
+                      ? v.axes.map((a) =>
+                          a.attributeId === action.cell.attributeId ? action.cell : a,
+                        )
+                      : [...v.axes, action.cell],
+                  };
+                }),
+              }
+            : b,
+        ),
+      };
+    case "REMOVE_VARIANT_AXIS":
+      return {
+        ...state,
+        productBases: state.productBases.map((b) =>
+          b.id === action.baseId
+            ? {
+                ...b,
+                variants: b.variants.map((v) =>
+                  v.id === action.variantId
+                    ? { ...v, axes: v.axes.filter((a) => a.attributeId !== action.attributeId) }
+                    : v,
+                ),
+              }
+            : b,
+        ),
+      };
+    case "UPSERT_VARIANT_ATTRIBUTE":
+      return {
+        ...state,
+        productBases: state.productBases.map((b) =>
+          b.id === action.baseId
+            ? {
+                ...b,
+                variants: b.variants.map((v) => {
+                  if (v.id !== action.variantId) return v;
+                  const exists = v.attributes.some(
+                    (a) => a.attributeId === action.cell.attributeId,
+                  );
+                  return {
+                    ...v,
+                    attributes: exists
+                      ? v.attributes.map((a) =>
+                          a.attributeId === action.cell.attributeId ? action.cell : a,
+                        )
+                      : [...v.attributes, action.cell],
+                  };
+                }),
+              }
+            : b,
+        ),
+      };
+    case "REMOVE_VARIANT_ATTRIBUTE":
+      return {
+        ...state,
+        productBases: state.productBases.map((b) =>
+          b.id === action.baseId
+            ? {
+                ...b,
+                variants: b.variants.map((v) =>
+                  v.id === action.variantId
+                    ? {
+                        ...v,
+                        attributes: v.attributes.filter(
+                          (a) => a.attributeId !== action.attributeId,
+                        ),
+                      }
+                    : v,
+                ),
+              }
+            : b,
+        ),
+      };
     case "SET_COLUMN_MAPPING_FIELD":
       return { ...state, columnMapping: { ...state.columnMapping, [action.field]: action.mapping } };
     case "SET_IMPORTING":
       return { ...state, importing: action.on };
     case "SET_IMPORT_RESULT":
       return { ...state, importResult: action.result };
-    case "APPEND_AGENT_MESSAGE":
-      return { ...state, agentMessages: [...state.agentMessages, action.message] };
-    case "CLEAR_AGENT_MESSAGES":
-      return { ...state, agentMessages: [] };
     default:
       return state;
   }

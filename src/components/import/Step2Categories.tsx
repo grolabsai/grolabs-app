@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { Brand, Category } from "@/components/import/ImportWizard";
 import { ProductThumbnail } from "@/components/import/ProductThumbnail";
 import { useWizard } from "@/components/import/WizardContext";
+import { useAgentLog } from "@/components/shell/AgentLogContext";
 import { Combobox } from "@/components/ui/combobox";
 import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import { analyzeImportCategories } from "@/lib/actions/import";
@@ -22,6 +23,7 @@ export function Step2Categories({
 }) {
   const t = useTranslations("import.wizard.step2");
   const { state, dispatch } = useWizard();
+  const { append: logAgent } = useAgentLog();
   const [pending, startTransition] = useTransition();
 
   const file = state.parsedFile;
@@ -119,14 +121,13 @@ export function Step2Categories({
         userSelected: false,
       }));
       dispatch({ type: "SET_CATEGORY_ASSIGNMENTS", assignments });
-      dispatch({
-        type: "APPEND_AGENT_MESSAGE",
-        message: makeAgentMessage({
+      logAgent(
+        makeAgentMessage({
           kind: "info",
           title: t("agentTitleSkipped"),
           body: t("agentBodySkipped", { n: assignments.length, category: only.category_name }),
         }),
-      });
+      );
       toast.success(t("analysisSuccess", { n: assignments.length }));
       return;
     }
@@ -138,28 +139,26 @@ export function Step2Categories({
     }));
 
     dispatch({ type: "SET_ANALYZING_CATEGORIES", on: true });
-    dispatch({
-      type: "APPEND_AGENT_MESSAGE",
-      message: makeAgentMessage({
+    logAgent(
+      makeAgentMessage({
         kind: "thinking",
         title: t("agentTitleAnalyzing"),
         body: t("agentBodyAnalyzing", { n: products.length, c: candidates.length }),
       }),
-    });
+    );
     startTransition(async () => {
       const r = await analyzeImportCategories({ products, candidates });
       dispatch({ type: "SET_ANALYZING_CATEGORIES", on: false });
       if ("error" in r) {
         toast.error(t("analysisError"), { description: r.error });
-        dispatch({
-          type: "APPEND_AGENT_MESSAGE",
-          message: makeAgentMessage({
+        logAgent(
+          makeAgentMessage({
             kind: "error",
             title: t("agentTitleAnalyzeError"),
             body: r.error,
             raw: r.error,
           }),
-        });
+        );
         return;
       }
       // Map response → CategoryAssignment[]
@@ -205,9 +204,8 @@ export function Step2Categories({
         if (a.suggestedCategoryId === null) tiers.unmatched += 1;
         else tiers[a.confidenceTier] += 1;
       }
-      dispatch({
-        type: "APPEND_AGENT_MESSAGE",
-        message: makeAgentMessage({
+      logAgent(
+        makeAgentMessage({
           kind: tiers.unmatched > 0 ? "warning" : "success",
           title: t("agentTitleAnalyzed"),
           body: t("agentBodyAnalyzed", {
@@ -220,7 +218,7 @@ export function Step2Categories({
           }),
           raw: r.data,
         }),
-      });
+      );
       toast.success(t("analysisSuccess", { n: assignments.length }));
     });
   }

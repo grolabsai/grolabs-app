@@ -4,27 +4,51 @@ import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import type { AttributeOption, Category } from "@/components/import/ImportWizard";
+import type {
+  Attribute,
+  AttributeOption,
+  Category,
+  CategoryAttributeLink,
+  Unit,
+} from "@/components/import/ImportWizard";
 import { ProductThumbnail } from "@/components/import/ProductThumbnail";
+import { SourceName } from "@/components/import/SourceName";
+import {
+  AttributeCellEditor,
+  AxisCellEditor,
+} from "@/components/import/VariantCellEditor";
 import { useWizard } from "@/components/import/WizardContext";
+import { useAgentLog } from "@/components/shell/AgentLogContext";
 import { groupImportProducts } from "@/lib/actions/import";
 import { makeAgentMessage } from "@/lib/import/agent-message";
+import { colorForAttribute } from "@/lib/import/attribute-colors";
 import type {
   ProposedAttributeCell,
   ProposedAxisCell,
   ProposedProductBaseRow,
   ProposedVariantRow,
 } from "@/lib/import/types";
+import {
+  effectiveVocabularyFor,
+  type EffectiveAttribute,
+} from "@/lib/import/vocabulary";
 
 export function Step3Grouping({
   categories,
   attributeOptions,
+  attributes,
+  categoryAttributes,
+  units,
 }: {
   categories: Category[];
   attributeOptions: AttributeOption[];
+  attributes: Attribute[];
+  categoryAttributes: CategoryAttributeLink[];
+  units: Unit[];
 }) {
   const t = useTranslations("import.wizard.step3");
   const { state, dispatch } = useWizard();
+  const { append: logAgent } = useAgentLog();
   const [pending, startTransition] = useTransition();
   const [activeCategoryId, setActiveCategoryId] = useState<number | "all">("all");
 
@@ -74,6 +98,30 @@ export function Step3Grouping({
     return m;
   }, [state.categoryAssignments]);
 
+  // attribute_id → its options, so list-typed cell editors can populate a
+  // dropdown with only the options that actually belong to that attribute.
+  const optionsByAttributeId = useMemo(() => {
+    const m = new Map<number, AttributeOption[]>();
+    for (const o of attributeOptions) {
+      const arr = m.get(o.attribute_id) ?? [];
+      arr.push(o);
+      m.set(o.attribute_id, arr);
+    }
+    return m;
+  }, [attributeOptions]);
+
+  // category_id → effective vocabulary (axes + descriptive attrs after the
+  // inheritance walk per CLAUDE.md §10). Drives column rendering — every
+  // column shows up even if the agent didn't populate it for any variant,
+  // so the user can fill in missed values manually.
+  const vocabByCategory = useMemo(() => {
+    const m = new Map<number, ReturnType<typeof effectiveVocabularyFor>>();
+    for (const cid of selectedCategoryIds) {
+      m.set(cid, effectiveVocabularyFor(cid, categories, categoryAttributes, attributes));
+    }
+    return m;
+  }, [selectedCategoryIds, categories, categoryAttributes, attributes]);
+
   function runGrouping() {
     if (selectedCategoryIds.length === 0) {
       toast.error(t("noCategoriesPicked"));
@@ -81,14 +129,13 @@ export function Step3Grouping({
     }
 
     dispatch({ type: "SET_GROUPING", on: true });
-    dispatch({
-      type: "APPEND_AGENT_MESSAGE",
-      message: makeAgentMessage({
+    logAgent(
+      makeAgentMessage({
         kind: "thinking",
         title: t("agentTitleGrouping"),
         body: t("agentBodyGrouping", { categories: selectedCategoryIds.length }),
       }),
-    });
+    );
     startTransition(async () => {
       const allBases: ProposedProductBaseRow[] = [];
       // One GLPIM call per category (the agent expects all products to be in
@@ -104,20 +151,18 @@ export function Step3Grouping({
         const r = await groupImportProducts({ products, categoryId });
         if ("error" in r) {
           toast.error(t("groupingError"), { description: r.error });
-          dispatch({
-            type: "APPEND_AGENT_MESSAGE",
-            message: makeAgentMessage({
+          logAgent(
+            makeAgentMessage({
               kind: "error",
               title: t("agentTitleGroupError", { category: cat?.category_name ?? `#${categoryId}` }),
               body: r.error,
               raw: r.error,
             }),
-          });
+          );
           continue;
         }
-        dispatch({
-          type: "APPEND_AGENT_MESSAGE",
-          message: makeAgentMessage({
+        logAgent(
+          makeAgentMessage({
             kind: r.data.bases.length > 0 ? "success" : "warning",
             title: t("agentTitleGroupedFor", { category: cat?.category_name ?? `#${categoryId}` }),
             body: t("agentBodyGroupedFor", {
@@ -126,7 +171,7 @@ export function Step3Grouping({
             }),
             raw: r.data,
           }),
-        });
+        );
 
         for (const base of r.data.bases) {
           const cat = categoryById.get(categoryId);
@@ -180,31 +225,45 @@ export function Step3Grouping({
     });
   }
 
-  // Compute the union of axis codes per category, so the table headers match
-  // the category being viewed. Each category may have different axes.
   const visibleBases = activeCategoryId === "all"
     ? state.productBases
     : state.productBases.filter((b) => b.categoryId === activeCategoryId);
 
-  const axisCodes = useMemo(() => {
-    const set = new Set<string>();
-    for (const b of visibleBases) {
-      for (const v of b.variants) {
-        for (const a of v.axes) set.add(a.attributeCode);
+  // Column set comes from the effective vocabulary of every visible
+  // category, deduped by attribute_id, in axis-order then descriptive-
+  // order. Columns appear regardless of agent population so the user can
+  // fill in a value the agent missed.
+  const axisColumns = useMemo<EffectiveAttribute[]>(() => {
+    const seen = new Set<number>();
+    const out: EffectiveAttribute[] = [];
+    const cats = activeCategoryId === "all" ? selectedCategoryIds : [activeCategoryId];
+    for (const cid of cats) {
+      const v = vocabByCategory.get(cid);
+      if (!v) continue;
+      for (const a of v.axes) {
+        if (seen.has(a.attribute_id)) continue;
+        seen.add(a.attribute_id);
+        out.push(a);
       }
     }
-    return Array.from(set);
-  }, [visibleBases]);
+    return out;
+  }, [activeCategoryId, selectedCategoryIds, vocabByCategory]);
 
-  const attributeCodes = useMemo(() => {
-    const set = new Set<string>();
-    for (const b of visibleBases) {
-      for (const v of b.variants) {
-        for (const a of v.attributes) set.add(a.attributeCode);
+  const attributeColumns = useMemo<EffectiveAttribute[]>(() => {
+    const seen = new Set<number>();
+    const out: EffectiveAttribute[] = [];
+    const cats = activeCategoryId === "all" ? selectedCategoryIds : [activeCategoryId];
+    for (const cid of cats) {
+      const v = vocabByCategory.get(cid);
+      if (!v) continue;
+      for (const a of v.descriptive) {
+        if (seen.has(a.attribute_id)) continue;
+        seen.add(a.attribute_id);
+        out.push(a);
       }
     }
-    return Array.from(set);
-  }, [visibleBases]);
+    return out;
+  }, [activeCategoryId, selectedCategoryIds, vocabByCategory]);
 
   const totalVariants = state.productBases.reduce((n, b) => n + b.variants.length, 0);
 
@@ -272,24 +331,22 @@ export function Step3Grouping({
                   <tr>
                     <th style={{ paddingLeft: 20, position: "sticky", left: 0, background: "var(--s-surface-alt)" }}>{t("col.base")}</th>
                     <th>{t("col.label")}</th>
-                    {axisCodes.map((code) => (
-                      <th key={`ax-${code}`} style={{ background: "var(--scout-accent-50)", color: "var(--scout-accent-800)" }}>
-                        {code}
-                      </th>
+                    {axisColumns.map((a) => (
+                      <ColumnHeader key={`ax-${a.attribute_id}`} attribute={a} variant="axis" />
                     ))}
-                    {attributeCodes.map((code) => (
-                      <th key={`at-${code}`}>{code}</th>
+                    {attributeColumns.map((a) => (
+                      <ColumnHeader key={`at-${a.attribute_id}`} attribute={a} variant="attr" />
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {visibleBases.flatMap((base) =>
                     base.variants.map((v, vi) => {
-                      // Photo URL of the source row that produced this variant.
-                      // First sourceRowIndex is the canonical pick — if multiple
-                      // source rows collapsed into one variant they share a SKU
-                      // anyway, so any photo is representative.
                       const photoUrl = photoByRowIndex.get(v.sourceRowIndices[0] ?? -1);
+                      const sourceText = v.sourceRowIndices
+                        .map((ri) => sourceNameByRowIndex.get(ri))
+                        .filter((s): s is string => Boolean(s))
+                        .join(" · ");
                       return (
                         <tr key={v.id}>
                           <td style={{ paddingLeft: 20, position: "sticky", left: 0, background: "white" }}>
@@ -324,51 +381,79 @@ export function Step3Grouping({
                               }
                               style={cellInput()}
                             />
-                            {v.sourceRowIndices.length > 0 ? (
-                              <div
-                                style={{
-                                  marginTop: 4,
-                                  fontSize: 11,
-                                  fontStyle: "italic",
-                                  color: "var(--s-text-tertiary)",
-                                  lineHeight: 1.3,
-                                  fontFamily:
-                                    "ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-                                }}
-                                title={t("sourceNameTooltip")}
-                              >
-                                {v.sourceRowIndices
-                                  .map((ri) => sourceNameByRowIndex.get(ri))
-                                  .filter(Boolean)
-                                  .join(" · ") || "—"}
-                              </div>
+                            {sourceText ? (
+                              <SourceName
+                                text={sourceText}
+                                axes={v.axes}
+                                attributes={v.attributes}
+                                optionLabelById={optionLabelById}
+                                tooltip={t("sourceNameTooltip")}
+                              />
                             ) : null}
                           </td>
-                          {axisCodes.map((code) => {
-                            const ax = v.axes.find((a) => a.attributeCode === code);
+                          {axisColumns.map((attr) => {
+                            const cell = v.axes.find((a) => Number(a.attributeId) === attr.attribute_id);
+                            const accent = cell ? colorForAttribute(attr.attribute_id) : null;
                             return (
-                              <td key={`ax-${code}`} style={{ background: "var(--scout-accent-50)" }}>
-                                {ax ? (
-                                  <div style={{ fontSize: 12, fontWeight: 500, color: "var(--scout-accent-800)" }}>
-                                    {renderAxisValue(ax, optionLabelById)}
-                                  </div>
-                                ) : (
-                                  <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
-                                )}
+                              <td
+                                key={`ax-${attr.attribute_id}`}
+                                style={{ background: "var(--scout-accent-50)", padding: 4 }}
+                              >
+                                <AxisCellEditor
+                                  attribute={attr}
+                                  cell={cell}
+                                  options={optionsByAttributeId.get(attr.attribute_id) ?? []}
+                                  units={units}
+                                  accent={accent}
+                                  onUpsert={(c) =>
+                                    dispatch({
+                                      type: "UPSERT_VARIANT_AXIS",
+                                      baseId: base.id,
+                                      variantId: v.id,
+                                      cell: c,
+                                    })
+                                  }
+                                  onRemove={() =>
+                                    dispatch({
+                                      type: "REMOVE_VARIANT_AXIS",
+                                      baseId: base.id,
+                                      variantId: v.id,
+                                      attributeId: attr.attribute_id,
+                                    })
+                                  }
+                                />
                               </td>
                             );
                           })}
-                          {attributeCodes.map((code) => {
-                            const at = v.attributes.find((a) => a.attributeCode === code);
+                          {attributeColumns.map((attr) => {
+                            const cell = v.attributes.find(
+                              (a) => Number(a.attributeId) === attr.attribute_id,
+                            );
+                            const accent = cell ? colorForAttribute(attr.attribute_id) : null;
                             return (
-                              <td key={`at-${code}`}>
-                                {at ? (
-                                  <div style={{ fontSize: 12 }}>
-                                    {renderAttributeValue(at, optionLabelById)}
-                                  </div>
-                                ) : (
-                                  <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
-                                )}
+                              <td key={`at-${attr.attribute_id}`} style={{ padding: 4 }}>
+                                <AttributeCellEditor
+                                  attribute={attr}
+                                  cell={cell}
+                                  options={optionsByAttributeId.get(attr.attribute_id) ?? []}
+                                  accent={accent}
+                                  onUpsert={(c) =>
+                                    dispatch({
+                                      type: "UPSERT_VARIANT_ATTRIBUTE",
+                                      baseId: base.id,
+                                      variantId: v.id,
+                                      cell: c,
+                                    })
+                                  }
+                                  onRemove={() =>
+                                    dispatch({
+                                      type: "REMOVE_VARIANT_ATTRIBUTE",
+                                      baseId: base.id,
+                                      variantId: v.id,
+                                      attributeId: attr.attribute_id,
+                                    })
+                                  }
+                                />
                               </td>
                             );
                           })}
@@ -417,39 +502,39 @@ function cellInput(): React.CSSProperties {
   };
 }
 
-function renderAxisValue(
-  ax: ProposedAxisCell,
-  optionLabelById: Map<number, string>,
-): string {
-  if (ax.dataType === "quantity") {
-    return `${ax.valueNumber ?? "—"} ${ax.unitCode ?? ""}`.trim();
-  }
-  if (ax.dataType === "list" || ax.dataType === "multiselect") {
-    return resolveOption(ax.valueId, ax.valueText, optionLabelById);
-  }
-  return ax.valueText ?? "—";
-}
-
-function renderAttributeValue(
-  at: ProposedAttributeCell,
-  optionLabelById: Map<number, string>,
-): string {
-  if (at.dataType === "list" || at.dataType === "multiselect") {
-    return resolveOption(at.valueId, at.valueText, optionLabelById);
-  }
-  return at.valueText ?? "—";
-}
-
-function resolveOption(
-  valueId: number | string | null,
-  valueText: string | null,
-  optionLabelById: Map<number, string>,
-): string {
-  if (valueText) return valueText;
-  if (valueId === null || valueId === undefined) return "—";
-  const numId = typeof valueId === "number" ? valueId : Number(valueId);
-  const label = optionLabelById.get(numId);
-  return label ?? `#${valueId}`;
+function ColumnHeader({
+  attribute,
+  variant,
+}: {
+  attribute: EffectiveAttribute;
+  variant: "axis" | "attr";
+}) {
+  const color = colorForAttribute(attribute.attribute_id);
+  return (
+    <th
+      style={
+        variant === "axis"
+          ? { background: "var(--scout-accent-50)", color: "var(--scout-accent-800)", whiteSpace: "nowrap" }
+          : { whiteSpace: "nowrap" }
+      }
+      title={`${attribute.attribute_name} · ${attribute.data_type}`}
+    >
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <span
+          style={{
+            display: "inline-block",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: color.fg,
+            flexShrink: 0,
+          }}
+          aria-hidden
+        />
+        {attribute.attribute_name}
+      </span>
+    </th>
+  );
 }
 
 function CatPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {

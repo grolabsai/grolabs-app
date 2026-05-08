@@ -7,12 +7,14 @@ import { Icon } from "@/components/ui/icon";
 import { Upload, FileText } from "lucide-react";
 
 import { useWizard } from "@/components/import/WizardContext";
+import { useAgentLog } from "@/components/shell/AgentLogContext";
 import { makeAgentMessage } from "@/lib/import/agent-message";
 import { parseSpreadsheetFile } from "@/lib/import/xlsx";
 
 export function Step1Upload() {
   const t = useTranslations("import.wizard.step1");
   const { state, dispatch } = useWizard();
+  const { append: logAgent } = useAgentLog();
   const [dragOver, setDragOver] = useState(false);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,9 +23,8 @@ export function Step1Upload() {
     try {
       const parsed = await parseSpreadsheetFile(file, hasHeaders);
       dispatch({ type: "SET_PARSED_FILE", file: parsed });
-      dispatch({
-        type: "APPEND_AGENT_MESSAGE",
-        message: makeAgentMessage({
+      logAgent(
+        makeAgentMessage({
           kind: "info",
           title: t("agentTitleParsed"),
           body: t("agentBodyParsed", {
@@ -32,18 +33,17 @@ export function Step1Upload() {
             rows: parsed.rows.length,
           }),
         }),
-      });
+      );
     } catch (e) {
       const description = e instanceof Error ? e.message : String(e);
       toast.error(t("parseError"), { description });
-      dispatch({
-        type: "APPEND_AGENT_MESSAGE",
-        message: makeAgentMessage({
+      logAgent(
+        makeAgentMessage({
           kind: "error",
           title: t("agentTitleParseError"),
           body: description,
         }),
-      });
+      );
     }
   }
 

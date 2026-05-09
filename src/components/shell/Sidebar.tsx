@@ -18,6 +18,7 @@ import {
   UserRound,
   Settings,
   Search,
+  Telescope,
   Download,
   Palette,
   Workflow,
@@ -64,6 +65,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
   const t = useTranslations("configuration.algolia");
+  const tSearch = useTranslations("configuration.search");
 
   const NAV: NavGroup[] = [
     {
@@ -125,6 +127,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
     {
       title: tNav("configuration"),
       items: [
+        { href: "/configuration/search" as Route, label: tSearch("navLabel"), icon: Telescope, useIconWrapper: true },
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
         { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
         { href: null, label: tNav("storeSettings"), icon: Settings },

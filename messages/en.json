@@ -946,6 +946,42 @@
         "saveFailed": "Could not save configuration"
       }
     },
+    "typesense": {
+      "navLabel": "Typesense",
+      "pageTitle": "Typesense",
+      "pageDescription": "Connect your Typesense cluster to enable real-time search on your catalog.",
+      "fields": {
+        "host": "Host",
+        "protocol": "Protocol",
+        "protocolPlaceholder": "Select protocol",
+        "port": "Port",
+        "searchOnlyApiKey": "Search-only API Key",
+        "adminApiKey": "Write API Key",
+        "adminApiKeyHint": "Write access. Encrypted in Vault.",
+        "adminApiKeyHidden": "Write API Key saved",
+        "replaceKey": "Replace key",
+        "primaryCollection": "Primary collection"
+      },
+      "status": {
+        "label": "Status",
+        "verified": "Verified {time} ago · {latency}ms",
+        "failed": "Verification failed",
+        "notVerified": "Not verified"
+      },
+      "actions": {
+        "test": "Test connection",
+        "save": "Save",
+        "showKey": "Show key",
+        "hideKey": "Hide key"
+      },
+      "toast": {
+        "testSuccess": "Connection successful",
+        "testFailed": "Connection failed",
+        "saveSuccess": "Configuration saved",
+        "saveFailed": "Could not save configuration",
+        "missingFields": "Fill in Host and write key before testing."
+      }
+    },
     "woocommerce": {
       "pageTitle": "WooCommerce",
       "pageDescription": "Connect your WooCommerce store to push products to the storefront.",

@@ -55,10 +55,18 @@ type NavGroup = {
   items: NavItem[];
 };
 
-export function Sidebar({ instanceName }: { instanceName: string }) {
+export function Sidebar({
+  instanceName,
+  typesenseConfigured = false,
+}: {
+  instanceName: string;
+  /** When true, the Typesense nav item appears under Configuration. */
+  typesenseConfigured?: boolean;
+}) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
   const t = useTranslations("configuration.algolia");
+  const tTypesense = useTranslations("configuration.typesense");
 
   const NAV: NavGroup[] = [
     {
@@ -110,6 +118,9 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       title: tNav("configuration"),
       items: [
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
+        ...(typesenseConfigured
+          ? [{ href: "/configuration/typesense" as Route, label: tTypesense("navLabel"), icon: Search }]
+          : []),
         { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
         { href: null, label: tNav("storeSettings"), icon: Settings },
       ],

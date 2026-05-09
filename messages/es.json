@@ -946,6 +946,42 @@
         "saveFailed": "No se pudo guardar"
       }
     },
+    "typesense": {
+      "navLabel": "Typesense",
+      "pageTitle": "Typesense",
+      "pageDescription": "Conecta tu cluster de Typesense para habilitar búsqueda en tiempo real en tu catálogo.",
+      "fields": {
+        "host": "Host",
+        "protocol": "Protocolo",
+        "protocolPlaceholder": "Seleccionar protocolo",
+        "port": "Puerto",
+        "searchOnlyApiKey": "Search-only API Key",
+        "adminApiKey": "Clave de escritura",
+        "adminApiKeyHint": "Acceso de escritura. Encriptada en Vault.",
+        "adminApiKeyHidden": "Clave de escritura guardada",
+        "replaceKey": "Reemplazar clave",
+        "primaryCollection": "Colección principal"
+      },
+      "status": {
+        "label": "Estado",
+        "verified": "Verificado hace {time} · {latency}ms",
+        "failed": "Falló la verificación",
+        "notVerified": "Sin verificar"
+      },
+      "actions": {
+        "test": "Probar conexión",
+        "save": "Guardar",
+        "showKey": "Mostrar clave",
+        "hideKey": "Ocultar clave"
+      },
+      "toast": {
+        "testSuccess": "Conexión exitosa",
+        "testFailed": "Error de conexión",
+        "saveSuccess": "Configuración guardada",
+        "saveFailed": "No se pudo guardar",
+        "missingFields": "Completa Host y clave de escritura antes de probar."
+      }
+    },
     "woocommerce": {
       "pageTitle": "WooCommerce",
       "pageDescription": "Conecta tu tienda WooCommerce para enviar productos al storefront.",

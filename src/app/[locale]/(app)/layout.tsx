@@ -47,13 +47,34 @@ export default async function AppLayout({
   const instanceObj = Array.isArray(instanceRel) ? instanceRel[0] : instanceRel;
   const instanceName = instanceObj?.name ?? "Sin instancia";
 
+  // Per-integration nav gating: a nav entry only appears once the integration
+  // is configured. We treat "configured" as "host/app-id present in JSONB" —
+  // the credentials screen itself is always reachable via direct URL so users
+  // can bootstrap a new integration before it shows up in the sidebar.
+  let typesenseConfigured = false;
+  if (membership?.instance_id != null) {
+    const { data: instanceRow } = await supabase
+      .from("instance")
+      .select("integrations_config")
+      .eq("instance_id", membership.instance_id)
+      .maybeSingle();
+    const cfg = instanceRow?.integrations_config as
+      | { typesense?: { host?: string } }
+      | null
+      | undefined;
+    typesenseConfigured = Boolean(cfg?.typesense?.host);
+  }
+
   // User initials for the topbar avatar — from email local part if no name.
   const initials = (user.email ?? "??").slice(0, 2).toUpperCase();
 
   return (
     <AgentLogProvider>
       <div className="s-app">
-        <Sidebar instanceName={instanceName} />
+        <Sidebar
+          instanceName={instanceName}
+          typesenseConfigured={typesenseConfigured}
+        />
         <main className="s-main">
           <TopBar initials={initials} userEmail={user.email ?? ""} />
           <div className="s-shell-body">

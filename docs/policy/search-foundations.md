@@ -6,9 +6,10 @@ Stage 0 goals
 Establish infrastructure plumbing so all subsequent stages compose cleanly. No user-facing changes. No shoppers see anything different yet.
 
 * Provision Meilisearch Cloud project for production use.
+* Add `instance.storefront_domains text[]` column — required by the token endpoint's origin validation.
 * Implement Scout-side `meilisearch_client` module for admin operations (index management, document upserts, settings).
 * Implement token-issuing endpoint that exchanges a Scout instance ID for a short-lived Meilisearch tenant token.
-* Surface connection status in Scout admin under each instance's settings.
+* Surface connection status in Scout admin under each instance's settings, with editor for `storefront_domains` and copy-to-clipboard for the Instance ID.
 Stage 1 goals
 Replace WooCommerce's default search with Meilisearch-powered search on Wazú. No frontend widget yet — when shoppers hit enter, they get faster, typo-tolerant, more relevant results in WooCommerce's existing search UI. Variable products show two-button cards that respect the shopper's expressed variant preference when matched.
 
@@ -47,7 +48,7 @@ Project configuration
 * Project URL: stored in `MEILISEARCH_HOST`
 * Analytics and monitoring: enabled (free at all tiers)
 Index naming convention
-`inst_<instance_id>` where `instance_id` is the integer/UUID from Scout's `instances` table.
+`inst_<instance_id>` where `instance_id` is the integer primary key from Scout's `instance` table (note: singular table name, consistent with all other Scout tables — see CLAUDE.md §2). The template instance has `instance_id = 0`; that's a valid value, not a falsy sentinel — never use `if (!instanceId)` checks.
 Index settings defaults (applied at creation)
 The `searchableAttributes` MUST include `variants.attributes` and `variants.sku` to enable nested-field matching for variation queries. Spanish stop words and pet-domain synonyms are baked in as defaults; Stage 5 will let merchants override these per-instance. Typo tolerance enabled with `oneTypo` at 4 chars and `twoTypos` at 8 chars. Faceting max 100 values per facet. Pagination max 1000 hits.
 Searchable attributes: `name`, `brand`, `categories`, `description`, `variants.attributes`, `variants.sku`, `scout_attributes.lifestage`, `scout_attributes.species`, `scout_attributes.breed_compatibility`, `scout_attributes.medical_conditions`.
@@ -79,6 +80,7 @@ variation_summary computation rules
 * `type: 'variable_multi'`: Type is `variable` AND two or more variations are purchasable.
 * `default_variation_id`: For `simple`, the parent product ID. For `variable_single`, the one purchasable variation. For `variable_multi`, the variation marked default in WooCommerce, falling back to the first in-stock variation if no default is set, falling back to null if nothing is in stock.
 5. Scout backend — `meilisearch_client` module
+Stage: 0.
 Module location: `src/lib/search/meilisearch-client.ts`. This is the only place in Scout's codebase that holds the Meilisearch master key.
 Required interface includes index lifecycle (`createIndex`, `deleteIndex`, `indexExists`), settings management (`applyDefaultSettings`, `updateSettings`, `getSettings`), document operations (`upsertDocuments`, `deleteDocument`, `deleteAllDocuments`, `getDocumentCount`), search (with `showMatchesPosition: true` requested — verify exact option name in current SDK), token generation, and health (`ping`, `getTaskStatus`).
 Implementation requirements: use the official `meilisearch` npm package (latest stable); never log the master key; wrap Meilisearch errors with Scout-specific context; all write operations return `TaskInfo` for tracking; search operations request match positions for the variant selection logic.
@@ -88,21 +90,25 @@ Tenant tokens for `instance_id` X include this filter as defense-in-depth:
 ```typescript
 const searchRules = {
   [`inst_${instanceId}`]: {
-    filter: `instance_id = "${instanceId}"`
+    filter: `instance_id = ${instanceId}`
   }
 };
 
 ```
 
+`instance_id` is a number — the filter value is unquoted. Meilisearch's filter DSL distinguishes numeric from string equality.
+
 Tokens expire in 15 minutes by default.
 6. Scout backend — token-issuing API endpoint
+Stage: 0.
 Endpoint: `POST /api/v1/search/token`
-Request body: `{ instance_id: string }`. Origin header required.
+Request body: `{ instance_id: number }`. Origin header required.
 Success response: `{ token, expires_at, meilisearch_host, index_uid }` with `Cache-Control: no-store`.
 Error response (instance unknown OR origin not registered): 403 with generic message `instance_not_found_or_origin_not_authorized`. Error responses MUST NOT distinguish between the two cases (prevents enumeration).
-Validation: instance must exist and be `active` in `instances` table; origin must be in `instances.storefront_domains`; rate limit 60/min per (instance_id, origin), 600/min per IP, both → 429; CORS echoes Origin if validated, never `*`.
+Validation: `instance_id` parses as a non-negative integer (note: 0 is valid — the template instance); instance must exist and be `active` in the `instance` table; origin must be in `instance.storefront_domains`; rate limit 60/min per (instance_id, origin), 600/min per IP, both → 429; CORS echoes Origin if validated, never `*`.
 Trust model: instance_id is public (like a Stripe publishable key). Origin validation is the security boundary. Rate limiting prevents abuse. No auth header from the WordPress plugin in Stage 1. Future hardening (Stage 4+) adds HMAC signature with per-instance secret.
 7. Scout backend — search proxy endpoint
+Stage: 1. The WordPress plugin calls this endpoint, so it lands in the same stage as the plugin.
 Endpoint: `POST /api/v1/search`. The middle-layer endpoint the WordPress plugin calls. Proxies to Meilisearch with server-side tenant token management and adds the variant selection logic.
 Request: `{ instance_id, query, limit, offset, filters, sort }`. Response: `{ hits[], total_hits, processing_time_ms, query_uid }` where each hit is `{ document, matched_variation, _score }`.
 Variant selection logic
@@ -114,8 +120,9 @@ For each Meilisearch hit, compute `matched_variation`:
 This logic is roughly 15-25 lines of pure, unit-testable TypeScript.
 Validation: validate `instance_id` and `Origin` exactly as token endpoint. Acquire tenant token internally (cached for TTL minus 1 minute). Forward search to Meilisearch with `showMatchesPosition: true`. Process with variant selection. Log query, total_hits, processing_time, variant selection result to `query_log` table.
 8. Scout admin — instance search settings
-Location: `/scout/[instance_id]/configuration/search`.
-Stage 0 deliverables: connection status panel (green/red), storefront domain registration field (stored in `instances.storefront_domains` text array), plugin instructions with copy-button for Instance ID.
+Stage 0 ships connection panel + storefront-domains editor + Instance-ID copy. Stage 1 adds indexing status + reindex.
+Page lives at `/configuration/search`, matching the existing pattern at `src/app/[locale]/(app)/configuration/<integration>/page.tsx` (see `/configuration/algolia` and `/configuration/woocommerce`). The current instance is resolved from the JWT via `currentInstanceId()`, not from the URL.
+Stage 0 deliverables: connection status panel (green/red), storefront domain registration field (stored in `instance.storefront_domains` text array), plugin instructions with copy-button for Instance ID.
 Stage 1 deliverables: indexing status panel (last sync, document counts, mismatch detection), manual reindex button with confirmation modal, WooCommerce credentials form (REST API URL, consumer_key, consumer_secret).
 No search behavior configuration in Stage 1 — that's Stage 5.
 9. Stage 1 — Indexing pipeline
@@ -163,6 +170,11 @@ After the file tree is approved and Claude Code has written the code:
 * Merchant-facing search configuration UI → `search-configuration.md` (Stage 5)
 * Natural language search via Meilisearch Chat → `search-conversational.md` (Stage 6)
 * Agent insights from search data → `search-agents.md` (Stage 7)
+
+Out of scope for this policy (separate concerns, not part of search):
+
+* Stock management — adding a `variant_stock` table, stock inline edit on the variant management screen, and any stock-source semantics. Search consumes `in_stock` / `stock_quantity` from whatever upstream source produces them; producing those values is a stock-policy concern, not a search-policy concern. Belongs in a future `inventory.md` or similar.
+* `product_sync_status` schema additions for `platform='meilisearch'` are a Stage 1 implementation detail (handled by the push pipeline), not a Stage 0 prerequisite.
 15. Resolved decisions
 These open questions have been resolved through Tuncho's approval:
 

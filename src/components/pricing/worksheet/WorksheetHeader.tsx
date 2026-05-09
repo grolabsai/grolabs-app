@@ -15,6 +15,7 @@ import {
   updateBatchName,
   type BatchDetail,
 } from "@/lib/actions/pricing";
+import { SyncBatchButton } from "@/components/pricing/SyncBatchButton";
 import { formatRelative } from "@/lib/format";
 
 /**
@@ -236,15 +237,20 @@ export function WorksheetHeader({
             </>
           ) : null}
           {batch.status === "ready" ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBackToDraft}
-              disabled={transitioning}
-            >
-              <Icon icon={Undo2} size={14} strokeWidth={2} />
-              <span style={{ marginLeft: 6 }}>{t("buttons.backToDraft")}</span>
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBackToDraft}
+                disabled={transitioning}
+              >
+                <Icon icon={Undo2} size={14} strokeWidth={2} />
+                <span style={{ marginLeft: 6 }}>
+                  {t("buttons.backToDraft")}
+                </span>
+              </Button>
+              <SyncBatchButton batchId={batch.price_batch_id} size="default" />
+            </>
           ) : null}
         </div>
       </header>

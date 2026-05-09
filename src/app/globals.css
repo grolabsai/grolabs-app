@@ -2135,3 +2135,46 @@ button {
   background: var(--scout-accent-50);
   color: var(--scout-accent-800);
 }
+
+.pricing-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid var(--s-border-strong);
+  background: var(--s-surface);
+  color: var(--s-text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.pricing-brand-chip:hover {
+  background: var(--s-surface-alt);
+  color: var(--s-text);
+}
+.pricing-brand-chip[data-active="true"] {
+  background: var(--scout-accent-50);
+  color: var(--scout-accent-800);
+  border-color: var(--scout-accent);
+}
+
+.pricing-provider-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-lg);
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pricing-provider-card:hover {
+  border-color: var(--scout-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.pricing-provider-card[data-inactive="true"] {
+  opacity: 0.55;
+}

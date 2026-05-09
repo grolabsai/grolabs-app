@@ -28,7 +28,7 @@ scout/
 │   └── en.json                ← stub (populate per screen)
 ├── supabase/
 │   └── migrations/            ← ordered SQL files, applied manually via Supabase MCP
-├── docs/                      ← decision log, design prompts, entity inventory
+├── docs/                      ← policy specs, decision log, design prompts, entity inventory
 ├── global.d.ts                ← IntlMessages type (derived from es.json)
 ├── next.config.ts
 ├── tailwind.config.ts
@@ -436,3 +436,21 @@ Items here are intentional shortcuts or pre-rename artifacts that need follow-up
 - **Funnel per-tenant write policies** — currently use `tenant_write_all` (any authenticated `instance_member` can INSERT/UPDATE/DELETE on their instance's funnel data). Tighten to role-gated policies when `instance_member.role` gating is wired up across Scout. Affected tables: `funnel_instance`, `funnel_dataset`, `funnel_dataset_transition_value`, `funnel_benchmark_source`, `funnel_friction_finding`.
 
 - **Funnel shared-table writes via service-role** — mutations to `funnel_flow`, `funnel_stage`, `funnel_transition`, `funnel_friction_point` go through the service-role client (RLS allows only `service_role`). There is no app-level admin gate yet — any authenticated user calling a shared-write server action will succeed. Add an admin/owner role check in those actions when role taxonomy lands. Affected actions live in `src/lib/actions/funnel.ts` and reference this section in their TODO comments.
+
+---
+
+## 18. Policy documents
+
+`docs/policy/` holds authoritative specs that must be read **before** writing code in the area they cover. Each policy doc is the single source of truth for one feature surface; implementation conversations reference it rather than restating decisions.
+
+**Conventions:**
+
+- One policy doc per feature surface, named `<feature>.md` (e.g. `search-foundations.md`).
+- Frontmatter at the top: `Status:` (`Active policy` / `Superseded` / `Draft`), `Owner:`, `Scope:`, `Audience:`.
+- Decisions in a policy doc are **locked**. If implementation reveals a flaw, raise it as a question — don't work around it silently.
+- Approval checkpoints are marked `APPROVAL REQUIRED` inside the doc. Stop and wait for explicit approval at each one.
+- See `docs/policy/README.md` for the current index.
+
+**Active policy docs:**
+
+- [`search-foundations.md`](docs/policy/search-foundations.md) — Stages 0 & 1 of the search roadmap. Foundations + basic search live on Wazú via Meilisearch Cloud. Read before any search-related implementation.

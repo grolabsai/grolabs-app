@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cola de Autorizaciones — Scout</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="pricing-tokens.css">
+  <style>
+    :root {
+      --scout-accent: #378ADD;
+      --scout-accent-hover: #185FA5;
+      --scout-accent-50: #E6F1FB;
+      --scout-accent-600: #185FA5;
+      --scout-accent-800: #0C447C;
+      --s-bg: #FAFAF9;
+      --s-surface: #FFFFFF;
+      --s-surface-alt: #F5F5F4;
+      --s-surface-hover: #EFEFEE;
+      --s-border: rgba(0, 0, 0, 0.08);
+      --s-border-strong: rgba(0, 0, 0, 0.16);
+      --s-text: #1A1A1A;
+      --s-text-secondary: #5F5E5A;
+      --s-text-tertiary: #888780;
+      --s-text-muted: #B4B2A9;
+      --s-success: #1D9E75;
+      --s-success-bg: #E1F5EE;
+      --s-danger: #A32D2D;
+      --s-danger-bg: #FCEBEB;
+      --s-danger-text: #501313;
+      --s-radius-sm: 6px;
+      --s-radius-md: 8px;
+      --s-radius-lg: 12px;
+      --s-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html, body, #root {
+      height: 100%;
+      font-family: var(--s-font);
+      font-size: 13px;
+      color: var(--s-text);
+      background: var(--s-bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 28px;
+    }
+
+    .page-header {
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--s-text-secondary);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 24px;
+      border-bottom: 0.5px solid var(--s-border);
+      margin-bottom: 28px;
+    }
+
+    .nav-tab {
+      padding: 10px 0;
+      font-size: 13px;
+      color: var(--s-text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-tab:hover { color: var(--s-text); }
+    .nav-tab.active {
+      color: var(--scout-accent-800);
+      border-bottom-color: var(--scout-accent);
+    }
+
+    .violation-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-left: 3px solid var(--s-danger);
+      border-radius: var(--s-radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+
+    .violation-header {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .violation-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--s-radius-md);
+      background: var(--s-surface-alt);
+      border: 0.5px solid var(--s-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--s-text-secondary);
+      flex-shrink: 0;
+    }
+
+    .violation-info {
+      flex: 1;
+    }
+
+    .violation-product {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .violation-variant {
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+    }
+
+    .violation-reason {
+      background: var(--s-danger-bg);
+      color: var(--s-danger-text);
+      padding: 10px 14px;
+      border-radius: var(--s-radius-md);
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .violation-details {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 12px 0;
+      border-top: 0.5px solid var(--s-border);
+      border-bottom: 0.5px solid var(--s-border);
+      margin-bottom: 12px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--s-text-tertiary);
+      font-weight: 500;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .violation-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .s-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border-radius: var(--s-radius-md);
+      cursor: pointer;
+      border: 0.5px solid transparent;
+      transition: all 0.12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+    }
+
+    .s-btn-primary {
+      background: var(--scout-accent);
+      color: #fff;
+      border-color: var(--scout-accent);
+    }
+
+    .s-btn-primary:hover {
+      background: var(--scout-accent-hover);
+    }
+
+    .s-btn-secondary {
+      border-color: var(--s-border-strong);
+      color: var(--s-text);
+    }
+
+    .s-btn-secondary:hover {
+      background: var(--s-surface-alt);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--s-text);
+    }
+
+    .empty-text {
+      font-size: 13px;
+      color: var(--s-text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const AuthorizationQueue = () => {
+      const violations = [
+        {
+          id: 1,
+          product: "Hill's Prescription Diet c/d",
+          variant: '8 kg',
+          thumb: 'HD',
+          reason: 'Precio propuesto (Q625.00) está por debajo del MAP del proveedor (Q650.00)',
+          providerMAP: 650.00,
+          proposedPrice: 625.00,
+          margin: 27.8,
+          batch: 'Cambios de 8 mayo 2026'
+        },
+        {
+          id: 2,
+          product: "Royal Canin Veterinary Diet",
+          variant: '10 kg',
+          thumb: 'RC',
+          reason: 'Precio propuesto (Q780.00) está por debajo del MAP del proveedor (Q795.00)',
+          providerMAP: 795.00,
+          proposedPrice: 780.00,
+          margin: 28.5,
+          batch: 'Cambios de 8 mayo 2026'
+        },
+        {
+          id: 3,
+          product: "Purina Pro Plan Veterinary Diets",
+          variant: '7.5 kg',
+          thumb: 'PP',
+          reason: 'Precio propuesto (Q520.00) está por debajo del MAP del proveedor (Q545.00)',
+          providerMAP: 545.00,
+          proposedPrice: 520.00,
+          margin: 26.2,
+          batch: 'Cambios de 8 mayo 2026'
+        }
+      ];
+
+      return (
+        <div className="page">
+          <div className="page-header">
+            <h1 className="page-title">Cola de Autorizaciones</h1>
+            <p className="page-subtitle">Revisar y autorizar violaciones de reglas de proveedor</p>
+          </div>
+
+          <div className="nav-tabs">
+            <a href="Pricing Overview.html" className="nav-tab">Resumen</a>
+            <a href="Pricing Policies.html" className="nav-tab">Políticas</a>
+            <a href="Providers.html" className="nav-tab">Proveedores</a>
+            <a href="Authorization Queue.html" className="nav-tab active">Autorizaciones</a>
+            <a href="Sync Status.html" className="nav-tab">Sincronización</a>
+          </div>
+
+          {violations.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-title">No hay violaciones pendientes</div>
+              <div className="empty-text">Todos los precios cumplen con las reglas de proveedor</div>
+            </div>
+          ) : (
+            violations.map(v => (
+              <div key={v.id} className="violation-card">
+                <div className="violation-header">
+                  <div className="violation-thumb">{v.thumb}</div>
+                  <div className="violation-info">
+                    <div className="violation-product">{v.product}</div>
+                    <div className="violation-variant">{v.variant} · {v.batch}</div>
+                  </div>
+                </div>
+                
+                <div className="violation-reason">{v.reason}</div>
+
+                <div className="violation-details">
+                  <div className="detail-item">
+                    <div className="detail-label">MAP Proveedor</div>
+                    <div className="detail-value">Q{v.providerMAP.toFixed(2)}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Precio propuesto</div>
+                    <div className="detail-value" style={{color: 'var(--s-danger)'}}>Q{v.proposedPrice.toFixed(2)}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Diferencia</div>
+                    <div className="detail-value">-Q{(v.providerMAP - v.proposedPrice).toFixed(2)}</div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">Margen final</div>
+                    <div className="detail-value">{v.margin.toFixed(1)}%</div>
+                  </div>
+                </div>
+
+                <div className="violation-actions">
+                  <button className="s-btn s-btn-primary">Autorizar excepción</button>
+                  <button className="s-btn s-btn-secondary">Rechazar y ajustar precio</button>
+                  <button className="s-btn s-btn-secondary">Ver en hoja</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AuthorizationQueue />);
+  </script>
+</body>
+</html>

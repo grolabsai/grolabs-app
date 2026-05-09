@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing Module ERD — Scout</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      background: #FAFAF9;
+      padding: 40px 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1A1A1A;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #5F5E5A;
+      margin-bottom: 32px;
+    }
+
+    .erd-canvas {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 40px;
+      overflow-x: auto;
+    }
+
+    .erd {
+      display: grid;
+      grid-template-columns: repeat(4, 280px);
+      grid-template-rows: repeat(3, auto);
+      gap: 60px 80px;
+      position: relative;
+      min-width: fit-content;
+    }
+
+    .entity {
+      background: white;
+      border: 2px solid #378ADD;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .entity-header {
+      background: #378ADD;
+      color: white;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .entity-body {
+      padding: 0;
+    }
+
+    .field {
+      padding: 8px 16px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .field:last-child {
+      border-bottom: none;
+    }
+
+    .field-name {
+      flex: 1;
+      color: #1A1A1A;
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 12px;
+    }
+
+    .field-type {
+      color: #888780;
+      font-size: 11px;
+      font-family: ui-monospace, "SF Mono", monospace;
+    }
+
+    .pk {
+      color: #D97706;
+      font-weight: 600;
+    }
+
+    .fk {
+      color: #378ADD;
+      font-weight: 600;
+    }
+
+    .field-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .key-icon {
+      color: #D97706;
+    }
+
+    .link-icon {
+      color: #378ADD;
+    }
+
+    /* Entity positioning */
+    .entity:nth-child(1) { grid-column: 1; grid-row: 1; } /* Provider */
+    .entity:nth-child(2) { grid-column: 2; grid-row: 1; } /* ProviderBrands */
+    .entity:nth-child(3) { grid-column: 3; grid-row: 1; } /* Brand */
+    .entity:nth-child(4) { grid-column: 1; grid-row: 2; } /* PriceList */
+    .entity:nth-child(5) { grid-column: 2; grid-row: 2; } /* PriceListItem */
+    .entity:nth-child(6) { grid-column: 3; grid-row: 2; } /* Product */
+    .entity:nth-child(7) { grid-column: 4; grid-row: 2; } /* Category */
+    .entity:nth-child(8) { grid-column: 1; grid-row: 3; } /* PriceBatch */
+    .entity:nth-child(9) { grid-column: 2; grid-row: 3; } /* PriceBatchItem */
+    .entity:nth-child(10) { grid-column: 4; grid-row: 1; } /* MAPRule */
+
+    .legend {
+      margin-top: 32px;
+      padding: 20px;
+      background: #F5F5F4;
+      border-radius: 8px;
+    }
+
+    .legend-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #1A1A1A;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .legend-item {
+      font-size: 13px;
+      color: #5F5E5A;
+      line-height: 1.6;
+    }
+
+    .legend-item strong {
+      color: #1A1A1A;
+      font-weight: 600;
+    }
+
+    .note {
+      margin-top: 24px;
+      padding: 16px;
+      background: #E6F1FB;
+      border-left: 3px solid #378ADD;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #0C447C;
+    }
+
+    .note-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #0C447C;
+    }
+
+    svg.connector {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .connector-line {
+      stroke: #888780;
+      stroke-width: 2;
+      fill: none;
+      opacity: 0.4;
+    }
+
+    .connector-arrow {
+      fill: #888780;
+      opacity: 0.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pricing Module — Entity Relationship Diagram</h1>
+    <p class="subtitle">Core data model supporting provider/brand separation and flexible MAP rules</p>
+
+    <div class="erd-canvas">
+      <div class="erd">
+        <!-- Provider -->
+        <div class="entity">
+          <div class="entity-header">Provider</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <span class="field-name">name</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name">contact_info</span>
+              <span class="field-type">json</span>
+            </div>
+            <div class="field">
+              <span class="field-name">payment_terms</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name">created_at</span>
+              <span class="field-type">timestamp</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ProviderBrands (join table) -->
+        <div class="entity">
+          <div class="entity-header">ProviderBrands</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">provider_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">brand_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <span class="field-name">active</span>
+              <span class="field-type">boolean</span>
+            </div>
+            <div class="field">
+              <span class="field-name">created_at</span>
+              <span class="field-type">timestamp</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Brand -->
+        <div class="entity">
+          <div class="entity-header">Brand</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <span class="field-name">name</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name">created_at</span>
+              <span class="field-type">timestamp</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PriceList -->
+        <div class="entity">
+          <div class="entity-header">PriceList</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">provider_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <span class="field-name">import_date</span>
+              <span class="field-type">timestamp</span>
+            </div>
+            <div class="field">
+              <span class="field-name">effective_date</span>
+              <span class="field-type">date</span>
+            </div>
+            <div class="field">
+              <span class="field-name">file_name</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name fk">imported_by</span>
+              <span class="field-type">FK User</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PriceListItem -->
+        <div class="entity">
+          <div class="entity-header">PriceListItem</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">price_list_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">variant_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <span class="field-name">cost</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">sku</span>
+              <span class="field-type">string</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ProductVariant -->
+        <div class="entity">
+          <div class="entity-header">ProductVariant</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <span class="field-name">name</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">brand_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">category_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <span class="field-name">sku</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name">variant_attrs</span>
+              <span class="field-type">json</span>
+            </div>
+            <div class="field">
+              <span class="field-name">active</span>
+              <span class="field-type">boolean</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div class="entity">
+          <div class="entity-header">Category</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <span class="field-name">name</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name">target_margin</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">min_margin</span>
+              <span class="field-type">decimal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PriceBatch -->
+        <div class="entity">
+          <div class="entity-header">PriceBatch</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <span class="field-name">name</span>
+              <span class="field-type">string</span>
+            </div>
+            <div class="field">
+              <span class="field-name">status</span>
+              <span class="field-type">enum</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">created_by</span>
+              <span class="field-type">FK User</span>
+            </div>
+            <div class="field">
+              <span class="field-name">created_at</span>
+              <span class="field-type">timestamp</span>
+            </div>
+            <div class="field">
+              <span class="field-name">synced_at</span>
+              <span class="field-type">timestamp</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PriceBatchItem -->
+        <div class="entity">
+          <div class="entity-header">PriceBatchItem</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">price_batch_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">variant_id</span>
+              <span class="field-type">FK</span>
+            </div>
+            <div class="field">
+              <span class="field-name">current_cost</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">new_cost</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">charm_price</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">final_price</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">manual_override</span>
+              <span class="field-type">boolean</span>
+            </div>
+            <div class="field">
+              <span class="field-name">status</span>
+              <span class="field-type">enum</span>
+            </div>
+            <div class="field">
+              <span class="field-name">status_reasons</span>
+              <span class="field-type">json</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAPRule -->
+        <div class="entity">
+          <div class="entity-header">MAPRule</div>
+          <div class="entity-body">
+            <div class="field">
+              <svg class="field-icon key-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name pk">id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <span class="field-name">rule_type</span>
+              <span class="field-type">enum</span>
+            </div>
+            <div class="field">
+              <span class="field-name">source_type</span>
+              <span class="field-type">enum</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">source_id</span>
+              <span class="field-type">UUID</span>
+            </div>
+            <div class="field">
+              <svg class="field-icon link-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+              </svg>
+              <span class="field-name fk">variant_id</span>
+              <span class="field-type">FK null</span>
+            </div>
+            <div class="field">
+              <span class="field-name">min_price</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">max_price</span>
+              <span class="field-type">decimal</span>
+            </div>
+            <div class="field">
+              <span class="field-name">active</span>
+              <span class="field-type">boolean</span>
+            </div>
+            <div class="field">
+              <span class="field-name">effective_date</span>
+              <span class="field-type">date</span>
+            </div>
+            <div class="field">
+              <span class="field-name">expires_at</span>
+              <span class="field-type">date null</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-title">Key Relationships</div>
+      <div class="legend-grid">
+        <div class="legend-item">
+          <strong>Provider ↔ Brand (many-to-many):</strong> One provider can distribute multiple brands. One brand can be sold by multiple providers. The ProviderBrands join table tracks which providers supply which brands.
+        </div>
+        <div class="legend-item">
+          <strong>Provider → PriceList (one-to-many):</strong> Each price list import is tied to exactly one provider. A provider can have many historical price lists.
+        </div>
+        <div class="legend-item">
+          <strong>PriceList → PriceListItem (one-to-many):</strong> Each price list contains many line items (one per product). Items link to the master Product catalog.
+        </div>
+        <div class="legend-item">
+          <strong>Brand → ProductVariant (one-to-many):</strong> Every product variant belongs to exactly one brand (manufacturer). The entity named "ProductVariant" represents the sellable SKU (e.g. "Royal Canin Adult 15kg" is a variant).
+        </div>
+        <div class="legend-item">
+          <strong>Category → ProductVariant (one-to-many):</strong> Variants are grouped into categories. Each category has target & min margin settings.
+        </div>
+        <div class="legend-item">
+          <strong>MAPRule (polymorphic):</strong> Rules can originate from a Brand (manufacturer-mandated MAP) OR a Provider (contractual terms). The source_type enum ('brand' or 'provider') + source_id FK determines the origin. Rules can apply to all variants from that source (variant_id null) or be variant-specific.
+        </div>
+        <div class="legend-item">
+          <strong>PriceBatch → PriceBatchItem (one-to-many):</strong> A batch is a worksheet of pending price changes. Each item is one variant's pricing calculation (costs, charm price, manual overrides, violations).
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="note-title">Polymorphic MAPRule Design</div>
+        The MAPRule table uses <strong>source_type</strong> (enum: 'brand' | 'provider') + <strong>source_id</strong> (UUID) to point to either the Brand table or Provider table. This allows:<br><br>
+        • <strong>Brand-level rules:</strong> "Royal Canin mandates all Prescription Diet variants must be ≥Q650" → source_type='brand', source_id=royal_canin_id, variant_id=null<br>
+        • <strong>Provider-level rules:</strong> "Distributor XYZ negotiates max Q700 for Hill's c/d 8kg" → source_type='provider', source_id=xyz_id, variant_id=hills_cd_8kg_id<br><br>
+        When validating a price, the system queries all active rules where:<br>
+        1. variant_id matches OR variant_id is null (applies to all)<br>
+        2. source_type='brand' AND source_id = variant's brand_id, OR<br>
+        3. source_type='provider' AND source_id = any provider who has supplied that variant
+      </div>
+    </div>
+  </div>
+</body>
+</html>

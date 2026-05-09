@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Políticas de Precios — Scout</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="pricing-tokens.css">
+  <style>
+    :root {
+      --scout-accent: #378ADD;
+      --scout-accent-hover: #185FA5;
+      --scout-accent-50: #E6F1FB;
+      --scout-accent-600: #185FA5;
+      --scout-accent-800: #0C447C;
+      --s-bg: #FAFAF9;
+      --s-surface: #FFFFFF;
+      --s-surface-alt: #F5F5F4;
+      --s-surface-hover: #EFEFEE;
+      --s-border: rgba(0, 0, 0, 0.08);
+      --s-border-strong: rgba(0, 0, 0, 0.16);
+      --s-text: #1A1A1A;
+      --s-text-secondary: #5F5E5A;
+      --s-text-tertiary: #888780;
+      --s-text-muted: #B4B2A9;
+      --s-success: #1D9E75;
+      --s-success-bg: #E1F5EE;
+      --s-danger: #A32D2D;
+      --s-danger-bg: #FCEBEB;
+      --s-warning: #D97706;
+      --s-radius-sm: 6px;
+      --s-radius-md: 8px;
+      --s-radius-lg: 12px;
+      --s-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html, body, #root {
+      height: 100%;
+      font-family: var(--s-font);
+      font-size: 13px;
+      color: var(--s-text);
+      background: var(--s-bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 28px;
+    }
+
+    .page-header {
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--s-text-secondary);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 24px;
+      border-bottom: 0.5px solid var(--s-border);
+      margin-bottom: 28px;
+    }
+
+    .nav-tab {
+      padding: 10px 0;
+      font-size: 13px;
+      color: var(--s-text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-tab:hover { color: var(--s-text); }
+    .nav-tab.active {
+      color: var(--scout-accent-800);
+      border-bottom-color: var(--scout-accent);
+    }
+
+    .s-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+
+    .s-card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .s-card-title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .s-card-subtitle {
+      font-size: 12px;
+      color: var(--s-text-secondary);
+      margin-top: 4px;
+    }
+
+    .s-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border-radius: var(--s-radius-md);
+      cursor: pointer;
+      border: 0.5px solid transparent;
+      transition: all 0.12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      background: transparent;
+      color: var(--s-text);
+    }
+
+    .s-btn-primary {
+      background: var(--scout-accent);
+      color: #fff;
+      border-color: var(--scout-accent);
+    }
+
+    .s-btn-primary:hover {
+      background: var(--scout-accent-hover);
+    }
+
+    .s-btn-secondary {
+      border-color: var(--s-border-strong);
+    }
+
+    .s-btn-secondary:hover {
+      background: var(--s-surface-alt);
+    }
+
+    .policy-row {
+      display: grid;
+      grid-template-columns: 200px 1fr 100px;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 0.5px solid var(--s-border);
+    }
+
+    .policy-row:last-child {
+      border-bottom: none;
+    }
+
+    .policy-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--s-text);
+    }
+
+    .policy-desc {
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+    }
+
+    .policy-value {
+      font-size: 13px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--scout-accent-800);
+      text-align: right;
+    }
+
+    .s-input {
+      width: 100%;
+      padding: 8px 12px;
+      background: white;
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--s-text);
+      outline: none;
+    }
+
+    .s-input:focus {
+      border-color: var(--scout-accent);
+      box-shadow: 0 0 0 2px var(--scout-accent-50);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const PricingPolicies = () => {
+      const [maxPriceChange, setMaxPriceChange] = useState(5);
+      const [charmEnabled, setCharmEnabled] = useState(true);
+
+      return (
+        <div className="page">
+          <div className="page-header">
+            <h1 className="page-title">Políticas de Precios</h1>
+            <p className="page-subtitle">Configurar reglas de margen y precios gancho</p>
+          </div>
+
+          <div className="nav-tabs">
+            <a href="Pricing Overview.html" className="nav-tab">Resumen</a>
+            <a href="Pricing Policies.html" className="nav-tab active">Políticas</a>
+            <a href="Providers.html" className="nav-tab">Proveedores</a>
+            <a href="Authorization Queue.html" className="nav-tab">Autorizaciones</a>
+            <a href="Sync Status.html" className="nav-tab">Sincronización</a>
+          </div>
+
+          <div className="s-card">
+            <div className="s-card-header">
+              <div>
+                <div className="s-card-title">Reglas generales</div>
+                <div className="s-card-subtitle">Aplican a todos los productos excepto cuando se sobrescriben</div>
+              </div>
+              <button className="s-btn s-btn-primary">Guardar cambios</button>
+            </div>
+
+            <div className="policy-row">
+              <div className="policy-label">Cambio máximo de precio</div>
+              <div className="policy-desc">Alerta si el precio sube o baja más de este porcentaje respecto al precio actual</div>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <input
+                  type="number"
+                  className="s-input"
+                  value={maxPriceChange}
+                  onChange={(e) => setMaxPriceChange(e.target.value)}
+                  style={{width: '80px', textAlign: 'right'}}
+                />
+                <span style={{fontSize: '13px', color: 'var(--s-text-secondary)'}}>%</span>
+              </div>
+            </div>
+
+            <div className="policy-row">
+              <div className="policy-label">Margen mínimo global</div>
+              <div className="policy-desc">Margen objetivo por defecto cuando no hay banda de categoría</div>
+              <div className="policy-value">30%</div>
+            </div>
+
+            <div className="policy-row">
+              <div className="policy-label">Aplicar precios gancho</div>
+              <div className="policy-desc">Redondear precios automáticamente según las reglas de charm pricing</div>
+              <div className="policy-value">{charmEnabled ? 'Sí' : 'No'}</div>
+            </div>
+          </div>
+
+          <div className="s-card">
+            <div className="s-card-header">
+              <div>
+                <div className="s-card-title">Bandas de margen por categoría</div>
+                <div className="s-card-subtitle">Margen objetivo y mínimo por cada categoría de producto</div>
+              </div>
+              <button className="s-btn s-btn-secondary">+ Agregar categoría</button>
+            </div>
+
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 120px 120px 120px',
+                gap: '12px',
+                padding: '10px 12px',
+                background: 'var(--s-surface-alt)',
+                borderRadius: 'var(--s-radius-md)',
+                fontSize: '12px',
+                fontWeight: '500',
+                color: 'var(--s-text-secondary)'
+              }}>
+                <div>Categoría</div>
+                <div style={{textAlign: 'right'}}>Margen objetivo</div>
+                <div style={{textAlign: 'right'}}>Margen mínimo</div>
+                <div></div>
+              </div>
+
+              {[
+                {name: 'Alimento para perros', target: 38, min: 30},
+                {name: 'Alimento para gatos', target: 36, min: 28},
+                {name: 'Alimento medicado', target: 28, min: 22},
+                {name: 'Accesorios', target: 45, min: 35},
+              ].map((cat, i) => (
+                <div key={i} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 120px 120px 120px',
+                  gap: '12px',
+                  padding: '8px 12px',
+                  borderBottom: '0.5px solid var(--s-border)'
+                }}>
+                  <div style={{fontSize: '13px', fontWeight: '500', paddingTop: '6px'}}>{cat.name}</div>
+                  <div style={{textAlign: 'right', fontSize: '13px', fontWeight: '500', color: 'var(--scout-accent-800)', paddingTop: '6px'}}>{cat.target}%</div>
+                  <div style={{textAlign: 'right', fontSize: '13px', fontWeight: '500', color: 'var(--s-text-secondary)', paddingTop: '6px'}}>{cat.min}%</div>
+                  <div style={{textAlign: 'right'}}>
+                    <button className="s-btn s-btn-secondary" style={{padding: '4px 12px', fontSize: '12px'}}>Editar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="s-card">
+            <div className="s-card-header">
+              <div>
+                <div className="s-card-title">Reglas de precios gancho</div>
+                <div className="s-card-subtitle">Redondeo psicológico por rango de precio final</div>
+              </div>
+              <button className="s-btn s-btn-secondary">+ Agregar regla</button>
+            </div>
+
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '140px 140px 1fr 120px',
+                gap: '12px',
+                padding: '10px 12px',
+                background: 'var(--s-surface-alt)',
+                borderRadius: 'var(--s-radius-md)',
+                fontSize: '12px',
+                fontWeight: '500',
+                color: 'var(--s-text-secondary)'
+              }}>
+                <div>Desde (Q)</div>
+                <div>Hasta (Q)</div>
+                <div>Terminación</div>
+                <div></div>
+              </div>
+
+              {[
+                {from: '0.00', to: '50.00', ending: '.99'},
+                {from: '50.01', to: '200.00', ending: '.99'},
+                {from: '200.01', to: '500.00', ending: '.99, .95'},
+                {from: '500.01', to: '999999.00', ending: '.00 (redondeado)'},
+              ].map((rule, i) => (
+                <div key={i} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '140px 140px 1fr 120px',
+                  gap: '12px',
+                  padding: '8px 12px',
+                  borderBottom: '0.5px solid var(--s-border)',
+                  fontSize: '13px'
+                }}>
+                  <div style={{paddingTop: '6px'}}>{rule.from}</div>
+                  <div style={{paddingTop: '6px'}}>{rule.to}</div>
+                  <div style={{fontWeight: '500', color: 'var(--scout-accent-800)', paddingTop: '6px'}}>{rule.ending}</div>
+                  <div style={{textAlign: 'right'}}>
+                    <button className="s-btn s-btn-secondary" style={{padding: '4px 12px', fontSize: '12px'}}>Editar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PricingPolicies />);
+  </script>
+</body>
+</html>

@@ -811,13 +811,21 @@
       "step4": {
         "label": "Mapeo",
         "title": "Mapear columnas a campos de Scout",
-        "subtitle": "Selecciona qué columna del archivo alimenta cada campo. Los ejes y atributos ya fueron extraídos en el paso anterior.",
+        "subtitle": "Arrastra columnas del archivo (derecha) hacia los campos de Scout (izquierda). Cada lado muestra a qué está vinculado el otro, así puedes leerlo en cualquier dirección.",
+        "autoHint": "Las coincidencias obvias (sku, barcode, precio…) ya están sugeridas. Cámbialas si es necesario.",
+        "scoutFieldsTitle": "Campos de Scout",
+        "scoutFieldsSubtitle": "Suelta aquí las columnas del archivo",
+        "fileColumnsTitle": "Columnas de tu archivo",
+        "fileColumnsSubtitle": "Arrastra hacia la izquierda para mapear",
+        "lockedFromStep2": "Definido en el paso 2; cámbialo allí si necesitas.",
         "noColumn": "— sin columna —",
         "group": {
           "base": "Producto base",
           "variant": "Variante"
         },
         "field": {
+          "productName": "Nombre del producto",
+          "productPhoto": "Foto del producto",
           "slug": "Slug",
           "shortDescription": "Descripción corta",
           "longDescription": "Descripción larga",

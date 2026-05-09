@@ -811,13 +811,21 @@
       "step4": {
         "label": "Mapping",
         "title": "Map columns to Scout fields",
-        "subtitle": "Pick which file column feeds each field. Axes and attributes were already extracted in the previous step.",
+        "subtitle": "Drag file columns (right) onto Scout fields (left). Each side shows what the other is bound to, so you can read the pairing from either direction.",
+        "autoHint": "Obvious matches (sku, barcode, price…) are pre-suggested. Change anything that's wrong.",
+        "scoutFieldsTitle": "Scout fields",
+        "scoutFieldsSubtitle": "Drop file columns here",
+        "fileColumnsTitle": "Your file columns",
+        "fileColumnsSubtitle": "Drag left to map",
+        "lockedFromStep2": "Set in Step 2; change it there if needed.",
         "noColumn": "— no column —",
         "group": {
           "base": "Base product",
           "variant": "Variant"
         },
         "field": {
+          "productName": "Product name",
+          "productPhoto": "Product photo",
           "slug": "Slug",
           "shortDescription": "Short description",
           "longDescription": "Long description",

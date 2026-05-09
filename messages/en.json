@@ -374,6 +374,9 @@
           "codeLockedHint": "The code cannot be changed after creating the attribute.",
           "description": "Description",
           "descriptionPlaceholder": "What this attribute is used for…",
+          "parsingHint": "Agent hint",
+          "parsingHintPlaceholder": "e.g. \"Set true when the name contains 'Prescription Diet' or codes R/D, K/D, C/D, J/D, U/D, Z/D, W/D, I/D, L/D, Derm Complete\"",
+          "parsingHintDesc": "Free-text the import agent reads. Use it to teach the agent how to recognize this attribute in product names. Takes priority over naive matching from the attribute name alone.",
           "dataType": "Data type",
           "dataTypePlaceholder": "Select type…",
           "dimension": "Physical dimension",
@@ -790,6 +793,7 @@
         "agentBodyGroupedFor": "{bases} base products · {variants} variants.",
         "agentTitleGroupError": "Grouping failed — {category}",
         "sourceNameTooltip": "Original name as it came in the source file. Use it to verify the agent's interpretation.",
+        "baseVariantCount": "{n, plural, one {# variant} other {# variants}}",
         "groupingInProgress": "Processing categories…",
         "statRows": "rows",
         "statBases": "bases",
@@ -873,6 +877,16 @@
         "nothingToImport": "No products are assigned to a category.",
         "backToImport": "Import more",
         "viewProducts": "View imported products"
+      },
+      "hintReview": {
+        "title": "The agent learned new things",
+        "subtitle": "Accept the terms so the agent recognizes them next time. Optional — you can ignore this and move on.",
+        "newTerms": "New terms detected",
+        "accept": "Add to hint",
+        "accepted": "Added",
+        "dismiss": "Close",
+        "saved": "Hint updated.",
+        "saveError": "Couldn't update the hint"
       }
     }
   },

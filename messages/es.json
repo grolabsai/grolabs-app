@@ -374,6 +374,9 @@
           "codeLockedHint": "El código no puede modificarse después de crear el atributo.",
           "description": "Descripción",
           "descriptionPlaceholder": "Para qué sirve este atributo…",
+          "parsingHint": "Pista para el agente",
+          "parsingHintPlaceholder": "Ej.: «Marcar verdadero cuando el nombre incluya \"Prescription Diet\" o códigos R/D, K/D, C/D, J/D, U/D, Z/D, W/D, I/D, L/D, Derm Complete»",
+          "parsingHintDesc": "Texto libre que lee el agente al importar. Úsalo para enseñarle cómo identificar este atributo en los nombres de producto. Tiene prioridad sobre la coincidencia por nombre del atributo.",
           "dataType": "Tipo de dato",
           "dataTypePlaceholder": "Seleccionar tipo…",
           "dimension": "Dimensión física",
@@ -790,6 +793,7 @@
         "agentBodyGroupedFor": "{bases} productos base · {variants} variantes.",
         "agentTitleGroupError": "Error agrupando — {category}",
         "sourceNameTooltip": "Nombre original tal como vino en el archivo. Sirve para verificar que la interpretación del agente sea correcta.",
+        "baseVariantCount": "{n, plural, one {# variante} other {# variantes}}",
         "groupingInProgress": "Procesando categorías…",
         "statRows": "filas",
         "statBases": "bases",
@@ -873,6 +877,16 @@
         "nothingToImport": "No hay productos asignados a una categoría.",
         "backToImport": "Importar más",
         "viewProducts": "Ver productos importados"
+      },
+      "hintReview": {
+        "title": "El agente aprendió cosas nuevas",
+        "subtitle": "Acepta los términos para que el agente los reconozca mejor en la próxima importación. Es opcional — puedes ignorarlo.",
+        "newTerms": "Nuevos términos detectados",
+        "accept": "Agregar a la pista",
+        "accepted": "Agregado",
+        "dismiss": "Cerrar",
+        "saved": "Pista actualizada.",
+        "saveError": "No se pudo actualizar la pista"
       }
     }
   },

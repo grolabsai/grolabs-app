@@ -240,6 +240,18 @@ export function Step3Grouping({
           categoryName: cat?.category_name ?? null,
           confidence: base.confidence,
           reasoning: base.reasoning,
+          baseAttributes: (base.base_attribute_values ?? []).map(
+            (av): ProposedAttributeCell => ({
+              attributeId: av.attribute_id,
+              attributeCode: av.attribute_code,
+              attributeName: av.attribute_code,
+              dataType:
+                av.value_id !== null && av.value_id !== undefined ? "list" : "text",
+              valueId: av.value_id ?? null,
+              valueText: av.value_text ?? null,
+              extractedFrom: av.extracted_from ?? null,
+            }),
+          ),
           variants: base.variants.map((v, vi): ProposedVariantRow => ({
             id: `v-${vi}-${Math.random().toString(36).slice(2, 6)}`,
             sourceRowIndices: v.source_refs.map((r) => parseInt(r.replace("row-", ""), 10)),
@@ -304,22 +316,6 @@ export function Step3Grouping({
       const v = vocabByCategory.get(cid);
       if (!v) continue;
       for (const a of v.axes) {
-        if (seen.has(a.attribute_id)) continue;
-        seen.add(a.attribute_id);
-        out.push(a);
-      }
-    }
-    return out;
-  }, [activeCategoryId, selectedCategoryIds, vocabByCategory]);
-
-  const attributeColumns = useMemo<EffectiveAttribute[]>(() => {
-    const seen = new Set<number>();
-    const out: EffectiveAttribute[] = [];
-    const cats = activeCategoryId === "all" ? selectedCategoryIds : [activeCategoryId];
-    for (const cid of cats) {
-      const v = vocabByCategory.get(cid);
-      if (!v) continue;
-      for (const a of v.descriptive) {
         if (seen.has(a.attribute_id)) continue;
         seen.add(a.attribute_id);
         out.push(a);
@@ -528,147 +524,232 @@ export function Step3Grouping({
             </div>
           ) : null}
 
-          {/* Flat editable table */}
-          <div className="s-card" style={{ padding: 0 }}>
-            <div style={{ overflow: "auto", maxHeight: 600 }}>
-              <table className="s-table" style={{ minWidth: "100%" }}>
-                <thead>
-                  <tr>
-                    <th style={{ paddingLeft: 20, position: "sticky", left: 0, background: "var(--s-surface-alt)" }}>{t("col.base")}</th>
-                    <th>{t("col.label")}</th>
-                    {axisColumns.map((a) => (
-                      <ColumnHeader key={`ax-${a.attribute_id}`} attribute={a} variant="axis" />
-                    ))}
-                    {attributeColumns.map((a) => (
-                      <ColumnHeader key={`at-${a.attribute_id}`} attribute={a} variant="attr" />
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleBases.flatMap((base) =>
-                    base.variants.map((v, vi) => {
-                      const photoUrl = photoByRowIndex.get(v.sourceRowIndices[0] ?? -1);
-                      const sourceText = v.sourceRowIndices
-                        .map((ri) => sourceNameByRowIndex.get(ri))
-                        .filter((s): s is string => Boolean(s))
-                        .join(" · ");
-                      return (
-                        <tr key={v.id}>
-                          <td style={{ paddingLeft: 20, position: "sticky", left: 0, background: "white" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <ProductThumbnail url={photoUrl} alt={base.baseName} />
-                              {vi === 0 ? (
-                                <div>
-                                  <div style={{ fontWeight: 500 }}>{base.baseName}</div>
-                                  <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
-                                    {base.categoryName}
+          {/* One block per base: base-attribute strip + variant table.
+              Descriptive attributes are no longer table columns — they're
+              base-level (shared by all variants), edited inline in the
+              strip. Variant rows show only axis columns. */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {visibleBases.map((base) => {
+              const headPhoto = photoByRowIndex.get(
+                base.variants[0]?.sourceRowIndices[0] ?? -1,
+              );
+              const baseDescriptiveAttrs =
+                base.categoryId !== null
+                  ? vocabByCategory.get(base.categoryId)?.descriptive ?? []
+                  : [];
+              return (
+                <div key={base.id} className="s-card" style={{ padding: 0 }}>
+                  {/* Base header: thumbnail + name + base-attribute editors inline */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 16,
+                      padding: "14px 18px",
+                      borderBottom: "0.5px solid var(--s-border)",
+                      background: "var(--s-surface-alt)",
+                    }}
+                  >
+                    <ProductThumbnail url={headPhoto} alt={base.baseName} />
+                    <div style={{ minWidth: 200, maxWidth: 280, flexShrink: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{base.baseName}</div>
+                      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+                        {base.categoryName}
+                      </div>
+                      <div
+                        style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}
+                      >
+                        {t("baseVariantCount", { n: base.variants.length })}
+                      </div>
+                    </div>
+                    {baseDescriptiveAttrs.length > 0 ? (
+                      <div
+                        style={{
+                          flex: 1,
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {baseDescriptiveAttrs.map((attr) => {
+                          const cell = base.baseAttributes.find(
+                            (a) => Number(a.attributeId) === attr.attribute_id,
+                          );
+                          const accent = cell
+                            ? colorForAttribute(attr.attribute_id)
+                            : null;
+                          return (
+                            <div key={`base-attr-${attr.attribute_id}`}>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 500,
+                                  letterSpacing: "0.04em",
+                                  textTransform: "uppercase",
+                                  color: "var(--s-text-tertiary)",
+                                  marginBottom: 4,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 5,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 7,
+                                    height: 7,
+                                    borderRadius: "50%",
+                                    background: colorForAttribute(attr.attribute_id).fg,
+                                  }}
+                                />
+                                {attr.attribute_name}
+                              </div>
+                              <AttributeCellEditor
+                                attribute={attr}
+                                cell={cell}
+                                options={optionsByAttributeId.get(attr.attribute_id) ?? []}
+                                accent={accent}
+                                onUpsert={(c) =>
+                                  dispatch({
+                                    type: "UPSERT_BASE_ATTRIBUTE",
+                                    baseId: base.id,
+                                    cell: c,
+                                  })
+                                }
+                                onRemove={() =>
+                                  dispatch({
+                                    type: "REMOVE_BASE_ATTRIBUTE",
+                                    baseId: base.id,
+                                    attributeId: attr.attribute_id,
+                                  })
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Variant rows */}
+                  <div style={{ overflow: "auto" }}>
+                    <table className="s-table" style={{ minWidth: "100%" }}>
+                      <thead>
+                        <tr>
+                          <th style={{ paddingLeft: 20 }}>{t("col.label")}</th>
+                          {axisColumns.map((a) => (
+                            <ColumnHeader
+                              key={`ax-${a.attribute_id}`}
+                              attribute={a}
+                              variant="axis"
+                            />
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {base.variants.map((v) => {
+                          const variantPhoto = photoByRowIndex.get(
+                            v.sourceRowIndices[0] ?? -1,
+                          );
+                          const sourceText = v.sourceRowIndices
+                            .map((ri) => sourceNameByRowIndex.get(ri))
+                            .filter((s): s is string => Boolean(s))
+                            .join(" · ");
+                          return (
+                            <tr key={v.id}>
+                              <td style={{ paddingLeft: 20 }}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 10,
+                                  }}
+                                >
+                                  <ProductThumbnail
+                                    url={variantPhoto}
+                                    alt={v.label || base.baseName}
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <input
+                                      type="text"
+                                      value={v.label}
+                                      onChange={(e) =>
+                                        dispatch({
+                                          type: "UPDATE_VARIANT_FIELD",
+                                          baseId: base.id,
+                                          variantId: v.id,
+                                          field: "label",
+                                          value: e.target.value,
+                                        })
+                                      }
+                                      style={cellInput()}
+                                    />
+                                    {sourceText ? (
+                                      <SourceName
+                                        text={sourceText}
+                                        axes={v.axes}
+                                        attributes={[
+                                          ...base.baseAttributes,
+                                          ...v.attributes,
+                                        ]}
+                                        optionLabelById={optionLabelById}
+                                        tooltip={t("sourceNameTooltip")}
+                                      />
+                                    ) : null}
                                   </div>
                                 </div>
-                              ) : (
-                                <div style={{ color: "var(--s-text-tertiary)", fontSize: 11 }}>
-                                  {base.variants.length > 1 ? "↳" : ""}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              value={v.label}
-                              onChange={(e) =>
-                                dispatch({
-                                  type: "UPDATE_VARIANT_FIELD",
-                                  baseId: base.id,
-                                  variantId: v.id,
-                                  field: "label",
-                                  value: e.target.value,
-                                })
-                              }
-                              style={cellInput()}
-                            />
-                            {sourceText ? (
-                              <SourceName
-                                text={sourceText}
-                                axes={v.axes}
-                                attributes={v.attributes}
-                                optionLabelById={optionLabelById}
-                                tooltip={t("sourceNameTooltip")}
-                              />
-                            ) : null}
-                          </td>
-                          {axisColumns.map((attr) => {
-                            const cell = v.axes.find((a) => Number(a.attributeId) === attr.attribute_id);
-                            const accent = cell ? colorForAttribute(attr.attribute_id) : null;
-                            return (
-                              <td
-                                key={`ax-${attr.attribute_id}`}
-                                style={{ background: "var(--scout-accent-50)", padding: 4 }}
-                              >
-                                <AxisCellEditor
-                                  attribute={attr}
-                                  cell={cell}
-                                  options={optionsByAttributeId.get(attr.attribute_id) ?? []}
-                                  units={units}
-                                  accent={accent}
-                                  onUpsert={(c) =>
-                                    dispatch({
-                                      type: "UPSERT_VARIANT_AXIS",
-                                      baseId: base.id,
-                                      variantId: v.id,
-                                      cell: c,
-                                    })
-                                  }
-                                  onRemove={() =>
-                                    dispatch({
-                                      type: "REMOVE_VARIANT_AXIS",
-                                      baseId: base.id,
-                                      variantId: v.id,
-                                      attributeId: attr.attribute_id,
-                                    })
-                                  }
-                                />
                               </td>
-                            );
-                          })}
-                          {attributeColumns.map((attr) => {
-                            const cell = v.attributes.find(
-                              (a) => Number(a.attributeId) === attr.attribute_id,
-                            );
-                            const accent = cell ? colorForAttribute(attr.attribute_id) : null;
-                            return (
-                              <td key={`at-${attr.attribute_id}`} style={{ padding: 4 }}>
-                                <AttributeCellEditor
-                                  attribute={attr}
-                                  cell={cell}
-                                  options={optionsByAttributeId.get(attr.attribute_id) ?? []}
-                                  accent={accent}
-                                  onUpsert={(c) =>
-                                    dispatch({
-                                      type: "UPSERT_VARIANT_ATTRIBUTE",
-                                      baseId: base.id,
-                                      variantId: v.id,
-                                      cell: c,
-                                    })
-                                  }
-                                  onRemove={() =>
-                                    dispatch({
-                                      type: "REMOVE_VARIANT_ATTRIBUTE",
-                                      baseId: base.id,
-                                      variantId: v.id,
-                                      attributeId: attr.attribute_id,
-                                    })
-                                  }
-                                />
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    }),
-                  )}
-                </tbody>
-              </table>
-            </div>
+                              {axisColumns.map((attr) => {
+                                const cell = v.axes.find(
+                                  (a) => Number(a.attributeId) === attr.attribute_id,
+                                );
+                                const accent = cell
+                                  ? colorForAttribute(attr.attribute_id)
+                                  : null;
+                                return (
+                                  <td
+                                    key={`ax-${attr.attribute_id}`}
+                                    style={{
+                                      background: "var(--scout-accent-50)",
+                                      padding: 4,
+                                    }}
+                                  >
+                                    <AxisCellEditor
+                                      attribute={attr}
+                                      cell={cell}
+                                      options={
+                                        optionsByAttributeId.get(attr.attribute_id) ?? []
+                                      }
+                                      units={units}
+                                      accent={accent}
+                                      onUpsert={(c) =>
+                                        dispatch({
+                                          type: "UPSERT_VARIANT_AXIS",
+                                          baseId: base.id,
+                                          variantId: v.id,
+                                          cell: c,
+                                        })
+                                      }
+                                      onRemove={() =>
+                                        dispatch({
+                                          type: "REMOVE_VARIANT_AXIS",
+                                          baseId: base.id,
+                                          variantId: v.id,
+                                          attributeId: attr.attribute_id,
+                                        })
+                                      }
+                                    />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </>
       )}

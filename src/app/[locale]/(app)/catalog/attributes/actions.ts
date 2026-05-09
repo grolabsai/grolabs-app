@@ -8,6 +8,7 @@ export type AttributeInput = {
   attribute_code: string;
   attribute_name: string;
   description?: string | null;
+  parsing_hint?: string | null;
   data_type?: string | null;
   dimension?: string | null;
   is_multivalue?: boolean;
@@ -53,6 +54,47 @@ export async function updateAttribute(attributeId: number, input: Partial<Attrib
   if (error) return { error: error.message };
   revalidate();
   return { ok: true as const };
+}
+
+/**
+ * Append the supplied terms to an attribute's parsing_hint, deduping
+ * against the existing hint text. Used by the import wizard's post-
+ * success "hint review" panel to teach the agent from successful
+ * extractions. Returns the new hint string for the caller to display.
+ */
+export async function appendAttributeParsingHint(
+  attributeId: number,
+  terms: string[],
+) {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { error: "No instance" };
+  const cleanTerms = Array.from(
+    new Set(terms.map((t) => t.trim()).filter((t) => t.length > 0)),
+  );
+  if (cleanTerms.length === 0) return { ok: true as const, data: { parsing_hint: null } };
+  const supabase = await createClient();
+  const { data: existing, error: readErr } = await supabase
+    .from("product_attribute")
+    .select("parsing_hint")
+    .eq("attribute_id", attributeId)
+    .eq("instance_id", instanceId)
+    .single();
+  if (readErr) return { error: readErr.message };
+  const current = (existing?.parsing_hint ?? "").trim();
+  const lower = current.toLowerCase();
+  const additions = cleanTerms.filter((t) => !lower.includes(t.toLowerCase()));
+  if (additions.length === 0) return { ok: true as const, data: { parsing_hint: current || null } };
+  const next = current
+    ? `${current}\nAlso recognize: ${additions.join(", ")}.`
+    : `Recognize: ${additions.join(", ")}.`;
+  const { error: writeErr } = await supabase
+    .from("product_attribute")
+    .update({ parsing_hint: next })
+    .eq("attribute_id", attributeId)
+    .eq("instance_id", instanceId);
+  if (writeErr) return { error: writeErr.message };
+  revalidate();
+  return { ok: true as const, data: { parsing_hint: next } };
 }
 
 export async function deleteAttribute(attributeId: number) {

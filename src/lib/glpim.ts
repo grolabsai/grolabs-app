@@ -121,6 +121,8 @@ export type GroupedBase = {
   confidence: number;
   confidence_tier: "high" | "medium" | "low";
   reasoning: string;
+  /** Descriptive attribute values that apply to every variant of the base. */
+  base_attribute_values?: AttributeValue[];
 };
 
 export type GroupProductsResponse = {
@@ -143,6 +145,7 @@ export type VocabularyAttributeIn = {
     dimension: "mass" | "volume" | "count" | "length";
   }>;
   required?: boolean;
+  parsing_hint?: string | null;
 };
 
 export type VocabularyIn = {

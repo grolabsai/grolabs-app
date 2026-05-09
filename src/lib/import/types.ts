@@ -117,6 +117,15 @@ export type ProposedProductBaseRow = {
   /** Per the agent's self-assessment. */
   confidence: number; // 0..1
   reasoning: string;
+  /**
+   * Descriptive attribute values that apply to EVERY variant of this base
+   * (e.g. medicado=true on a prescription line, target_life_stage=Adult on
+   * an adult-only product). Written once into product_attribute_value at
+   * import. A variant can override a base attr by carrying the same
+   * attribute_id in its own `attributes`; that override goes to
+   * product_variant_attribute and trumps the base value at read time.
+   */
+  baseAttributes: ProposedAttributeCell[];
   variants: ProposedVariantRow[];
 };
 

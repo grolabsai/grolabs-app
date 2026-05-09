@@ -30,6 +30,7 @@ type AttributeRow = {
   attribute_name: string;
   data_type: "text" | "number" | "list" | "multiselect" | "boolean" | "quantity" | "url";
   dimension: "mass" | "volume" | "count" | "length" | null;
+  parsing_hint: string | null;
 };
 type CategoryAttributeLinkRow = {
   category_id: number;
@@ -108,7 +109,7 @@ export default async function ImportWizardPage() {
     // dimension (so quantity unit dropdowns filter correctly).
     supabase
       .from("product_attribute")
-      .select("attribute_id, attribute_code, attribute_name, data_type, dimension")
+      .select("attribute_id, attribute_code, attribute_name, data_type, dimension, parsing_hint")
       .eq("instance_id", instanceId)
       .eq("is_active", true)
       .returns<AttributeRow[]>(),

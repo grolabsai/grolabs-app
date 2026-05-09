@@ -25,6 +25,7 @@ type FormState = {
   attribute_name: string;
   attribute_code: string;
   description: string;
+  parsing_hint: string;
   data_type: string;
   dimension: string | null;
   is_multivalue: boolean;
@@ -37,6 +38,7 @@ const DEFAULT_FORM: FormState = {
   attribute_name: "",
   attribute_code: "",
   description: "",
+  parsing_hint: "",
   data_type: "text",
   dimension: null,
   is_multivalue: false,
@@ -70,6 +72,7 @@ export function AttributeEditor({
           attribute_name: attribute.attribute_name,
           attribute_code: attribute.attribute_code,
           description: attribute.description ?? "",
+          parsing_hint: attribute.parsing_hint ?? "",
           data_type: attribute.data_type ?? "text",
           dimension: attribute.dimension ?? null,
           is_multivalue: attribute.is_multivalue,
@@ -109,6 +112,7 @@ export function AttributeEditor({
         attribute_name: form.attribute_name,
         attribute_code: form.attribute_code,
         description: form.description || null,
+        parsing_hint: form.parsing_hint.trim() || null,
         data_type: form.data_type,
         dimension: form.data_type === "quantity" ? form.dimension : null,
         is_multivalue: form.is_multivalue,
@@ -261,6 +265,20 @@ export function AttributeEditor({
           placeholder={t("form.fields.descriptionPlaceholder")}
           onChange={(e) => setField("description", e.target.value)}
         />
+      </div>
+
+      <div className="s-field">
+        <label className="s-field-label">{t("form.fields.parsingHint")}</label>
+        <textarea
+          className="s-textarea"
+          rows={3}
+          value={form.parsing_hint}
+          placeholder={t("form.fields.parsingHintPlaceholder")}
+          onChange={(e) => setField("parsing_hint", e.target.value)}
+        />
+        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
+          {t("form.fields.parsingHintDesc")}
+        </div>
       </div>
 
       {/* Data type */}

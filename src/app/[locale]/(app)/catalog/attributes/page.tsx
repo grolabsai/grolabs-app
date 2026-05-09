@@ -37,7 +37,7 @@ export default async function AttributesPage({
   const { data: rawAttributes } = await supabase
     .from("product_attribute")
     .select(
-      "attribute_id, attribute_code, attribute_name, description, data_type, dimension, is_multivalue, is_filterable, is_searchable, is_active",
+      "attribute_id, attribute_code, attribute_name, description, parsing_hint, data_type, dimension, is_multivalue, is_filterable, is_searchable, is_active",
     )
     .eq("instance_id", instanceId)
     .order("attribute_name");

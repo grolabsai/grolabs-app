@@ -19,6 +19,7 @@ export type Attribute = {
   attribute_name: string;
   data_type: "text" | "number" | "list" | "multiselect" | "boolean" | "quantity" | "url";
   dimension: "mass" | "volume" | "count" | "length" | null;
+  parsing_hint: string | null;
 };
 export type CategoryAttributeLink = {
   category_id: number;
@@ -168,7 +169,12 @@ function Inner({
         )}
         {state.step === 4 && <Step4Mapping />}
         {state.step === 5 && <Step5Review categories={categories} />}
-        {state.step === 6 && <Step6Import defaultProductTypeId={defaultProductTypeId} />}
+        {state.step === 6 && (
+          <Step6Import
+            defaultProductTypeId={defaultProductTypeId}
+            attributes={attributes}
+          />
+        )}
       </div>
     </>
   );

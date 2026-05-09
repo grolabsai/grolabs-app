@@ -3,6 +3,7 @@ export type AttributeRow = {
   attribute_code: string;
   attribute_name: string;
   description: string | null;
+  parsing_hint: string | null;
   data_type: string | null;
   dimension: string | null;
   is_multivalue: boolean;

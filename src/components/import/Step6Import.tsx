@@ -6,12 +6,20 @@ import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 
+import { HintReviewPanel } from "@/components/import/HintReviewPanel";
+import type { Attribute } from "@/components/import/ImportWizard";
 import { useWizard } from "@/components/import/WizardContext";
 import { Link } from "@/i18n/routing";
 import { createProductsBulk } from "@/lib/actions/import";
 import type { CreateProductFullInput } from "@/lib/actions/product";
 
-export function Step6Import({ defaultProductTypeId }: { defaultProductTypeId: number | null }) {
+export function Step6Import({
+  defaultProductTypeId,
+  attributes,
+}: {
+  defaultProductTypeId: number | null;
+  attributes: Attribute[];
+}) {
   const t = useTranslations("import.wizard.step6");
   const { state, dispatch } = useWizard();
   const [pending, startTransition] = useTransition();
@@ -64,8 +72,13 @@ export function Step6Import({ defaultProductTypeId }: { defaultProductTypeId: nu
           trackInventory: true,
           isConsignment: false,
           variants,
-          attributeValues: b.variants
-            .flatMap((v) => v.attributes)
+          // Descriptive attributes are now base-level (b.baseAttributes).
+          // Per-variant overrides (v.attributes) are intentionally dropped
+          // here — product_variant_attribute holds axes today, and adding
+          // descriptive overrides per variant is a separate model change.
+          // The dedup eliminates the prior bug where N variants writing
+          // the same (product_id, attribute_id) tripped the unique index.
+          attributeValues: b.baseAttributes
             .filter((a) => a.valueId !== null || a.valueText !== null)
             .map((a) => ({
               attributeId: typeof a.attributeId === "string" ? Number(a.attributeId) : a.attributeId,
@@ -196,6 +209,13 @@ export function Step6Import({ defaultProductTypeId }: { defaultProductTypeId: nu
               </table>
             </div>
           ) : null}
+
+          {/* Non-blocking hint review — propose new triggers for each
+              attribute the agent extracted with a literal source span,
+              so the agent gets smarter on the next import. User can
+              accept individual rows, dismiss the panel, or just navigate
+              away — nothing auto-writes. */}
+          <HintReviewPanel bases={state.productBases} attributes={attributes} />
         </>
       ) : null}
     </div>

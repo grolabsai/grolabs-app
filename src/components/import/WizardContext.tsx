@@ -65,6 +65,8 @@ type Action =
   | { type: "REMOVE_VARIANT_AXIS"; baseId: string; variantId: string; attributeId: number | string }
   | { type: "UPSERT_VARIANT_ATTRIBUTE"; baseId: string; variantId: string; cell: ProposedAttributeCell }
   | { type: "REMOVE_VARIANT_ATTRIBUTE"; baseId: string; variantId: string; attributeId: number | string }
+  | { type: "UPSERT_BASE_ATTRIBUTE"; baseId: string; cell: ProposedAttributeCell }
+  | { type: "REMOVE_BASE_ATTRIBUTE"; baseId: string; attributeId: number | string }
   | { type: "SET_COLUMN_MAPPING_FIELD"; field: ScoutFieldId; mapping: ColumnMapping[ScoutFieldId] }
   | { type: "SET_IMPORTING"; on: boolean }
   | { type: "SET_IMPORT_RESULT"; result: ImportResult | null };
@@ -218,6 +220,38 @@ function reducer(state: WizardState, action: Action): WizardState {
                         ),
                       }
                     : v,
+                ),
+              }
+            : b,
+        ),
+      };
+    case "UPSERT_BASE_ATTRIBUTE":
+      return {
+        ...state,
+        productBases: state.productBases.map((b) => {
+          if (b.id !== action.baseId) return b;
+          const exists = b.baseAttributes.some(
+            (a) => a.attributeId === action.cell.attributeId,
+          );
+          return {
+            ...b,
+            baseAttributes: exists
+              ? b.baseAttributes.map((a) =>
+                  a.attributeId === action.cell.attributeId ? action.cell : a,
+                )
+              : [...b.baseAttributes, action.cell],
+          };
+        }),
+      };
+    case "REMOVE_BASE_ATTRIBUTE":
+      return {
+        ...state,
+        productBases: state.productBases.map((b) =>
+          b.id === action.baseId
+            ? {
+                ...b,
+                baseAttributes: b.baseAttributes.filter(
+                  (a) => a.attributeId !== action.attributeId,
                 ),
               }
             : b,

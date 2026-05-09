@@ -1133,6 +1133,51 @@
       "toastInvalidNumber": "Percentages must be valid numbers",
       "toastMinAboveTarget": "Minimum cannot exceed the target"
     },
+    "categoryMargins": {
+      "title": {
+        "margin": "Margins by category",
+        "markup": "Markup by category"
+      },
+      "subtitle": {
+        "margin": "Each category can inherit its parent's percentages, or set its own targets.",
+        "markup": "Each category can inherit its parent's markup, or set its own."
+      },
+      "modeBadge": "Current mode:",
+      "modeName": {
+        "margin": "Margin",
+        "markup": "Markup"
+      },
+      "formula": {
+        "margin": "Price = Cost / (1 − Margin ÷ 100)",
+        "markup": "Price = Cost × (1 + Markup ÷ 100)"
+      },
+      "inheritedCount": "{count, plural, one {# category inherits} other {# categories inherit}} from parent",
+      "usingDefaultsCount": "{count, plural, one {# uses default} other {# use defaults}}",
+      "empty": "No categories. Create categories in the catalogue to assign margins.",
+      "columns": {
+        "category": "Category",
+        "target": {
+          "margin": "Target margin (%)",
+          "markup": "Target markup (%)"
+        },
+        "min": {
+          "margin": "Min margin (%)",
+          "markup": "Min markup (%)"
+        },
+        "inherits": "Inherits"
+      },
+      "buttons": {
+        "save": "Save",
+        "saving": "…"
+      },
+      "toast": {
+        "saved": "Category updated",
+        "saveError": "Could not save the category",
+        "invalidTarget": "Target must be a valid number ≥ 0",
+        "invalidMin": "Minimum must be a valid number ≥ 0",
+        "minAboveTarget": "Minimum cannot exceed the target"
+      }
+    },
     "charmRules": {
       "title": "Charm-pricing rules",
       "subtitle": "Automatically snap a calculated price to a more attractive value within a band.",

@@ -1133,6 +1133,51 @@
       "toastInvalidNumber": "Los porcentajes deben ser números válidos",
       "toastMinAboveTarget": "El mínimo no puede ser mayor que el objetivo"
     },
+    "categoryMargins": {
+      "title": {
+        "margin": "Márgenes por categoría",
+        "markup": "Markup por categoría"
+      },
+      "subtitle": {
+        "margin": "Cada categoría puede heredar los porcentajes del padre, o tener sus propios objetivos.",
+        "markup": "Cada categoría puede heredar el markup del padre, o tener su propio valor."
+      },
+      "modeBadge": "Modo actual:",
+      "modeName": {
+        "margin": "Margen",
+        "markup": "Markup"
+      },
+      "formula": {
+        "margin": "Precio = Costo / (1 − Margen ÷ 100)",
+        "markup": "Precio = Costo × (1 + Markup ÷ 100)"
+      },
+      "inheritedCount": "{count} {count, plural, one {categoría hereda} other {categorías heredan}} del padre",
+      "usingDefaultsCount": "{count} {count, plural, one {usa el valor por defecto} other {usan el valor por defecto}}",
+      "empty": "No hay categorías. Crea categorías en el catálogo para asignarles márgenes.",
+      "columns": {
+        "category": "Categoría",
+        "target": {
+          "margin": "Margen objetivo (%)",
+          "markup": "Markup objetivo (%)"
+        },
+        "min": {
+          "margin": "Margen mínimo (%)",
+          "markup": "Markup mínimo (%)"
+        },
+        "inherits": "Hereda"
+      },
+      "buttons": {
+        "save": "Guardar",
+        "saving": "…"
+      },
+      "toast": {
+        "saved": "Categoría actualizada",
+        "saveError": "No se pudo guardar la categoría",
+        "invalidTarget": "El objetivo debe ser un número válido ≥ 0",
+        "invalidMin": "El mínimo debe ser un número válido ≥ 0",
+        "minAboveTarget": "El mínimo no puede ser mayor que el objetivo"
+      }
+    },
     "charmRules": {
       "title": "Reglas de precio gancho",
       "subtitle": "Ajusta automáticamente el precio calculado a un valor más atractivo según el rango.",

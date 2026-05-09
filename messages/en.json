@@ -1100,6 +1100,88 @@
       "comingSoon": "Coming soon",
       "comingSoonText": "This view is part of the pricing module and will ship in a follow-up."
     },
+    "calculationMode": {
+      "title": "Calculation method",
+      "subtitle": "How Scout calculates selling prices from cost. This setting drives every percentage in the pricing module.",
+      "modes": {
+        "margin": {
+          "label": "Margin",
+          "description": "Percentage is profit as a share of the selling price.",
+          "formulaPrice": "Price = Cost / (1 − Margin ÷ 100)",
+          "formulaPct": "Margin % = (Price − Cost) / Price × 100"
+        },
+        "markup": {
+          "label": "Markup",
+          "description": "Percentage is profit as a share of cost.",
+          "formulaPrice": "Price = Cost × (1 + Markup ÷ 100)",
+          "formulaPct": "Markup % = (Price − Cost) / Cost × 100"
+        }
+      },
+      "example": {
+        "heading": "Example · cost Q {cost}, percentage {pct}%"
+      },
+      "defaults": {
+        "target": "Target (%)",
+        "targetHint": "Default for new categories.",
+        "min": "Minimum (%)",
+        "minHint": "Below this level a row is flagged critical."
+      },
+      "save": "Save changes",
+      "saving": "Saving…",
+      "toastSaved": "Settings saved",
+      "toastSaveError": "Could not save settings",
+      "toastInvalidNumber": "Percentages must be valid numbers",
+      "toastMinAboveTarget": "Minimum cannot exceed the target"
+    },
+    "charmRules": {
+      "title": "Charm-pricing rules",
+      "subtitle": "Automatically snap a calculated price to a more attractive value within a band.",
+      "empty": "No rules yet. Add the first one to start applying charm prices in change batches.",
+      "columns": {
+        "from": "From (Q)",
+        "to": "To (Q)",
+        "strategy": "Strategy",
+        "value": "Value",
+        "example": "Example",
+        "active": "Active"
+      },
+      "placeholders": {
+        "max": "no limit"
+      },
+      "strategies": {
+        "ends_in": {
+          "label": "Ends in",
+          "hint": "Snaps to the next value whose decimal part matches.",
+          "placeholder": "0.99"
+        },
+        "round_to": {
+          "label": "Round to multiple",
+          "hint": "Rounds up to the nearest multiple.",
+          "placeholder": "5"
+        },
+        "fixed_offset": {
+          "label": "Fixed offset",
+          "hint": "Rounds up to the next whole, then subtracts this value.",
+          "placeholder": "0.05"
+        }
+      },
+      "buttons": {
+        "add": "Add rule",
+        "save": "Save",
+        "saving": "…",
+        "delete": "Delete"
+      },
+      "confirmDelete": "Delete this rule? Already-synced batches are not affected.",
+      "toast": {
+        "saved": "Rule saved",
+        "saveError": "Could not save the rule",
+        "deleted": "Rule deleted",
+        "deleteError": "Could not delete the rule",
+        "invalidMin": "From must be a valid number ≥ 0",
+        "invalidMax": "To must be ≥ From, or empty for no limit",
+        "invalidValue": "Strategy value must be a valid number ≥ 0"
+      }
+    },
     "providersList": {
       "add": "Add provider",
       "inactiveBadge": "Inactive",

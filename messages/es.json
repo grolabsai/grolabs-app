@@ -1100,6 +1100,88 @@
       "comingSoon": "Próximamente",
       "comingSoonText": "Esta vista forma parte del módulo de precios y se construirá en una próxima entrega."
     },
+    "calculationMode": {
+      "title": "Método de cálculo",
+      "subtitle": "Cómo Scout calcula los precios de venta a partir del costo. Esta selección afecta todos los porcentajes del módulo de precios.",
+      "modes": {
+        "margin": {
+          "label": "Margen",
+          "description": "El porcentaje es la ganancia como parte del precio de venta.",
+          "formulaPrice": "Precio = Costo / (1 − Margen ÷ 100)",
+          "formulaPct": "Margen % = (Precio − Costo) / Precio × 100"
+        },
+        "markup": {
+          "label": "Markup",
+          "description": "El porcentaje es la ganancia como parte del costo.",
+          "formulaPrice": "Precio = Costo × (1 + Markup ÷ 100)",
+          "formulaPct": "Markup % = (Precio − Costo) / Costo × 100"
+        }
+      },
+      "example": {
+        "heading": "Ejemplo · costo Q {cost}, porcentaje {pct}%"
+      },
+      "defaults": {
+        "target": "Objetivo (%)",
+        "targetHint": "Valor por defecto para nuevas categorías.",
+        "min": "Mínimo (%)",
+        "minHint": "Por debajo de este nivel se marca como crítico."
+      },
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "toastSaved": "Configuración guardada",
+      "toastSaveError": "No se pudo guardar la configuración",
+      "toastInvalidNumber": "Los porcentajes deben ser números válidos",
+      "toastMinAboveTarget": "El mínimo no puede ser mayor que el objetivo"
+    },
+    "charmRules": {
+      "title": "Reglas de precio gancho",
+      "subtitle": "Ajusta automáticamente el precio calculado a un valor más atractivo según el rango.",
+      "empty": "Aún no hay reglas. Agrega la primera para que el lote de cambios aplique precios gancho.",
+      "columns": {
+        "from": "Desde (Q)",
+        "to": "Hasta (Q)",
+        "strategy": "Estrategia",
+        "value": "Valor",
+        "example": "Ejemplo",
+        "active": "Activa"
+      },
+      "placeholders": {
+        "max": "sin límite"
+      },
+      "strategies": {
+        "ends_in": {
+          "label": "Termina en",
+          "hint": "Ajusta el precio al siguiente valor cuyo decimal coincide.",
+          "placeholder": "0.99"
+        },
+        "round_to": {
+          "label": "Redondea a múltiplo",
+          "hint": "Redondea hacia arriba al múltiplo más cercano.",
+          "placeholder": "5"
+        },
+        "fixed_offset": {
+          "label": "Resta fija",
+          "hint": "Redondea al siguiente entero y resta este valor.",
+          "placeholder": "0.05"
+        }
+      },
+      "buttons": {
+        "add": "Agregar regla",
+        "save": "Guardar",
+        "saving": "…",
+        "delete": "Eliminar"
+      },
+      "confirmDelete": "¿Eliminar esta regla? No afecta lotes ya sincronizados.",
+      "toast": {
+        "saved": "Regla guardada",
+        "saveError": "No se pudo guardar la regla",
+        "deleted": "Regla eliminada",
+        "deleteError": "No se pudo eliminar la regla",
+        "invalidMin": "Desde debe ser un número válido ≥ 0",
+        "invalidMax": "Hasta debe ser ≥ Desde, o vacío para sin límite",
+        "invalidValue": "El valor de la estrategia debe ser un número válido ≥ 0"
+      }
+    },
     "providersList": {
       "add": "Agregar proveedor",
       "inactiveBadge": "Inactivo",

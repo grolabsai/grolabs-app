@@ -2611,3 +2611,177 @@ export async function bulkDeleteItems(
   for (const id of batchIds) revalidatePath(`/pricing/changes/${id}`);
   return { ok: true };
 }
+
+// =============================================================================
+// Authorization queue — cross-batch view of open violations
+// =============================================================================
+
+export type AuthQueueRow = {
+  price_batch_item_id: number;
+  price_batch_id: number;
+  batch_name: string;
+  batch_status: PriceBatchStatus;
+  variant_id: number;
+  variant_label: string;
+  brand_name: string | null;
+  current_price: number | null;
+  final_price: number | null;
+  margin_percent: number | null;
+  status: "warning" | "critical";
+  status_reasons: string[];
+  updated_at: string;
+};
+
+/**
+ * Every warning + critical row across every non-synced batch on the
+ * instance. Sorted criticals-first then by batch updated_at desc so the
+ * most recently-touched batches surface at the top.
+ *
+ * Synced batches are intentionally excluded — their rows are immutable
+ * and there's nothing the user can do from the queue.
+ */
+export async function listOpenViolations(): Promise<
+  | { ok: true; rows: AuthQueueRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("price_batch_item")
+    .select(
+      "price_batch_item_id, price_batch_id, variant_id, current_price, final_price, margin_percent, status, status_reasons, price_batch:price_batch_id!inner(batch_name, status, updated_at)",
+    )
+    .in("status", ["warning", "critical"])
+    .neq("price_batch.status", "synced")
+    .limit(500);
+  if (error) return { ok: false, error: error.message };
+
+  type Raw = {
+    price_batch_item_id: number;
+    price_batch_id: number;
+    variant_id: number;
+    current_price: number | string | null;
+    final_price: number | string | null;
+    margin_percent: number | string | null;
+    status: "warning" | "critical";
+    status_reasons: string[] | null;
+    price_batch:
+      | { batch_name: string; status: PriceBatchStatus; updated_at: string }
+      | { batch_name: string; status: PriceBatchStatus; updated_at: string }[]
+      | null;
+  };
+  const rows = (data ?? []) as unknown as Raw[];
+  if (rows.length === 0) return { ok: true, rows: [] };
+
+  // Resolve variant + product + brand names in three batched lookups so
+  // the queue table can render labels without N+1.
+  const variantIds = Array.from(new Set(rows.map((r) => r.variant_id)));
+  const { data: variantRows } = await supabase
+    .from("product_variant")
+    .select("variant_id, variant_name, sku, product_id")
+    .in("variant_id", variantIds);
+  const productIds = Array.from(
+    new Set(
+      (variantRows ?? [])
+        .map((v) => (v as { product_id: number | null }).product_id)
+        .filter((p): p is number => p !== null),
+    ),
+  );
+  const { data: productRows } =
+    productIds.length > 0
+      ? await supabase
+          .from("product")
+          .select("product_id, brand_id, product_name")
+          .in("product_id", productIds)
+      : { data: [] };
+  const brandIds = Array.from(
+    new Set(
+      (productRows ?? [])
+        .map((p) => (p as { brand_id: number | null }).brand_id)
+        .filter((b): b is number => b !== null),
+    ),
+  );
+  const { data: brandRows } =
+    brandIds.length > 0
+      ? await supabase
+          .from("brand")
+          .select("brand_id, brand_name")
+          .in("brand_id", brandIds)
+      : { data: [] };
+
+  const variantMap = new Map<
+    number,
+    { product_id: number | null; variant_name: string | null; sku: string | null }
+  >();
+  for (const v of variantRows ?? []) {
+    variantMap.set((v as { variant_id: number }).variant_id, {
+      product_id: (v as { product_id: number | null }).product_id,
+      variant_name: (v as { variant_name: string | null }).variant_name,
+      sku: (v as { sku: string | null }).sku,
+    });
+  }
+  const productMap = new Map<
+    number,
+    { brand_id: number | null; product_name: string | null }
+  >();
+  for (const p of productRows ?? []) {
+    productMap.set((p as { product_id: number }).product_id, {
+      brand_id: (p as { brand_id: number | null }).brand_id,
+      product_name: (p as { product_name: string | null }).product_name,
+    });
+  }
+  const brandMap = new Map<number, string>();
+  for (const b of brandRows ?? []) {
+    brandMap.set(
+      (b as { brand_id: number }).brand_id,
+      (b as { brand_name: string }).brand_name,
+    );
+  }
+
+  const out: AuthQueueRow[] = rows.map((r) => {
+    const variant = variantMap.get(r.variant_id);
+    const product =
+      variant?.product_id !== null && variant?.product_id !== undefined
+        ? productMap.get(variant.product_id)
+        : null;
+    const brand =
+      product?.brand_id !== null && product?.brand_id !== undefined
+        ? brandMap.get(product.brand_id) ?? null
+        : null;
+
+    const productName = product?.product_name ?? "";
+    const variantName = variant?.variant_name ?? "";
+    const composed = [productName, variantName]
+      .filter((s) => s && s.trim() !== "")
+      .join(" · ");
+    const labelBase = composed || `#${r.variant_id}`;
+    const label = variant?.sku ? `${labelBase} · ${variant.sku}` : labelBase;
+
+    const pb = Array.isArray(r.price_batch) ? r.price_batch[0] : r.price_batch;
+    return {
+      price_batch_item_id: r.price_batch_item_id,
+      price_batch_id: r.price_batch_id,
+      batch_name: pb?.batch_name ?? `#${r.price_batch_id}`,
+      batch_status: (pb?.status as PriceBatchStatus) ?? "draft",
+      variant_id: r.variant_id,
+      variant_label: label,
+      brand_name: brand,
+      current_price: r.current_price === null ? null : Number(r.current_price),
+      final_price: r.final_price === null ? null : Number(r.final_price),
+      margin_percent: r.margin_percent === null ? null : Number(r.margin_percent),
+      status: r.status,
+      status_reasons: r.status_reasons ?? [],
+      updated_at: pb?.updated_at ?? new Date().toISOString(),
+    };
+  });
+
+  // Critical first; within each, most recently-updated batch first.
+  out.sort((a, b) => {
+    if (a.status !== b.status) return a.status === "critical" ? -1 : 1;
+    return b.updated_at.localeCompare(a.updated_at);
+  });
+
+  return { ok: true, rows: out };
+}

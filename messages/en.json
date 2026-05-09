@@ -1289,6 +1289,9 @@
     },
     "batchDetail": {
       "back": "Batches",
+      "clickToEdit": "Click to edit",
+      "selectAll": "Select all",
+      "selectRow": "Select row",
       "status": {
         "draft": "Draft",
         "ready": "Ready",
@@ -1309,8 +1312,56 @@
         "margin": "Margin",
         "status": "Status"
       },
+      "filters": {
+        "status": "Status",
+        "statusOptions": {
+          "all": "All",
+          "neutral": "No alerts",
+          "warning": "Warnings",
+          "critical": "Criticals"
+        },
+        "brand": "Brand",
+        "brandAll": "All",
+        "onlyChanges": "Only with price change",
+        "shown": "{shown} of {total}"
+      },
+      "staleBanner": "Configuration changed since this batch was created. Recompute to apply the new values.",
+      "buttons": {
+        "recompute": "Recompute",
+        "recomputing": "Recomputing…",
+        "markReady": "Mark as ready",
+        "markReadyBlockedHint": "Resolve the critical rows before marking as ready.",
+        "backToDraft": "Back to draft",
+        "resetOverride": "Clear manual price",
+        "notOverridden": "No manual price set"
+      },
+      "bulk": {
+        "selected": "{n} selected",
+        "approve": "Approve",
+        "delete": "Delete",
+        "clear": "Clear"
+      },
+      "toast": {
+        "savedName": "Name updated",
+        "saveNameError": "Could not save the name",
+        "recomputed": "Batch recomputed",
+        "recomputeError": "Could not recompute the batch",
+        "markedReady": "Batch marked as ready",
+        "readyError": "Could not mark as ready",
+        "backToDraft": "Batch back to draft",
+        "backToDraftError": "Could not return to draft",
+        "editError": "Could not save the change",
+        "invalidCharm": "Charm price must be a valid number ≥ 0",
+        "invalidFinal": "Final price must be a valid number ≥ 0",
+        "overrideCleared": "Manual price cleared",
+        "bulkApproveError": "Could not approve the rows",
+        "bulkApproved": "Approved {n} rows",
+        "bulkDeleteError": "Could not delete the rows",
+        "bulkDeleted": "Deleted {n} rows",
+        "bulkDeleteConfirm": "Delete {n} rows from this batch? The original price list is untouched."
+      },
       "emptyItems": "This batch has no items. That usually means none of the list rows matched a catalogue variant.",
-      "w1Notice": "Read-only view. Filters, violation banners and inline editing land in the next release."
+      "emptyAfterFilters": "No items match the active filters."
     },
     "violationsPage": {
       "queueTitle": "Authorization queue",

@@ -29,7 +29,7 @@ import { suggestColumns, type KeyColumnKind } from "@/lib/pricing/column-detect"
 import { parseMoney } from "@/lib/pricing/parse-money";
 import {
   importPriceList,
-  listProviders,
+  listActiveProvidersBrief,
   createProvider,
   type ProviderRow,
 } from "@/lib/actions/pricing";
@@ -83,7 +83,7 @@ export function PriceListImportDialog({
   useEffect(() => {
     if (step !== "configure") return;
     let alive = true;
-    listProviders().then((res) => {
+    listActiveProvidersBrief().then((res) => {
       if (!alive || !res.ok) return;
       setProviders(res.providers);
     });

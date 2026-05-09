@@ -1100,6 +1100,70 @@
       "comingSoon": "Coming soon",
       "comingSoonText": "This view is part of the pricing module and will ship in a follow-up."
     },
+    "providersList": {
+      "add": "Add provider",
+      "inactiveBadge": "Inactive",
+      "consignmentTag": "Consignment",
+      "empty": {
+        "title": "No providers yet",
+        "text": "Add your first provider to start importing cost lists. You can edit all their details later."
+      }
+    },
+    "providerForm": {
+      "titleNew": "New provider",
+      "backToList": "Providers",
+      "sections": {
+        "identity": "Identity",
+        "contact": "Contact",
+        "address": "Address",
+        "commercial": "Commercial",
+        "banking": "Bank",
+        "brands": "Brands distributed",
+        "status": "Status"
+      },
+      "fields": {
+        "provider_name": "Short name",
+        "legal_name": "Legal name",
+        "tax_id": "Tax ID",
+        "contact_name": "Contact person",
+        "email": "Email",
+        "phone": "Phone",
+        "website": "Website",
+        "address_line": "Address",
+        "city": "City",
+        "country": "Country",
+        "payment_terms": "Payment terms",
+        "default_currency": "Currency",
+        "consignment": "Consignment",
+        "notes": "Internal notes",
+        "bank_name": "Bank",
+        "bank_account_number": "Account number",
+        "is_active": "Active"
+      },
+      "placeholders": {
+        "payment_terms": "e.g. 30 days, cash"
+      },
+      "yes": "Yes",
+      "no": "No",
+      "active": "Active",
+      "inactive": "Inactive",
+      "brands": {
+        "hint": "Select the brands this provider distributes.",
+        "empty": "No brands registered yet. Create brands in the catalogue before linking them."
+      },
+      "buttons": {
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel"
+      },
+      "toastNameRequired": "Provider name is required",
+      "toastSaved": "Provider saved",
+      "toastSaveError": "Could not save the provider",
+      "toastBrandsError": "Provider saved, but brand assignment failed",
+      "toastActiveError": "Could not change status",
+      "toastActivated": "Provider activated",
+      "toastDeactivated": "Provider deactivated"
+    },
     "importDialog": {
       "title": "Import price list",
       "description": {

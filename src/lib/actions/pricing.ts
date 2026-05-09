@@ -13,7 +13,7 @@ import type { KeyColumnKind } from "@/lib/pricing/column-detect";
  */
 
 // =============================================================================
-// listProviders — used by the import modal's provider dropdown
+// Provider CRUD
 // =============================================================================
 
 export type ProviderRow = {
@@ -21,7 +21,83 @@ export type ProviderRow = {
   provider_name: string;
 };
 
+/** Full provider record returned by the detail screen and grid card. */
+export type ProviderDetail = {
+  provider_id: number;
+  provider_name: string;
+  legal_name: string | null;
+  tax_id: string | null;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  address_line: string | null;
+  city: string | null;
+  country: string | null;
+  payment_terms: string | null;
+  default_currency: string | null;
+  consignment: boolean;
+  notes: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Editable subset — `is_active` and identity stay in saveProvider. */
+export type ProviderInput = {
+  provider_name: string;
+  legal_name: string | null;
+  tax_id: string | null;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  address_line: string | null;
+  city: string | null;
+  country: string | null;
+  payment_terms: string | null;
+  default_currency: string | null;
+  consignment: boolean;
+  notes: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  is_active: boolean;
+};
+
+const PROVIDER_DETAIL_COLUMNS = `
+  provider_id, provider_name, legal_name, tax_id,
+  contact_name, email, phone, website,
+  address_line, city, country,
+  payment_terms, default_currency, consignment, notes,
+  bank_name, bank_account_number,
+  is_active, created_at, updated_at
+` as const;
+
+/**
+ * List providers visible on the provider grid. Returns active and inactive
+ * rows so the UI can show a "ver inactivos" toggle later. Sorted by name.
+ */
 export async function listProviders(): Promise<
+  | { ok: true; providers: ProviderDetail[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("provider")
+    .select(PROVIDER_DETAIL_COLUMNS)
+    .order("provider_name", { ascending: true });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, providers: (data ?? []) as ProviderDetail[] };
+}
+
+/** Used by the import dialog dropdown — only active providers, minimal cols. */
+export async function listActiveProvidersBrief(): Promise<
   | { ok: true; providers: ProviderRow[] }
   | { ok: false; error: string }
 > {
@@ -39,10 +115,29 @@ export async function listProviders(): Promise<
   return { ok: true, providers: data ?? [] };
 }
 
-// =============================================================================
-// createProvider — used by the modal's "create new" branch
-// =============================================================================
+/** Fetch one provider by id. RLS scopes to current instance. */
+export async function getProvider(providerId: number): Promise<
+  | { ok: true; provider: ProviderDetail }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
 
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("provider")
+    .select(PROVIDER_DETAIL_COLUMNS)
+    .eq("provider_id", providerId)
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, provider: data as ProviderDetail };
+}
+
+/**
+ * Lightweight create used by the import wizard's inline "+ Nuevo proveedor"
+ * branch. The full-page form goes through saveProvider instead.
+ */
 export async function createProvider(name: string): Promise<
   | { ok: true; provider: ProviderRow }
   | { ok: false; error: string }
@@ -63,6 +158,212 @@ export async function createProvider(name: string): Promise<
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, provider: data };
+}
+
+/**
+ * Save a provider — creates when `providerId` is null, updates otherwise.
+ * `provider_name` is the only required field; the rest are optional and
+ * trimmed-then-nulled empty strings on save.
+ */
+export async function saveProvider(
+  providerId: number | null,
+  input: ProviderInput,
+): Promise<
+  | { ok: true; providerId: number }
+  | { ok: false; error: string }
+> {
+  const name = input.provider_name.trim();
+  if (name.length < 2) return { ok: false, error: "provider_name_too_short" };
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  // Normalise empty strings to null to keep the DB clean.
+  const blank = (v: string | null) =>
+    v === null || v.trim() === "" ? null : v.trim();
+
+  const payload = {
+    provider_name: name,
+    legal_name: blank(input.legal_name),
+    tax_id: blank(input.tax_id),
+    contact_name: blank(input.contact_name),
+    email: blank(input.email),
+    phone: blank(input.phone),
+    website: blank(input.website),
+    address_line: blank(input.address_line),
+    city: blank(input.city),
+    country: blank(input.country),
+    payment_terms: blank(input.payment_terms),
+    default_currency: blank(input.default_currency),
+    consignment: input.consignment,
+    notes: blank(input.notes),
+    bank_name: blank(input.bank_name),
+    bank_account_number: blank(input.bank_account_number),
+    is_active: input.is_active,
+  };
+
+  const supabase = await createClient();
+  if (providerId === null) {
+    const { data, error } = await supabase
+      .from("provider")
+      .insert({ instance_id: instanceId, ...payload })
+      .select("provider_id")
+      .single();
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/pricing/providers");
+    return { ok: true, providerId: data.provider_id };
+  } else {
+    const { error } = await supabase
+      .from("provider")
+      .update(payload)
+      .eq("provider_id", providerId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/pricing/providers");
+    revalidatePath(`/pricing/providers/${providerId}`);
+    return { ok: true, providerId };
+  }
+}
+
+/** Soft toggle — deactivates rather than deletes to keep audit trail. */
+export async function setProviderActive(
+  providerId: number,
+  isActive: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("provider")
+    .update({ is_active: isActive })
+    .eq("provider_id", providerId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/pricing/providers");
+  return { ok: true };
+}
+
+// =============================================================================
+// Provider ↔ Brand wiring
+// =============================================================================
+
+export type BrandRow = {
+  brand_id: number;
+  brand_name: string;
+};
+
+/** Brands currently linked to a provider (active links only). */
+export async function listProviderBrands(providerId: number): Promise<
+  | { ok: true; brandIds: number[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("provider_brand")
+    .select("brand_id")
+    .eq("provider_id", providerId)
+    .eq("is_active", true);
+  if (error) return { ok: false, error: error.message };
+  return {
+    ok: true,
+    brandIds: (data ?? []).map((r) => r.brand_id as number),
+  };
+}
+
+/**
+ * Replace the provider's brand set. Existing rows for brands that are no
+ * longer in the new set get `is_active = false` (not deleted, so we can
+ * audit who used to distribute what). Brands newly added get inserted or
+ * reactivated.
+ */
+export async function setProviderBrands(
+  providerId: number,
+  brandIds: number[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+
+  // Pull current rows so we know which to deactivate vs upsert.
+  const { data: current, error: curErr } = await supabase
+    .from("provider_brand")
+    .select("brand_id, is_active")
+    .eq("provider_id", providerId);
+  if (curErr) return { ok: false, error: curErr.message };
+
+  const currentMap = new Map<number, boolean>();
+  for (const r of current ?? []) {
+    currentMap.set(r.brand_id as number, r.is_active as boolean);
+  }
+  const desired = new Set(brandIds);
+
+  const toDeactivate: number[] = [];
+  const toUpsert: Array<{
+    instance_id: number;
+    provider_id: number;
+    brand_id: number;
+    is_active: boolean;
+  }> = [];
+
+  for (const [bid, active] of currentMap) {
+    if (!desired.has(bid) && active) toDeactivate.push(bid);
+  }
+  for (const bid of desired) {
+    const wasActive = currentMap.get(bid);
+    if (wasActive === undefined) {
+      toUpsert.push({
+        instance_id: instanceId,
+        provider_id: providerId,
+        brand_id: bid,
+        is_active: true,
+      });
+    } else if (wasActive === false) {
+      toUpsert.push({
+        instance_id: instanceId,
+        provider_id: providerId,
+        brand_id: bid,
+        is_active: true,
+      });
+    }
+  }
+
+  if (toDeactivate.length > 0) {
+    const { error } = await supabase
+      .from("provider_brand")
+      .update({ is_active: false })
+      .eq("provider_id", providerId)
+      .in("brand_id", toDeactivate);
+    if (error) return { ok: false, error: error.message };
+  }
+  if (toUpsert.length > 0) {
+    const { error } = await supabase
+      .from("provider_brand")
+      .upsert(toUpsert, { onConflict: "provider_id,brand_id" });
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidatePath(`/pricing/providers/${providerId}`);
+  return { ok: true };
+}
+
+/** All brands belonging to the current instance — feeds the chip picker. */
+export async function listBrandsForPricing(): Promise<
+  | { ok: true; brands: BrandRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("brand")
+    .select("brand_id, brand_name")
+    .order("brand_name", { ascending: true });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, brands: data ?? [] };
 }
 
 // =============================================================================

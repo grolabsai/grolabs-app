@@ -1100,6 +1100,70 @@
       "comingSoon": "Próximamente",
       "comingSoonText": "Esta vista forma parte del módulo de precios y se construirá en una próxima entrega."
     },
+    "providersList": {
+      "add": "Agregar proveedor",
+      "inactiveBadge": "Inactivo",
+      "consignmentTag": "Consignación",
+      "empty": {
+        "title": "Sin proveedores aún",
+        "text": "Agrega tu primer proveedor para empezar a importar listas de costos. Puedes editar todos sus datos después."
+      }
+    },
+    "providerForm": {
+      "titleNew": "Nuevo proveedor",
+      "backToList": "Proveedores",
+      "sections": {
+        "identity": "Identidad",
+        "contact": "Contacto",
+        "address": "Dirección",
+        "commercial": "Comercial",
+        "banking": "Banco",
+        "brands": "Marcas que distribuye",
+        "status": "Estado"
+      },
+      "fields": {
+        "provider_name": "Nombre corto",
+        "legal_name": "Razón social",
+        "tax_id": "NIT / RFC / RUC",
+        "contact_name": "Persona de contacto",
+        "email": "Correo",
+        "phone": "Teléfono",
+        "website": "Sitio web",
+        "address_line": "Dirección",
+        "city": "Ciudad",
+        "country": "País",
+        "payment_terms": "Términos de pago",
+        "default_currency": "Moneda",
+        "consignment": "Consignación",
+        "notes": "Notas internas",
+        "bank_name": "Banco",
+        "bank_account_number": "Número de cuenta",
+        "is_active": "Activo"
+      },
+      "placeholders": {
+        "payment_terms": "ej. 30 días, contado"
+      },
+      "yes": "Sí",
+      "no": "No",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "brands": {
+        "hint": "Selecciona las marcas que este proveedor distribuye.",
+        "empty": "Aún no hay marcas registradas. Crea marcas en el catálogo antes de asociarlas."
+      },
+      "buttons": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar"
+      },
+      "toastNameRequired": "El nombre del proveedor es obligatorio",
+      "toastSaved": "Proveedor guardado",
+      "toastSaveError": "No se pudo guardar el proveedor",
+      "toastBrandsError": "Se guardó el proveedor, pero falló la asignación de marcas",
+      "toastActiveError": "No se pudo cambiar el estado",
+      "toastActivated": "Proveedor activado",
+      "toastDeactivated": "Proveedor desactivado"
+    },
     "importDialog": {
       "title": "Importar lista de precios",
       "description": {

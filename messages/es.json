@@ -25,7 +25,14 @@
     "instance": "Instancia",
     "version": "Versión",
     "sync": "Sincronización",
-    "woocommerce": "WooCommerce"
+    "woocommerce": "WooCommerce",
+    "pricing": "Precios",
+    "pricingOverview": "Visión general",
+    "pricingPolicies": "Políticas",
+    "pricingProviders": "Proveedores",
+    "pricingChanges": "Lotes de cambios",
+    "pricingViolations": "Autorizaciones",
+    "pricingSync": "Sincronización"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -1042,6 +1049,113 @@
       "syncSuccess": "{platform}: {n} producto(s) sincronizados.",
       "syncPartial": "{platform}: {ok} ok, {failed} fallaron.",
       "syncError": "Error al sincronizar con {platform}"
+    }
+  },
+  "pricing": {
+    "title": "Gestión de Precios",
+    "subtitle": "Administra listas de costos, políticas de precio y sincronización con WooCommerce",
+    "tabs": {
+      "overview": "Visión general",
+      "policies": "Políticas",
+      "providers": "Proveedores",
+      "changes": "Lotes",
+      "violations": "Autorizaciones",
+      "sync": "Sincronización"
+    },
+    "actions": {
+      "importList": "Importar lista de precios",
+      "viewAll": "Ver todos",
+      "newBatch": "Nuevo lote"
+    },
+    "stats": {
+      "activeProducts": "Productos activos",
+      "activeProductsHint": "Con precio asignado",
+      "avgMargin": "Margen promedio",
+      "avgMarginHint": "Últimos 30 días",
+      "pendingAuth": "Autorizaciones pendientes",
+      "pendingAuthHint": "Violaciones MAP requieren aprobación",
+      "lastSync": "Última sincronización",
+      "lastSyncHint": "Precios en WooCommerce actualizados",
+      "noData": "—"
+    },
+    "batches": {
+      "sectionTitle": "Lotes de cambios activos",
+      "products": "{n} productos",
+      "violations": "{n} violaciones",
+      "status": {
+        "draft": "Borrador",
+        "ready": "Listo",
+        "synced": "Sincronizado"
+      },
+      "empty": {
+        "title": "No hay lotes activos",
+        "text": "Importa una lista de precios para crear un lote de cambios"
+      }
+    },
+    "activity": {
+      "sectionTitle": "Actividad reciente",
+      "empty": "Sin actividad reciente"
+    },
+    "stub": {
+      "comingSoon": "Próximamente",
+      "comingSoonText": "Esta vista forma parte del módulo de precios y se construirá en una próxima entrega."
+    },
+    "importDialog": {
+      "title": "Importar lista de precios",
+      "description": {
+        "upload": "Sube el archivo Excel o CSV del proveedor.",
+        "configure": "Indica el proveedor y mapea las columnas. Sugerimos las que detectamos por los encabezados.",
+        "result": "La lista se importó. Estos son los resultados."
+      },
+      "dropZone": "Arrastra el archivo aquí o haz clic para elegir",
+      "dropHint": "Acepta .xlsx, .xls o .csv (hasta 10 MB)",
+      "parsing": "Procesando archivo…",
+      "parseError": "No se pudo leer el archivo",
+      "fileMeta": "{columns} columnas · {rows} filas",
+      "fields": {
+        "provider": "Proveedor",
+        "effectiveDate": "Fecha de vigencia",
+        "keyKind": "Tipo de clave",
+        "keyColumn": "Columna clave",
+        "costColumn": "Columna de costo",
+        "suggestedPriceColumn": "Precio sugerido (PVP)",
+        "suggestedPriceColumnHint": "Opcional. Se usa como referencia en el lote."
+      },
+      "placeholders": {
+        "provider": "Selecciona un proveedor",
+        "newProviderName": "Nombre del nuevo proveedor",
+        "column": "Selecciona una columna",
+        "optionalColumn": "Sin asignar"
+      },
+      "providerCreateOption": "+ Crear nuevo proveedor",
+      "keyKinds": {
+        "barcode": "Código de barras",
+        "sku": "SKU interno",
+        "provider_sku": "Código del proveedor"
+      },
+      "preview": {
+        "title": "Vista previa (primeras 5 filas)",
+        "key": "Clave",
+        "cost": "Costo",
+        "suggested": "Sugerido"
+      },
+      "result": {
+        "heading": "Importación completada",
+        "matched": "Productos vinculados",
+        "unmatched": "Filas sin coincidencia",
+        "invalid": "Filas inválidas"
+      },
+      "buttons": {
+        "cancel": "Cancelar",
+        "back": "Atrás",
+        "continue": "Continuar",
+        "import": "Importar",
+        "importing": "Importando…",
+        "close": "Cerrar"
+      },
+      "toastProviderError": "No se pudo crear el proveedor",
+      "toastImportError": "Error al importar la lista",
+      "toastImportSuccess": "Importados {matched} de {total} productos"
     }
   }
 }

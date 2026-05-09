@@ -25,7 +25,14 @@
     "instance": "Instance",
     "version": "Version",
     "sync": "Sync",
-    "woocommerce": "WooCommerce"
+    "woocommerce": "WooCommerce",
+    "pricing": "Pricing",
+    "pricingOverview": "Overview",
+    "pricingPolicies": "Policies",
+    "pricingProviders": "Providers",
+    "pricingChanges": "Change batches",
+    "pricingViolations": "Authorizations",
+    "pricingSync": "Sync"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -1042,6 +1049,113 @@
       "syncSuccess": "{platform}: {n} product(s) synced.",
       "syncPartial": "{platform}: {ok} ok, {failed} failed.",
       "syncError": "Error syncing with {platform}"
+    }
+  },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Manage cost lists, pricing policies and WooCommerce sync",
+    "tabs": {
+      "overview": "Overview",
+      "policies": "Policies",
+      "providers": "Providers",
+      "changes": "Batches",
+      "violations": "Authorizations",
+      "sync": "Sync"
+    },
+    "actions": {
+      "importList": "Import price list",
+      "viewAll": "View all",
+      "newBatch": "New batch"
+    },
+    "stats": {
+      "activeProducts": "Active products",
+      "activeProductsHint": "With assigned price",
+      "avgMargin": "Average margin",
+      "avgMarginHint": "Last 30 days",
+      "pendingAuth": "Pending authorizations",
+      "pendingAuthHint": "MAP violations require approval",
+      "lastSync": "Last sync",
+      "lastSyncHint": "WooCommerce prices updated",
+      "noData": "—"
+    },
+    "batches": {
+      "sectionTitle": "Active change batches",
+      "products": "{n} products",
+      "violations": "{n} violations",
+      "status": {
+        "draft": "Draft",
+        "ready": "Ready",
+        "synced": "Synced"
+      },
+      "empty": {
+        "title": "No active batches",
+        "text": "Import a price list to create a change batch"
+      }
+    },
+    "activity": {
+      "sectionTitle": "Recent activity",
+      "empty": "No recent activity"
+    },
+    "stub": {
+      "comingSoon": "Coming soon",
+      "comingSoonText": "This view is part of the pricing module and will ship in a follow-up."
+    },
+    "importDialog": {
+      "title": "Import price list",
+      "description": {
+        "upload": "Upload the provider's Excel or CSV file.",
+        "configure": "Pick the provider and map the columns. We've suggested the ones we detected from the headers.",
+        "result": "The list was imported. Here are the results."
+      },
+      "dropZone": "Drag the file here, or click to choose",
+      "dropHint": "Accepts .xlsx, .xls or .csv (up to 10 MB)",
+      "parsing": "Parsing file…",
+      "parseError": "Could not read the file",
+      "fileMeta": "{columns} columns · {rows} rows",
+      "fields": {
+        "provider": "Provider",
+        "effectiveDate": "Effective date",
+        "keyKind": "Key kind",
+        "keyColumn": "Key column",
+        "costColumn": "Cost column",
+        "suggestedPriceColumn": "Suggested price (MSRP)",
+        "suggestedPriceColumnHint": "Optional. Shown as a reference in the batch."
+      },
+      "placeholders": {
+        "provider": "Select a provider",
+        "newProviderName": "New provider name",
+        "column": "Select a column",
+        "optionalColumn": "Unassigned"
+      },
+      "providerCreateOption": "+ Create new provider",
+      "keyKinds": {
+        "barcode": "Barcode",
+        "sku": "Internal SKU",
+        "provider_sku": "Provider's product code"
+      },
+      "preview": {
+        "title": "Preview (first 5 rows)",
+        "key": "Key",
+        "cost": "Cost",
+        "suggested": "Suggested"
+      },
+      "result": {
+        "heading": "Import complete",
+        "matched": "Products linked",
+        "unmatched": "Unmatched rows",
+        "invalid": "Invalid rows"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "back": "Back",
+        "continue": "Continue",
+        "import": "Import",
+        "importing": "Importing…",
+        "close": "Close"
+      },
+      "toastProviderError": "Could not create the provider",
+      "toastImportError": "Error importing the list",
+      "toastImportSuccess": "Imported {matched} of {total} products"
     }
   }
 }

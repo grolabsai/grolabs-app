@@ -2047,3 +2047,91 @@ button {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ============================================================================
+ * Pricing module — sub-navigation tabs and dashboard atoms.
+ * Matches the design tokens in docs/design/pricing/ but uses Scout's existing
+ * --s-* / --scout-accent-* variables rather than introducing parallel tokens.
+ * ============================================================================ */
+
+.pricing-tab {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--s-text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  text-decoration: none;
+}
+.pricing-tab:hover {
+  color: var(--s-text);
+  background: var(--s-surface-alt);
+}
+.pricing-tab.active {
+  color: var(--scout-accent);
+  border-bottom-color: var(--scout-accent);
+}
+
+.pricing-stat-card {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-md);
+  padding: 20px;
+}
+.pricing-stat-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--s-text-tertiary);
+  margin-bottom: 4px;
+}
+.pricing-stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--s-text);
+  margin-bottom: 8px;
+  line-height: 1.1;
+}
+.pricing-stat-hint {
+  font-size: 13px;
+  color: var(--s-text-muted);
+}
+
+.pricing-section {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.pricing-batch-card {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius-md);
+  padding: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pricing-batch-card:hover {
+  border-color: var(--scout-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.pricing-status-pill {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.pricing-status-pill.draft {
+  background: var(--s-surface-alt);
+  color: var(--s-text-tertiary);
+}
+.pricing-status-pill.ready {
+  background: var(--s-success-bg);
+  color: var(--s-success-text);
+}
+.pricing-status-pill.synced {
+  background: var(--scout-accent-50);
+  color: var(--scout-accent-800);
+}

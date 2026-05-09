@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoja de Cambios — Scout</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="pricing-tokens.css">
+  <style>
+    :root {
+      --scout-accent: #378ADD;
+      --scout-accent-hover: #185FA5;
+      --scout-accent-50: #E6F1FB;
+      --scout-accent-100: #B5D4F4;
+      --scout-accent-600: #185FA5;
+      --scout-accent-800: #0C447C;
+      --s-bg: #FAFAF9;
+      --s-surface: #FFFFFF;
+      --s-surface-alt: #F5F5F4;
+      --s-surface-hover: #EFEFEE;
+      --s-border: rgba(0, 0, 0, 0.08);
+      --s-border-strong: rgba(0, 0, 0, 0.16);
+      --s-text: #1A1A1A;
+      --s-text-secondary: #5F5E5A;
+      --s-text-tertiary: #888780;
+      --s-text-muted: #B4B2A9;
+      --s-success: #1D9E75;
+      --s-success-bg: #E1F5EE;
+      --s-success-text: #085041;
+      --s-danger: #A32D2D;
+      --s-danger-bg: #FCEBEB;
+      --s-danger-text: #501313;
+      --s-radius-sm: 6px;
+      --s-radius-md: 8px;
+      --s-radius-lg: 12px;
+      --s-radius-xl: 16px;
+      --s-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body, #root {
+      height: 100%;
+      font-family: var(--s-font);
+      font-size: 13px;
+      color: var(--s-text);
+      background: var(--s-bg);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      position: relative;
+    }
+
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .agent-panel-overlay {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 360px;
+      background: var(--s-surface);
+      border-left: 0.5px solid var(--s-border);
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform 0.25s ease-out;
+    }
+
+    .agent-panel-overlay.visible {
+      transform: translateX(0);
+    }
+
+    .agent-toggle-btn {
+      position: fixed;
+      top: 80px;
+      right: 16px;
+      z-index: 99;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--scout-accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(55, 138, 221, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .agent-toggle-btn:hover {
+      background: var(--scout-accent-hover);
+      box-shadow: 0 4px 16px rgba(55, 138, 221, 0.4);
+    }
+
+    .agent-toggle-btn.panel-open {
+      right: 376px;
+    }
+
+    .agent-panel-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 0.5px solid var(--s-border);
+    }
+
+    .agent-panel-close {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--s-text-tertiary);
+      cursor: pointer;
+      border-radius: var(--s-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .agent-panel-close:hover {
+      background: var(--s-surface-alt);
+      color: var(--s-text);
+    }
+
+    .worksheet-header {
+      background: var(--s-surface);
+      border-bottom: 0.5px solid var(--s-border);
+      padding: 16px 24px;
+    }
+
+    .header-row-1 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .batch-name {
+      font-size: 18px;
+      font-weight: 500;
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      color: var(--s-text);
+      padding: 4px 8px;
+      border-radius: var(--s-radius-sm);
+      outline: none;
+    }
+
+    .batch-name:hover {
+      background: var(--s-surface-hover);
+    }
+
+    .batch-name:focus {
+      background: white;
+      box-shadow: 0 0 0 2px var(--scout-accent-50);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .s-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border-radius: var(--s-radius-md);
+      cursor: pointer;
+      border: 0.5px solid transparent;
+      transition: all 0.12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .s-btn-secondary {
+      background: transparent;
+      border-color: var(--s-border-strong);
+      color: var(--s-text);
+    }
+
+    .s-btn-secondary:hover {
+      background: var(--s-surface-alt);
+    }
+
+    .s-btn-primary {
+      background: var(--scout-accent);
+      color: #fff;
+      border-color: var(--scout-accent);
+    }
+
+    .s-btn-primary:hover {
+      background: var(--scout-accent-hover);
+    }
+
+    .s-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .header-row-2 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--s-text-secondary);
+    }
+
+    .header-meta {
+      display: flex;
+      gap: 16px;
+    }
+
+    .worksheet-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--s-surface);
+    }
+
+    .filters-section {
+      padding: 16px 24px;
+      border-bottom: 0.5px solid var(--s-border);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--s-text-secondary);
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+
+    .filter-chip:hover {
+      border-color: var(--s-border-strong);
+      color: var(--s-text);
+    }
+
+    .filter-chip.active {
+      background: var(--scout-accent-50);
+      border-color: var(--scout-accent);
+      color: var(--scout-accent-800);
+      font-weight: 500;
+    }
+
+    .filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--s-text-secondary);
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+
+    .filter-toggle.active {
+      background: var(--scout-accent-50);
+      border-color: var(--scout-accent);
+      color: var(--scout-accent-800);
+      font-weight: 500;
+    }
+
+    .toggle-switch {
+      width: 28px;
+      height: 16px;
+      background: var(--s-surface-hover);
+      border-radius: 999px;
+      position: relative;
+      transition: background 0.15s;
+      border: 0.5px solid var(--s-border);
+    }
+
+    .filter-toggle.active .toggle-switch {
+      background: var(--scout-accent);
+      border-color: var(--scout-accent);
+    }
+
+    .toggle-switch::after {
+      content: "";
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.15s;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    .filter-toggle.active .toggle-switch::after {
+      transform: translateX(12px);
+    }
+
+    .filter-clear {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--scout-accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-weight: 500;
+      font-family: inherit;
+    }
+
+    .filter-clear:hover {
+      text-decoration: underline;
+    }
+
+    .table-container {
+      flex: 1;
+      overflow: auto;
+      padding: 0 24px 24px;
+    }
+
+    .checkbox-cell {
+      width: 40px;
+      text-align: center;
+    }
+
+    .checkbox-cell input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 280px;
+    }
+
+    .product-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--s-radius-sm);
+      background: var(--s-surface-alt);
+      border: 0.5px solid var(--s-border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--s-text-muted);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .product-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .product-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--s-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .product-variant {
+      font-size: 11px;
+      color: var(--s-text-tertiary);
+    }
+
+    .cost-cell {
+      min-width: 140px;
+    }
+
+    .price-cell {
+      min-width: 110px;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .price-cell.charm {
+      font-weight: 600;
+      color: var(--scout-accent-800);
+    }
+
+    .price-with-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--s-text-tertiary);
+      cursor: help;
+    }
+
+    .info-icon:hover {
+      color: var(--scout-accent);
+    }
+
+    .margin-cell {
+      min-width: 100px;
+    }
+
+    .status-cell {
+      min-width: 140px;
+    }
+
+    .strikethrough {
+      text-decoration: line-through;
+      opacity: 0.5;
+    }
+
+    .lock-icon {
+      width: 12px;
+      height: 12px;
+      color: var(--s-text-tertiary);
+      cursor: pointer;
+    }
+
+    .lock-icon:hover {
+      color: var(--scout-accent);
+    }
+
+    .empty-state {
+      padding: 80px 20px;
+      text-align: center;
+    }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--s-text);
+      margin-bottom: 6px;
+    }
+
+    .empty-text {
+      font-size: 13px;
+      color: var(--s-text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    // Icons
+    const CheckIcon = () => (
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+      </svg>
+    );
+
+    const InfoIcon = () => (
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+      </svg>
+    );
+
+    const LockIcon = () => (
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+      </svg>
+    );
+
+    const AlertIcon = () => (
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+      </svg>
+    );
+
+    const XIcon = () => (
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+    );
+
+    // Mock data
+    const mockProducts = [
+      {
+        id: 1,
+        name: "Royal Canin Adult",
+        variant: "15 kg",
+        thumb: "RC",
+        currentCost: 280.50,
+        newCost: 295.75,
+        currentPrice: 450.00,
+        charmPrice: 449.99,
+        finalPrice: 449.99,
+        margin: 34.2,
+        status: "neutral",
+        statusLabel: "Listo",
+        manualOverride: false,
+        provider: "Distribuidora Pet Supplies S.A.",
+        category: "Alimento para perros",
+        brand: "Royal Canin"
+      },
+      {
+        id: 2,
+        name: "Hill's Science Diet Puppy",
+        variant: "7 kg",
+        thumb: "HD",
+        currentCost: 195.00,
+        newCost: 195.00,
+        currentPrice: 325.00,
+        charmPrice: 324.99,
+        finalPrice: 324.99,
+        margin: 40.0,
+        status: "neutral",
+        statusLabel: "Listo",
+        manualOverride: false,
+        provider: "Hill's Guatemala Importadora",
+        category: "Alimento para perros",
+        brand: "Hill's"
+      },
+      {
+        id: 3,
+        name: "Purina Pro Plan Sensitive Skin",
+        variant: "12 kg",
+        thumb: "PP",
+        currentCost: 245.00,
+        newCost: 268.00,
+        currentPrice: 380.00,
+        charmPrice: 419.99,
+        finalPrice: 419.99,
+        margin: 36.1,
+        status: "neutral",
+        statusLabel: "Listo",
+        manualOverride: false,
+        provider: "Nestlé Purina Centroamérica",
+        category: "Alimento para perros",
+        brand: "Purina"
+      },
+      {
+        id: 4,
+        name: "Whiskas Adult Pollo",
+        variant: "3 kg",
+        thumb: "WK",
+        currentCost: 65.00,
+        newCost: 72.00,
+        currentPrice: 98.50,
+        charmPrice: 112.99,
+        finalPrice: 112.99,
+        margin: 36.3,
+        status: "neutral",
+        statusLabel: "Listo",
+        manualOverride: false,
+        provider: "Importadora Global Pet",
+        category: "Alimento para gatos",
+        brand: "Whiskas"
+      },
+      {
+        id: 5,
+        name: "Royal Canin Kitten",
+        variant: "2 kg",
+        thumb: "RC",
+        currentCost: 88.00,
+        newCost: 95.00,
+        currentPrice: 135.00,
+        charmPrice: 148.99,
+        finalPrice: 135.00,
+        margin: 29.5,
+        status: "warning",
+        statusLabel: "Bajo margen objetivo · Cambio >5%",
+        manualOverride: true,
+        provider: "Importadora Global Pet",
+        category: "Alimento para gatos",
+        brand: "Royal Canin"
+      },
+      {
+        id: 6,
+        name: "Hill's Prescription Diet c/d",
+        variant: "8 kg",
+        thumb: "HD",
+        currentCost: 425.00,
+        newCost: 450.00,
+        currentPrice: 640.00,
+        charmPrice: 704.99,
+        finalPrice: 625.00,
+        margin: 27.8,
+        status: "critical",
+        statusLabel: "Viola MAP del proveedor",
+        manualOverride: true,
+        provider: "Hill's Guatemala Importadora",
+        category: "Alimento medicado",
+        brand: "Hill's"
+      },
+      {
+        id: 7,
+        name: "Eukanuba Adult Medium Breed",
+        variant: "15 kg",
+        thumb: "EU",
+        currentCost: 310.00,
+        newCost: 325.00,
+        currentPrice: 485.00,
+        charmPrice: 509.99,
+        finalPrice: 509.99,
+        margin: 36.3,
+        status: "neutral",
+        statusLabel: "Listo",
+        manualOverride: false,
+        provider: "Distribuidora Pet Supplies S.A.",
+        category: "Alimento para perros",
+        brand: "Eukanuba"
+      },
+      {
+        id: 8,
+        name: "Fancy Feast Gourmet",
+        variant: "85g x 24",
+        thumb: "FF",
+        currentCost: 156.00,
+        newCost: 165.00,
+        currentPrice: 245.00,
+        charmPrice: 258.99,
+        finalPrice: 258.99,
+        margin: 36.3,
+        status: "neutral",
+        statusLabel: "Listo",
+        manualOverride: false,
+        provider: "Nestlé Purina Centroamérica",
+        category: "Alimento húmedo gatos",
+        brand: "Fancy Feast"
+      }
+    ];
+
+    const SparklesIcon = () => (
+      <svg viewBox="0 0 20 20" fill="currentColor" style={{width: '20px', height: '20px'}}>
+        <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+      </svg>
+    );
+
+    const AgentPanel = ({ onClose }) => {
+      const observations = [
+        {
+          id: 1,
+          type: "warning",
+          text: "12 productos están bajo el margen mínimo",
+          action: "Ver hoja"
+        },
+        {
+          id: 2,
+          type: "info",
+          text: "La lista de precios de Royal Canin tiene 47 días",
+          action: "Importar nueva"
+        },
+        {
+          id: 3,
+          type: "critical",
+          text: "3 violaciones esperan autorización",
+          action: "Revisar"
+        },
+        {
+          id: 4,
+          type: "info",
+          text: "Última sincronización: hace 2 horas — 187 productos actualizados, 3 errores",
+          action: "Ver errores"
+        }
+      ];
+
+      return (
+        <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+          <div className="agent-panel-header-row">
+            <div className="agent-panel-header">Observaciones del sistema</div>
+            <button className="agent-panel-close" onClick={onClose}>
+              <XIcon />
+            </button>
+          </div>
+          <div className="agent-panel" style={{flex: 1, borderLeft: 'none'}}>
+            {observations.map(obs => (
+              <div key={obs.id} className="agent-card">
+                <div className="agent-card-header">
+                  <div className={`agent-card-dot ${obs.type}`}></div>
+                  <div className="agent-card-text">{obs.text}</div>
+                </div>
+                <div className="agent-card-action">
+                  <button className="s-btn s-btn-secondary agent-card-btn">
+                    {obs.action}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const PriceWorksheet = () => {
+      const [batchName, setBatchName] = useState("Cambios de 8 mayo 2026");
+      const [selectedRows, setSelectedRows] = useState(new Set());
+      const [showOnlyChanges, setShowOnlyChanges] = useState(false);
+      const [agentPanelOpen, setAgentPanelOpen] = useState(false);
+      const [activeFilters, setActiveFilters] = useState({
+        category: new Set(),
+        brand: new Set(),
+        provider: new Set(),
+        status: new Set()
+      });
+
+      const toggleRowSelection = (id) => {
+        setSelectedRows(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) {
+            next.delete(id);
+          } else {
+            next.add(id);
+          }
+          return next;
+        });
+      };
+
+      const toggleAllRows = () => {
+        if (selectedRows.size === mockProducts.length) {
+          setSelectedRows(new Set());
+        } else {
+          setSelectedRows(new Set(mockProducts.map(p => p.id)));
+        }
+      };
+
+      const filteredProducts = useMemo(() => {
+        return mockProducts.filter(product => {
+          if (showOnlyChanges && product.currentCost === product.newCost && product.currentPrice === product.finalPrice) {
+            return false;
+          }
+          return true;
+        });
+      }, [showOnlyChanges]);
+
+      const violationCount = mockProducts.filter(p => p.status === 'warning' || p.status === 'critical').length;
+      const criticalCount = mockProducts.filter(p => p.status === 'critical').length;
+      const warningCount = mockProducts.filter(p => p.status === 'warning').length;
+
+      return (
+        <div className="app-shell">
+          <button 
+            className={`agent-toggle-btn ${agentPanelOpen ? 'panel-open' : ''}`}
+            onClick={() => setAgentPanelOpen(!agentPanelOpen)}
+            title="Observaciones del sistema"
+          >
+            <SparklesIcon />
+          </button>
+
+          <div className={`agent-panel-overlay ${agentPanelOpen ? 'visible' : ''}`}>
+            <AgentPanel onClose={() => setAgentPanelOpen(false)} />
+          </div>
+
+          <div className="main-area">
+            <div className="worksheet-header">
+              <div className="header-row-1">
+                <input
+                  type="text"
+                  className="batch-name"
+                  value={batchName}
+                  onChange={(e) => setBatchName(e.target.value)}
+                />
+                <div className="s-status-pill neutral">Borrador</div>
+                <div className="header-actions">
+                  <button className="s-btn s-btn-secondary">Guardar borrador</button>
+                  <button className="s-btn s-btn-secondary">Marcar como listo</button>
+                  <button className="s-btn s-btn-primary" disabled>Sincronizar ahora</button>
+                </div>
+              </div>
+              <div className="header-row-2">
+                <div className="header-meta">
+                  <span>Creado por <strong>Usuario Admin</strong></span>
+                  <span>8 de mayo, 2026 · 14:30</span>
+                  <span><strong>{mockProducts.length}</strong> productos</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="worksheet-content">
+              <div className="filters-section">
+                <div className="filter-row">
+                  <button className="filter-chip">
+                    Categoría <span style={{marginLeft: '2px', opacity: 0.6}}>▼</span>
+                  </button>
+                  <button className="filter-chip">
+                    Marca <span style={{marginLeft: '2px', opacity: 0.6}}>▼</span>
+                  </button>
+                  <button className="filter-chip">
+                    Proveedor <span style={{marginLeft: '2px', opacity: 0.6}}>▼</span>
+                  </button>
+                  <button className="filter-chip">
+                    Estado de regla <span style={{marginLeft: '2px', opacity: 0.6}}>▼</span>
+                  </button>
+                  <button 
+                    className={`filter-toggle ${showOnlyChanges ? 'active' : ''}`}
+                    onClick={() => setShowOnlyChanges(!showOnlyChanges)}
+                  >
+                    Solo cambios
+                    <div className="toggle-switch"></div>
+                  </button>
+                  <button className="filter-clear">Limpiar filtros</button>
+                </div>
+              </div>
+
+              {violationCount > 0 && (
+                <div style={{padding: '0 24px', paddingTop: '16px'}}>
+                  {criticalCount > 0 && (
+                    <div className="pricing-banner critical">
+                      <div className="pricing-banner-icon"><AlertIcon /></div>
+                      <div className="pricing-banner-text">
+                        <strong>{criticalCount} productos violan reglas de proveedor</strong> — {criticalCount} bajo MAP · 0 sobre precio máximo permitido
+                      </div>
+                      <div className="pricing-banner-actions">
+                        <button className="pricing-banner-link">Ver solo estos</button>
+                        <button className="pricing-banner-link">Solicitar autorización</button>
+                      </div>
+                    </div>
+                  )}
+                  {warningCount > 0 && (
+                    <div className="pricing-banner warning" style={{marginTop: criticalCount > 0 ? '8px' : '0'}}>
+                      <div className="pricing-banner-icon"><AlertIcon /></div>
+                      <div className="pricing-banner-text">
+                        <strong>{warningCount} productos requieren revisión</strong> — {warningCount} bajo margen objetivo
+                      </div>
+                      <div className="pricing-banner-actions">
+                        <button className="pricing-banner-link">Ver solo estos</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedRows.size > 0 && (
+                <div style={{padding: '0 24px', paddingTop: '16px'}}>
+                  <div className="bulk-toolbar">
+                    <div className="bulk-toolbar-count">{selectedRows.size} seleccionados</div>
+                    <div className="bulk-toolbar-actions">
+                      <button className="s-btn s-btn-secondary" style={{fontSize: '12px', padding: '6px 12px'}}>
+                        Aumentar precio por %
+                      </button>
+                      <button className="s-btn s-btn-secondary" style={{fontSize: '12px', padding: '6px 12px'}}>
+                        Aplicar precio gancho
+                      </button>
+                      <button className="s-btn s-btn-secondary" style={{fontSize: '12px', padding: '6px 12px'}}>
+                        Restaurar precio actual
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="table-container">
+                {filteredProducts.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-title">No hay productos en esta hoja</div>
+                    <div className="empty-text">Aplica filtros o importa una lista de costos para empezar.</div>
+                  </div>
+                ) : (
+                  <table className="pricing-table">
+                    <thead>
+                      <tr>
+                        <th className="checkbox-cell">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.size === mockProducts.length}
+                            onChange={toggleAllRows}
+                          />
+                        </th>
+                        <th>Producto</th>
+                        <th>Costo actual → nuevo</th>
+                        <th>Precio actual</th>
+                        <th>Precio gancho</th>
+                        <th>Precio final (manual)</th>
+                        <th>Margen final</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProducts.map(product => {
+                        const costChanged = product.currentCost !== product.newCost;
+                        const priceChanged = product.currentPrice !== product.finalPrice;
+                        const costDelta = ((product.newCost - product.currentCost) / product.currentCost * 100);
+                        
+                        return (
+                          <tr
+                            key={product.id}
+                            className={product.status === 'warning' ? 'status-warning' : product.status === 'critical' ? 'status-critical' : ''}
+                          >
+                            <td className="checkbox-cell">
+                              <input
+                                type="checkbox"
+                                checked={selectedRows.has(product.id)}
+                                onChange={() => toggleRowSelection(product.id)}
+                              />
+                            </td>
+                            <td>
+                              <div className="product-cell">
+                                <div className="product-thumb">{product.thumb}</div>
+                                <div className="product-info">
+                                  <div className="product-name">{product.name}</div>
+                                  <div className="product-variant">{product.variant}</div>
+                                  <div className="product-source">{product.brand} ({product.provider})</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="cost-cell">
+                              {costChanged ? (
+                                <div className="cost-stack">
+                                  <div>
+                                    <span className="cost-current">Q{product.currentCost.toFixed(2)}</span>
+                                    <span className="cost-arrow">→</span>
+                                    <span className="cost-new">Q{product.newCost.toFixed(2)}</span>
+                                  </div>
+                                  <div className={`cost-delta ${costDelta > 0 ? 'positive' : 'negative'}`}>
+                                    {costDelta > 0 ? '+' : ''}{costDelta.toFixed(1)}%
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="cost-current">Q{product.currentCost.toFixed(2)}</span>
+                              )}
+                            </td>
+                            <td className="price-cell">Q{product.currentPrice.toFixed(2)}</td>
+                            <td className="price-cell charm">
+                              <div className="price-with-info">
+                                <span>Q{product.charmPrice.toFixed(2)}</span>
+                                <div className="info-icon">
+                                  <InfoIcon />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="price-cell">
+                              {product.manualOverride ? (
+                                <div className="price-with-info">
+                                  <span style={{fontWeight: 500}}>Q{product.finalPrice.toFixed(2)}</span>
+                                  <div className="lock-icon">
+                                    <LockIcon />
+                                  </div>
+                                </div>
+                              ) : (
+                                <span style={{color: 'var(--s-text-muted)', fontSize: '12px'}}>—</span>
+                              )}
+                            </td>
+                            <td className="margin-cell">
+                              <div className={`margin-chip ${product.status}`}>
+                                {product.margin.toFixed(1)}%
+                              </div>
+                            </td>
+                            <td className="status-cell">
+                              <div className={`s-status-pill ${product.status}`}>
+                                {product.statusLabel}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PriceWorksheet />);
+  </script>
+</body>
+</html>

@@ -23,6 +23,11 @@ import {
   Workflow,
   RefreshCw,
   ShoppingBag,
+  CircleDollarSign,
+  ClipboardList,
+  ShieldCheck,
+  Receipt,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
@@ -83,6 +88,17 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         { href: null, label: tNav("productTypes"), icon: Shapes },
         { href: null, label: tNav("tags"), icon: Tag },
         { href: null, label: tNav("matchingRules"), icon: GitMerge },
+      ],
+    },
+    {
+      title: tNav("pricing"),
+      items: [
+        { href: "/pricing" as Route, label: tNav("pricingOverview"), icon: CircleDollarSign, useIconWrapper: true },
+        { href: "/pricing/policies" as Route, label: tNav("pricingPolicies"), icon: ShieldCheck, useIconWrapper: true },
+        { href: "/pricing/providers" as Route, label: tNav("pricingProviders"), icon: Truck, useIconWrapper: true },
+        { href: "/pricing/changes" as Route, label: tNav("pricingChanges"), icon: ClipboardList, useIconWrapper: true },
+        { href: "/pricing/violations" as Route, label: tNav("pricingViolations"), icon: Receipt, useIconWrapper: true },
+        { href: "/pricing/sync" as Route, label: tNav("pricingSync"), icon: RefreshCw, useIconWrapper: true },
       ],
     },
     {

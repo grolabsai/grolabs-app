@@ -1246,6 +1246,119 @@
         "invalidValue": "Strategy value must be a valid number ≥ 0"
       }
     },
+    "violationsPage": {
+      "queueTitle": "Authorization queue",
+      "queueSubtitle": "Violations detected in change batches show up here for approval or rejection.",
+      "queueEmpty": "No violations yet. They'll appear once a batch has rows in critical state."
+    },
+    "mapRules": {
+      "title": "Price rules (MAP / max)",
+      "subtitle": "Rules that set the minimum or maximum allowed price per brand or provider. They can apply to every variant from a source or a specific one.",
+      "empty": "No rules yet. Add the first to start enforcing minimum and maximum prices.",
+      "confirmDelete": "Delete this rule? Already-synced batches are not affected.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "appliesTo": {
+        "all": "All variants",
+        "specific": "A specific variant"
+      },
+      "ruleTypes": {
+        "MAP_min": "MAP minimum",
+        "max_price": "Max price",
+        "custom": "Custom"
+      },
+      "sourceTypes": {
+        "brand": "Brand",
+        "provider": "Provider"
+      },
+      "columns": {
+        "source": "Source",
+        "appliesTo": "Applies to",
+        "ruleType": "Type",
+        "min": "Min",
+        "max": "Max",
+        "validity": "Validity",
+        "active": "Active"
+      },
+      "buttons": {
+        "add": "New rule",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "toast": {
+        "deleted": "Rule deleted",
+        "deleteError": "Could not delete the rule"
+      },
+      "variantPicker": {
+        "placeholder": "Search by name, SKU or barcode…",
+        "hintMinChars": "Type at least 2 characters",
+        "searching": "Searching…",
+        "noResults": "No matches",
+        "clear": "Clear selection"
+      },
+      "dialog": {
+        "titleNew": "New rule",
+        "titleEdit": "Edit rule",
+        "active": "Active",
+        "inactive": "Inactive",
+        "fields": {
+          "ruleType": "Rule type",
+          "sourceType": "Source",
+          "source": {
+            "brand": "Brand",
+            "provider": "Provider"
+          },
+          "appliesTo": "Applies to",
+          "minPrice": "Min price",
+          "minPriceHint": "Selling price cannot be below this.",
+          "maxPrice": "Max price",
+          "maxPriceHint": "Selling price cannot exceed this.",
+          "effectiveDate": "Effective from",
+          "expiresAt": "Expires",
+          "expiresAtHint": "Optional. Empty = never expires.",
+          "notes": "Notes"
+        },
+        "placeholders": {
+          "source": {
+            "brand": "Select a brand",
+            "provider": "Select a provider"
+          }
+        },
+        "ruleTypes": {
+          "MAP_min": "MAP minimum",
+          "max_price": "Max price",
+          "custom": "Custom"
+        },
+        "ruleTypeHint": {
+          "MAP_min": "Sets a minimum selling price only.",
+          "max_price": "Sets a maximum selling price only.",
+          "custom": "Sets both limits at once."
+        },
+        "sourceTypes": {
+          "brand": "Brand (manufacturer-mandated)",
+          "provider": "Provider (contractual)"
+        },
+        "appliesTo": {
+          "all": "All variants",
+          "specific": "A specific variant"
+        },
+        "buttons": {
+          "save": "Save",
+          "saving": "Saving…",
+          "cancel": "Cancel"
+        },
+        "toast": {
+          "sourceRequired": "Select a source",
+          "variantRequired": "Select a variant",
+          "invalidMin": "Min price must be a valid number ≥ 0",
+          "invalidMax": "Max price must be a valid number ≥ 0",
+          "minAboveMax": "Min cannot exceed max",
+          "saveError": "Could not save the rule",
+          "created": "Rule created",
+          "updated": "Rule updated"
+        }
+      }
+    },
     "providersList": {
       "add": "Add provider",
       "inactiveBadge": "Inactive",

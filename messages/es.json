@@ -1246,6 +1246,119 @@
         "invalidValue": "El valor de la estrategia debe ser un número válido ≥ 0"
       }
     },
+    "violationsPage": {
+      "queueTitle": "Cola de autorizaciones",
+      "queueSubtitle": "Las violaciones detectadas en lotes de cambios aparecen aquí para autorizar o rechazar.",
+      "queueEmpty": "Aún no hay violaciones. Aparecerán cuando un lote tenga filas en estado crítico."
+    },
+    "mapRules": {
+      "title": "Reglas de precio (MAP / máximo)",
+      "subtitle": "Reglas que definen el precio mínimo o máximo permitido por marca o proveedor. Pueden aplicar a todas las variantes de un origen o a una específica.",
+      "empty": "Aún no hay reglas. Agrega la primera para empezar a controlar los precios mínimos y máximos.",
+      "confirmDelete": "¿Eliminar esta regla? No afecta lotes ya sincronizados.",
+      "active": "Activa",
+      "inactive": "Inactiva",
+      "appliesTo": {
+        "all": "Todas las variantes",
+        "specific": "Una variante específica"
+      },
+      "ruleTypes": {
+        "MAP_min": "MAP mínimo",
+        "max_price": "Precio máximo",
+        "custom": "Personalizada"
+      },
+      "sourceTypes": {
+        "brand": "Marca",
+        "provider": "Proveedor"
+      },
+      "columns": {
+        "source": "Origen",
+        "appliesTo": "Aplica a",
+        "ruleType": "Tipo",
+        "min": "Mínimo",
+        "max": "Máximo",
+        "validity": "Vigencia",
+        "active": "Activa"
+      },
+      "buttons": {
+        "add": "Nueva regla",
+        "edit": "Editar",
+        "delete": "Eliminar"
+      },
+      "toast": {
+        "deleted": "Regla eliminada",
+        "deleteError": "No se pudo eliminar la regla"
+      },
+      "variantPicker": {
+        "placeholder": "Buscar por nombre, SKU o código de barras…",
+        "hintMinChars": "Escribe al menos 2 caracteres",
+        "searching": "Buscando…",
+        "noResults": "Sin coincidencias",
+        "clear": "Quitar selección"
+      },
+      "dialog": {
+        "titleNew": "Nueva regla",
+        "titleEdit": "Editar regla",
+        "active": "Activa",
+        "inactive": "Inactiva",
+        "fields": {
+          "ruleType": "Tipo de regla",
+          "sourceType": "Origen",
+          "source": {
+            "brand": "Marca",
+            "provider": "Proveedor"
+          },
+          "appliesTo": "Aplica a",
+          "minPrice": "Precio mínimo",
+          "minPriceHint": "El precio de venta no puede ser menor.",
+          "maxPrice": "Precio máximo",
+          "maxPriceHint": "El precio de venta no puede ser mayor.",
+          "effectiveDate": "Vigente desde",
+          "expiresAt": "Vence",
+          "expiresAtHint": "Opcional. Vacío = no expira.",
+          "notes": "Notas"
+        },
+        "placeholders": {
+          "source": {
+            "brand": "Selecciona una marca",
+            "provider": "Selecciona un proveedor"
+          }
+        },
+        "ruleTypes": {
+          "MAP_min": "MAP mínimo",
+          "max_price": "Precio máximo",
+          "custom": "Personalizada"
+        },
+        "ruleTypeHint": {
+          "MAP_min": "Establece sólo un precio mínimo de venta.",
+          "max_price": "Establece sólo un precio máximo de venta.",
+          "custom": "Establece ambos límites a la vez."
+        },
+        "sourceTypes": {
+          "brand": "Marca (manufacturer-mandated)",
+          "provider": "Proveedor (negociado)"
+        },
+        "appliesTo": {
+          "all": "Todas las variantes",
+          "specific": "Una variante específica"
+        },
+        "buttons": {
+          "save": "Guardar",
+          "saving": "Guardando…",
+          "cancel": "Cancelar"
+        },
+        "toast": {
+          "sourceRequired": "Selecciona un origen",
+          "variantRequired": "Selecciona una variante",
+          "invalidMin": "El precio mínimo debe ser un número válido ≥ 0",
+          "invalidMax": "El precio máximo debe ser un número válido ≥ 0",
+          "minAboveMax": "El mínimo no puede ser mayor que el máximo",
+          "saveError": "No se pudo guardar la regla",
+          "created": "Regla creada",
+          "updated": "Regla actualizada"
+        }
+      }
+    },
     "providersList": {
       "add": "Agregar proveedor",
       "inactiveBadge": "Inactivo",

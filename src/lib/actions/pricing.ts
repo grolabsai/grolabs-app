@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { parseMoney } from "@/lib/pricing/parse-money";
 import type { KeyColumnKind } from "@/lib/pricing/column-detect";
+import type { CalculationMode } from "@/lib/pricing/calculate";
+import type { CharmStrategy } from "@/lib/pricing/charm";
 
 /**
  * Discrete server actions for the pricing module. Per CLAUDE.md §14
@@ -544,4 +546,234 @@ export async function importPriceList(
     unmatched,
     invalidRows,
   };
+}
+
+// =============================================================================
+// Pricing config (instance.pricing_config jsonb)
+// =============================================================================
+
+export type PricingConfig = {
+  calculation_mode: CalculationMode;
+  default_target_pct: number;
+  default_min_pct: number;
+};
+
+const PRICING_CONFIG_DEFAULTS: PricingConfig = {
+  calculation_mode: "margin",
+  default_target_pct: 40,
+  default_min_pct: 20,
+};
+
+/**
+ * Read the current instance's pricing config, falling back to defaults
+ * for any keys that haven't been written yet. Always returns a complete
+ * `PricingConfig` so callers don't have to worry about partial state.
+ */
+export async function getPricingConfig(): Promise<
+  | { ok: true; config: PricingConfig }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("instance")
+    .select("pricing_config")
+    .eq("instance_id", instanceId)
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  const raw = (data?.pricing_config ?? {}) as Partial<PricingConfig>;
+  const mode: CalculationMode =
+    raw.calculation_mode === "markup" ? "markup" : "margin";
+  return {
+    ok: true,
+    config: {
+      calculation_mode: mode,
+      default_target_pct:
+        typeof raw.default_target_pct === "number"
+          ? raw.default_target_pct
+          : PRICING_CONFIG_DEFAULTS.default_target_pct,
+      default_min_pct:
+        typeof raw.default_min_pct === "number"
+          ? raw.default_min_pct
+          : PRICING_CONFIG_DEFAULTS.default_min_pct,
+    },
+  };
+}
+
+export async function savePricingConfig(
+  next: PricingConfig,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (next.calculation_mode !== "margin" && next.calculation_mode !== "markup") {
+    return { ok: false, error: "invalid_mode" };
+  }
+  if (
+    !Number.isFinite(next.default_target_pct) ||
+    !Number.isFinite(next.default_min_pct)
+  ) {
+    return { ok: false, error: "invalid_defaults" };
+  }
+  // Margin mode caps at 99.99 (100% would mean infinite price); markup has
+  // no hard upper limit but we cap at 1000% just to catch obvious typos.
+  const maxPct = next.calculation_mode === "margin" ? 99.99 : 1000;
+  if (
+    next.default_target_pct < 0 ||
+    next.default_target_pct > maxPct ||
+    next.default_min_pct < 0 ||
+    next.default_min_pct > maxPct
+  ) {
+    return { ok: false, error: "pct_out_of_range" };
+  }
+  if (next.default_min_pct > next.default_target_pct) {
+    return { ok: false, error: "min_above_target" };
+  }
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("instance")
+    .update({ pricing_config: next })
+    .eq("instance_id", instanceId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/pricing/policies");
+  revalidatePath("/pricing");
+  return { ok: true };
+}
+
+// =============================================================================
+// Charm rules CRUD
+// =============================================================================
+
+export type CharmRuleRow = {
+  charm_rule_id: number;
+  min_price: number;
+  max_price: number | null;
+  strategy: CharmStrategy;
+  strategy_value: number;
+  is_active: boolean;
+  sort_order: number;
+  notes: string | null;
+};
+
+export type CharmRuleInput = {
+  charm_rule_id: number | null; // null = create
+  min_price: number;
+  max_price: number | null;
+  strategy: CharmStrategy;
+  strategy_value: number;
+  is_active: boolean;
+  sort_order: number;
+  notes: string | null;
+};
+
+export async function listCharmRules(): Promise<
+  | { ok: true; rules: CharmRuleRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("charm_rule")
+    .select(
+      "charm_rule_id, min_price, max_price, strategy, strategy_value, is_active, sort_order, notes",
+    )
+    .order("sort_order", { ascending: true })
+    .order("charm_rule_id", { ascending: true });
+  if (error) return { ok: false, error: error.message };
+
+  // Postgres numeric arrives as a string; coerce to number for the UI.
+  const rules: CharmRuleRow[] = (data ?? []).map((r) => ({
+    charm_rule_id: r.charm_rule_id as number,
+    min_price: Number(r.min_price),
+    max_price: r.max_price === null ? null : Number(r.max_price),
+    strategy: r.strategy as CharmStrategy,
+    strategy_value: Number(r.strategy_value),
+    is_active: r.is_active as boolean,
+    sort_order: r.sort_order as number,
+    notes: r.notes as string | null,
+  }));
+  return { ok: true, rules };
+}
+
+export async function saveCharmRule(
+  input: CharmRuleInput,
+): Promise<
+  | { ok: true; charmRuleId: number }
+  | { ok: false; error: string }
+> {
+  if (!Number.isFinite(input.min_price) || input.min_price < 0) {
+    return { ok: false, error: "invalid_min_price" };
+  }
+  if (
+    input.max_price !== null &&
+    (!Number.isFinite(input.max_price) || input.max_price < input.min_price)
+  ) {
+    return { ok: false, error: "invalid_max_price" };
+  }
+  if (
+    input.strategy !== "ends_in" &&
+    input.strategy !== "round_to" &&
+    input.strategy !== "fixed_offset"
+  ) {
+    return { ok: false, error: "invalid_strategy" };
+  }
+  if (!Number.isFinite(input.strategy_value) || input.strategy_value < 0) {
+    return { ok: false, error: "invalid_strategy_value" };
+  }
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const payload = {
+    min_price: input.min_price,
+    max_price: input.max_price,
+    strategy: input.strategy,
+    strategy_value: input.strategy_value,
+    is_active: input.is_active,
+    sort_order: input.sort_order,
+    notes: input.notes,
+  };
+
+  const supabase = await createClient();
+  if (input.charm_rule_id === null) {
+    const { data, error } = await supabase
+      .from("charm_rule")
+      .insert({ instance_id: instanceId, ...payload })
+      .select("charm_rule_id")
+      .single();
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/pricing/policies");
+    return { ok: true, charmRuleId: data.charm_rule_id };
+  } else {
+    const { error } = await supabase
+      .from("charm_rule")
+      .update(payload)
+      .eq("charm_rule_id", input.charm_rule_id);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/pricing/policies");
+    return { ok: true, charmRuleId: input.charm_rule_id };
+  }
+}
+
+export async function deleteCharmRule(
+  charmRuleId: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("charm_rule")
+    .delete()
+    .eq("charm_rule_id", charmRuleId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/pricing/policies");
+  return { ok: true };
 }

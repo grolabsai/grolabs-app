@@ -1369,6 +1369,13 @@ export type BatchDetail = {
   neutral_count: number;
   warning_count: number;
   critical_count: number;
+  /**
+   * True when any of the engine inputs (instance.pricing_config,
+   * category margins, charm rules, MAP rules) was updated AFTER this
+   * batch was created. Worksheet shows a "[Recalcular]" banner when
+   * this is true and status='draft'. Once ready/synced, ignored.
+   */
+  config_stale: boolean;
   items: BatchDetailItem[];
 };
 
@@ -1765,6 +1772,7 @@ export async function createBatchFromPriceList(
       max_price_change_enabled: config.max_price_change_enabled,
       max_price_change_pct: config.max_price_change_pct,
       manual_override_final_price: null,
+      override_charm_price: null,
     });
 
     pending.push({
@@ -1992,6 +2000,46 @@ export async function getBatchDetail(batchId: number): Promise<
     critical: itemsOut.filter((i) => i.status === "critical").length,
   };
 
+  // Stale-config detection. Cheaper than re-running the engine: just
+  // compare each table's max(updated_at) against batch.created_at.
+  // We pull the most recent rows in parallel; if anything is newer the
+  // batch is flagged stale.
+  const createdAt = batch.created_at as string;
+  const [latestCat, latestCharm, latestMap, latestInst] = await Promise.all([
+    supabase
+      .from("category")
+      .select("updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("charm_rule")
+      .select("updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("map_rule")
+      .select("updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("instance")
+      .select("updated_at")
+      .eq("instance_id", instanceId)
+      .maybeSingle(),
+  ]);
+  const stamps: Array<string | null | undefined> = [
+    (latestCat.data as { updated_at: string } | null)?.updated_at,
+    (latestCharm.data as { updated_at: string } | null)?.updated_at,
+    (latestMap.data as { updated_at: string } | null)?.updated_at,
+    (latestInst.data as { updated_at: string } | null)?.updated_at,
+  ];
+  const config_stale = stamps.some(
+    (s) => typeof s === "string" && s > createdAt,
+  );
+
   return {
     ok: true,
     batch: {
@@ -2005,7 +2053,561 @@ export async function getBatchDetail(batchId: number): Promise<
       neutral_count: counts.neutral,
       warning_count: counts.warning,
       critical_count: counts.critical,
+      config_stale,
       items: itemsOut,
     },
   };
+}
+
+// =============================================================================
+// Worksheet — recompute, status transitions, edit, bulk actions
+// =============================================================================
+
+/** Data the engine needs that's the same for every row in a batch. */
+type BatchEngineDeps = {
+  mode: CalculationMode;
+  max_price_change_enabled: boolean;
+  max_price_change_pct: number;
+  fallbackTarget: number;
+  fallbackMin: number;
+  charmRules: CharmRule[];
+  /** category_id → resolved {target, min} */
+  marginByCategory: Map<number, { target: number; min: number }>;
+  /** variant_id → primary category_id (or null). */
+  primaryCategoryByVariant: Map<number, number | null>;
+  /** variant_id → product.brand_id (or null). */
+  brandByVariant: Map<number, number | null>;
+  /** Currently-active MAP rules, date-validated. */
+  mapRules: Array<{
+    rule_type: "MAP_min" | "max_price" | "custom";
+    source_type: "brand" | "provider";
+    source_id: number;
+    variant_id: number | null;
+    min_price: number | null;
+    max_price: number | null;
+  }>;
+  /** Provider per variant — derived from any prior price_list this variant
+   *  appeared on. For provider-scoped MAP rule filtering. */
+  providersByVariant: Map<number, Set<number>>;
+};
+
+async function loadBatchEngineDeps(
+  variantIds: number[],
+): Promise<{ ok: true; deps: BatchEngineDeps } | { ok: false; error: string }> {
+  const cfgRes = await getPricingConfig();
+  if (!cfgRes.ok) return { ok: false, error: cfgRes.error };
+  const marginsRes = await listCategoryMargins();
+  if (!marginsRes.ok) return { ok: false, error: marginsRes.error };
+
+  const supabase = await createClient();
+  const [charmRulesRes, mapRulesRes, variantRows, listItemRows] =
+    await Promise.all([
+      supabase
+        .from("charm_rule")
+        .select(
+          "charm_rule_id, min_price, max_price, strategy, strategy_value, is_active, sort_order",
+        )
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("charm_rule_id", { ascending: true }),
+      supabase
+        .from("map_rule")
+        .select(
+          "rule_type, source_type, source_id, variant_id, min_price, max_price, is_active, effective_date, expires_at",
+        )
+        .eq("is_active", true),
+      variantIds.length > 0
+        ? supabase
+            .from("product_variant")
+            .select("variant_id, product_id")
+            .in("variant_id", variantIds)
+        : Promise.resolve({ data: [], error: null }),
+      variantIds.length > 0
+        ? supabase
+            .from("price_list_item")
+            .select("variant_id, price_list:price_list_id!inner(provider_id)")
+            .in("variant_id", variantIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+  if (charmRulesRes.error) return { ok: false, error: charmRulesRes.error.message };
+  if (mapRulesRes.error) return { ok: false, error: mapRulesRes.error.message };
+  if (variantRows.error)
+    return { ok: false, error: variantRows.error.message ?? "variant_load_failed" };
+  if (listItemRows.error)
+    return { ok: false, error: listItemRows.error.message ?? "price_list_item_load_failed" };
+
+  const charmRules: CharmRule[] = (charmRulesRes.data ?? []).map((r) => ({
+    charm_rule_id: r.charm_rule_id as number,
+    min_price: Number(r.min_price),
+    max_price: r.max_price === null ? null : Number(r.max_price),
+    strategy: r.strategy as CharmRule["strategy"],
+    strategy_value: Number(r.strategy_value),
+    is_active: r.is_active as boolean,
+    sort_order: r.sort_order as number,
+  }));
+
+  const productIds = Array.from(
+    new Set(
+      (variantRows.data ?? [])
+        .map((v) => (v as { product_id: number | null }).product_id)
+        .filter((p): p is number => p !== null),
+    ),
+  );
+  const [productRows, primaryLinkRows] = await Promise.all([
+    productIds.length > 0
+      ? supabase
+          .from("product")
+          .select("product_id, brand_id")
+          .in("product_id", productIds)
+      : Promise.resolve({ data: [], error: null }),
+    productIds.length > 0
+      ? supabase
+          .from("product_category_link")
+          .select("product_id, category_id, is_primary")
+          .in("product_id", productIds)
+          .eq("is_primary", true)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (productRows.error)
+    return { ok: false, error: productRows.error.message ?? "product_load_failed" };
+
+  const brandByProduct = new Map<number, number | null>();
+  for (const p of productRows.data ?? []) {
+    brandByProduct.set(
+      (p as { product_id: number }).product_id,
+      (p as { brand_id: number | null }).brand_id ?? null,
+    );
+  }
+  const primaryCategoryByProduct = new Map<number, number>();
+  for (const link of primaryLinkRows.data ?? []) {
+    primaryCategoryByProduct.set(
+      (link as { product_id: number }).product_id,
+      (link as { category_id: number }).category_id,
+    );
+  }
+
+  const primaryCategoryByVariant = new Map<number, number | null>();
+  const brandByVariant = new Map<number, number | null>();
+  for (const v of variantRows.data ?? []) {
+    const vid = (v as { variant_id: number }).variant_id;
+    const pid = (v as { product_id: number | null }).product_id;
+    primaryCategoryByVariant.set(
+      vid,
+      pid !== null ? primaryCategoryByProduct.get(pid) ?? null : null,
+    );
+    brandByVariant.set(vid, pid !== null ? brandByProduct.get(pid) ?? null : null);
+  }
+
+  const providersByVariant = new Map<number, Set<number>>();
+  type ProviderRow = {
+    variant_id: number;
+    price_list:
+      | { provider_id: number }
+      | { provider_id: number }[]
+      | null;
+  };
+  for (const row of (listItemRows.data ?? []) as unknown as ProviderRow[]) {
+    const pl = Array.isArray(row.price_list) ? row.price_list[0] : row.price_list;
+    if (!pl) continue;
+    const set = providersByVariant.get(row.variant_id) ?? new Set<number>();
+    set.add(pl.provider_id);
+    providersByVariant.set(row.variant_id, set);
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateValid = (mapRulesRes.data ?? []).filter((r) => {
+    const eff = r.effective_date as string;
+    const exp = r.expires_at as string | null;
+    return eff <= today && (exp === null || exp >= today);
+  });
+  const mapRules = dateValid.map((r) => ({
+    rule_type: r.rule_type as "MAP_min" | "max_price" | "custom",
+    source_type: r.source_type as "brand" | "provider",
+    source_id: r.source_id as number,
+    variant_id: r.variant_id as number | null,
+    min_price: r.min_price === null ? null : Number(r.min_price),
+    max_price: r.max_price === null ? null : Number(r.max_price),
+  }));
+
+  const marginByCategory = new Map(
+    marginsRes.rows.map((r) => [
+      r.category_id,
+      { target: r.resolved_target_pct, min: r.resolved_min_pct },
+    ]),
+  );
+
+  return {
+    ok: true,
+    deps: {
+      mode: cfgRes.config.calculation_mode,
+      max_price_change_enabled: cfgRes.config.max_price_change_enabled,
+      max_price_change_pct: cfgRes.config.max_price_change_pct,
+      fallbackTarget: cfgRes.config.default_target_pct,
+      fallbackMin: cfgRes.config.default_min_pct,
+      charmRules,
+      marginByCategory,
+      primaryCategoryByVariant,
+      brandByVariant,
+      mapRules,
+      providersByVariant,
+    },
+  };
+}
+
+function applicableMapRulesForVariant(
+  deps: BatchEngineDeps,
+  variantId: number,
+): ApplicableMapRule[] {
+  const brandId = deps.brandByVariant.get(variantId) ?? null;
+  const providers = deps.providersByVariant.get(variantId) ?? new Set<number>();
+  return deps.mapRules
+    .filter((r) => {
+      if (r.variant_id !== null && r.variant_id !== variantId) return false;
+      if (r.source_type === "brand") {
+        return brandId !== null && r.source_id === brandId;
+      }
+      return providers.has(r.source_id);
+    })
+    .map((r) => ({
+      rule_type: r.rule_type,
+      min_price: r.min_price,
+      max_price: r.max_price,
+    }));
+}
+
+/**
+ * Recalculate every row in a batch using the current config. Manual
+ * overrides (manual_override=true) are preserved — we recompute status
+ * against the override, not the calculated final.
+ */
+export async function recomputeBatch(
+  batchId: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data: batchRow, error: batchErr } = await supabase
+    .from("price_batch")
+    .select("price_batch_id, status")
+    .eq("price_batch_id", batchId)
+    .single();
+  if (batchErr || !batchRow) {
+    return { ok: false, error: batchErr?.message ?? "batch_not_found" };
+  }
+  if (batchRow.status === "synced") {
+    return { ok: false, error: "batch_synced_immutable" };
+  }
+
+  const { data: itemRows, error: itemErr } = await supabase
+    .from("price_batch_item")
+    .select(
+      "price_batch_item_id, variant_id, new_cost, current_price, charm_price, final_price, manual_override",
+    )
+    .eq("price_batch_id", batchId);
+  if (itemErr) return { ok: false, error: itemErr.message };
+  const items = (itemRows ?? []) as Array<{
+    price_batch_item_id: number;
+    variant_id: number;
+    new_cost: number | string | null;
+    current_price: number | string | null;
+    charm_price: number | string | null;
+    final_price: number | string | null;
+    manual_override: boolean;
+  }>;
+  if (items.length === 0) return { ok: true };
+
+  const variantIds = items.map((i) => i.variant_id);
+  const depsRes = await loadBatchEngineDeps(variantIds);
+  if (!depsRes.ok) return { ok: false, error: depsRes.error };
+  const deps = depsRes.deps;
+
+  for (const it of items) {
+    const cost = Number(it.new_cost ?? 0);
+    const currentPrice =
+      it.current_price === null ? null : Number(it.current_price);
+    const categoryId = deps.primaryCategoryByVariant.get(it.variant_id) ?? null;
+    const margins =
+      (categoryId !== null ? deps.marginByCategory.get(categoryId) : null) ??
+      { target: deps.fallbackTarget, min: deps.fallbackMin };
+    const map = applicableMapRulesForVariant(deps, it.variant_id);
+
+    const result = computeBatchItem({
+      cost,
+      current_price: currentPrice,
+      mode: deps.mode,
+      category_target_pct: margins.target,
+      category_min_pct: margins.min,
+      charm_rules: deps.charmRules,
+      map_rules: map,
+      max_price_change_enabled: deps.max_price_change_enabled,
+      max_price_change_pct: deps.max_price_change_pct,
+      manual_override_final_price: it.manual_override
+        ? Number(it.final_price ?? 0)
+        : null,
+      override_charm_price: null,
+    });
+
+    const { error: upErr } = await supabase
+      .from("price_batch_item")
+      .update({
+        charm_price: result.charm_price,
+        final_price: result.final_price,
+        margin_percent: result.margin_percent,
+        status: result.status,
+        status_reasons: result.status_reasons,
+      })
+      .eq("price_batch_item_id", it.price_batch_item_id);
+    if (upErr) return { ok: false, error: upErr.message };
+  }
+
+  revalidatePath(`/pricing/changes/${batchId}`);
+  revalidatePath("/pricing/changes");
+  return { ok: true };
+}
+
+/** Transition a batch's status. draft↔ready supported here; ready→synced
+ *  ships in the future sync PR. ready requires zero critical rows. */
+export async function setBatchStatus(
+  batchId: number,
+  next: "draft" | "ready",
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data: batch, error: bErr } = await supabase
+    .from("price_batch")
+    .select("status")
+    .eq("price_batch_id", batchId)
+    .single();
+  if (bErr || !batch) return { ok: false, error: bErr?.message ?? "batch_not_found" };
+  if (batch.status === "synced") {
+    return { ok: false, error: "batch_synced_immutable" };
+  }
+
+  if (next === "ready") {
+    const { count } = await supabase
+      .from("price_batch_item")
+      .select("price_batch_item_id", { count: "exact", head: true })
+      .eq("price_batch_id", batchId)
+      .eq("status", "critical");
+    if ((count ?? 0) > 0) {
+      return { ok: false, error: "batch_has_criticals" };
+    }
+  }
+
+  const { error } = await supabase
+    .from("price_batch")
+    .update({ status: next })
+    .eq("price_batch_id", batchId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/pricing/changes/${batchId}`);
+  revalidatePath("/pricing/changes");
+  return { ok: true };
+}
+
+export async function updateBatchName(
+  batchId: number,
+  name: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const trimmed = name.trim();
+  if (trimmed.length < 1) return { ok: false, error: "name_required" };
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("price_batch")
+    .update({ batch_name: trimmed })
+    .eq("price_batch_id", batchId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/pricing/changes/${batchId}`);
+  revalidatePath("/pricing/changes");
+  return { ok: true };
+}
+
+/**
+ * Edit one row.
+ *   kind="charm": store new charm_price; if no manual_override, propagate to final.
+ *   kind="final": store new final_price + set manual_override=true.
+ *   kind="reset": clear manual_override + re-derive charm + final from rules.
+ * Status is recomputed against the new final_price in every path.
+ */
+export async function updateBatchItem(
+  itemId: number,
+  patch:
+    | { kind: "charm"; charm_price: number }
+    | { kind: "final"; final_price: number }
+    | { kind: "reset" },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data: row, error: rowErr } = await supabase
+    .from("price_batch_item")
+    .select(
+      "price_batch_item_id, price_batch_id, variant_id, new_cost, current_price, charm_price, final_price, manual_override",
+    )
+    .eq("price_batch_item_id", itemId)
+    .single();
+  if (rowErr || !row) return { ok: false, error: rowErr?.message ?? "item_not_found" };
+
+  const { data: parent, error: pErr } = await supabase
+    .from("price_batch")
+    .select("status")
+    .eq("price_batch_id", row.price_batch_id)
+    .single();
+  if (pErr || !parent) return { ok: false, error: pErr?.message ?? "batch_not_found" };
+  if (parent.status === "synced") {
+    return { ok: false, error: "batch_synced_immutable" };
+  }
+
+  const depsRes = await loadBatchEngineDeps([row.variant_id as number]);
+  if (!depsRes.ok) return { ok: false, error: depsRes.error };
+  const deps = depsRes.deps;
+
+  const variantId = row.variant_id as number;
+  const cost = Number(row.new_cost ?? 0);
+  const currentPrice =
+    row.current_price === null ? null : Number(row.current_price);
+  const categoryId = deps.primaryCategoryByVariant.get(variantId) ?? null;
+  const margins =
+    (categoryId !== null ? deps.marginByCategory.get(categoryId) : null) ??
+    { target: deps.fallbackTarget, min: deps.fallbackMin };
+  const mapRules = applicableMapRulesForVariant(deps, variantId);
+
+  let manualOverrideFinal: number | null = null;
+  let overrideCharm: number | null = null;
+  let nextManualOverride = row.manual_override as boolean;
+
+  if (patch.kind === "charm") {
+    if (!Number.isFinite(patch.charm_price) || patch.charm_price < 0) {
+      return { ok: false, error: "invalid_charm_price" };
+    }
+    overrideCharm = patch.charm_price;
+    if (row.manual_override) {
+      manualOverrideFinal = Number(row.final_price ?? 0);
+    }
+  } else if (patch.kind === "final") {
+    if (!Number.isFinite(patch.final_price) || patch.final_price < 0) {
+      return { ok: false, error: "invalid_final_price" };
+    }
+    manualOverrideFinal = patch.final_price;
+    nextManualOverride = true;
+  } else {
+    nextManualOverride = false;
+  }
+
+  const result = computeBatchItem({
+    cost,
+    current_price: currentPrice,
+    mode: deps.mode,
+    category_target_pct: margins.target,
+    category_min_pct: margins.min,
+    charm_rules: deps.charmRules,
+    map_rules: mapRules,
+    max_price_change_enabled: deps.max_price_change_enabled,
+    max_price_change_pct: deps.max_price_change_pct,
+    manual_override_final_price: manualOverrideFinal,
+    override_charm_price: overrideCharm,
+  });
+
+  const { error: upErr } = await supabase
+    .from("price_batch_item")
+    .update({
+      charm_price: result.charm_price,
+      final_price: result.final_price,
+      margin_percent: result.margin_percent,
+      status: result.status,
+      status_reasons: result.status_reasons,
+      manual_override: nextManualOverride,
+    })
+    .eq("price_batch_item_id", itemId);
+  if (upErr) return { ok: false, error: upErr.message };
+
+  revalidatePath(`/pricing/changes/${row.price_batch_id}`);
+  return { ok: true };
+}
+
+/** Force selected rows to neutral status. Append 'manually_approved' to
+ *  status_reasons so the audit context survives. */
+export async function bulkApproveItems(
+  itemIds: number[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (itemIds.length === 0) return { ok: true };
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data: rows, error: rowsErr } = await supabase
+    .from("price_batch_item")
+    .select("price_batch_item_id, price_batch_id, status_reasons")
+    .in("price_batch_item_id", itemIds);
+  if (rowsErr) return { ok: false, error: rowsErr.message };
+
+  const batchIds = Array.from(
+    new Set((rows ?? []).map((r) => (r as { price_batch_id: number }).price_batch_id)),
+  );
+  if (batchIds.length > 0) {
+    const { data: parents } = await supabase
+      .from("price_batch")
+      .select("price_batch_id, status")
+      .in("price_batch_id", batchIds);
+    if ((parents ?? []).some((b) => b.status === "synced")) {
+      return { ok: false, error: "batch_synced_immutable" };
+    }
+  }
+
+  for (const r of rows ?? []) {
+    const reasons = ((r as { status_reasons: string[] | null }).status_reasons ?? []).slice();
+    if (!reasons.includes("manually_approved")) reasons.push("manually_approved");
+    const { error } = await supabase
+      .from("price_batch_item")
+      .update({ status: "neutral", status_reasons: reasons })
+      .eq("price_batch_item_id", (r as { price_batch_item_id: number }).price_batch_item_id);
+    if (error) return { ok: false, error: error.message };
+  }
+
+  for (const id of batchIds) revalidatePath(`/pricing/changes/${id}`);
+  return { ok: true };
+}
+
+export async function bulkDeleteItems(
+  itemIds: number[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (itemIds.length === 0) return { ok: true };
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("price_batch_item")
+    .select("price_batch_item_id, price_batch_id")
+    .in("price_batch_item_id", itemIds);
+  const batchIds = Array.from(
+    new Set((rows ?? []).map((r) => (r as { price_batch_id: number }).price_batch_id)),
+  );
+  if (batchIds.length > 0) {
+    const { data: parents } = await supabase
+      .from("price_batch")
+      .select("price_batch_id, status")
+      .in("price_batch_id", batchIds);
+    if ((parents ?? []).some((b) => b.status === "synced")) {
+      return { ok: false, error: "batch_synced_immutable" };
+    }
+  }
+
+  const { error } = await supabase
+    .from("price_batch_item")
+    .delete()
+    .in("price_batch_item_id", itemIds);
+  if (error) return { ok: false, error: error.message };
+
+  for (const id of batchIds) revalidatePath(`/pricing/changes/${id}`);
+  return { ok: true };
 }

@@ -1289,6 +1289,9 @@
     },
     "batchDetail": {
       "back": "Lotes",
+      "clickToEdit": "Click para editar",
+      "selectAll": "Seleccionar todo",
+      "selectRow": "Seleccionar fila",
       "status": {
         "draft": "Borrador",
         "ready": "Listo",
@@ -1309,8 +1312,56 @@
         "margin": "Margen",
         "status": "Estado"
       },
+      "filters": {
+        "status": "Estado",
+        "statusOptions": {
+          "all": "Todos",
+          "neutral": "Sin alertas",
+          "warning": "Advertencias",
+          "critical": "Críticos"
+        },
+        "brand": "Marca",
+        "brandAll": "Todas",
+        "onlyChanges": "Solo con cambio de precio",
+        "shown": "{shown} de {total}"
+      },
+      "staleBanner": "La configuración cambió desde que se creó este lote. Recalcula para aplicar los nuevos valores.",
+      "buttons": {
+        "recompute": "Recalcular",
+        "recomputing": "Recalculando…",
+        "markReady": "Marcar como listo",
+        "markReadyBlockedHint": "Resuelve los críticos antes de marcar como listo.",
+        "backToDraft": "Volver a editar",
+        "resetOverride": "Quitar precio manual",
+        "notOverridden": "No tiene precio manual"
+      },
+      "bulk": {
+        "selected": "{n} seleccionados",
+        "approve": "Aprobar",
+        "delete": "Eliminar",
+        "clear": "Limpiar"
+      },
+      "toast": {
+        "savedName": "Nombre actualizado",
+        "saveNameError": "No se pudo guardar el nombre",
+        "recomputed": "Lote recalculado",
+        "recomputeError": "No se pudo recalcular el lote",
+        "markedReady": "Lote marcado como listo",
+        "readyError": "No se pudo marcar como listo",
+        "backToDraft": "Lote en borrador",
+        "backToDraftError": "No se pudo volver a borrador",
+        "editError": "No se pudo guardar el cambio",
+        "invalidCharm": "El precio gancho debe ser un número válido ≥ 0",
+        "invalidFinal": "El precio final debe ser un número válido ≥ 0",
+        "overrideCleared": "Precio manual quitado",
+        "bulkApproveError": "No se pudieron aprobar las filas",
+        "bulkApproved": "Se aprobaron {n} filas",
+        "bulkDeleteError": "No se pudieron eliminar las filas",
+        "bulkDeleted": "Se eliminaron {n} filas",
+        "bulkDeleteConfirm": "¿Eliminar {n} filas de este lote? No afecta la lista de precios original."
+      },
       "emptyItems": "Este lote no tiene productos. Esto suele indicar que ningún ítem de la lista pudo coincidir con una variante del catálogo.",
-      "w1Notice": "Vista de sólo lectura. Los filtros, banners de violaciones y edición en línea llegan en la próxima entrega."
+      "emptyAfterFilters": "Ningún producto coincide con los filtros activos."
     },
     "violationsPage": {
       "queueTitle": "Cola de autorizaciones",

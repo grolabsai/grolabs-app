@@ -58,6 +58,15 @@ export type ComputeInput = {
    * `final_price` — only the status is recomputed against the override.
    */
   manual_override_final_price: number | null;
+  /**
+   * When the user has manually typed a charm price (different from what
+   * the rules produce), pass it here. The engine uses it instead of
+   * applying charm rules. `manual_override_final_price` still wins for
+   * the final price; `override_charm_price` only changes how charm is
+   * derived. Editing charm doesn't set manual_override on the row — it's
+   * a different override slot, scoped to charm only.
+   */
+  override_charm_price: number | null;
 };
 
 export type ComputeOutput = {
@@ -84,7 +93,10 @@ export function computeBatchItem(input: ComputeInput): ComputeOutput {
     input.category_target_pct,
     input.mode,
   );
-  const charm = applyCharm(target, input.charm_rules);
+  const charm =
+    input.override_charm_price !== null
+      ? input.override_charm_price
+      : applyCharm(target, input.charm_rules);
   const final =
     input.manual_override_final_price !== null
       ? input.manual_override_final_price

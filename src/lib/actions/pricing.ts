@@ -777,3 +777,178 @@ export async function deleteCharmRule(
   revalidatePath("/pricing/policies");
   return { ok: true };
 }
+
+// =============================================================================
+// Per-category margins (target / min)
+// =============================================================================
+
+export type CategoryMarginRow = {
+  category_id: number;
+  parent_category_id: number | null;
+  level: number;
+  category_name: string;
+  /** Indent depth in the rendered tree — root = 0. */
+  depth: number;
+  /** Own (explicitly set) values, or null if the column is unset. */
+  own_target_margin: number | null;
+  own_min_margin: number | null;
+  /** Resolved values — own → ancestor → instance default. Always present. */
+  resolved_target_pct: number;
+  resolved_min_pct: number;
+  /** Per-field provenance so the UI can italicise inherited / default values. */
+  target_source: "own" | "inherited" | "default";
+  min_source: "own" | "inherited" | "default";
+};
+
+type CategoryRowRaw = {
+  category_id: number;
+  parent_category_id: number | null;
+  level: number;
+  sort_order: number | null;
+  category_name: string;
+  target_margin: number | string | null;
+  min_margin: number | string | null;
+};
+
+function num(v: number | string | null): number | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * List all categories in the current instance, in tree (depth-first) order,
+ * with each row's resolved target/min margin. The resolver walks ancestors;
+ * if no ancestor has a value either, falls back to instance defaults from
+ * pricing_config.
+ *
+ * Returned shape is flat — siblings are grouped under their parent in the
+ * order parents appear, so the UI can render straight rows with indent
+ * styling instead of recursing.
+ */
+export async function listCategoryMargins(): Promise<
+  | { ok: true; rows: CategoryMarginRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  // Pull defaults — they're the bottom-of-the-stack fallback per category.
+  const cfgRes = await getPricingConfig();
+  if (!cfgRes.ok) return { ok: false, error: cfgRes.error };
+  const defaults = {
+    target: cfgRes.config.default_target_pct,
+    min: cfgRes.config.default_min_pct,
+  };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("category")
+    .select(
+      "category_id, parent_category_id, level, sort_order, category_name, target_margin, min_margin",
+    )
+    .eq("is_active", true);
+  if (error) return { ok: false, error: error.message };
+
+  const raw: CategoryRowRaw[] = (data ?? []) as CategoryRowRaw[];
+
+  // Build adjacency for tree walk and a row map for ancestor resolution.
+  const byParent = new Map<number | null, CategoryRowRaw[]>();
+  const byId = new Map<number, CategoryRowRaw>();
+  for (const r of raw) {
+    byId.set(r.category_id, r);
+    const list = byParent.get(r.parent_category_id) ?? [];
+    list.push(r);
+    byParent.set(r.parent_category_id, list);
+  }
+  // Sort each sibling group alphabetically (sort_order tiebreaker first).
+  for (const list of byParent.values()) {
+    list.sort((a, b) => {
+      const so = (a.sort_order ?? 999_999) - (b.sort_order ?? 999_999);
+      if (so !== 0) return so;
+      return a.category_name.localeCompare(b.category_name, "es");
+    });
+  }
+
+  /** Resolve a single field by walking up the ancestor chain. */
+  function resolveField(
+    startId: number,
+    pick: "target_margin" | "min_margin",
+    fallback: number,
+  ): { value: number; source: "own" | "inherited" | "default" } {
+    const start = byId.get(startId);
+    if (!start) return { value: fallback, source: "default" };
+    const own = num(start[pick]);
+    if (own !== null) return { value: own, source: "own" };
+    let cursor = start.parent_category_id;
+    while (cursor !== null) {
+      const parent = byId.get(cursor);
+      if (!parent) break;
+      const v = num(parent[pick]);
+      if (v !== null) return { value: v, source: "inherited" };
+      cursor = parent.parent_category_id;
+    }
+    return { value: fallback, source: "default" };
+  }
+
+  const out: CategoryMarginRow[] = [];
+
+  function visit(node: CategoryRowRaw, depth: number) {
+    const target = resolveField(node.category_id, "target_margin", defaults.target);
+    const min = resolveField(node.category_id, "min_margin", defaults.min);
+    out.push({
+      category_id: node.category_id,
+      parent_category_id: node.parent_category_id,
+      level: node.level,
+      category_name: node.category_name,
+      depth,
+      own_target_margin: num(node.target_margin),
+      own_min_margin: num(node.min_margin),
+      resolved_target_pct: target.value,
+      resolved_min_pct: min.value,
+      target_source: target.source,
+      min_source: min.source,
+    });
+    const children = byParent.get(node.category_id) ?? [];
+    for (const child of children) visit(child, depth + 1);
+  }
+
+  const roots = byParent.get(null) ?? [];
+  for (const root of roots) visit(root, 0);
+
+  return { ok: true, rows: out };
+}
+
+/**
+ * Update a category's own target_margin and min_margin. Pass `null` for
+ * either field to inherit from the ancestor chain. The single-toggle UI
+ * passes (null, null) to "inherit both".
+ */
+export async function saveCategoryMargin(
+  categoryId: number,
+  target: number | null,
+  min: number | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (target !== null && (!Number.isFinite(target) || target < 0)) {
+    return { ok: false, error: "invalid_target" };
+  }
+  if (min !== null && (!Number.isFinite(min) || min < 0)) {
+    return { ok: false, error: "invalid_min" };
+  }
+  if (target !== null && min !== null && min > target) {
+    return { ok: false, error: "min_above_target" };
+  }
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("category")
+    .update({ target_margin: target, min_margin: min })
+    .eq("category_id", categoryId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/pricing/policies");
+  return { ok: true };
+}

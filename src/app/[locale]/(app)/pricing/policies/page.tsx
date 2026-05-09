@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation";
 import { currentInstanceId } from "@/lib/instance";
-import { getPricingConfig, listCharmRules } from "@/lib/actions/pricing";
+import {
+  getPricingConfig,
+  listCharmRules,
+  listCategoryMargins,
+} from "@/lib/actions/pricing";
 import { CalculationModeCard } from "@/components/pricing/CalculationModeCard";
 import { CharmRulesCard } from "@/components/pricing/CharmRulesCard";
+import { CategoryMarginsCard } from "@/components/pricing/CategoryMarginsCard";
 
 /**
  * Pricing policies — configuration hub for the worksheet.
@@ -19,9 +24,10 @@ export default async function PricingPoliciesPage() {
   const instanceId = await currentInstanceId();
   if (instanceId === null) redirect("/login");
 
-  const [configRes, charmRulesRes] = await Promise.all([
+  const [configRes, charmRulesRes, marginRowsRes] = await Promise.all([
     getPricingConfig(),
     listCharmRules(),
+    listCategoryMargins(),
   ]);
 
   // Defensive defaults — if either call fails the page still renders so
@@ -34,10 +40,15 @@ export default async function PricingPoliciesPage() {
         default_min_pct: 20,
       };
   const charmRules = charmRulesRes.ok ? charmRulesRes.rules : [];
+  const marginRows = marginRowsRes.ok ? marginRowsRes.rows : [];
 
   return (
     <>
       <CalculationModeCard initial={config} />
+      <CategoryMarginsCard
+        initial={marginRows}
+        mode={config.calculation_mode}
+      />
       <CharmRulesCard initial={charmRules} />
     </>
   );

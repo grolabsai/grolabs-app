@@ -948,6 +948,333 @@ export async function listCategoryMargins(): Promise<
   return { ok: true, rows: out };
 }
 
+// =============================================================================
+// MAP rules CRUD
+// =============================================================================
+
+export type MapRuleType = "MAP_min" | "max_price" | "custom";
+export type MapRuleSourceType = "brand" | "provider";
+
+/** Row shape used by the rules table — joins the source name + variant name. */
+export type MapRuleRow = {
+  map_rule_id: number;
+  rule_type: MapRuleType;
+  source_type: MapRuleSourceType;
+  source_id: number;
+  source_name: string; // resolved from brand or provider
+  variant_id: number | null;
+  variant_label: string | null; // resolved variant_name + sku, or null when applies-to-all
+  min_price: number | null;
+  max_price: number | null;
+  is_active: boolean;
+  effective_date: string;
+  expires_at: string | null;
+  notes: string | null;
+};
+
+export type MapRuleInput = {
+  map_rule_id: number | null; // null = create
+  rule_type: MapRuleType;
+  source_type: MapRuleSourceType;
+  source_id: number;
+  variant_id: number | null;
+  min_price: number | null;
+  max_price: number | null;
+  is_active: boolean;
+  effective_date: string; // YYYY-MM-DD
+  expires_at: string | null;
+  notes: string | null;
+};
+
+export async function listMapRules(): Promise<
+  | { ok: true; rules: MapRuleRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("map_rule")
+    .select(
+      "map_rule_id, rule_type, source_type, source_id, variant_id, min_price, max_price, is_active, effective_date, expires_at, notes",
+    )
+    .order("is_active", { ascending: false })
+    .order("effective_date", { ascending: false })
+    .order("map_rule_id", { ascending: false });
+  if (error) return { ok: false, error: error.message };
+
+  const rows = (data ?? []) as Array<{
+    map_rule_id: number;
+    rule_type: MapRuleType;
+    source_type: MapRuleSourceType;
+    source_id: number;
+    variant_id: number | null;
+    min_price: number | string | null;
+    max_price: number | string | null;
+    is_active: boolean;
+    effective_date: string;
+    expires_at: string | null;
+    notes: string | null;
+  }>;
+
+  // Resolve names in two batched lookups (brand and provider) plus one for
+  // variants. Doing N+1 here would scale poorly once the table has dozens
+  // of rules.
+  const brandIds = new Set<number>();
+  const providerIds = new Set<number>();
+  const variantIds = new Set<number>();
+  for (const r of rows) {
+    if (r.source_type === "brand") brandIds.add(r.source_id);
+    if (r.source_type === "provider") providerIds.add(r.source_id);
+    if (r.variant_id !== null) variantIds.add(r.variant_id);
+  }
+
+  const [brandData, providerData, variantData] = await Promise.all([
+    brandIds.size > 0
+      ? supabase
+          .from("brand")
+          .select("brand_id, brand_name")
+          .in("brand_id", Array.from(brandIds))
+      : Promise.resolve({ data: [] as Array<{ brand_id: number; brand_name: string }>, error: null }),
+    providerIds.size > 0
+      ? supabase
+          .from("provider")
+          .select("provider_id, provider_name")
+          .in("provider_id", Array.from(providerIds))
+      : Promise.resolve({ data: [] as Array<{ provider_id: number; provider_name: string }>, error: null }),
+    variantIds.size > 0
+      ? supabase
+          .from("product_variant")
+          .select("variant_id, variant_name, sku")
+          .in("variant_id", Array.from(variantIds))
+      : Promise.resolve({
+          data: [] as Array<{ variant_id: number; variant_name: string | null; sku: string | null }>,
+          error: null,
+        }),
+  ]);
+
+  const brandMap = new Map(
+    (brandData.data ?? []).map((b) => [b.brand_id, b.brand_name]),
+  );
+  const providerMap = new Map(
+    (providerData.data ?? []).map((p) => [p.provider_id, p.provider_name]),
+  );
+  const variantMap = new Map(
+    (variantData.data ?? []).map((v) => {
+      const label =
+        [v.variant_name, v.sku].filter((s) => s && String(s).trim() !== "").join(" · ") ||
+        `#${v.variant_id}`;
+      return [v.variant_id, label];
+    }),
+  );
+
+  const rules: MapRuleRow[] = rows.map((r) => ({
+    map_rule_id: r.map_rule_id,
+    rule_type: r.rule_type,
+    source_type: r.source_type,
+    source_id: r.source_id,
+    source_name:
+      r.source_type === "brand"
+        ? brandMap.get(r.source_id) ?? `#${r.source_id}`
+        : providerMap.get(r.source_id) ?? `#${r.source_id}`,
+    variant_id: r.variant_id,
+    variant_label:
+      r.variant_id === null ? null : variantMap.get(r.variant_id) ?? `#${r.variant_id}`,
+    min_price: r.min_price === null ? null : Number(r.min_price),
+    max_price: r.max_price === null ? null : Number(r.max_price),
+    is_active: r.is_active,
+    effective_date: r.effective_date,
+    expires_at: r.expires_at,
+    notes: r.notes,
+  }));
+
+  return { ok: true, rules };
+}
+
+export async function saveMapRule(
+  input: MapRuleInput,
+): Promise<
+  | { ok: true; mapRuleId: number }
+  | { ok: false; error: string }
+> {
+  if (
+    input.rule_type !== "MAP_min" &&
+    input.rule_type !== "max_price" &&
+    input.rule_type !== "custom"
+  ) {
+    return { ok: false, error: "invalid_rule_type" };
+  }
+  if (input.source_type !== "brand" && input.source_type !== "provider") {
+    return { ok: false, error: "invalid_source_type" };
+  }
+  if (!Number.isFinite(input.source_id) || input.source_id <= 0) {
+    return { ok: false, error: "invalid_source_id" };
+  }
+  if (input.min_price === null && input.max_price === null) {
+    return { ok: false, error: "no_price_set" };
+  }
+  if (
+    input.min_price !== null &&
+    (!Number.isFinite(input.min_price) || input.min_price < 0)
+  ) {
+    return { ok: false, error: "invalid_min_price" };
+  }
+  if (
+    input.max_price !== null &&
+    (!Number.isFinite(input.max_price) || input.max_price < 0)
+  ) {
+    return { ok: false, error: "invalid_max_price" };
+  }
+  if (
+    input.min_price !== null &&
+    input.max_price !== null &&
+    input.min_price > input.max_price
+  ) {
+    return { ok: false, error: "min_above_max" };
+  }
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const payload = {
+    rule_type: input.rule_type,
+    source_type: input.source_type,
+    source_id: input.source_id,
+    variant_id: input.variant_id,
+    min_price: input.min_price,
+    max_price: input.max_price,
+    is_active: input.is_active,
+    effective_date: input.effective_date,
+    expires_at: input.expires_at,
+    notes: input.notes,
+  };
+
+  const supabase = await createClient();
+  if (input.map_rule_id === null) {
+    const { data, error } = await supabase
+      .from("map_rule")
+      .insert({ instance_id: instanceId, ...payload })
+      .select("map_rule_id")
+      .single();
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/pricing/violations");
+    return { ok: true, mapRuleId: data.map_rule_id };
+  } else {
+    const { error } = await supabase
+      .from("map_rule")
+      .update(payload)
+      .eq("map_rule_id", input.map_rule_id);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/pricing/violations");
+    return { ok: true, mapRuleId: input.map_rule_id };
+  }
+}
+
+export async function deleteMapRule(
+  mapRuleId: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("map_rule")
+    .delete()
+    .eq("map_rule_id", mapRuleId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/pricing/violations");
+  return { ok: true };
+}
+
+/**
+ * Search variants for the MAP rule's "specific variant" picker.
+ * - Caps the result at 50 to keep payloads small.
+ * - Requires a 2-char query so we never return the whole catalog.
+ * - Searches by variant name OR SKU OR barcode (ilike).
+ * - When source_type='brand', filters to product.brand_id = source_id so
+ *   the picker only surfaces the brand's variants. For provider source
+ *   we skip the filter — variants aren't tied to a single provider.
+ */
+export type VariantSearchResult = {
+  variant_id: number;
+  label: string;
+  sku: string | null;
+  brand_id: number | null;
+};
+
+export async function searchVariantsForMapRule(
+  query: string,
+  sourceType: MapRuleSourceType,
+  sourceId: number | null,
+): Promise<
+  | { ok: true; variants: VariantSearchResult[] }
+  | { ok: false; error: string }
+> {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return { ok: true, variants: [] };
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  // The Supabase JS client doesn't support a single OR across nested fields
+  // cleanly; build a tilde-friendly pattern + multiple matches via .or().
+  const pattern = `%${trimmed.replace(/[%_]/g, "\\$&")}%`;
+  let qb = supabase
+    .from("product_variant")
+    .select("variant_id, variant_name, sku, barcode, product_id, product:product_id(brand_id, product_name)")
+    .eq("is_active", true)
+    .or(`variant_name.ilike.${pattern},sku.ilike.${pattern},barcode.ilike.${pattern}`)
+    .limit(50);
+
+  const { data, error } = await qb;
+  if (error) return { ok: false, error: error.message };
+
+  type Row = {
+    variant_id: number;
+    variant_name: string | null;
+    sku: string | null;
+    barcode: string | null;
+    product_id: number | null;
+    product:
+      | { brand_id: number | null; product_name: string | null }
+      | { brand_id: number | null; product_name: string | null }[]
+      | null;
+  };
+
+  let rows = (data ?? []) as unknown as Row[];
+
+  // Apply the brand filter client-side after the query — Supabase doesn't
+  // let us filter on a related field cleanly inside .or(), and 50 rows is
+  // small enough that a JS pass is fine.
+  if (sourceType === "brand" && sourceId !== null) {
+    rows = rows.filter((r) => {
+      const product = Array.isArray(r.product) ? r.product[0] : r.product;
+      return product?.brand_id === sourceId;
+    });
+  }
+
+  const variants: VariantSearchResult[] = rows.map((r) => {
+    const product = Array.isArray(r.product) ? r.product[0] : r.product;
+    const productName = product?.product_name ?? "";
+    const variantName = r.variant_name ?? "";
+    const composed = [productName, variantName]
+      .filter((s) => s && s.trim() !== "")
+      .join(" · ");
+    const labelBase = composed || `#${r.variant_id}`;
+    const labelWithSku = r.sku ? `${labelBase} · ${r.sku}` : labelBase;
+    return {
+      variant_id: r.variant_id,
+      label: labelWithSku,
+      sku: r.sku,
+      brand_id: product?.brand_id ?? null,
+    };
+  });
+
+  return { ok: true, variants };
+}
+
 /**
  * Update a category's own target_margin and min_margin. Pass `null` for
  * either field to inherit from the ancestor chain. The single-toggle UI

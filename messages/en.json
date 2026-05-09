@@ -1368,6 +1368,47 @@
       "queueSubtitle": "Violations detected in change batches show up here for approval or rejection.",
       "queueEmpty": "No violations yet. They'll appear once a batch has rows in critical state."
     },
+    "authQueue": {
+      "title": "Authorization queue",
+      "subtitle": "Warning and critical rows across every batch that hasn't synced yet.",
+      "empty": "No open violations. When a batch produces warning or critical rows, they'll appear here.",
+      "emptyAfterFilters": "No rows match the active filters.",
+      "shown": "{shown} of {total}",
+      "filters": {
+        "severity": "Severity",
+        "severityOptions": {
+          "all": "All",
+          "critical": "Critical",
+          "warning": "Warning"
+        },
+        "batch": "Batch",
+        "batchAll": "All batches"
+      },
+      "cols": {
+        "product": "Product",
+        "batch": "Batch",
+        "reasons": "Reasons",
+        "currentPrice": "Current price",
+        "finalPrice": "Final price",
+        "margin": "Margin"
+      },
+      "buttons": {
+        "approve": "Approve",
+        "openBatch": "Open batch"
+      },
+      "toast": {
+        "approved": "Row approved",
+        "approveError": "Could not approve the row"
+      }
+    },
+    "reasonCodes": {
+      "below_map": "Below MAP",
+      "above_max": "Above max",
+      "low_margin": "Margin too low",
+      "under_target": "Margin under target",
+      "price_change_exceeds_threshold": "Price change too large",
+      "manually_approved": "Manually approved"
+    },
     "mapRules": {
       "title": "Price rules (MAP / max)",
       "subtitle": "Rules that set the minimum or maximum allowed price per brand or provider. They can apply to every variant from a source or a specific one.",

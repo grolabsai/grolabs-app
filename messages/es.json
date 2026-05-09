@@ -1368,6 +1368,47 @@
       "queueSubtitle": "Las violaciones detectadas en lotes de cambios aparecen aquí para autorizar o rechazar.",
       "queueEmpty": "Aún no hay violaciones. Aparecerán cuando un lote tenga filas en estado crítico."
     },
+    "authQueue": {
+      "title": "Cola de autorizaciones",
+      "subtitle": "Filas con advertencia o estado crítico de todos los lotes que aún no se han sincronizado.",
+      "empty": "Sin violaciones abiertas. Cuando un lote genere filas críticas o con advertencia, aparecerán aquí.",
+      "emptyAfterFilters": "Ninguna fila coincide con los filtros activos.",
+      "shown": "{shown} de {total}",
+      "filters": {
+        "severity": "Severidad",
+        "severityOptions": {
+          "all": "Todas",
+          "critical": "Críticas",
+          "warning": "Advertencias"
+        },
+        "batch": "Lote",
+        "batchAll": "Todos los lotes"
+      },
+      "cols": {
+        "product": "Producto",
+        "batch": "Lote",
+        "reasons": "Motivos",
+        "currentPrice": "Precio actual",
+        "finalPrice": "Precio final",
+        "margin": "Margen"
+      },
+      "buttons": {
+        "approve": "Aprobar",
+        "openBatch": "Abrir lote"
+      },
+      "toast": {
+        "approved": "Fila aprobada",
+        "approveError": "No se pudo aprobar la fila"
+      }
+    },
+    "reasonCodes": {
+      "below_map": "Bajo MAP",
+      "above_max": "Sobre máximo",
+      "low_margin": "Margen muy bajo",
+      "under_target": "Margen bajo objetivo",
+      "price_change_exceeds_threshold": "Cambio de precio excesivo",
+      "manually_approved": "Aprobado manualmente"
+    },
     "mapRules": {
       "title": "Reglas de precio (MAP / máximo)",
       "subtitle": "Reglas que definen el precio mínimo o máximo permitido por marca o proveedor. Pueden aplicar a todas las variantes de un origen o a una específica.",

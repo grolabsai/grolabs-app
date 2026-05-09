@@ -6,7 +6,11 @@ import { currentInstanceId } from "@/lib/instance";
 import { parseMoney } from "@/lib/pricing/parse-money";
 import type { KeyColumnKind } from "@/lib/pricing/column-detect";
 import type { CalculationMode } from "@/lib/pricing/calculate";
-import type { CharmStrategy } from "@/lib/pricing/charm";
+import type { CharmRule, CharmStrategy } from "@/lib/pricing/charm";
+import {
+  computeBatchItem,
+  type ApplicableMapRule,
+} from "@/lib/pricing/compute";
 
 /**
  * Discrete server actions for the pricing module. Per CLAUDE.md §14
@@ -1307,4 +1311,701 @@ export async function saveCategoryMargin(
 
   revalidatePath("/pricing/policies");
   return { ok: true };
+}
+
+// =============================================================================
+// Price batches — list, create-from-price-list, detail
+// =============================================================================
+
+export type PriceBatchStatus = "draft" | "ready" | "synced";
+
+export type BatchListRow = {
+  price_batch_id: number;
+  batch_name: string;
+  status: PriceBatchStatus;
+  item_count: number;
+  warning_count: number;
+  critical_count: number;
+  created_at: string;
+  updated_at: string;
+  synced_at: string | null;
+};
+
+export type PendingPriceListRow = {
+  price_list_id: number;
+  provider_id: number;
+  provider_name: string;
+  file_name: string | null;
+  import_date: string;
+  effective_date: string | null;
+  item_count: number;
+};
+
+export type BatchDetailItem = {
+  price_batch_item_id: number;
+  variant_id: number;
+  variant_label: string;
+  brand_name: string | null;
+  provider_name: string | null;
+  current_cost: number | null;
+  new_cost: number | null;
+  current_price: number | null;
+  charm_price: number | null;
+  final_price: number | null;
+  manual_override: boolean;
+  margin_percent: number | null;
+  status: "neutral" | "warning" | "critical";
+  status_reasons: string[];
+};
+
+export type BatchDetail = {
+  price_batch_id: number;
+  batch_name: string;
+  status: PriceBatchStatus;
+  created_at: string;
+  updated_at: string;
+  synced_at: string | null;
+  item_count: number;
+  neutral_count: number;
+  warning_count: number;
+  critical_count: number;
+  items: BatchDetailItem[];
+};
+
+/**
+ * Recent batches for `/pricing/changes`. Sorted by updated_at desc.
+ * The status counts are computed in JS from the embedded items so a
+ * single round-trip covers the table.
+ */
+export async function listBatches(): Promise<
+  | { ok: true; batches: BatchListRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("price_batch")
+    .select(
+      "price_batch_id, batch_name, status, created_at, updated_at, synced_at, price_batch_item(price_batch_item_id, status)",
+    )
+    .order("updated_at", { ascending: false })
+    .limit(100);
+  if (error) return { ok: false, error: error.message };
+
+  const batches: BatchListRow[] = (data ?? []).map((b) => {
+    const items = (b.price_batch_item ?? []) as Array<{
+      price_batch_item_id: number;
+      status: "neutral" | "warning" | "critical";
+    }>;
+    return {
+      price_batch_id: b.price_batch_id as number,
+      batch_name: b.batch_name as string,
+      status: b.status as PriceBatchStatus,
+      item_count: items.length,
+      warning_count: items.filter((i) => i.status === "warning").length,
+      critical_count: items.filter((i) => i.status === "critical").length,
+      created_at: b.created_at as string,
+      updated_at: b.updated_at as string,
+      synced_at: (b.synced_at as string | null) ?? null,
+    };
+  });
+
+  return { ok: true, batches };
+}
+
+/**
+ * Price lists that have at least one matched item but no batch yet —
+ * candidates for the "Crear lote" button. We can't easily express
+ * "price lists with no associated batch" purely in SQL because there's
+ * no FK from price_batch back to price_list (a batch is a calculation
+ * snapshot, not a child of one list). For v1 we surface every recent
+ * price list and rely on the user to decide which to convert.
+ */
+export async function listPendingPriceLists(): Promise<
+  | { ok: true; lists: PendingPriceListRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("price_list")
+    .select(
+      "price_list_id, provider_id, file_name, import_date, effective_date, price_list_item(price_list_item_id)",
+    )
+    .order("import_date", { ascending: false })
+    .limit(20);
+  if (error) return { ok: false, error: error.message };
+
+  const providerIds = Array.from(
+    new Set((data ?? []).map((r) => r.provider_id as number)),
+  );
+  const { data: providerData } =
+    providerIds.length > 0
+      ? await supabase
+          .from("provider")
+          .select("provider_id, provider_name")
+          .in("provider_id", providerIds)
+      : { data: [] };
+  const providerMap = new Map(
+    (providerData ?? []).map((p) => [p.provider_id, p.provider_name]),
+  );
+
+  const lists: PendingPriceListRow[] = (data ?? []).map((r) => {
+    const items = (r.price_list_item ?? []) as Array<{
+      price_list_item_id: number;
+    }>;
+    return {
+      price_list_id: r.price_list_id as number,
+      provider_id: r.provider_id as number,
+      provider_name:
+        providerMap.get(r.provider_id as number) ?? `#${r.provider_id}`,
+      file_name: (r.file_name as string | null) ?? null,
+      import_date: r.import_date as string,
+      effective_date: (r.effective_date as string | null) ?? null,
+      item_count: items.length,
+    };
+  });
+
+  return { ok: true, lists };
+}
+
+/**
+ * Create a new price batch from a price list. Walks every matched
+ * price_list_item, runs the compute engine, and bulk-inserts the rows.
+ * Returns the new batch_id so the caller can redirect.
+ *
+ * V1 simplifications:
+ *   - One batch = one price list = one provider.
+ *   - current_price comes from the most recent SYNCED batch's
+ *     final_price for the same variant, or null.
+ *   - Variants without a primary category fall back to instance
+ *     defaults (handled by listCategoryMargins's resolver).
+ */
+export async function createBatchFromPriceList(
+  priceListId: number,
+  batchName: string | null,
+): Promise<
+  | { ok: true; priceBatchId: number }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+
+  // 1. Validate the price list and pull its provider so we can filter
+  //    provider-scoped MAP rules later.
+  const { data: priceList, error: plErr } = await supabase
+    .from("price_list")
+    .select("price_list_id, provider_id, import_date, file_name")
+    .eq("price_list_id", priceListId)
+    .single();
+  if (plErr || !priceList) {
+    return { ok: false, error: plErr?.message ?? "price_list_not_found" };
+  }
+  const providerId = priceList.provider_id as number;
+
+  // 2. Pull every cost row for this list.
+  const { data: itemsRaw, error: itemsErr } = await supabase
+    .from("price_list_item")
+    .select(
+      "price_list_item_id, variant_id, cost, suggested_retail_price, provider_sku",
+    )
+    .eq("price_list_id", priceListId);
+  if (itemsErr) return { ok: false, error: itemsErr.message };
+  const items = (itemsRaw ?? []) as Array<{
+    price_list_item_id: number;
+    variant_id: number;
+    cost: number | string;
+    suggested_retail_price: number | string | null;
+    provider_sku: string | null;
+  }>;
+  if (items.length === 0) {
+    return { ok: false, error: "no_items_in_list" };
+  }
+
+  // 3. Bulk-load every dependency in parallel.
+  const variantIds = items.map((i) => i.variant_id);
+  const [
+    cfgRes,
+    marginRowsRes,
+    charmRulesRes,
+    mapRulesRaw,
+    variantRows,
+    currentPriceRows,
+  ] = await Promise.all([
+    getPricingConfig(),
+    listCategoryMargins(),
+    supabase
+      .from("charm_rule")
+      .select(
+        "charm_rule_id, min_price, max_price, strategy, strategy_value, is_active, sort_order",
+      )
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("charm_rule_id", { ascending: true }),
+    supabase
+      .from("map_rule")
+      .select(
+        "rule_type, source_type, source_id, variant_id, min_price, max_price, is_active, effective_date, expires_at",
+      )
+      .eq("is_active", true),
+    supabase
+      .from("product_variant")
+      .select("variant_id, product_id, variant_name, sku")
+      .in("variant_id", variantIds),
+    // Latest synced price for the current_price column. Empty until
+    // anything actually syncs — fine for v1.
+    supabase
+      .from("price_batch_item")
+      .select(
+        "variant_id, final_price, price_batch:price_batch_id!inner(status, synced_at)",
+      )
+      .in("variant_id", variantIds)
+      .eq("price_batch.status", "synced")
+      .order("price_batch(synced_at)", { ascending: false }),
+  ]);
+
+  if (!cfgRes.ok) return { ok: false, error: cfgRes.error };
+  if (!marginRowsRes.ok) return { ok: false, error: marginRowsRes.error };
+  if (charmRulesRes.error) return { ok: false, error: charmRulesRes.error.message };
+  if (mapRulesRaw.error) return { ok: false, error: mapRulesRaw.error.message };
+  if (variantRows.error) return { ok: false, error: variantRows.error.message };
+  if (currentPriceRows.error)
+    return { ok: false, error: currentPriceRows.error.message };
+
+  const config = cfgRes.config;
+  const charmRules: CharmRule[] = (charmRulesRes.data ?? []).map((r) => ({
+    charm_rule_id: r.charm_rule_id as number,
+    min_price: Number(r.min_price),
+    max_price: r.max_price === null ? null : Number(r.max_price),
+    strategy: r.strategy as CharmRule["strategy"],
+    strategy_value: Number(r.strategy_value),
+    is_active: r.is_active as boolean,
+    sort_order: r.sort_order as number,
+  }));
+
+  // 4. Resolve variant → product → primary category in one go.
+  const productIds = Array.from(
+    new Set(
+      (variantRows.data ?? [])
+        .map((v) => (v as { product_id: number | null }).product_id)
+        .filter((id): id is number => id !== null),
+    ),
+  );
+  const [productRows, primaryLinkRows] = await Promise.all([
+    productIds.length > 0
+      ? supabase
+          .from("product")
+          .select("product_id, brand_id, product_name")
+          .in("product_id", productIds)
+      : Promise.resolve({
+          data: [] as Array<{
+            product_id: number;
+            brand_id: number | null;
+            product_name: string | null;
+          }>,
+          error: null,
+        }),
+    productIds.length > 0
+      ? supabase
+          .from("product_category_link")
+          .select("product_id, category_id, is_primary")
+          .in("product_id", productIds)
+          .eq("is_primary", true)
+      : Promise.resolve({
+          data: [] as Array<{
+            product_id: number;
+            category_id: number;
+            is_primary: boolean;
+          }>,
+          error: null,
+        }),
+  ]);
+
+  const productMap = new Map<
+    number,
+    { brand_id: number | null; product_name: string | null }
+  >();
+  for (const p of productRows.data ?? []) {
+    productMap.set(p.product_id as number, {
+      brand_id: (p as { brand_id: number | null }).brand_id,
+      product_name: (p as { product_name: string | null }).product_name,
+    });
+  }
+  const primaryCategoryByProduct = new Map<number, number>();
+  for (const link of primaryLinkRows.data ?? []) {
+    primaryCategoryByProduct.set(
+      link.product_id as number,
+      link.category_id as number,
+    );
+  }
+
+  // Margins by category_id for fast lookup.
+  const marginByCategory = new Map(
+    marginRowsRes.rows.map((r) => [
+      r.category_id,
+      { target: r.resolved_target_pct, min: r.resolved_min_pct },
+    ]),
+  );
+  const fallbackMargins = {
+    target: config.default_target_pct,
+    min: config.default_min_pct,
+  };
+
+  // current_price by variant_id (first row per variant wins because we
+  // ordered by synced_at desc above).
+  const currentPriceByVariant = new Map<number, number>();
+  for (const r of currentPriceRows.data ?? []) {
+    const vid = (r as { variant_id: number }).variant_id;
+    if (currentPriceByVariant.has(vid)) continue;
+    const fp = (r as { final_price: number | string | null }).final_price;
+    if (fp === null) continue;
+    currentPriceByVariant.set(vid, Number(fp));
+  }
+
+  // Index variant rows for label assembly.
+  const variantById = new Map<
+    number,
+    { product_id: number | null; variant_name: string | null; sku: string | null }
+  >();
+  for (const v of variantRows.data ?? []) {
+    variantById.set((v as { variant_id: number }).variant_id, {
+      product_id: (v as { product_id: number | null }).product_id,
+      variant_name: (v as { variant_name: string | null }).variant_name,
+      sku: (v as { sku: string | null }).sku,
+    });
+  }
+
+  // 5. Pre-filter MAP rules to ones that COULD apply on this batch (date
+  //    valid + source matches this batch's provider, OR source is a brand).
+  const today = new Date().toISOString().slice(0, 10);
+  type MapRuleRaw = {
+    rule_type: "MAP_min" | "max_price" | "custom";
+    source_type: "brand" | "provider";
+    source_id: number;
+    variant_id: number | null;
+    min_price: number | string | null;
+    max_price: number | string | null;
+    is_active: boolean;
+    effective_date: string;
+    expires_at: string | null;
+  };
+  const mapRules: MapRuleRaw[] = (mapRulesRaw.data ?? []) as MapRuleRaw[];
+  const dateValidRules = mapRules.filter(
+    (r) =>
+      r.is_active &&
+      r.effective_date <= today &&
+      (r.expires_at === null || r.expires_at >= today),
+  );
+
+  // 6. Build the insert payloads.
+  type Pending = {
+    instance_id: number;
+    price_batch_id: number; // patched in after the batch insert
+    variant_id: number;
+    current_cost: number | null;
+    new_cost: number;
+    current_price: number | null;
+    charm_price: number | null;
+    final_price: number | null;
+    manual_override: boolean;
+    margin_percent: number | null;
+    status: "neutral" | "warning" | "critical";
+    status_reasons: string[];
+  };
+  const pending: Omit<Pending, "price_batch_id">[] = [];
+
+  for (const item of items) {
+    const variant = variantById.get(item.variant_id);
+    const productId = variant?.product_id ?? null;
+    const product = productId !== null ? productMap.get(productId) : null;
+    const brandId = product?.brand_id ?? null;
+    const categoryId =
+      productId !== null ? primaryCategoryByProduct.get(productId) ?? null : null;
+    const margins =
+      (categoryId !== null ? marginByCategory.get(categoryId) : null) ??
+      fallbackMargins;
+
+    // MAP rules applicable to THIS variant.
+    const applicable: ApplicableMapRule[] = dateValidRules
+      .filter((r) => {
+        if (r.variant_id !== null && r.variant_id !== item.variant_id) {
+          return false;
+        }
+        if (r.source_type === "brand") {
+          return brandId !== null && r.source_id === brandId;
+        }
+        // provider scope: every variant in this batch shares the same
+        // provider (priceList.provider_id), so a provider-scoped rule
+        // applies if its source_id matches that.
+        return r.source_id === providerId;
+      })
+      .map((r) => ({
+        rule_type: r.rule_type,
+        min_price: r.min_price === null ? null : Number(r.min_price),
+        max_price: r.max_price === null ? null : Number(r.max_price),
+      }));
+
+    const cost = Number(item.cost);
+    const currentPrice = currentPriceByVariant.get(item.variant_id) ?? null;
+
+    const result = computeBatchItem({
+      cost,
+      current_price: currentPrice,
+      mode: config.calculation_mode,
+      category_target_pct: margins.target,
+      category_min_pct: margins.min,
+      charm_rules: charmRules,
+      map_rules: applicable,
+      max_price_change_enabled: config.max_price_change_enabled,
+      max_price_change_pct: config.max_price_change_pct,
+      manual_override_final_price: null,
+    });
+
+    pending.push({
+      instance_id: instanceId,
+      variant_id: item.variant_id,
+      current_cost: currentPrice !== null ? null : null, // we don't track historical cost yet; future
+      new_cost: cost,
+      current_price: currentPrice,
+      charm_price: result.charm_price,
+      final_price: result.final_price,
+      manual_override: false,
+      margin_percent: result.margin_percent,
+      status: result.status,
+      status_reasons: result.status_reasons,
+    });
+  }
+
+  // 7. Insert the batch row, then attach price_batch_id to every item and
+  //    bulk-insert in chunks.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const defaultName =
+    batchName?.trim() ||
+    `Cambios ${new Date().toLocaleDateString("es-GT", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })}`;
+
+  const { data: batchRow, error: batchErr } = await supabase
+    .from("price_batch")
+    .insert({
+      instance_id: instanceId,
+      batch_name: defaultName,
+      status: "draft",
+      created_by_user_id: user?.id ?? null,
+    })
+    .select("price_batch_id")
+    .single();
+  if (batchErr || !batchRow) {
+    return { ok: false, error: batchErr?.message ?? "batch_insert_failed" };
+  }
+  const priceBatchId = batchRow.price_batch_id as number;
+
+  const itemsToInsert = pending.map((p) => ({
+    ...p,
+    price_batch_id: priceBatchId,
+  }));
+
+  const CHUNK = 500;
+  for (let i = 0; i < itemsToInsert.length; i += CHUNK) {
+    const slice = itemsToInsert.slice(i, i + CHUNK);
+    const { error: insErr } = await supabase
+      .from("price_batch_item")
+      .insert(slice);
+    if (insErr) return { ok: false, error: insErr.message };
+  }
+
+  revalidatePath("/pricing/changes");
+  revalidatePath("/pricing");
+  return { ok: true, priceBatchId };
+}
+
+/**
+ * Detail loader for `/pricing/changes/[batch_id]`. Joins variant, product,
+ * brand, and the originating price list's provider so the items table can
+ * render "Producto · Marca (Proveedor)" without N+1.
+ */
+export async function getBatchDetail(batchId: number): Promise<
+  | { ok: true; batch: BatchDetail }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data: batch, error: batchErr } = await supabase
+    .from("price_batch")
+    .select(
+      "price_batch_id, batch_name, status, created_at, updated_at, synced_at",
+    )
+    .eq("price_batch_id", batchId)
+    .single();
+  if (batchErr || !batch) {
+    return { ok: false, error: batchErr?.message ?? "batch_not_found" };
+  }
+
+  const { data: itemRows, error: itemErr } = await supabase
+    .from("price_batch_item")
+    .select(
+      "price_batch_item_id, variant_id, current_cost, new_cost, current_price, charm_price, final_price, manual_override, margin_percent, status, status_reasons",
+    )
+    .eq("price_batch_id", batchId)
+    .order("price_batch_item_id", { ascending: true });
+  if (itemErr) return { ok: false, error: itemErr.message };
+
+  const items = (itemRows ?? []) as Array<{
+    price_batch_item_id: number;
+    variant_id: number;
+    current_cost: number | string | null;
+    new_cost: number | string | null;
+    current_price: number | string | null;
+    charm_price: number | string | null;
+    final_price: number | string | null;
+    manual_override: boolean;
+    margin_percent: number | string | null;
+    status: "neutral" | "warning" | "critical";
+    status_reasons: string[] | null;
+  }>;
+
+  // Look up variant + product + brand metadata in batched queries.
+  const variantIds = Array.from(new Set(items.map((i) => i.variant_id)));
+  const { data: variantRows, error: vErr } =
+    variantIds.length > 0
+      ? await supabase
+          .from("product_variant")
+          .select("variant_id, variant_name, sku, product_id")
+          .in("variant_id", variantIds)
+      : { data: [], error: null };
+  if (vErr) return { ok: false, error: vErr.message };
+
+  const productIds = Array.from(
+    new Set(
+      (variantRows ?? [])
+        .map((v) => (v as { product_id: number | null }).product_id)
+        .filter((p): p is number => p !== null),
+    ),
+  );
+  const { data: productRows } =
+    productIds.length > 0
+      ? await supabase
+          .from("product")
+          .select("product_id, brand_id, product_name")
+          .in("product_id", productIds)
+      : { data: [] };
+
+  const brandIds = Array.from(
+    new Set(
+      (productRows ?? [])
+        .map((p) => (p as { brand_id: number | null }).brand_id)
+        .filter((b): b is number => b !== null),
+    ),
+  );
+  const { data: brandRows } =
+    brandIds.length > 0
+      ? await supabase
+          .from("brand")
+          .select("brand_id, brand_name")
+          .in("brand_id", brandIds)
+      : { data: [] };
+
+  const variantMap = new Map<
+    number,
+    { product_id: number | null; variant_name: string | null; sku: string | null }
+  >();
+  for (const v of variantRows ?? []) {
+    variantMap.set((v as { variant_id: number }).variant_id, {
+      product_id: (v as { product_id: number | null }).product_id,
+      variant_name: (v as { variant_name: string | null }).variant_name,
+      sku: (v as { sku: string | null }).sku,
+    });
+  }
+  const productMap = new Map<
+    number,
+    { brand_id: number | null; product_name: string | null }
+  >();
+  for (const p of productRows ?? []) {
+    productMap.set((p as { product_id: number }).product_id, {
+      brand_id: (p as { brand_id: number | null }).brand_id,
+      product_name: (p as { product_name: string | null }).product_name,
+    });
+  }
+  const brandMap = new Map<number, string>();
+  for (const b of brandRows ?? []) {
+    brandMap.set(
+      (b as { brand_id: number }).brand_id,
+      (b as { brand_name: string }).brand_name,
+    );
+  }
+
+  // We don't currently store the originating price_list / provider per
+  // item — looking it up would require a join through price_list. For
+  // v1 we leave provider_name null on items; W2 will surface it as a
+  // header attribution.
+  const itemsOut: BatchDetailItem[] = items.map((it) => {
+    const variant = variantMap.get(it.variant_id);
+    const product =
+      variant?.product_id !== null && variant?.product_id !== undefined
+        ? productMap.get(variant.product_id)
+        : null;
+    const brand =
+      product?.brand_id !== null && product?.brand_id !== undefined
+        ? brandMap.get(product.brand_id) ?? null
+        : null;
+    const productName = product?.product_name ?? "";
+    const variantName = variant?.variant_name ?? "";
+    const composed = [productName, variantName]
+      .filter((s) => s && s.trim() !== "")
+      .join(" · ");
+    const labelBase = composed || `#${it.variant_id}`;
+    const label = variant?.sku ? `${labelBase} · ${variant.sku}` : labelBase;
+    return {
+      price_batch_item_id: it.price_batch_item_id,
+      variant_id: it.variant_id,
+      variant_label: label,
+      brand_name: brand,
+      provider_name: null,
+      current_cost: it.current_cost === null ? null : Number(it.current_cost),
+      new_cost: it.new_cost === null ? null : Number(it.new_cost),
+      current_price: it.current_price === null ? null : Number(it.current_price),
+      charm_price: it.charm_price === null ? null : Number(it.charm_price),
+      final_price: it.final_price === null ? null : Number(it.final_price),
+      manual_override: it.manual_override,
+      margin_percent: it.margin_percent === null ? null : Number(it.margin_percent),
+      status: it.status,
+      status_reasons: it.status_reasons ?? [],
+    };
+  });
+
+  const counts = {
+    neutral: itemsOut.filter((i) => i.status === "neutral").length,
+    warning: itemsOut.filter((i) => i.status === "warning").length,
+    critical: itemsOut.filter((i) => i.status === "critical").length,
+  };
+
+  return {
+    ok: true,
+    batch: {
+      price_batch_id: batch.price_batch_id as number,
+      batch_name: batch.batch_name as string,
+      status: batch.status as PriceBatchStatus,
+      created_at: batch.created_at as string,
+      updated_at: batch.updated_at as string,
+      synced_at: (batch.synced_at as string | null) ?? null,
+      item_count: itemsOut.length,
+      neutral_count: counts.neutral,
+      warning_count: counts.warning,
+      critical_count: counts.critical,
+      items: itemsOut,
+    },
+  };
 }

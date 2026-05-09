@@ -1246,6 +1246,72 @@
         "invalidValue": "El valor de la estrategia debe ser un número válido ≥ 0"
       }
     },
+    "changesPage": {
+      "status": {
+        "draft": "Borrador",
+        "ready": "Listo",
+        "synced": "Sincronizado"
+      },
+      "pendingLists": {
+        "title": "Listas de precios pendientes",
+        "subtitle": "Listas importadas que aún no se han convertido en un lote.",
+        "empty": "No hay listas pendientes. Importa una para empezar.",
+        "create": "Crear lote",
+        "creating": "Creando…",
+        "cols": {
+          "provider": "Proveedor",
+          "file": "Archivo",
+          "imported": "Importada",
+          "effective": "Vigencia",
+          "items": "Productos"
+        },
+        "toast": {
+          "created": "Lote creado",
+          "createError": "No se pudo crear el lote"
+        }
+      },
+      "batches": {
+        "title": "Lotes recientes",
+        "subtitle": "Cada lote es una propuesta de cambios calculada a partir de una lista de precios.",
+        "empty": {
+          "title": "Sin lotes aún",
+          "text": "Crea tu primer lote desde una lista pendiente. Si no tienes listas, importa una primero con el botón de arriba."
+        },
+        "cols": {
+          "name": "Nombre",
+          "status": "Estado",
+          "items": "Productos",
+          "warnings": "Advertencias",
+          "criticals": "Críticos",
+          "updated": "Actualizado"
+        }
+      }
+    },
+    "batchDetail": {
+      "back": "Lotes",
+      "status": {
+        "draft": "Borrador",
+        "ready": "Listo",
+        "synced": "Sincronizado"
+      },
+      "itemCount": "{n} productos",
+      "counts": {
+        "neutral": "Sin alertas",
+        "warning": "Advertencias",
+        "critical": "Críticos"
+      },
+      "cols": {
+        "product": "Producto",
+        "cost": "Costo nuevo",
+        "currentPrice": "Precio actual",
+        "charmPrice": "Precio gancho",
+        "finalPrice": "Precio final",
+        "margin": "Margen",
+        "status": "Estado"
+      },
+      "emptyItems": "Este lote no tiene productos. Esto suele indicar que ningún ítem de la lista pudo coincidir con una variante del catálogo.",
+      "w1Notice": "Vista de sólo lectura. Los filtros, banners de violaciones y edición en línea llegan en la próxima entrega."
+    },
     "violationsPage": {
       "queueTitle": "Cola de autorizaciones",
       "queueSubtitle": "Las violaciones detectadas en lotes de cambios aparecen aquí para autorizar o rechazar.",

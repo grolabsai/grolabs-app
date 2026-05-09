@@ -1246,6 +1246,72 @@
         "invalidValue": "Strategy value must be a valid number ≥ 0"
       }
     },
+    "changesPage": {
+      "status": {
+        "draft": "Draft",
+        "ready": "Ready",
+        "synced": "Synced"
+      },
+      "pendingLists": {
+        "title": "Pending price lists",
+        "subtitle": "Imported lists that haven't yet been turned into a batch.",
+        "empty": "No pending lists. Import one to get started.",
+        "create": "Create batch",
+        "creating": "Creating…",
+        "cols": {
+          "provider": "Provider",
+          "file": "File",
+          "imported": "Imported",
+          "effective": "Effective",
+          "items": "Items"
+        },
+        "toast": {
+          "created": "Batch created",
+          "createError": "Could not create the batch"
+        }
+      },
+      "batches": {
+        "title": "Recent batches",
+        "subtitle": "Each batch is a proposed set of price changes calculated from a price list.",
+        "empty": {
+          "title": "No batches yet",
+          "text": "Create your first batch from a pending list. If you don't have any lists, import one first with the button above."
+        },
+        "cols": {
+          "name": "Name",
+          "status": "Status",
+          "items": "Items",
+          "warnings": "Warnings",
+          "criticals": "Criticals",
+          "updated": "Updated"
+        }
+      }
+    },
+    "batchDetail": {
+      "back": "Batches",
+      "status": {
+        "draft": "Draft",
+        "ready": "Ready",
+        "synced": "Synced"
+      },
+      "itemCount": "{n} items",
+      "counts": {
+        "neutral": "No alerts",
+        "warning": "Warnings",
+        "critical": "Criticals"
+      },
+      "cols": {
+        "product": "Product",
+        "cost": "New cost",
+        "currentPrice": "Current price",
+        "charmPrice": "Charm price",
+        "finalPrice": "Final price",
+        "margin": "Margin",
+        "status": "Status"
+      },
+      "emptyItems": "This batch has no items. That usually means none of the list rows matched a catalogue variant.",
+      "w1Notice": "Read-only view. Filters, violation banners and inline editing land in the next release."
+    },
     "violationsPage": {
       "queueTitle": "Authorization queue",
       "queueSubtitle": "Violations detected in change batches show up here for approval or rejection.",

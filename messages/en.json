@@ -1133,6 +1133,25 @@
       "toastInvalidNumber": "Percentages must be valid numbers",
       "toastMinAboveTarget": "Minimum cannot exceed the target"
     },
+    "maxPriceChange": {
+      "title": "Maximum price change",
+      "subtitle": "Flags batch rows whose new price differs from the current selling price by more than the threshold. Applies in both directions — increases and decreases.",
+      "toggle": "Detect large price changes",
+      "threshold": "Threshold (%)",
+      "thresholdHint": "Changes greater than or equal to this value trigger the warning.",
+      "example": {
+        "heading": "Example · current price Q {current}, threshold {pct}%"
+      },
+      "badges": {
+        "warning": "warning",
+        "ok": "ok"
+      },
+      "save": "Save changes",
+      "saving": "Saving…",
+      "toastSaved": "Policy saved",
+      "toastSaveError": "Could not save the policy",
+      "toastInvalidPct": "Threshold must be a valid number ≥ 0"
+    },
     "categoryMargins": {
       "title": {
         "margin": "Margins by category",

@@ -69,10 +69,14 @@ export function CalculationModeCard({
       return;
     }
     startSubmit(async () => {
+      // Pass through the keys this card doesn't own so a save here can't
+      // accidentally wipe settings managed by sibling cards on the page.
       const res = await savePricingConfig({
         calculation_mode: mode,
         default_target_pct: t1,
         default_min_pct: t2,
+        max_price_change_enabled: initial.max_price_change_enabled,
+        max_price_change_pct: initial.max_price_change_pct,
       });
       if (!res.ok) {
         toast.error(t("toastSaveError"), { description: res.error });

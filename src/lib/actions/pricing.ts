@@ -556,12 +556,23 @@ export type PricingConfig = {
   calculation_mode: CalculationMode;
   default_target_pct: number;
   default_min_pct: number;
+  /**
+   * When true, worksheet rows whose |new_price − current_price| / current_price
+   * exceeds `max_price_change_pct` get flagged as a warning. Compares against
+   * the variant's current selling price, not the previous batch's final price.
+   */
+  max_price_change_enabled: boolean;
+  max_price_change_pct: number;
 };
 
 const PRICING_CONFIG_DEFAULTS: PricingConfig = {
   calculation_mode: "margin",
   default_target_pct: 40,
   default_min_pct: 20,
+  // Off by default so a fresh instance doesn't fire warnings on its first
+  // import before the user has had a chance to opt in.
+  max_price_change_enabled: false,
+  max_price_change_pct: 5,
 };
 
 /**
@@ -599,6 +610,14 @@ export async function getPricingConfig(): Promise<
         typeof raw.default_min_pct === "number"
           ? raw.default_min_pct
           : PRICING_CONFIG_DEFAULTS.default_min_pct,
+      max_price_change_enabled:
+        typeof raw.max_price_change_enabled === "boolean"
+          ? raw.max_price_change_enabled
+          : PRICING_CONFIG_DEFAULTS.max_price_change_enabled,
+      max_price_change_pct:
+        typeof raw.max_price_change_pct === "number"
+          ? raw.max_price_change_pct
+          : PRICING_CONFIG_DEFAULTS.max_price_change_pct,
     },
   };
 }
@@ -628,6 +647,16 @@ export async function savePricingConfig(
   }
   if (next.default_min_pct > next.default_target_pct) {
     return { ok: false, error: "min_above_target" };
+  }
+  if (typeof next.max_price_change_enabled !== "boolean") {
+    return { ok: false, error: "invalid_max_change_flag" };
+  }
+  if (
+    !Number.isFinite(next.max_price_change_pct) ||
+    next.max_price_change_pct < 0 ||
+    next.max_price_change_pct > 1000
+  ) {
+    return { ok: false, error: "invalid_max_change_pct" };
   }
 
   const instanceId = await currentInstanceId();

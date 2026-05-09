@@ -8,6 +8,7 @@ import {
 import { CalculationModeCard } from "@/components/pricing/CalculationModeCard";
 import { CharmRulesCard } from "@/components/pricing/CharmRulesCard";
 import { CategoryMarginsCard } from "@/components/pricing/CategoryMarginsCard";
+import { MaxPriceChangeCard } from "@/components/pricing/MaxPriceChangeCard";
 
 /**
  * Pricing policies — configuration hub for the worksheet.
@@ -38,6 +39,8 @@ export default async function PricingPoliciesPage() {
         calculation_mode: "margin" as const,
         default_target_pct: 40,
         default_min_pct: 20,
+        max_price_change_enabled: false,
+        max_price_change_pct: 5,
       };
   const charmRules = charmRulesRes.ok ? charmRulesRes.rules : [];
   const marginRows = marginRowsRes.ok ? marginRowsRes.rows : [];
@@ -50,6 +53,7 @@ export default async function PricingPoliciesPage() {
         mode={config.calculation_mode}
       />
       <CharmRulesCard initial={charmRules} />
+      <MaxPriceChangeCard initial={config} />
     </>
   );
 }

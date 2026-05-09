@@ -1133,6 +1133,25 @@
       "toastInvalidNumber": "Los porcentajes deben ser números válidos",
       "toastMinAboveTarget": "El mínimo no puede ser mayor que el objetivo"
     },
+    "maxPriceChange": {
+      "title": "Cambio máximo de precio",
+      "subtitle": "Detecta filas del lote cuyo precio nuevo difiere demasiado del precio actual de venta y las marca como advertencia. Aplica en ambos sentidos (subidas y bajadas).",
+      "toggle": "Activar detección de cambios grandes",
+      "threshold": "Umbral (%)",
+      "thresholdHint": "Cambios mayores o iguales a este valor activan la advertencia.",
+      "example": {
+        "heading": "Ejemplo · precio actual Q {current}, umbral {pct}%"
+      },
+      "badges": {
+        "warning": "advertencia",
+        "ok": "ok"
+      },
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "toastSaved": "Política guardada",
+      "toastSaveError": "No se pudo guardar la política",
+      "toastInvalidPct": "El umbral debe ser un número válido ≥ 0"
+    },
     "categoryMargins": {
       "title": {
         "margin": "Márgenes por categoría",

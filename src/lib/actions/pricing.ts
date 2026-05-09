@@ -11,6 +11,11 @@ import {
   computeBatchItem,
   type ApplicableMapRule,
 } from "@/lib/pricing/compute";
+import {
+  findProductBySku,
+  updateProduct as wcUpdateProduct,
+  type WooClient,
+} from "@/lib/sync/woocommerce-client";
 
 /**
  * Discrete server actions for the pricing module. Per CLAUDE.md §14
@@ -2784,4 +2789,458 @@ export async function listOpenViolations(): Promise<
   });
 
   return { ok: true, rows: out };
+}
+
+// =============================================================================
+// WooCommerce sync — push final_price for every row in a ready batch
+// =============================================================================
+
+type WooConfig = {
+  site_url?: string;
+  consumer_key?: string;
+};
+
+async function loadWooClient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  instanceId: number,
+): Promise<{ ok: true; client: WooClient } | { ok: false; error: string }> {
+  const { data: instanceRow } = await supabase
+    .from("instance")
+    .select("integrations_config")
+    .eq("instance_id", instanceId)
+    .maybeSingle();
+  const cfg: WooConfig =
+    ((instanceRow?.integrations_config as { woocommerce?: WooConfig })
+      ?.woocommerce) ?? {};
+  if (!cfg.site_url || !cfg.consumer_key) {
+    return { ok: false, error: "wc_not_configured" };
+  }
+  const { data: secret, error: secErr } = await supabase.rpc(
+    "woocommerce_get_consumer_secret",
+    { p_instance_id: instanceId },
+  );
+  if (secErr || !secret) {
+    return { ok: false, error: "wc_no_consumer_secret" };
+  }
+  return {
+    ok: true,
+    client: {
+      siteUrl: cfg.site_url,
+      consumerKey: cfg.consumer_key,
+      consumerSecret: secret as string,
+    },
+  };
+}
+
+export type SyncBatchResult = {
+  priceBatchId: number;
+  syncLogId: number;
+  totalRows: number;
+  succeededCount: number;
+  failedCount: number;
+  finalStatus: "synced" | "ready";
+};
+
+/**
+ * Push a ready batch's final prices to WooCommerce.
+ *
+ * Concurrency: the first step is an atomic
+ *   UPDATE price_batch SET status='syncing' WHERE id=? AND status='ready'.
+ * If two operators click "Sincronizar" simultaneously, the second
+ * update returns 0 rows and we abort with `batch_not_ready`.
+ *
+ * Per-row strategy (v1): look the WC product up by Scout's variant.sku,
+ * then PUT regular_price on the matched product. Variable parents are
+ * out of scope — those rows get tagged `wc_skip_variable_parent` so the
+ * operator can handle them by hand.
+ *
+ * Failure handling (option c, agreed in chat): any failure leaves the
+ * batch back at `ready` with failed rows tagged. A future "Reintentar
+ * fallidos" path can re-run only those.
+ */
+export async function syncBatchToWoocommerce(
+  batchId: number,
+): Promise<
+  | { ok: true; result: SyncBatchResult }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+
+  // 1. Claim — atomic ready→syncing.
+  const { data: claimed, error: claimErr } = await supabase
+    .from("price_batch")
+    .update({ status: "syncing" })
+    .eq("price_batch_id", batchId)
+    .eq("status", "ready")
+    .select("price_batch_id")
+    .maybeSingle();
+  if (claimErr) return { ok: false, error: claimErr.message };
+  if (!claimed) return { ok: false, error: "batch_not_ready" };
+
+  async function release(
+    next: "synced" | "ready",
+    syncLogId: number | null,
+  ) {
+    await supabase
+      .from("price_batch")
+      .update({
+        status: next,
+        synced_at: next === "synced" ? new Date().toISOString() : null,
+        last_sync_log_id: syncLogId,
+      })
+      .eq("price_batch_id", batchId);
+  }
+
+  // 2. Load WC client.
+  const wcRes = await loadWooClient(supabase, instanceId);
+  if (!wcRes.ok) {
+    await release("ready", null);
+    return { ok: false, error: wcRes.error };
+  }
+  const wc = wcRes.client;
+
+  // 3. Pull rows + SKUs.
+  const { data: itemRows, error: itemErr } = await supabase
+    .from("price_batch_item")
+    .select(
+      "price_batch_item_id, variant_id, final_price, status, status_reasons",
+    )
+    .eq("price_batch_id", batchId);
+  if (itemErr) {
+    await release("ready", null);
+    return { ok: false, error: itemErr.message };
+  }
+  const items = (itemRows ?? []) as Array<{
+    price_batch_item_id: number;
+    variant_id: number;
+    final_price: number | string | null;
+    status: "neutral" | "warning" | "critical";
+    status_reasons: string[] | null;
+  }>;
+
+  if (items.length === 0) {
+    await release("synced", null);
+    return {
+      ok: true,
+      result: {
+        priceBatchId: batchId,
+        syncLogId: 0,
+        totalRows: 0,
+        succeededCount: 0,
+        failedCount: 0,
+        finalStatus: "synced",
+      },
+    };
+  }
+
+  const variantIds = items.map((i) => i.variant_id);
+  const { data: variantRows } = await supabase
+    .from("product_variant")
+    .select("variant_id, sku")
+    .in("variant_id", variantIds);
+  const skuByVariant = new Map<number, string | null>();
+  for (const v of variantRows ?? []) {
+    skuByVariant.set(
+      (v as { variant_id: number }).variant_id,
+      (v as { sku: string | null }).sku,
+    );
+  }
+
+  // 4. Open a sync_log row for this run.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: logRow, error: logErr } = await supabase
+    .from("sync_log")
+    .insert({
+      instance_id: instanceId,
+      platform: "woocommerce",
+      status: "running",
+      products_count: items.length,
+      price_batch_id: batchId,
+      triggered_by: user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (logErr || !logRow) {
+    await release("ready", null);
+    return { ok: false, error: logErr?.message ?? "sync_log_insert_failed" };
+  }
+  const syncLogId = logRow.id as number;
+
+  // 5. Push each row.
+  type Outcome = {
+    item_id: number;
+    success: boolean;
+    reasonCode: string | null;
+    error: string | null;
+  };
+  const outcomes: Outcome[] = [];
+
+  for (const item of items) {
+    const sku = skuByVariant.get(item.variant_id) ?? null;
+    if (!sku) {
+      outcomes.push({
+        item_id: item.price_batch_item_id,
+        success: false,
+        reasonCode: "wc_no_sku",
+        error: null,
+      });
+      continue;
+    }
+    const lookup = await findProductBySku(wc, sku);
+    if (!lookup.ok) {
+      outcomes.push({
+        item_id: item.price_batch_item_id,
+        success: false,
+        reasonCode: "wc_lookup_failed",
+        error: lookup.error,
+      });
+      continue;
+    }
+    const product = lookup.product;
+    if (!product) {
+      outcomes.push({
+        item_id: item.price_batch_item_id,
+        success: false,
+        reasonCode: "wc_sku_not_found",
+        error: null,
+      });
+      continue;
+    }
+    if (product.type === "variable") {
+      outcomes.push({
+        item_id: item.price_batch_item_id,
+        success: false,
+        reasonCode: "wc_skip_variable_parent",
+        error: null,
+      });
+      continue;
+    }
+    const finalPrice =
+      item.final_price === null ? null : Number(item.final_price);
+    if (finalPrice === null || !Number.isFinite(finalPrice)) {
+      outcomes.push({
+        item_id: item.price_batch_item_id,
+        success: false,
+        reasonCode: "wc_no_final_price",
+        error: null,
+      });
+      continue;
+    }
+    const updated = await wcUpdateProduct(wc, product.id, {
+      regular_price: finalPrice.toFixed(2),
+    });
+    if (!updated.ok) {
+      outcomes.push({
+        item_id: item.price_batch_item_id,
+        success: false,
+        reasonCode: "wc_push_failed",
+        error: updated.error,
+      });
+      continue;
+    }
+    outcomes.push({
+      item_id: item.price_batch_item_id,
+      success: true,
+      reasonCode: null,
+      error: null,
+    });
+  }
+
+  // 6. Persist per-row outcomes.
+  for (const item of items) {
+    const o = outcomes.find((x) => x.item_id === item.price_batch_item_id);
+    if (!o) continue;
+    // Drop any prior wc_* tags so we don't accumulate stale outcomes.
+    const reasons = (item.status_reasons ?? []).filter(
+      (r) => !r.startsWith("wc_"),
+    );
+    if (o.reasonCode) reasons.push(o.reasonCode);
+    if (o.success && !reasons.includes("wc_synced")) reasons.push("wc_synced");
+    await supabase
+      .from("price_batch_item")
+      .update({ status_reasons: reasons })
+      .eq("price_batch_item_id", item.price_batch_item_id);
+  }
+
+  const succeeded = outcomes.filter((o) => o.success).length;
+  const failed = outcomes.length - succeeded;
+
+  // 7. Close the sync log.
+  const firstError = outcomes.find((o) => !o.success && o.error)?.error ?? null;
+  await supabase
+    .from("sync_log")
+    .update({
+      ended_at: new Date().toISOString(),
+      status: failed === 0 ? "success" : succeeded === 0 ? "failed" : "partial",
+      succeeded_count: succeeded,
+      failed_count: failed,
+      error_message: firstError,
+    })
+    .eq("id", syncLogId);
+
+  // 8. Release.
+  const finalStatus: "synced" | "ready" = failed === 0 ? "synced" : "ready";
+  await release(finalStatus, syncLogId);
+
+  revalidatePath(`/pricing/changes/${batchId}`);
+  revalidatePath("/pricing/changes");
+  revalidatePath("/pricing/sync");
+  revalidatePath("/pricing");
+
+  return {
+    ok: true,
+    result: {
+      priceBatchId: batchId,
+      syncLogId,
+      totalRows: items.length,
+      succeededCount: succeeded,
+      failedCount: failed,
+      finalStatus,
+    },
+  };
+}
+
+// =============================================================================
+// Sync page support
+// =============================================================================
+
+export type ReadyBatchRow = {
+  price_batch_id: number;
+  batch_name: string;
+  item_count: number;
+  warning_count: number;
+  updated_at: string;
+};
+
+export async function listReadyBatches(): Promise<
+  | { ok: true; batches: ReadyBatchRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("price_batch")
+    .select(
+      "price_batch_id, batch_name, updated_at, price_batch_item(price_batch_item_id, status)",
+    )
+    .eq("status", "ready")
+    .order("updated_at", { ascending: false })
+    .limit(50);
+  if (error) return { ok: false, error: error.message };
+
+  const batches: ReadyBatchRow[] = (data ?? []).map((b) => {
+    const items = (b.price_batch_item ?? []) as Array<{
+      price_batch_item_id: number;
+      status: "neutral" | "warning" | "critical";
+    }>;
+    return {
+      price_batch_id: b.price_batch_id as number,
+      batch_name: b.batch_name as string,
+      item_count: items.length,
+      warning_count: items.filter((i) => i.status === "warning").length,
+      updated_at: b.updated_at as string,
+    };
+  });
+  return { ok: true, batches };
+}
+
+export type SyncHistoryRow = {
+  sync_log_id: number;
+  price_batch_id: number | null;
+  batch_name: string | null;
+  status: "running" | "success" | "partial" | "failed";
+  products_count: number;
+  succeeded_count: number;
+  failed_count: number;
+  started_at: string;
+  ended_at: string | null;
+  error_message: string | null;
+};
+
+export async function listSyncHistory(): Promise<
+  | { ok: true; rows: SyncHistoryRow[] }
+  | { ok: false; error: string }
+> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { ok: false, error: "no_instance" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("sync_log")
+    .select(
+      "id, price_batch_id, status, products_count, succeeded_count, failed_count, started_at, ended_at, error_message",
+    )
+    .eq("platform", "woocommerce")
+    .not("price_batch_id", "is", null)
+    .order("started_at", { ascending: false })
+    .limit(50);
+  if (error) return { ok: false, error: error.message };
+
+  const batchIds = Array.from(
+    new Set(
+      (data ?? [])
+        .map((r) => (r as { price_batch_id: number | null }).price_batch_id)
+        .filter((b): b is number => b !== null),
+    ),
+  );
+  const { data: batchRows } =
+    batchIds.length > 0
+      ? await supabase
+          .from("price_batch")
+          .select("price_batch_id, batch_name")
+          .in("price_batch_id", batchIds)
+      : { data: [] };
+  const batchMap = new Map<number, string>();
+  for (const b of batchRows ?? []) {
+    batchMap.set(
+      (b as { price_batch_id: number }).price_batch_id,
+      (b as { batch_name: string }).batch_name,
+    );
+  }
+
+  const rows: SyncHistoryRow[] = (data ?? []).map((r) => {
+    const pbId = (r as { price_batch_id: number | null }).price_batch_id;
+    return {
+      sync_log_id: (r as { id: number }).id,
+      price_batch_id: pbId,
+      batch_name: pbId !== null ? batchMap.get(pbId) ?? null : null,
+      status: (r as { status: SyncHistoryRow["status"] }).status,
+      products_count:
+        (r as { products_count: number | null }).products_count ?? 0,
+      succeeded_count:
+        (r as { succeeded_count: number | null }).succeeded_count ?? 0,
+      failed_count: (r as { failed_count: number | null }).failed_count ?? 0,
+      started_at: (r as { started_at: string }).started_at,
+      ended_at: (r as { ended_at: string | null }).ended_at,
+      error_message:
+        (r as { error_message: string | null }).error_message ?? null,
+    };
+  });
+
+  return { ok: true, rows };
+}
+
+/** Used by the worksheet header to decide whether to render the
+ *  Sincronizar button. Cheap — just probes for credentials presence. */
+export async function isWoocommerceConfigured(): Promise<boolean> {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return false;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("instance")
+    .select("integrations_config")
+    .eq("instance_id", instanceId)
+    .maybeSingle();
+  const cfg =
+    ((data?.integrations_config as { woocommerce?: WooConfig })
+      ?.woocommerce) ?? {};
+  return Boolean(cfg.site_url && cfg.consumer_key);
 }

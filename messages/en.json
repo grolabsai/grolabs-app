@@ -1085,6 +1085,7 @@
       "status": {
         "draft": "Draft",
         "ready": "Ready",
+        "syncing": "Syncing…",
         "synced": "Synced"
       },
       "empty": {
@@ -1250,6 +1251,7 @@
       "status": {
         "draft": "Draft",
         "ready": "Ready",
+        "syncing": "Syncing…",
         "synced": "Synced"
       },
       "pendingLists": {
@@ -1295,6 +1297,7 @@
       "status": {
         "draft": "Draft",
         "ready": "Ready",
+        "syncing": "Syncing…",
         "synced": "Synced"
       },
       "itemCount": "{n} items",
@@ -1362,6 +1365,47 @@
       },
       "emptyItems": "This batch has no items. That usually means none of the list rows matched a catalogue variant.",
       "emptyAfterFilters": "No items match the active filters."
+    },
+    "syncPage": {
+      "notConfigured": {
+        "title": "WooCommerce isn't configured",
+        "text": "Configure WooCommerce credentials so Scout can push approved prices.",
+        "cta": "Go to WooCommerce configuration"
+      },
+      "ready": {
+        "title": "Batches ready to sync",
+        "subtitle": "Each batch pushes its final prices to WooCommerce. If a product fails, the batch returns to 'Ready' so you can retry.",
+        "empty": "No batches in 'Ready' status. Mark a batch as ready from its worksheet.",
+        "cols": {
+          "name": "Batch",
+          "items": "Items",
+          "warnings": "Warnings",
+          "updated": "Updated"
+        }
+      },
+      "history": {
+        "title": "Sync history",
+        "subtitle": "Every attempt, successful or failed, is logged here.",
+        "empty": "No batches have been synced yet.",
+        "cols": {
+          "batch": "Batch",
+          "total": "Total",
+          "ok": "Succeeded",
+          "failed": "Failed",
+          "started": "Started",
+          "duration": "Duration"
+        }
+      },
+      "button": {
+        "sync": "Sync",
+        "syncing": "Syncing…"
+      },
+      "toast": {
+        "error": "Could not sync the batch",
+        "allOk": "Sync succeeded: {n} products",
+        "allFailed": "Sync failed: {n} products",
+        "partial": "Partial: {ok} ok, {fail} failed. Batch returned to 'Ready'."
+      }
     },
     "violationsPage": {
       "queueTitle": "Authorization queue",

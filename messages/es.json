@@ -1085,6 +1085,7 @@
       "status": {
         "draft": "Borrador",
         "ready": "Listo",
+        "syncing": "Sincronizando…",
         "synced": "Sincronizado"
       },
       "empty": {
@@ -1250,6 +1251,7 @@
       "status": {
         "draft": "Borrador",
         "ready": "Listo",
+        "syncing": "Sincronizando…",
         "synced": "Sincronizado"
       },
       "pendingLists": {
@@ -1295,6 +1297,7 @@
       "status": {
         "draft": "Borrador",
         "ready": "Listo",
+        "syncing": "Sincronizando…",
         "synced": "Sincronizado"
       },
       "itemCount": "{n} productos",
@@ -1362,6 +1365,47 @@
       },
       "emptyItems": "Este lote no tiene productos. Esto suele indicar que ningún ítem de la lista pudo coincidir con una variante del catálogo.",
       "emptyAfterFilters": "Ningún producto coincide con los filtros activos."
+    },
+    "syncPage": {
+      "notConfigured": {
+        "title": "WooCommerce no está configurado",
+        "text": "Configura las credenciales de WooCommerce para que Scout pueda enviar los precios aprobados.",
+        "cta": "Ir a configuración de WooCommerce"
+      },
+      "ready": {
+        "title": "Lotes listos para sincronizar",
+        "subtitle": "Cada lote envía sus precios finales a WooCommerce. Si algún producto falla, el lote vuelve a estado 'Listo' para que reintentes.",
+        "empty": "No hay lotes en estado 'Listo'. Marca un lote como listo desde su hoja de trabajo.",
+        "cols": {
+          "name": "Lote",
+          "items": "Productos",
+          "warnings": "Advertencias",
+          "updated": "Actualizado"
+        }
+      },
+      "history": {
+        "title": "Historial de sincronización",
+        "subtitle": "Cada intento, exitoso o fallido, queda registrado aquí.",
+        "empty": "Aún no se ha sincronizado ningún lote.",
+        "cols": {
+          "batch": "Lote",
+          "total": "Total",
+          "ok": "Exitosos",
+          "failed": "Fallidos",
+          "started": "Inicio",
+          "duration": "Duración"
+        }
+      },
+      "button": {
+        "sync": "Sincronizar",
+        "syncing": "Sincronizando…"
+      },
+      "toast": {
+        "error": "No se pudo sincronizar el lote",
+        "allOk": "Sincronización exitosa: {n} productos",
+        "allFailed": "Falló la sincronización: {n} productos",
+        "partial": "Parcial: {ok} exitosos, {fail} fallidos. El lote vuelve a 'Listo'."
+      }
     },
     "violationsPage": {
       "queueTitle": "Cola de autorizaciones",

@@ -65,6 +65,8 @@ Categorization from WooCommerce: `categories` (names), `category_ids` (WC term I
 Scout enrichment under `scout_attributes`: `species[]`, `lifestage[]`, `breed_compatibility[]`, `size`, `weight_grams`, `food_type`, `medical_conditions[]`, `age_min_months`, `age_max_months`.
 Variation summary under `variation_summary`: `type` (`'simple'` | `'variable_single'` | `'variable_multi'`), `purchasable_variation_count`, `default_variation_id`, `default_variation_sku`, `price_range` (`{min, max}`), `in_stock_summary` (`{any_in_stock, all_in_stock}`).
 Variants array — each entry contains: `variation_id`, `sku`, `attributes` (Record<string, string>), `price`, `sale_price`, `in_stock`, `stock_quantity`, `image_url`.
+
+**Attribute key convention.** Keys in `variants[].attributes` MUST be the WC taxonomy slug (e.g. `pa_size`), NOT the human-readable name (`Tamaño`). Slugs are stable identifiers — names get localized and renamed. The WordPress plugin uses these keys to build add-to-cart URLs of the form `?attribute_pa_size=4kg`, which only works with slug keys.
 Top-level commerce mirrors: `price` (for variable products equals `price_range.min`), `sale_price`, `currency`, `in_stock`, `sku`.
 Other: `popularity` (default 0, populated in Stage 4), `created_at`, `updated_at`, `indexed_at`, `_schema_version: 1`.
 Field source rules
@@ -111,6 +113,8 @@ Trust model: instance_id is public (like a Stripe publishable key). Origin valid
 Stage: 1. The WordPress plugin calls this endpoint, so it lands in the same stage as the plugin.
 Endpoint: `POST /api/v1/search`. The middle-layer endpoint the WordPress plugin calls. Proxies to Meilisearch with server-side tenant token management and adds the variant selection logic.
 Request: `{ instance_id, query, limit, offset, filters, sort }`. Response: `{ hits[], total_hits, processing_time_ms, query_uid }` where each hit is `{ document, matched_variation, _score }`.
+
+**`matched_variation` shape.** When non-null, `matched_variation` is a **full variant object** matching the exact shape of entries in `document.variants[]`: `variation_id`, `sku`, `attributes` (Record<string,string> with slug keys per §4), `price`, `sale_price`, `in_stock`, `stock_quantity`, `image_url`. Not just a `variation_id` reference — the whole object, so the plugin can render a card without a second lookup. `null` for `simple` products and for `variable_multi` products with no in-stock variation found.
 Variant selection logic
 For each Meilisearch hit, compute `matched_variation`:
 

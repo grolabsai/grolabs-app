@@ -335,6 +335,102 @@ export async function createProductFull(input: CreateProductFullInput) {
   return { ok: true as const, productId };
 }
 
+export type UpdateProductPhotosInput = {
+  productId: number;
+  photos: Array<{
+    mediaId?: number;
+    url: string;
+    isPrimary: boolean;
+    sortOrder: number;
+  }>;
+};
+
+/**
+ * Reconcile product_media against the desired set:
+ *   - any existing row with a mediaId not present in the input is deleted
+ *   - rows with a mediaId are UPDATEd in place (image_url / is_primary / sort_order)
+ *   - rows without a mediaId are INSERTed
+ *
+ * Enforces exactly-one is_primary when the desired set is non-empty: if
+ * the caller submitted zero primaries we promote the first row; if they
+ * submitted more than one we keep the first and demote the rest. Empty
+ * sets are allowed (a product can have no images).
+ */
+export async function updateProductPhotos(input: UpdateProductPhotosInput) {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { error: "No instance" };
+
+  const supabase = await createClient();
+
+  const desired = input.photos
+    .map((p, idx) => ({
+      mediaId: p.mediaId,
+      url: p.url.trim(),
+      isPrimary: !!p.isPrimary,
+      sortOrder: Number.isFinite(p.sortOrder) ? p.sortOrder : idx,
+    }))
+    .filter((p) => p.url.length > 0);
+
+  // Enforce exactly-one primary when there's at least one photo.
+  if (desired.length > 0) {
+    const firstPrimaryIdx = desired.findIndex((p) => p.isPrimary);
+    const promote = firstPrimaryIdx === -1 ? 0 : firstPrimaryIdx;
+    desired.forEach((p, i) => {
+      p.isPrimary = i === promote;
+    });
+  }
+
+  const { data: existing, error: existErr } = await supabase
+    .from("product_media")
+    .select("media_id")
+    .eq("product_id", input.productId);
+  if (existErr) return { error: existErr.message };
+
+  const existingIds = new Set(
+    (existing ?? []).map((r) => Number((r as { media_id: number }).media_id)),
+  );
+  const keepIds = new Set(
+    desired.map((p) => p.mediaId).filter((id): id is number => typeof id === "number"),
+  );
+  const toDelete = [...existingIds].filter((id) => !keepIds.has(id));
+
+  if (toDelete.length > 0) {
+    const { error: delErr } = await supabase
+      .from("product_media")
+      .delete()
+      .eq("product_id", input.productId)
+      .in("media_id", toDelete);
+    if (delErr) return { error: delErr.message };
+  }
+
+  for (const p of desired) {
+    if (p.mediaId !== undefined) {
+      const { error: updErr } = await supabase
+        .from("product_media")
+        .update({
+          image_url: p.url,
+          is_primary: p.isPrimary,
+          sort_order: p.sortOrder,
+        })
+        .eq("media_id", p.mediaId);
+      if (updErr) return { error: updErr.message };
+    } else {
+      const { error: insErr } = await supabase.from("product_media").insert({
+        instance_id: instanceId,
+        product_id: input.productId,
+        image_url: p.url,
+        is_primary: p.isPrimary,
+        sort_order: p.sortOrder,
+      });
+      if (insErr) return { error: insErr.message };
+    }
+  }
+
+  await triggerProductIndex(instanceId, input.productId);
+  revalidatePath(`/catalog/products/${input.productId}`, "page");
+  return { ok: true as const };
+}
+
 export async function deleteProduct(input: { productId: number }) {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "No instance" };

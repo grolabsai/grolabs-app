@@ -159,7 +159,7 @@ export async function syncProductsToAlgolia(
   const { data: rows, error: pErr } = await supabase
     .from("product")
     .select(
-      `product_id, product_name, slug, short_description, long_description, is_active,
+      `product_id, product_name, slug, short_description, long_description, is_active, image_url,
        brand:brand_id ( brand_name ),
        product_category_link ( is_primary, category_id, category:category_id ( category_name, slug ) ),
        product_media ( image_url, is_primary, sort_order ),
@@ -349,7 +349,7 @@ export async function syncProductsToWordPress(
   const { data: rows, error: pErr } = await supabase
     .from("product")
     .select(
-      `product_id, product_name, slug, short_description, long_description, is_active,
+      `product_id, product_name, slug, short_description, long_description, is_active, image_url,
        brand:brand_id ( brand_name ),
        product_category_link ( is_primary, category_id, category:category_id ( category_name, slug ) ),
        product_media ( image_url, is_primary, sort_order ),

@@ -43,6 +43,7 @@ export type ProductWrite = {
   short_description: string | null;
   long_description: string | null;
   image_url: string | null;
+  images: Array<{ src: string; alt: string | null }>;
   price: number | null;
   sale_price: number | null;
   stock_quantity: number | null;
@@ -74,11 +75,21 @@ export function mapProduct(row: WooProductRaw): ProductWrite {
     if (!MAPPED_KEYS.has(k)) wcRaw[k] = v;
   }
 
-  // images: keep [0] mapped onto image_url; preserve the full array in wc_raw
-  // so alt text / additional images aren't lost.
-  // (already preserved because "images" is not in MAPPED_KEYS)
-
-  const image0 = Array.isArray(row.images) && row.images.length > 0 ? row.images[0]?.src : null;
+  // images: keep [0] mapped onto image_url for backwards compat; also
+  // emit the full ordered array so the caller can materialise
+  // product_media rows (one per image, alt preserved). The full row
+  // remains in wc_raw too — "images" is not in MAPPED_KEYS.
+  const rawImages = Array.isArray(row.images) ? row.images : [];
+  const images = rawImages
+    .map((img) => {
+      const src = img && typeof img.src === "string" ? img.src.trim() : "";
+      if (!src) return null;
+      const altRaw = img && "alt" in img ? (img as { alt?: unknown }).alt : null;
+      const alt = typeof altRaw === "string" && altRaw.trim() ? altRaw.trim() : null;
+      return { src, alt };
+    })
+    .filter((x): x is { src: string; alt: string | null } => x !== null);
+  const image0 = images[0]?.src ?? null;
 
   const categoryIds: number[] = Array.isArray(row.categories)
     ? row.categories.map((c) => Number(c.id)).filter((id) => Number.isFinite(id))
@@ -91,7 +102,8 @@ export function mapProduct(row: WooProductRaw): ProductWrite {
     sku: row.sku?.trim() || null,
     short_description: row.short_description?.trim() || null,
     long_description: row.description?.trim() || null,
-    image_url: image0 ? String(image0) : null,
+    image_url: image0,
+    images,
     price: parseDecimal(row.regular_price ?? row.price),
     sale_price: parseDecimal(row.sale_price),
     stock_quantity:

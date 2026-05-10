@@ -65,6 +65,14 @@ export async function pullProducts(
           mapped.woocommerce_id,
           errors,
         );
+        await refreshProductMedia(
+          supabase,
+          instanceId,
+          productId,
+          mapped.images,
+          mapped.woocommerce_id,
+          errors,
+        );
         upserted += 1;
       } catch (err) {
         errors.push({
@@ -226,5 +234,106 @@ async function refreshCategoryLinks(
       woocommerceId: productWcId,
       message: `insert category links: ${insErr.message}`,
     });
+  }
+}
+
+/**
+ * Reconcile product_media against the WC `images[]` array.
+ *
+ * - Delete any existing row whose image_url is not in the incoming set
+ *   (handles WC-side image removal cleanly).
+ * - For each incoming image, update an existing row matched by URL
+ *   (preserves the media_id so Scout-side references stay stable), or
+ *   insert a new one. is_primary is set on index 0 only; sort_order
+ *   matches the WC ordering.
+ *
+ * Cross-row writes use the service-role client (the caller already
+ * passes service-role into pullProducts) so RLS doesn't trip on the
+ * delete branch.
+ */
+async function refreshProductMedia(
+  supabase: SupabaseClient,
+  instanceId: number,
+  productId: number,
+  images: Array<{ src: string; alt: string | null }>,
+  productWcId: number,
+  errors: ImportError[],
+): Promise<void> {
+  const incomingUrls = images.map((i) => i.src);
+
+  const { data: existing, error: selErr } = await supabase
+    .from("product_media")
+    .select("media_id, image_url")
+    .eq("instance_id", instanceId)
+    .eq("product_id", productId);
+  if (selErr) {
+    errors.push({
+      woocommerceId: productWcId,
+      message: `read product_media: ${selErr.message}`,
+    });
+    return;
+  }
+
+  const existingByUrl = new Map<string, number>(
+    (existing ?? []).map((r) => [
+      String((r as { image_url: string }).image_url),
+      Number((r as { media_id: number }).media_id),
+    ]),
+  );
+
+  const incomingSet = new Set(incomingUrls);
+  const toDeleteIds = (existing ?? [])
+    .filter((r) => !incomingSet.has(String((r as { image_url: string }).image_url)))
+    .map((r) => Number((r as { media_id: number }).media_id));
+
+  if (toDeleteIds.length > 0) {
+    const { error: delErr } = await supabase
+      .from("product_media")
+      .delete()
+      .in("media_id", toDeleteIds);
+    if (delErr) {
+      errors.push({
+        woocommerceId: productWcId,
+        message: `delete obsolete product_media: ${delErr.message}`,
+      });
+      return;
+    }
+  }
+
+  for (let idx = 0; idx < images.length; idx++) {
+    const img = images[idx];
+    const isPrimary = idx === 0;
+    const existingId = existingByUrl.get(img.src);
+    if (existingId !== undefined) {
+      const { error: updErr } = await supabase
+        .from("product_media")
+        .update({
+          is_primary: isPrimary,
+          sort_order: idx,
+          alt_text: img.alt,
+        })
+        .eq("media_id", existingId);
+      if (updErr) {
+        errors.push({
+          woocommerceId: productWcId,
+          message: `update product_media ${existingId}: ${updErr.message}`,
+        });
+      }
+    } else {
+      const { error: insErr } = await supabase.from("product_media").insert({
+        instance_id: instanceId,
+        product_id: productId,
+        image_url: img.src,
+        alt_text: img.alt,
+        is_primary: isPrimary,
+        sort_order: idx,
+      });
+      if (insErr) {
+        errors.push({
+          woocommerceId: productWcId,
+          message: `insert product_media ${img.src}: ${insErr.message}`,
+        });
+      }
+    }
   }
 }

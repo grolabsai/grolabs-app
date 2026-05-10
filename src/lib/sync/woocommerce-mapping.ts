@@ -98,14 +98,23 @@ export function mapProductToWooCommerce(
   const skippedVariantIds: number[] = [];
   const unmappedCategoryIds: number[] = [];
 
-  // Image set, primary first
+  // Image set, primary first. If product_media is empty but the legacy
+  // `product.image_url` column is populated (which is the state of
+  // every WC-imported row before the product_media backfill /
+  // pull-products materialisation lands), fabricate a single entry so
+  // the sync still pushes an image to WC.
   const sortedImages = (p.product_media ?? [])
     .slice()
     .sort((a, b) => {
       if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
       return (a.sort_order ?? 0) - (b.sort_order ?? 0);
     });
-  const images = sortedImages.map((m) => ({ src: m.image_url }));
+  const images: Array<{ src: string; alt?: string }> =
+    sortedImages.length > 0
+      ? sortedImages.map((m) => ({ src: m.image_url }))
+      : p.image_url
+        ? [{ src: p.image_url }]
+        : [];
   const primaryImage = images[0];
 
   // Categories — emit WC ids from the pre-built map. Unmapped Scout

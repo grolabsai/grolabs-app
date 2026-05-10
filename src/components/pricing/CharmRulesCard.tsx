@@ -21,7 +21,13 @@ import {
   deleteCharmRule,
   type CharmRuleRow,
 } from "@/lib/actions/pricing";
-import { applyCharmRule, type CharmStrategy } from "@/lib/pricing/charm";
+import {
+  applyCharm,
+  applyCharmRule,
+  findCharmRule,
+  type CharmRule,
+  type CharmStrategy,
+} from "@/lib/pricing/charm";
 
 /**
  * Editable table of charm-pricing rules. Each row is a price band with a
@@ -43,7 +49,14 @@ type Draft = {
   sort_order: number;
   notes: string | null;
   dirty: boolean;
+  /** Per-row "what would Q… become with this rule" calculator input. */
+  example_input: string;
 };
+
+function defaultExampleInput(minPrice: number | string): string {
+  const n = typeof minPrice === "number" ? minPrice : Number.parseFloat(minPrice);
+  return Number.isFinite(n) ? (n + 0.13).toFixed(2) : "10.00";
+}
 
 function rowToDraft(r: CharmRuleRow): Draft {
   return {
@@ -56,10 +69,11 @@ function rowToDraft(r: CharmRuleRow): Draft {
     sort_order: r.sort_order,
     notes: r.notes,
     dirty: false,
+    example_input: defaultExampleInput(r.min_price),
   };
 }
 
-const NEW_ROW_DEFAULTS: Omit<Draft, "sort_order"> = {
+const NEW_ROW_DEFAULTS: Omit<Draft, "sort_order" | "example_input"> = {
   charm_rule_id: null,
   min_price: "0",
   max_price: "",
@@ -70,13 +84,74 @@ const NEW_ROW_DEFAULTS: Omit<Draft, "sort_order"> = {
   dirty: true,
 };
 
+/**
+ * Build a CharmRule from a Draft. Returns null if the draft has invalid
+ * numeric fields — used by the test-price calculator and overlap check
+ * so they never crash on partial input.
+ */
+function draftToRule(d: Draft, fallbackId = 0): CharmRule | null {
+  const min = Number.parseFloat(d.min_price);
+  const max = d.max_price.trim() === "" ? null : Number.parseFloat(d.max_price);
+  const value = Number.parseFloat(d.strategy_value);
+  if (!Number.isFinite(min) || min < 0) return null;
+  if (max !== null && (!Number.isFinite(max) || max < min)) return null;
+  if (!Number.isFinite(value) || value < 0) return null;
+  return {
+    charm_rule_id: d.charm_rule_id ?? fallbackId,
+    min_price: min,
+    max_price: max,
+    strategy: d.strategy,
+    strategy_value: value,
+    is_active: d.is_active,
+    sort_order: d.sort_order,
+  };
+}
+
+/**
+ * Two bands [a1, a2] and [b1, b2] (a2/b2 nullable = +∞) overlap when
+ * max(a1, b1) ≤ min(a2, b2). Inclusive on both ends — that matches the
+ * resolver's `price < min` / `price > max` exclusions.
+ */
+function bandsOverlap(
+  a: { min: number; max: number | null },
+  b: { min: number; max: number | null },
+): boolean {
+  const lo = Math.max(a.min, b.min);
+  const hi = Math.min(a.max ?? Infinity, b.max ?? Infinity);
+  return lo <= hi;
+}
+
+function formatBand(min: number, max: number | null, noLimit: string): string {
+  return `Q${min.toFixed(2)} – ${max === null ? noLimit : `Q${max.toFixed(2)}`}`;
+}
+
 export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
   const t = useTranslations("pricing.charmRules");
   const router = useRouter();
   const [drafts, setDrafts] = useState<Draft[]>(() => initial.map(rowToDraft));
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [testPrice, setTestPrice] = useState<string>("100");
   const [, startTransition] = useTransition();
+
+  // Resolve the test price through the full active ruleset — same order
+  // (sort_order asc, id asc) the worksheet uses, so this preview matches
+  // what saveCharmRule + recomputeBatch will actually do.
+  const sortedActiveRules: CharmRule[] = drafts
+    .slice()
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return (a.charm_rule_id ?? Infinity) - (b.charm_rule_id ?? Infinity);
+    })
+    .map((d) => draftToRule(d))
+    .filter((r): r is CharmRule => r !== null && r.is_active);
+  const testPriceNum = Number.parseFloat(testPrice);
+  const testMatch = Number.isFinite(testPriceNum)
+    ? findCharmRule(testPriceNum, sortedActiveRules)
+    : null;
+  const testOutput = Number.isFinite(testPriceNum)
+    ? applyCharm(testPriceNum, sortedActiveRules)
+    : NaN;
 
   function patch(idx: number, partial: Partial<Draft>) {
     setDrafts((d) =>
@@ -90,6 +165,7 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
       {
         ...NEW_ROW_DEFAULTS,
         sort_order: 100 + d.length * 10,
+        example_input: defaultExampleInput(NEW_ROW_DEFAULTS.min_price),
       },
     ]);
   }
@@ -111,6 +187,12 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
     if (!Number.isFinite(valueNum) || valueNum < 0) {
       toast.error(t("toast.invalidValue"));
       return;
+    }
+    if (row.strategy === "ends_in_whole") {
+      if (!Number.isInteger(valueNum) || valueNum < 1) {
+        toast.error(t("toast.invalidWholeValue"));
+        return;
+      }
     }
 
     const targetId: number | "new" = row.charm_rule_id ?? "new";
@@ -139,6 +221,48 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
         ),
       );
       toast.success(t("toast.saved"));
+
+      // Overlap check — flag conflicts with other active rules so the
+      // user knows the resolver may shadow this rule (or vice-versa).
+      const savedBand = { min: minNum, max: maxNum };
+      const conflicts = drafts
+        .map((other, i) => ({ other, i }))
+        .filter(({ i }) => i !== idx)
+        .filter(({ other }) => other.is_active && row.is_active)
+        .map(({ other }) => ({ other, rule: draftToRule(other) }))
+        .filter(
+          (c): c is { other: Draft; rule: CharmRule } =>
+            c.rule !== null &&
+            bandsOverlap(savedBand, {
+              min: c.rule.min_price,
+              max: c.rule.max_price,
+            }),
+        );
+      if (conflicts.length > 0) {
+        const first = conflicts[0];
+        const winner =
+          first.other.sort_order < row.sort_order ||
+          (first.other.sort_order === row.sort_order &&
+            (first.other.charm_rule_id ?? Infinity) <
+              (row.charm_rule_id ?? Infinity))
+            ? "other"
+            : "this";
+        toast.warning(t("toast.conflictTitle"), {
+          description: t("toast.conflictBody", {
+            band: formatBand(
+              first.rule.min_price,
+              first.rule.max_price,
+              t("placeholders.max"),
+            ),
+            winner:
+              winner === "other"
+                ? t("toast.conflictWinnerOther")
+                : t("toast.conflictWinnerThis"),
+            count: conflicts.length,
+          }),
+        });
+      }
+
       router.refresh();
     });
   }
@@ -184,6 +308,74 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
         </p>
       </header>
 
+      {/* Test calculator — runs the price through the full active ruleset */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 12,
+          padding: "10px 14px",
+          marginBottom: 16,
+          background: "var(--s-surface-alt)",
+          border: "1px solid var(--s-border)",
+          borderRadius: "var(--s-radius-md)",
+          fontSize: 12,
+          color: "var(--s-text-secondary)",
+        }}
+      >
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: "var(--s-font-mono)",
+          }}
+        >
+          <span>{t("testCalculator.label")}</span>
+          <input
+            type="number"
+            step="0.01"
+            min={0}
+            value={testPrice}
+            onChange={(e) => setTestPrice(e.target.value)}
+            placeholder="100.00"
+            style={{
+              width: 96,
+              padding: "4px 8px",
+              fontSize: 12,
+              border: "1px solid var(--s-border-strong)",
+              borderRadius: "var(--s-radius-md)",
+              background: "var(--s-surface)",
+              color: "var(--s-text)",
+              fontFamily: "var(--s-font-mono)",
+            }}
+          />
+        </label>
+        <span style={{ color: "var(--s-text-tertiary)" }}>→</span>
+        <span
+          style={{
+            fontFamily: "var(--s-font-mono)",
+            color: Number.isFinite(testOutput)
+              ? "var(--s-text)"
+              : "var(--s-text-tertiary)",
+          }}
+        >
+          {Number.isFinite(testOutput) ? `Q${testOutput.toFixed(2)}` : "—"}
+        </span>
+        <span style={{ flex: 1 }} />
+        <span style={{ color: "var(--s-text-tertiary)" }}>
+          {testMatch
+            ? t("testCalculator.matched", {
+                strategy: t(`strategies.${testMatch.strategy}.label`),
+                value: testMatch.strategy_value.toString(),
+              })
+            : Number.isFinite(testPriceNum)
+              ? t("testCalculator.noMatch")
+              : t("testCalculator.enterPrice")}
+        </span>
+      </div>
+
       {drafts.length === 0 ? (
         <div
           style={{
@@ -221,29 +413,18 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                 <Th>{t("columns.to")}</Th>
                 <Th>{t("columns.strategy")}</Th>
                 <Th>{t("columns.value")}</Th>
-                <Th>{t("columns.example")}</Th>
+                <Th>{t("columns.test")}</Th>
                 <Th align="center">{t("columns.active")}</Th>
                 <Th>{" "}</Th>
               </tr>
             </thead>
             <tbody>
               {drafts.map((row, idx) => {
-                const exampleInput =
-                  Number.parseFloat(row.min_price || "0") + 0.13;
+                const ruleForRow = draftToRule(row);
+                const exampleInputNum = Number.parseFloat(row.example_input);
                 const exampleOutput =
-                  Number.isFinite(Number.parseFloat(row.strategy_value))
-                    ? applyCharmRule(exampleInput, {
-                        charm_rule_id: 0,
-                        min_price: Number.parseFloat(row.min_price || "0"),
-                        max_price:
-                          row.max_price === ""
-                            ? null
-                            : Number.parseFloat(row.max_price),
-                        strategy: row.strategy,
-                        strategy_value: Number.parseFloat(row.strategy_value),
-                        is_active: true,
-                        sort_order: 0,
-                      })
+                  ruleForRow !== null && Number.isFinite(exampleInputNum)
+                    ? applyCharmRule(exampleInputNum, ruleForRow)
                     : NaN;
                 const saveTargetId = row.charm_rule_id ?? "new";
                 const saving = savingId === saveTargetId;
@@ -285,6 +466,9 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                           <SelectItem value="ends_in">
                             {t("strategies.ends_in.label")}
                           </SelectItem>
+                          <SelectItem value="ends_in_whole">
+                            {t("strategies.ends_in_whole.label")}
+                          </SelectItem>
                           <SelectItem value="round_to">
                             {t("strategies.round_to.label")}
                           </SelectItem>
@@ -314,18 +498,39 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                       />
                     </Td>
                     <Td>
-                      <span
+                      <div
                         style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
                           fontFamily: "var(--s-font-mono)",
                           fontSize: 12,
-                          color: "var(--s-text-secondary)",
                         }}
                       >
-                        {Number.isFinite(exampleInput) &&
-                        Number.isFinite(exampleOutput)
-                          ? `Q${exampleInput.toFixed(2)} → Q${exampleOutput.toFixed(2)}`
-                          : "—"}
-                      </span>
+                        <PriceInput
+                          value={row.example_input}
+                          onChange={(v) =>
+                            setDrafts((d) =>
+                              d.map((r, i) =>
+                                i === idx ? { ...r, example_input: v } : r,
+                              ),
+                            )
+                          }
+                        />
+                        <span style={{ color: "var(--s-text-tertiary)" }}>→</span>
+                        <span
+                          style={{
+                            color: Number.isFinite(exampleOutput)
+                              ? "var(--s-text-secondary)"
+                              : "var(--s-text-tertiary)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {Number.isFinite(exampleOutput)
+                            ? `Q${exampleOutput.toFixed(2)}`
+                            : "—"}
+                        </span>
+                      </div>
                     </Td>
                     <Td align="center">
                       <Switch

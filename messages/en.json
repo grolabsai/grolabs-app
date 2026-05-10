@@ -1253,17 +1253,28 @@
         "to": "To (Q)",
         "strategy": "Strategy",
         "value": "Value",
-        "example": "Example",
+        "test": "Test",
         "active": "Active"
+      },
+      "testCalculator": {
+        "label": "Test price:",
+        "matched": "Matched: {strategy} {value}",
+        "noMatch": "No active band covers this price.",
+        "enterPrice": "Enter a price to see the result."
       },
       "placeholders": {
         "max": "no limit"
       },
       "strategies": {
         "ends_in": {
-          "label": "Ends in",
-          "hint": "Snaps to the next value whose decimal part matches.",
+          "label": "Ends in (cents)",
+          "hint": "Snaps to the next value whose decimal part matches. E.g. 0.99, 0.95.",
           "placeholder": "0.99"
+        },
+        "ends_in_whole": {
+          "label": "Ends in (whole)",
+          "hint": "Snaps the integer portion up to the next number ending in this value. E.g. 9, 99, 95.",
+          "placeholder": "99"
         },
         "round_to": {
           "label": "Round to multiple",
@@ -1290,7 +1301,12 @@
         "deleteError": "Could not delete the rule",
         "invalidMin": "From must be a valid number ≥ 0",
         "invalidMax": "To must be ≥ From, or empty for no limit",
-        "invalidValue": "Strategy value must be a valid number ≥ 0"
+        "invalidValue": "Strategy value must be a valid number ≥ 0",
+        "invalidWholeValue": "\"Ends in (whole)\" value must be an integer ≥ 1 (e.g. 9, 99, 95)",
+        "conflictTitle": "Rule saved but overlaps with another",
+        "conflictBody": "Conflict in band {band}. {winner} (affects {count} active rule(s)).",
+        "conflictWinnerOther": "The existing rule wins because it has a lower sort order",
+        "conflictWinnerThis": "This rule wins because it has a lower sort order"
       }
     },
     "changesPage": {

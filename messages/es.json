@@ -1253,17 +1253,28 @@
         "to": "Hasta (Q)",
         "strategy": "Estrategia",
         "value": "Valor",
-        "example": "Ejemplo",
+        "test": "Probar",
         "active": "Activa"
+      },
+      "testCalculator": {
+        "label": "Probar precio:",
+        "matched": "Coincide con: {strategy} {value}",
+        "noMatch": "Ningún rango activo cubre este precio.",
+        "enterPrice": "Ingresa un precio para ver el resultado."
       },
       "placeholders": {
         "max": "sin límite"
       },
       "strategies": {
         "ends_in": {
-          "label": "Termina en",
-          "hint": "Ajusta el precio al siguiente valor cuyo decimal coincide.",
+          "label": "Termina en (centavos)",
+          "hint": "Ajusta el precio al siguiente valor cuyo decimal coincide. Ej.: 0.99, 0.95.",
           "placeholder": "0.99"
+        },
+        "ends_in_whole": {
+          "label": "Termina en (entero)",
+          "hint": "Ajusta el precio al siguiente entero que termina en este número. Ej.: 9, 99, 95.",
+          "placeholder": "99"
         },
         "round_to": {
           "label": "Redondea a múltiplo",
@@ -1290,7 +1301,12 @@
         "deleteError": "No se pudo eliminar la regla",
         "invalidMin": "Desde debe ser un número válido ≥ 0",
         "invalidMax": "Hasta debe ser ≥ Desde, o vacío para sin límite",
-        "invalidValue": "El valor de la estrategia debe ser un número válido ≥ 0"
+        "invalidValue": "El valor de la estrategia debe ser un número válido ≥ 0",
+        "invalidWholeValue": "Para \"Termina en (entero)\" el valor debe ser un entero ≥ 1 (ej.: 9, 99, 95)",
+        "conflictTitle": "La regla guardó pero se solapa con otra",
+        "conflictBody": "Conflicto en el rango {band}. {winner} (afecta {count} regla(s) activa(s)).",
+        "conflictWinnerOther": "La regla existente gana porque tiene menor orden",
+        "conflictWinnerThis": "Esta regla gana porque tiene menor orden"
       }
     },
     "changesPage": {

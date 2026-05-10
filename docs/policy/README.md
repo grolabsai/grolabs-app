@@ -20,6 +20,11 @@ rather than working around it.
   Daily snapshots into Scout's DB plus on-demand real-time queries.
   Alert pipeline for top-3 traffic-health metrics. Daily-digest
   dashboard surface at `/dashboard/traffic`. Owner: Tuncho.
+- **instance-management.md** — Multi-instance support for a single
+  logged-in user. Topbar dropdown to switch instances + create new
+  ones. Adds `instance_member.is_current` column with partial unique
+  index. Replaces `.maybeSingle()` on `is_active` ambiguity.
+  Owner: Tuncho.
 
 ## Conventions
 

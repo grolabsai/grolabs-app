@@ -36,7 +36,7 @@ export default async function AppLayout({
     .from("instance_member")
     .select("instance_id, role, instance:instance_id(name, slug, kind)")
     .eq("user_id", user.id)
-    .eq("is_active", true)
+    .eq("is_current", true)
     .maybeSingle();
 
   const instanceRel = membership?.instance as

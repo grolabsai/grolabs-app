@@ -30,7 +30,7 @@ export default async function WooCommerceConfigPage() {
     .from("instance_member")
     .select("instance_id")
     .eq("user_id", user.id)
-    .eq("is_active", true)
+    .eq("is_current", true)
     .maybeSingle();
   if (!membership) redirect("/login");
   const instanceId: number = membership.instance_id;

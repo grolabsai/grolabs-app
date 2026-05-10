@@ -24,7 +24,7 @@ export async function addSynonym(
     .from("instance_member")
     .select("instance_id")
     .eq("user_id", user.id)
-    .eq("is_active", true)
+    .eq("is_current", true)
     .maybeSingle();
   if (!membership) return { ok: false, error: "Not authorized" };
 

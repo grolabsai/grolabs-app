@@ -19,7 +19,7 @@ import {
   upsertVariantPricing,
 } from "@/lib/actions/variant";
 import { formatGTQ } from "@/lib/format";
-import type { VariantForDisplay } from "./ProductEditor";
+import { WoocommerceIdBadge, type VariantForDisplay } from "./ProductEditor";
 
 type Props = {
   productId: number;
@@ -129,6 +129,7 @@ export function VariantsTable({ productId, variants, onSaved }: Props) {
               <th>Peso (g)</th>
               <th className="text-right">Precio</th>
               <th className="text-right">Costo</th>
+              <th>WC ID</th>
               <th>Estado</th>
               <th></th>
             </tr>
@@ -136,7 +137,7 @@ export function VariantsTable({ productId, variants, onSaved }: Props) {
           <tbody>
             {variants.length === 0 && !draft ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <div className="s-empty" style={{ padding: "32px 20px" }}>
                     <div className="s-empty-sub">
                       Este producto aún no tiene variantes.
@@ -286,6 +287,9 @@ function VariantRow({
           onSave={(v) => priceSaver(v, "cost_price")}
           onSaved={onSaved}
         />
+      </td>
+      <td>
+        <WoocommerceIdBadge id={variant.woocommerce_id} />
       </td>
       <td>
         <Switch
@@ -472,6 +476,9 @@ function DraftVariantRow({
           disabled={pending}
           placeholder="0"
         />
+      </td>
+      <td>
+        <WoocommerceIdBadge id={null} />
       </td>
       <td>
         <Switch

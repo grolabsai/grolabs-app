@@ -522,6 +522,51 @@ export async function syncProductsToWordPress(
       continue;
     }
 
+    // Best-effort writeback of the WC IDs onto Scout rows. These power
+    // the document builder's woocommerce_id gate (parent) and the
+    // variation_id field on each variant. A writeback failure is logged
+    // but doesn't fail the whole product — the next push run reconciles.
+    {
+      const { error: parentWriteErr } = await supabase
+        .from("product")
+        .update({ woocommerce_id: parentId })
+        .eq("instance_id", instanceId)
+        .eq("product_id", p.product_id);
+      if (parentWriteErr) {
+        console.warn(
+          `[woo-sync] writeback parent woocommerce_id for product ${p.product_id} failed: ${parentWriteErr.message}`,
+        );
+      }
+
+      // Match WC variation responses to Scout variants by SKU. WC's
+      // variations/batch returns the upserted rows on `.create` (it uses
+      // create-or-update-by-SKU semantics, not the literal "create" verb),
+      // each carrying { id, sku }.
+      const wcVariationIdBySku = new Map<string, number>();
+      for (const wv of batchRes.data.create ?? []) {
+        if (wv.sku) wcVariationIdBySku.set(wv.sku, wv.id);
+      }
+      for (const wv of batchRes.data.update ?? []) {
+        if (wv.sku) wcVariationIdBySku.set(wv.sku, wv.id);
+      }
+      for (const v of p.product_variant ?? []) {
+        const sku = v.sku?.trim();
+        if (!sku) continue;
+        const wcVariationId = wcVariationIdBySku.get(sku);
+        if (wcVariationId === undefined) continue;
+        const { error: vWriteErr } = await supabase
+          .from("product_variant")
+          .update({ woocommerce_id: wcVariationId })
+          .eq("instance_id", instanceId)
+          .eq("variant_id", v.variant_id);
+        if (vWriteErr) {
+          console.warn(
+            `[woo-sync] writeback variant woocommerce_id for variant ${v.variant_id} failed: ${vWriteErr.message}`,
+          );
+        }
+      }
+    }
+
     productResults.push({
       productId: p.product_id,
       success: true,

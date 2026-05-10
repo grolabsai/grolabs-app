@@ -22,6 +22,7 @@ import {
 } from "./meilisearch-client";
 import {
   buildScoutSearchDocument,
+  NotIndexableError,
   type SourceProductRow,
   type SourceVariantRow,
   type SourceCategoryLink,
@@ -58,7 +59,7 @@ async function fetchSources(instanceId: number, productIds: number[]): Promise<{
   const variantsP = sb
     .from("product_variant")
     .select(
-      `variant_id, product_id, variant_name, sku, weight_grams, is_active, image_url,
+      `variant_id, product_id, variant_name, sku, weight_grams, is_active, image_url, woocommerce_id,
        product_pricing:product_pricing ( list_price, sale_price, cost_price, channel, currency )`
     )
     .eq("instance_id", instanceId)
@@ -228,6 +229,11 @@ export async function indexProduct(
       }),
     ];
   } catch (err) {
+    if (err instanceof NotIndexableError) {
+      // Not yet round-tripped to WC. Remove any stale doc and exit clean.
+      await removeProduct(instanceId, productId);
+      return { ok: true };
+    }
     const message = err instanceof Error ? err.message : String(err);
     await recordSyncError(instanceId, productId, `build: ${message}`);
     return { ok: false, error: message };
@@ -354,6 +360,11 @@ export async function indexAllForInstance(
         docs.push(doc);
         builtIds.push(product.product_id);
       } catch (err) {
+        if (err instanceof NotIndexableError) {
+          // Strip any prior doc and treat the product as up-to-date.
+          await removeProduct(instanceId, product.product_id);
+          continue;
+        }
         const msg = err instanceof Error ? err.message : String(err);
         await recordSyncError(instanceId, product.product_id, `build: ${msg}`);
         failed += 1;

@@ -46,12 +46,13 @@ export default async function ProductEditorPage({
       created_at,
       updated_at,
       wazudb1_id,
+      woocommerce_id,
       product_type_id,
       brand_id,
       product_type:product_type_id ( product_type_id, type_name, type_code, kind ),
       brand:brand_id ( brand_id, brand_name ),
       product_variant (
-        variant_id, variant_name, variant_label, sku, barcode, weight_grams, is_active,
+        variant_id, variant_name, variant_label, sku, barcode, weight_grams, is_active, woocommerce_id,
         product_pricing ( list_price, cost_price, channel )
       ),
       product_attribute_value (

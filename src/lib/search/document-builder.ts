@@ -51,6 +51,11 @@ export type SourceVariantRow = {
   weight_grams: number | string | null;
   is_active: boolean;
   image_url: string | null;
+  /** WC variation post id, set on Scout→WC push. Variants where this is
+   * null haven't round-tripped yet — the document builder filters them
+   * out so the storefront plugin never sees a variation it can't add to
+   * cart. */
+  woocommerce_id: number | null;
   product_pricing: Array<{
     list_price: number | string | null;
     sale_price: number | string | null;
@@ -341,8 +346,13 @@ function projectVariant(
       ? wc.stock_status === "instock"
       : !!v.is_active;
 
+  // variation_id MUST be the WC variation post ID — the storefront plugin
+  // builds add-to-cart URLs against it. Variants without a WC id are
+  // filtered upstream of this projector (see buildScoutSearchDocument);
+  // the `?? v.variant_id` is a defensive fallback only and should never
+  // hit in practice.
   return {
-    variation_id: v.variant_id,
+    variation_id: v.woocommerce_id ?? v.variant_id,
     sku: v.sku ?? null,
     attributes: buildVariantAttributes(v, wcRaw, scoutAttrs),
     price: pricing.price ?? num(wc?.regular_price ?? wc?.price ?? null),
@@ -438,14 +448,46 @@ function matchDefaultByAttributes(
 
 // ── Top-level builder ────────────────────────────────────────────────────
 
+/** Sentinel returned by buildScoutSearchDocument when the product has no
+ * woocommerce_id (parent not yet pushed) or — for variable products — no
+ * variants with a woocommerce_id after filtering. The indexer treats this
+ * as "not ready to index" and routes through removeProduct so the index
+ * never carries a doc the storefront plugin can't add to cart. */
+export class NotIndexableError extends Error {
+  constructor(public readonly reason: "no-parent-wc-id" | "no-variants-with-wc-id") {
+    super(reason);
+    this.name = "NotIndexableError";
+  }
+}
+
 export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearchDocument {
   const { product, variants: variantRows, categoryLinks, media } = input;
   const scoutAttrs = input.variantAttributes ?? [];
 
-  // Filter: per §9, exclude inactive variations.
-  const activeVariants = variantRows.filter((v) => v.is_active);
+  // Hard gate: the doc is keyed on woocommerce_id for the storefront
+  // plugin. Without one, indexing is a no-op (worse: a stale doc that
+  // can't be added to cart).
+  if (product.woocommerce_id == null) {
+    throw new NotIndexableError("no-parent-wc-id");
+  }
 
-  const variants = activeVariants.map((v) => projectVariant(v, product.wc_raw, scoutAttrs));
+  // Filter: per §9, exclude inactive variations. Then filter out any
+  // variant that hasn't round-tripped to WC yet — the plugin needs the
+  // WC variation post id, not Scout's internal variant_id.
+  const activeVariants = variantRows.filter((v) => v.is_active);
+  const indexableVariantRows = activeVariants.filter((v) => v.woocommerce_id != null);
+
+  // For variable products with at least one variant row, we need at least
+  // one indexable variant to build a usable card. Pure "simple" products
+  // (no variants at all) skip this guard — they're indexed off the parent
+  // alone.
+  const wcType = product.wc_raw?.type;
+  const isVariable = wcType === "variable" || activeVariants.length > 1;
+  if (isVariable && indexableVariantRows.length === 0) {
+    throw new NotIndexableError("no-variants-with-wc-id");
+  }
+
+  const variants = indexableVariantRows.map((v) => projectVariant(v, product.wc_raw, scoutAttrs));
 
   const summary = computeVariationSummary(product, variants);
 

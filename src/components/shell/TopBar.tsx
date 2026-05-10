@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
 import { cn } from "@/lib/utils";
 
 /**
@@ -34,9 +35,13 @@ import { cn } from "@/lib/utils";
 export function TopBar({
   initials,
   userEmail,
+  instances,
+  currentInstanceId,
 }: {
   initials: string;
   userEmail: string;
+  instances: InstanceListItem[];
+  currentInstanceId: number | null;
 }) {
   const t = useTranslations("topbar");
   const [open, setOpen] = useState(false);
@@ -56,9 +61,17 @@ export function TopBar({
           display: "flex",
           alignItems: "center",
           gap: 12,
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
         }}
       >
+        {/* Instance switcher — left side, where the agent panel never lives */}
+        <InstanceSwitcher
+          instances={instances}
+          currentInstanceId={currentInstanceId}
+        />
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
         {/* Search — visual only in Phase 1, ⌘K palette deferred */}
         <div className="s-search">
           <Search
@@ -145,6 +158,7 @@ export function TopBar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
     </div>
   );

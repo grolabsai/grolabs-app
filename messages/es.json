@@ -988,6 +988,52 @@
         "missingSecret": "Ingresa el consumer secret o usa Cancelar para mantener el guardado",
         "testNeedsSecret": "Para probar, ingresa el secret o usa Reemplazar"
       }
+    },
+    "search": {
+      "navLabel": "Búsqueda (Meilisearch)",
+      "pageTitle": "Búsqueda",
+      "pageDescription": "Conexión con Meilisearch, dominios autorizados de la tienda y estado del índice.",
+      "connection": {
+        "title": "Conexión con Meilisearch",
+        "ok": "Conectado",
+        "down": "Sin conexión",
+        "retest": "Probar de nuevo",
+        "testing": "Probando…",
+        "latency": "{ms} ms",
+        "unreachable": "Servidor inaccesible"
+      },
+      "instanceId": {
+        "label": "ID de instancia",
+        "copy": "Copiar",
+        "help": "Pega este ID en el plugin de WordPress para conectar tu tienda."
+      },
+      "domains": {
+        "label": "Dominios autorizados",
+        "help": "Solo se aceptarán solicitudes de búsqueda desde estos hosts. Ej: shop.wazu.gt",
+        "placeholder": "shop.tudominio.com",
+        "add": "Agregar",
+        "remove": "Quitar {host}",
+        "empty": "Aún no has registrado ningún dominio."
+      },
+      "index": {
+        "label": "Índice de búsqueda",
+        "help": "Crea o actualiza el índice de Meilisearch para esta instancia con la configuración por defecto (atributos buscables, sinónimos, stop words).",
+        "create": "Inicializar índice",
+        "creating": "Inicializando…"
+      },
+      "toast": {
+        "connectionOk": "Conexión exitosa",
+        "connectionFailed": "No se pudo conectar",
+        "latency": "Latencia: {ms} ms",
+        "unreachable": "Servidor inaccesible",
+        "duplicateDomain": "Ese dominio ya está en la lista",
+        "saveFailed": "No se pudo guardar",
+        "saved": "Dominios actualizados",
+        "copied": "ID copiado al portapapeles",
+        "indexReady": "Índice listo",
+        "indexUid": "UID: {uid}",
+        "indexFailed": "No se pudo crear el índice"
+      }
     }
   },
   "sync": {

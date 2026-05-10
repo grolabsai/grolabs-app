@@ -988,6 +988,52 @@
         "missingSecret": "Enter the consumer secret or click Cancel to keep the saved one",
         "testNeedsSecret": "To test, enter the secret or click Replace"
       }
+    },
+    "search": {
+      "navLabel": "Search (Meilisearch)",
+      "pageTitle": "Search",
+      "pageDescription": "Meilisearch connection, authorized storefront domains, and index status.",
+      "connection": {
+        "title": "Meilisearch connection",
+        "ok": "Connected",
+        "down": "Not connected",
+        "retest": "Test again",
+        "testing": "Testing…",
+        "latency": "{ms} ms",
+        "unreachable": "Server unreachable"
+      },
+      "instanceId": {
+        "label": "Instance ID",
+        "copy": "Copy",
+        "help": "Paste this ID into the WordPress plugin to connect your storefront."
+      },
+      "domains": {
+        "label": "Authorized domains",
+        "help": "Search requests will only be accepted from these hosts. e.g. shop.wazu.gt",
+        "placeholder": "shop.yourdomain.com",
+        "add": "Add",
+        "remove": "Remove {host}",
+        "empty": "No domains registered yet."
+      },
+      "index": {
+        "label": "Search index",
+        "help": "Create or update this instance’s Meilisearch index with default settings (searchable attributes, synonyms, stop words).",
+        "create": "Initialize index",
+        "creating": "Initializing…"
+      },
+      "toast": {
+        "connectionOk": "Connection succeeded",
+        "connectionFailed": "Could not connect",
+        "latency": "Latency: {ms} ms",
+        "unreachable": "Server unreachable",
+        "duplicateDomain": "That domain is already on the list",
+        "saveFailed": "Could not save",
+        "saved": "Domains updated",
+        "copied": "ID copied to clipboard",
+        "indexReady": "Index ready",
+        "indexUid": "UID: {uid}",
+        "indexFailed": "Could not create index"
+      }
     }
   },
   "sync": {

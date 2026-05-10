@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(git add *)",
       "Bash(git commit *)",
@@ -63,6 +64,8 @@
       "Bash(chmod *)",
       "Bash(rm -rf .next*)",
       "Bash(rm -rf node_modules/.cache*)",
+      "mcp__github__get_file_contents",
+      "mcp__8f4fb189-498a-4a74-8ba4-50c3e1b10b94__list_projects",
       "Edit",
       "Write",
       "Read",

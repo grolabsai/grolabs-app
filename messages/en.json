@@ -489,6 +489,75 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "subtitle": "Activity overview and alerts",
+    "tabs": {
+      "resumen": "Summary",
+      "otros": "Other indicators"
+    },
+    "timeRange": {
+      "hoy": "Today",
+      "ayer": "Yesterday",
+      "7d": "7 days",
+      "30d": "30 days"
+    },
+    "sections": {
+      "search": "Search metrics",
+      "traffic": "Traffic metrics"
+    },
+    "alerts": {
+      "activeTitle": "Active alerts",
+      "inboxTitle": "Active alerts",
+      "emptyTitle": "No active alerts",
+      "emptyDescription": "All metrics within normal ranges",
+      "acknowledge": "Acknowledge",
+      "viewConfig": "View configuration",
+      "acknowledged": "Alert acknowledged",
+      "acknowledgeFailed": "Could not acknowledge alert"
+    },
+    "kpi": {
+      "noResults": {
+        "label": "No-result searches",
+        "meta": "last 7 days (lower is better)",
+        "threshold": "Alert threshold: ±15% day over day"
+      },
+      "searchConversion": {
+        "label": "Search conversion",
+        "meta": "vs 7-day avg",
+        "threshold": "Alert threshold: ±2pp day over day"
+      },
+      "clickPosition": {
+        "label": "Average click position",
+        "meta": "vs 7-day avg (lower is better)",
+        "threshold": "Alert threshold: ±0.5 day over day"
+      },
+      "sessions": {
+        "label": "Sessions",
+        "meta": "vs 7-day avg",
+        "threshold": "Alert threshold: ±15% vs 7d avg"
+      },
+      "engagement": {
+        "label": "Engagement rate",
+        "meta": "vs 7-day avg",
+        "threshold": "Alert threshold: −10pp vs 7d avg"
+      },
+      "users": {
+        "label": "Users",
+        "meta": "vs 7-day avg",
+        "threshold": "Alert threshold: ±15% vs 7d avg",
+        "new": "New",
+        "returning": "Returning"
+      }
+    },
+    "trafficSources": {
+      "title": "Traffic sources",
+      "viewDetail": "View detail"
+    },
+    "pages": {
+      "topLanding": "Top entry pages",
+      "topExit": "Top exit pages",
+      "entrances": "Entrances",
+      "exits": "Exits"
+    },
     "noResults": {
       "title": "Searches without results",
       "description": "Terms your customers searched for but didn't find. Adding a synonym connects the term to existing products.",
@@ -526,6 +595,70 @@
       "cancel": "Cancel",
       "toastSuccess": "Synonym added: {query} ↔ {synonym}",
       "toastFailed": "Could not save synonym"
+    }
+  },
+  "traffic": {
+    "breadcrumb": {
+      "dashboard": "Dashboard",
+      "current": "Traffic & engagement"
+    },
+    "title": "Traffic & Engagement",
+    "subtitle": "Google Analytics · Property {property} · Updated every 6 hours",
+    "live": {
+      "label": "Active now",
+      "loading": "loading…",
+      "updatedAgo": "updated {seconds}s ago"
+    },
+    "tiles": {
+      "sessions": "Sessions today",
+      "engagement": "Engagement today",
+      "trafficSources": "Traffic sources",
+      "noSources": "No traffic data yet"
+    },
+    "charts": {
+      "sessions": {
+        "title": "Sessions",
+        "subtitle": "Last 14 days"
+      },
+      "engagement": {
+        "title": "Engagement rate",
+        "subtitle": "Last 14 days"
+      }
+    },
+    "trafficSources": {
+      "title": "Traffic sources"
+    },
+    "topLanding": {
+      "title": "Top entry pages",
+      "value": "Entrances"
+    },
+    "topExit": {
+      "title": "Top exit pages",
+      "value": "Exits"
+    },
+    "emptyState": {
+      "breadcrumb": "Traffic & engagement",
+      "pageTitle": "Traffic & engagement",
+      "pageSubtitle": "Connect Google Analytics 4 to see metrics",
+      "title": "Connect Google Analytics to see your traffic",
+      "description": "Once connected, you'll see sessions, engagement, traffic sources, and automatic alerts on this panel.",
+      "cta": "Configure Google Analytics",
+      "benefit1": {
+        "title": "Real-time monitoring",
+        "description": "See how many users are active on your store right now."
+      },
+      "benefit2": {
+        "title": "Automatic alerts",
+        "description": "We notify you when sessions drop or there are meaningful changes."
+      },
+      "benefit3": {
+        "title": "Visual trends",
+        "description": "Sessions and engagement charts for the last 14 days."
+      },
+      "benefit4": {
+        "title": "Traffic sources",
+        "description": "Know where your traffic comes from — organic, direct, social, referral."
+      }
     }
   },
   "product": {
@@ -1134,6 +1267,83 @@
         "lastPullOk": "Last pull {time} ago · {latency} ms",
         "lastPullFailed": "Last pull failed {time} ago: {error}",
         "neverPulled": "No pull recorded yet."
+      },
+      "actions": {
+        "connect": "Connect Google Analytics",
+        "savePropertyId": "Save ID",
+        "test": "Test connection",
+        "pullNow": "Pull now",
+        "disconnect": "Disconnect"
+      },
+      "disconnect": {
+        "confirm": "Disconnect Google Analytics? This deletes the stored token and stops pulls."
+      },
+      "toast": {
+        "connected": "Google Analytics connected",
+        "disconnected": "Google Analytics disconnected",
+        "disconnectFailed": "Could not disconnect",
+        "propertyIdSaved": "Property ID saved",
+        "saveFailed": "Could not save",
+        "missingPropertyId": "Enter the property ID",
+        "testSuccess": "Connection succeeded",
+        "testFailed": "Test failed",
+        "pullSuccess": "Pull succeeded",
+        "pullFailed": "Pull failed",
+        "pullSummary": "{rows} rows written"
+      },
+      "oauthErrors": {
+        "generic": "Try connecting again.",
+        "user_denied": "You cancelled the authorization.",
+        "missing_params": "Google's response was incomplete.",
+        "state_mismatch": "OAuth state mismatch.",
+        "invalid_state": "Invalid OAuth state.",
+        "membership_mismatch": "Membership mismatch.",
+        "exchange_failed": "Token exchange with Google failed.",
+        "no_refresh_token": "Google did not return a refresh token.",
+        "save_failed": "Could not save credentials."
+      }
+    },
+    "ga4": {
+      "navLabel": "Google Analytics",
+      "pageTitle": "Google Analytics",
+      "pageDescription": "Connect your Google Analytics 4 property to power the traffic dashboard and daily alerts.",
+      "preConnect": {
+        "intro": "Connect a GA4 property (read-only) to pull daily traffic metrics and enable health alerts.",
+        "bulletDaily": "Sessions, users, engagement, top pages — refreshed every 6 hours.",
+        "bulletAlerts": "Auto-alerts when sessions, engagement, or channel mix change meaningfully.",
+        "bulletRealtime": "Live active-users widget on the traffic dashboard.",
+        "benefitsTitle": "What you get",
+        "helpText": "You need read-only access to a GA4 property. The connection uses Google OAuth and we only store an encrypted refresh token.",
+        "benefits": {
+          "realtime": "Real-time active users on your store",
+          "alerts": "Automatic alerts when metrics deviate",
+          "trends": "Sessions and engagement charts for the last 14 days",
+          "sources": "Traffic source mix — organic, direct, social, referral"
+        }
+      },
+      "fields": {
+        "propertyId": "GA4 property ID",
+        "propertyIdHint": "Numeric ID of your GA4 property (Admin → Property settings). Digits only."
+      },
+      "status": {
+        "connected": "Google Analytics connected",
+        "subtitle": "Data refreshed every 6 hours",
+        "activeBadge": "Active",
+        "account": "Account",
+        "property": "Property",
+        "lastSync": "Last sync",
+        "noPropertyYet": "Pending — add the ID below",
+        "lastPullOk": "{time} ago · {latency} ms",
+        "lastPullFailed": "Failed {time} ago: {error}",
+        "neverPulled": "No pull recorded yet."
+      },
+      "thresholds": {
+        "title": "Alert thresholds",
+        "description": "Alerts fire when metrics deviate from the 7-day average by more than these thresholds.",
+        "sessionsLabel": "Sessions — deviation",
+        "engagementLabel": "Engagement rate — drop",
+        "trafficShareLabel": "Source mix — change",
+        "v3Footnote": "Thresholds are fixed in v1. Merchant-configurable in upcoming versions."
       },
       "actions": {
         "connect": "Connect Google Analytics",

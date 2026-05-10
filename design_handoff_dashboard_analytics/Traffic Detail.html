@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tráfico y Engagement — Scout Dashboard</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="../src/app/globals.css">
+  <style>
+    .dashboard-container {
+      padding: 20px 28px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .dashboard-title-group h1 {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      letter-spacing: -0.02em;
+    }
+
+    .dashboard-subtitle {
+      font-size: 13px;
+      color: var(--s-text-secondary);
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .breadcrumb a {
+      color: var(--s-text-secondary);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--scout-accent);
+    }
+
+    .breadcrumb-sep {
+      color: var(--s-text-muted);
+    }
+
+    .time-range-selector {
+      display: flex;
+      gap: 4px;
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-md);
+      padding: 4px;
+    }
+
+    .time-range-btn {
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: var(--s-text-secondary);
+      border-radius: var(--s-radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .time-range-btn:hover {
+      color: var(--s-text);
+      background: var(--s-surface-alt);
+    }
+
+    .time-range-btn.active {
+      background: var(--scout-accent);
+      color: white;
+    }
+
+    /* Main layout grid */
+    .traffic-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    /* Live widget (compact, top-left) */
+    .live-widget-compact {
+      background: var(--scout-accent-50);
+      border: 0.5px solid var(--scout-accent);
+      border-radius: var(--s-radius-md);
+      padding: 16px 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      max-width: 320px;
+    }
+
+    .live-widget-left {
+      flex: 1;
+    }
+
+    .live-widget-label {
+      font-size: 11px;
+      color: var(--scout-accent-800);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .live-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--scout-accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .live-value {
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--scout-accent-800);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 4px;
+    }
+
+    .live-timestamp {
+      font-size: 10px;
+      color: var(--scout-accent-600);
+    }
+
+    .live-sparkline {
+      width: 80px;
+      height: 50px;
+    }
+
+    /* Alert tiles row */
+    .alert-tiles-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .alert-tile {
+      background: white;
+      border: 1.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 20px;
+      transition: all 0.15s;
+    }
+
+    .alert-tile.warning {
+      border-color: #D97706;
+      background: #FEF3C7;
+    }
+
+    .alert-tile.critical {
+      border-color: var(--s-danger);
+      background: var(--s-danger-bg);
+    }
+
+    .alert-tile.ok {
+      border-color: var(--s-border);
+      background: white;
+    }
+
+    .alert-tile-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .alert-tile-label {
+      font-size: 11px;
+      color: var(--s-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .alert-tile.warning .alert-tile-label {
+      color: #78350F;
+    }
+
+    .alert-tile.critical .alert-tile-label {
+      color: var(--s-danger-text);
+    }
+
+    .alert-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--s-success);
+      flex-shrink: 0;
+    }
+
+    .alert-tile.warning .alert-status-dot {
+      background: #D97706;
+    }
+
+    .alert-tile.critical .alert-status-dot {
+      background: var(--s-danger);
+    }
+
+    .alert-tile-value {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .alert-tile.warning .alert-tile-value {
+      color: #78350F;
+    }
+
+    .alert-tile.critical .alert-tile-value {
+      color: var(--s-danger-text);
+    }
+
+    .alert-tile-comparison {
+      font-size: 13px;
+      color: var(--s-text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .alert-tile.warning .alert-tile-comparison {
+      color: #78350F;
+    }
+
+    .alert-tile.critical .alert-tile-comparison {
+      color: var(--s-danger-text);
+    }
+
+    .alert-tile-comparison svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .alert-tile-sparkline {
+      height: 24px;
+      margin: 12px 0;
+      opacity: 0.8;
+    }
+
+    .alert-tile-comparisons {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .alert-tile.warning .alert-tile-comparisons {
+      border-top-color: rgba(217, 119, 6, 0.2);
+    }
+
+    .alert-tile.critical .alert-tile-comparisons {
+      border-top-color: rgba(163, 45, 45, 0.2);
+    }
+
+    .alert-tile-comparison-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .comparison-label {
+      color: var(--s-text-tertiary);
+      font-weight: 400;
+    }
+
+    .alert-tile.warning .comparison-label {
+      color: #78350F;
+      opacity: 0.7;
+    }
+
+    .alert-tile.critical .comparison-label {
+      color: var(--s-danger-text);
+      opacity: 0.7;
+    }
+
+    .comparison-value {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .comparison-value.positive {
+      color: var(--s-success);
+    }
+
+    .comparison-value.negative {
+      color: var(--s-danger);
+    }
+
+    .alert-tile.warning .comparison-value.negative {
+      color: #78350F;
+    }
+
+    .alert-tile.critical .comparison-value.negative {
+      color: var(--s-danger-text);
+    }
+
+    /* Traffic sources mini table */
+    .traffic-sources-mini {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .traffic-source-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .source-name {
+      color: var(--s-text-secondary);
+      flex: 1;
+    }
+
+    .source-stats {
+      font-weight: 600;
+      color: var(--s-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Charts section */
+    .charts-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 20px;
+    }
+
+    .chart-card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .chart-card-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .chart-card-subtitle {
+      font-size: 11px;
+      color: var(--s-text-tertiary);
+    }
+
+    .chart-container {
+      height: 240px;
+      margin-top: 12px;
+    }
+
+    /* Data cards section */
+    .data-cards-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .data-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 20px;
+    }
+
+    .data-card-header {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      text-align: left;
+      font-size: 10px;
+      color: var(--s-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+      padding: 8px 0;
+      border-bottom: 0.5px solid var(--s-border);
+    }
+
+    .data-table td {
+      padding: 10px 0;
+      border-bottom: 0.5px solid rgba(0,0,0,0.04);
+      font-size: 13px;
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+      background: var(--s-surface-alt);
+    }
+
+    .data-table-metric {
+      color: var(--s-text);
+    }
+
+    .data-table-value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .data-table-change {
+      text-align: right;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .data-table-change.positive {
+      color: var(--s-success);
+    }
+
+    .data-table-change.negative {
+      color: var(--s-danger);
+    }
+
+    .data-table-change.neutral {
+      color: var(--s-text-tertiary);
+    }
+
+    /* Home page navigation breakdown */
+    .home-nav-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .home-nav-header {
+      margin-bottom: 20px;
+    }
+
+    .home-nav-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .home-nav-subtitle {
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+    }
+
+    .home-nav-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .home-nav-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .home-nav-bar {
+      height: 28px;
+      border-radius: var(--s-radius-sm);
+      transition: opacity 0.15s;
+    }
+
+    .home-nav-bar:hover {
+      opacity: 0.9;
+    }
+
+    .home-nav-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .home-nav-name {
+      color: var(--s-text-secondary);
+    }
+
+    .home-nav-stats {
+      font-weight: 600;
+      color: var(--s-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Channels card with horizontal bar */
+    .channels-section {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .channels-header {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .channel-bar-container {
+      margin-bottom: 20px;
+    }
+
+    .channel-bar {
+      display: flex;
+      height: 32px;
+      border-radius: var(--s-radius-sm);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .channel-segment {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      transition: opacity 0.15s;
+    }
+
+    .channel-segment:hover {
+      opacity: 0.9;
+    }
+
+    .channel-legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .channel-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .channel-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .channel-name {
+      font-size: 12px;
+      color: var(--s-text-secondary);
+      flex: 1;
+    }
+
+    .channel-value {
+      font-size: 13px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .channel-change {
+      font-size: 11px;
+      margin-left: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .channel-change.positive {
+      color: var(--s-success);
+    }
+
+    .channel-change.negative {
+      color: var(--s-danger);
+    }
+
+    /* Alerts inbox */
+    .alerts-inbox {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 24px;
+    }
+
+    .alerts-inbox-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .alerts-inbox-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alerts-count-badge {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--s-danger-bg);
+      color: var(--s-danger-text);
+    }
+
+    .alerts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--s-surface-alt);
+      border-radius: var(--s-radius-md);
+      border-left: 3px solid var(--s-danger);
+    }
+
+    .alert-item.warning {
+      border-left-color: #D97706;
+      background: #FEF9F0;
+    }
+
+    .alert-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .alert-item.warning .alert-icon {
+      color: #D97706;
+    }
+
+    .alert-item.critical .alert-icon {
+      color: var(--s-danger);
+    }
+
+    .alert-content {
+      flex: 1;
+    }
+
+    .alert-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--s-text);
+      margin-bottom: 4px;
+    }
+
+    .alert-description {
+      font-size: 12px;
+      color: var(--s-text-secondary);
+      line-height: 1.5;
+    }
+
+    .alert-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .alert-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: var(--s-radius-sm);
+      border: 0.5px solid var(--s-border);
+      background: white;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--s-text-secondary);
+      transition: all 0.15s;
+    }
+
+    .alert-btn:hover {
+      background: var(--s-surface-alt);
+      color: var(--s-text);
+    }
+
+    .alert-time {
+      font-size: 11px;
+      color: var(--s-text-muted);
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    .alerts-empty {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .alerts-empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      color: var(--s-success);
+      opacity: 0.6;
+    }
+
+    .alerts-empty-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--s-text);
+      margin-bottom: 4px;
+    }
+
+    .alerts-empty-text {
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .alert-tiles-row {
+        grid-template-columns: 1fr;
+      }
+
+      .charts-section {
+        grid-template-columns: 1fr;
+      }
+
+      .data-cards-section {
+        grid-template-columns: 1fr;
+      }
+
+      .channel-legend {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="s-app">
+    <!-- Sidebar navigation -->
+    <nav class="s-nav">
+      <div class="s-brand">
+        <div class="s-brand-mark"></div>
+        <div class="s-brand-name">Scout</div>
+      </div>
+
+      <div class="s-nav-section">Principal</div>
+      <a href="Dashboard Landing.html" class="s-nav-item active">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        Dashboard
+        <span class="s-nav-badge">1</span>
+      </a>
+      
+      <div class="s-nav-section">Catálogo</div>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        Productos
+      </a>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+        Categorías
+      </a>
+      
+      <div class="s-nav-section">Operaciones</div>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Precios
+      </a>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Sincronización
+      </a>
+      
+      <div class="s-nav-section">Configuración</div>
+      <a href="GA4 Configuration.html" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Integraciones
+      </a>
+    </nav>
+
+    <!-- Main content -->
+    <main class="s-main">
+      <div id="root"></div>
+    </main>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Generate data
+    const generateSessionsData = () => {
+      const data = [];
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const sessions = i < 3 ? Math.floor(120 + Math.random() * 60) : Math.floor(150 + Math.random() * 80);
+        data.push({
+          date: date.toLocaleDateString('es-GT', { month: 'short', day: 'numeric' }),
+          sessions: sessions,
+          avg: 162
+        });
+      }
+      return data;
+    };
+
+    const generateEngagementData = () => {
+      const data = [];
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        data.push({
+          date: date.toLocaleDateString('es-GT', { month: 'short', day: 'numeric' }),
+          rate: 38 + Math.random() * 8
+        });
+      }
+      return data;
+    };
+
+    const generateSparklineData = () => {
+      const data = [];
+      for (let i = 9; i >= 0; i--) {
+        data.push({
+          value: Math.floor(8 + Math.random() * 5)
+        });
+      }
+      return data;
+    };
+
+    // Simple SVG-based line chart component
+    const SimpleLineChart = ({ data, dataKey, avgKey, color, avgColor, minY, maxY }) => {
+      const [hoveredIndex, setHoveredIndex] = useState(null);
+      
+      const values = data.map(d => d[dataKey]);
+      const min = minY !== undefined ? minY : Math.min(...values) * 0.95;
+      const max = maxY !== undefined ? maxY : Math.max(...values) * 1.05;
+      
+      const padding = { top: 20, right: 30, bottom: 30, left: 50 };
+      const width = 100;
+      const height = 100;
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+      
+      const scaleY = (val) => {
+        const normalized = (val - min) / (max - min);
+        return padding.top + chartHeight - (normalized * chartHeight);
+      };
+      
+      const scaleX = (index) => {
+        return padding.left + (index / (data.length - 1)) * chartWidth;
+      };
+      
+      const points = data.map((d, i) => `${scaleX(i)},${scaleY(d[dataKey])}`).join(' ');
+      const avgPoints = avgKey ? data.map((d, i) => `${scaleX(i)},${scaleY(d[avgKey])}`).join(' ') : '';
+      
+      return (
+        <svg 
+          width="100%" 
+          height="100%" 
+          viewBox={`0 0 ${width} ${height}`}
+          style={{ overflow: 'visible' }}
+        >
+          {/* Grid lines */}
+          {[0, 1, 2, 3, 4].map(i => {
+            const y = padding.top + (chartHeight / 4) * i;
+            return (
+              <line 
+                key={i}
+                x1={padding.left} 
+                y1={y}
+                x2={padding.left + chartWidth}
+                y2={y}
+                stroke="#EFEFEE"
+                strokeWidth="0.5"
+              />
+            );
+          })}
+          
+          {/* Y axis labels */}
+          {[0, 1, 2, 3, 4].map(i => {
+            const val = max - ((max - min) / 4) * i;
+            const y = padding.top + (chartHeight / 4) * i;
+            return (
+              <text 
+                key={i}
+                x={padding.left - 8}
+                y={y + 1.5}
+                textAnchor="end"
+                fontSize="4"
+                fill="#888780"
+              >
+                {Math.round(val)}
+              </text>
+            );
+          })}
+          
+          {/* X axis labels */}
+          {data.map((d, i) => {
+            if (i % 3 !== 0) return null;
+            return (
+              <text
+                key={i}
+                x={scaleX(i)}
+                y={padding.top + chartHeight + 8}
+                textAnchor="middle"
+                fontSize="4"
+                fill="#888780"
+              >
+                {d.date}
+              </text>
+            );
+          })}
+          
+          {/* Average line (dashed) */}
+          {avgPoints && (
+            <polyline
+              fill="none"
+              stroke={avgColor || '#888780'}
+              strokeWidth="0.5"
+              strokeDasharray="2 2"
+              points={avgPoints}
+            />
+          )}
+          
+          {/* Main line */}
+          <polyline
+            fill="none"
+            stroke={color}
+            strokeWidth="0.8"
+            points={points}
+          />
+          
+          {/* Dots */}
+          {data.map((d, i) => (
+            <circle
+              key={i}
+              cx={scaleX(i)}
+              cy={scaleY(d[dataKey])}
+              r={hoveredIndex === i ? 2 : 1.2}
+              fill={color}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            />
+          ))}
+          
+          {/* Hover tooltip */}
+          {hoveredIndex !== null && (
+            <g>
+              <rect
+                x={scaleX(hoveredIndex) - 12}
+                y={scaleY(data[hoveredIndex][dataKey]) - 10}
+                width="24"
+                height="8"
+                fill="white"
+                stroke="rgba(0,0,0,0.1)"
+                strokeWidth="0.3"
+                rx="1.5"
+              />
+              <text
+                x={scaleX(hoveredIndex)}
+                y={scaleY(data[hoveredIndex][dataKey]) - 4}
+                textAnchor="middle"
+                fontSize="3.5"
+                fill="#1A1A1A"
+                fontWeight="600"
+              >
+                {Math.round(data[hoveredIndex][dataKey])}
+              </text>
+            </g>
+          )}
+        </svg>
+      );
+    };
+
+    const TrafficDetail = () => {
+      const [timeRange, setTimeRange] = useState('7d');
+      const [sessionsData] = useState(generateSessionsData());
+      const [engagementData] = useState(generateEngagementData());
+      const [sparklineData] = useState(generateSparklineData());
+      const [activeNow, setActiveNow] = useState(12);
+      const [lastUpdate, setLastUpdate] = useState(0);
+      const [alertsActive, setAlertsActive] = useState(true);
+
+      // Simulate live updates
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setActiveNow(prev => Math.max(5, prev + Math.floor(Math.random() * 3) - 1));
+          setLastUpdate(0);
+        }, 30000);
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setLastUpdate(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const channels = [
+        { name: 'Búsqueda orgánica', absolute: 524, value: 42, change: -3, color: '#378ADD' },
+        { name: 'Directo', absolute: 349, value: 28, change: 2, color: '#1D9E75' },
+        { name: 'Redes sociales', absolute: 224, value: 18, change: 1, color: '#D97706' },
+        { name: 'Referidos', absolute: 150, value: 12, change: 0, color: '#888780' }
+      ];
+
+      const landingPages = [
+        { page: '/productos/alimento-perros', entrances: 1247, change: -12 },
+        { page: '/productos/alimento-gatos', entrances: 892, change: 8 },
+        { page: '/', entrances: 734, change: -5 },
+        { page: '/productos/accesorios', entrances: 521, change: 15 },
+        { page: '/categorias/perros', entrances: 418, change: 3 }
+      ];
+
+      const exitPages = [
+        { page: '/carrito', exits: 445, change: -8 },
+        { page: '/productos/alimento-perros', exits: 312, change: 5 },
+        { page: '/checkout', exits: 287, change: -15 },
+        { page: '/', exits: 234, change: 2 },
+        { page: '/productos/alimento-gatos', exits: 198, change: 7 }
+      ];
+
+      const handleAcknowledge = () => {
+        setAlertsActive(false);
+      };
+
+      return (
+        <div className="dashboard-container">
+          <div className="breadcrumb">
+            <a href="Dashboard Landing.html">Dashboard</a>
+            <span className="breadcrumb-sep">›</span>
+            <span>Tráfico y engagement</span>
+          </div>
+
+          <div className="dashboard-header">
+            <div className="dashboard-title-group">
+              <h1>Tráfico y Engagement</h1>
+              <div className="dashboard-subtitle">Google Analytics 4 · Actualizado cada 30 minutos</div>
+            </div>
+            <div className="time-range-selector">
+              <button 
+                className={`time-range-btn ${timeRange === 'hoy' ? 'active' : ''}`}
+                onClick={() => setTimeRange('hoy')}
+              >
+                Hoy
+              </button>
+              <button 
+                className={`time-range-btn ${timeRange === 'ayer' ? 'active' : ''}`}
+                onClick={() => setTimeRange('ayer')}
+              >
+                Ayer
+              </button>
+              <button 
+                className={`time-range-btn ${timeRange === '7d' ? 'active' : ''}`}
+                onClick={() => setTimeRange('7d')}
+              >
+                7 días
+              </button>
+              <button 
+                className={`time-range-btn ${timeRange === '30d' ? 'active' : ''}`}
+                onClick={() => setTimeRange('30d')}
+              >
+                30 días
+              </button>
+            </div>
+          </div>
+
+          {/* Live widget */}
+          <div className="live-widget-compact">
+            <div className="live-widget-left">
+              <div className="live-widget-label">
+                <div className="live-pulse"></div>
+                Activos ahora
+              </div>
+              <div className="live-value">{activeNow}</div>
+              <div className="live-timestamp">
+                última actualización: hace {lastUpdate}s
+              </div>
+            </div>
+            <div className="live-sparkline">
+              <svg width="100%" height="100%" viewBox="0 0 100 50" preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke="#378ADD"
+                  strokeWidth="2"
+                  points={sparklineData.map((d, i) => `${i * 11.1},${50 - (d.value * 4)}`).join(' ')}
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Alert tiles with sparklines */}
+          <div className="alert-tiles-row">
+            <div className="alert-tile critical">
+              <div className="alert-tile-header">
+                <div className="alert-tile-label">Sesiones hoy</div>
+                <div className="alert-status-dot"></div>
+              </div>
+              <div className="alert-tile-value">1,247</div>
+              <div className="alert-tile-sparkline">
+                <svg width="100%" height="100%" viewBox="0 0 70 24" preserveAspectRatio="none">
+                  <polyline
+                    fill="none"
+                    stroke="rgba(163, 45, 45, 0.4)"
+                    strokeWidth="1.5"
+                    points="0,8 10,7 20,6 30,9 40,5 50,7 60,12 70,18"
+                  />
+                </svg>
+              </div>
+              <div className="alert-tile-comparisons">
+                <div className="alert-tile-comparison-item">
+                  <span className="comparison-label">vs ayer:</span>
+                  <span className="comparison-value negative">-156 (-11%)</span>
+                </div>
+                <div className="alert-tile-comparison-item">
+                  <span className="comparison-label">vs 7d atrás:</span>
+                  <span className="comparison-value negative">-373 (-23%)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="alert-tile ok">
+              <div className="alert-tile-header">
+                <div className="alert-tile-label">Engagement hoy</div>
+                <div className="alert-status-dot"></div>
+              </div>
+              <div className="alert-tile-value">42.3%</div>
+              <div className="alert-tile-sparkline">
+                <svg width="100%" height="100%" viewBox="0 0 70 24" preserveAspectRatio="none">
+                  <polyline
+                    fill="none"
+                    stroke="rgba(29, 158, 117, 0.6)"
+                    strokeWidth="1.5"
+                    points="0,16 10,14 20,15 30,12 40,10 50,11 60,9 70,8"
+                  />
+                </svg>
+              </div>
+              <div className="alert-tile-comparisons">
+                <div className="alert-tile-comparison-item">
+                  <span className="comparison-label">vs ayer:</span>
+                  <span className="comparison-value positive">+1.2pp</span>
+                </div>
+                <div className="alert-tile-comparison-item">
+                  <span className="comparison-label">vs 7d atrás:</span>
+                  <span className="comparison-value positive">+5pp</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="alert-tile ok">
+              <div className="alert-tile-header">
+                <div className="alert-tile-label">Fuentes de tráfico</div>
+              </div>
+              <div className="traffic-sources-mini">
+                <div className="traffic-source-row">
+                  <span className="source-name">Búsqueda orgánica</span>
+                  <span className="source-stats">524 · 42%</span>
+                </div>
+                <div className="traffic-source-row">
+                  <span className="source-name">Directo</span>
+                  <span className="source-stats">349 · 28%</span>
+                </div>
+                <div className="traffic-source-row">
+                  <span className="source-name">Redes sociales</span>
+                  <span className="source-stats">224 · 18%</span>
+                </div>
+                <div className="traffic-source-row">
+                  <span className="source-name">Referidos</span>
+                  <span className="source-stats">150 · 12%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts */}
+          <div className="charts-section">
+            <div className="chart-card">
+              <div className="chart-card-header">
+                <div>
+                  <div className="chart-card-title">Sesiones</div>
+                  <div className="chart-card-subtitle">Últimos 14 días</div>
+                </div>
+              </div>
+              <div className="chart-container">
+                <SimpleLineChart 
+                  data={sessionsData}
+                  dataKey="sessions"
+                  avgKey="avg"
+                  color="#378ADD"
+                  avgColor="#888780"
+                />
+              </div>
+            </div>
+
+            <div className="chart-card">
+              <div className="chart-card-header">
+                <div>
+                  <div className="chart-card-title">Tasa de Engagement</div>
+                  <div className="chart-card-subtitle">Últimos 14 días</div>
+                </div>
+              </div>
+              <div className="chart-container">
+                <SimpleLineChart 
+                  data={engagementData}
+                  dataKey="rate"
+                  color="#1D9E75"
+                  minY={30}
+                  maxY={50}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Home page navigation breakdown */}
+          <div className="home-nav-card">
+            <div className="home-nav-header">
+              <div className="home-nav-title">Navegación desde Home</div>
+              <div className="home-nav-subtitle">De 1,247 visitantes en home hoy</div>
+            </div>
+            <div className="home-nav-breakdown">
+              <div className="home-nav-item">
+                <div className="home-nav-bar" style={{ width: '58%', background: '#378ADD' }}></div>
+                <div className="home-nav-label">
+                  <span className="home-nav-name">Usaron búsqueda</span>
+                  <span className="home-nav-stats">723 · 58%</span>
+                </div>
+              </div>
+              <div className="home-nav-item">
+                <div className="home-nav-bar" style={{ width: '31%', background: '#1D9E75' }}></div>
+                <div className="home-nav-label">
+                  <span className="home-nav-name">Navegaron a categorías</span>
+                  <span className="home-nav-stats">387 · 31%</span>
+                </div>
+              </div>
+              <div className="home-nav-item">
+                <div className="home-nav-bar" style={{ width: '11%', background: '#888780' }}></div>
+                <div className="home-nav-label">
+                  <span className="home-nav-name">Otra acción</span>
+                  <span className="home-nav-stats">137 · 11%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Channels */}
+          <div className="channels-section">
+            <div className="channels-header">Fuentes de Tráfico (hoy)</div>
+            <div className="channel-bar-container">
+              <div className="channel-bar">
+                {channels.map((channel, i) => (
+                  <div 
+                    key={i}
+                    className="channel-segment"
+                    style={{ 
+                      width: `${channel.value}%`,
+                      background: channel.color
+                    }}
+                  >
+                    {channel.value}%
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="channel-legend">
+              {channels.map((channel, i) => (
+                <div key={i} className="channel-legend-item">
+                  <div className="channel-color" style={{ background: channel.color }}></div>
+                  <div className="channel-name">{channel.name}</div>
+                  <div className="channel-value">
+                    {channel.absolute} · {channel.value}%
+                    <span className={`channel-change ${channel.change > 0 ? 'positive' : channel.change < 0 ? 'negative' : 'neutral'}`}>
+                      {channel.change > 0 ? '+' : ''}{channel.change}pp
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Landing and Exit pages */}
+          <div className="data-cards-section">
+            <div className="data-card">
+              <div className="data-card-header">Top 5 Páginas de Entrada</div>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Página</th>
+                    <th style={{ textAlign: 'right' }}>Entradas</th>
+                    <th style={{ textAlign: 'right' }}>Cambio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {landingPages.map((page, i) => (
+                    <tr key={i}>
+                      <td className="data-table-metric">{page.page}</td>
+                      <td className="data-table-value">{page.entrances.toLocaleString()}</td>
+                      <td className={`data-table-change ${page.change > 0 ? 'positive' : page.change < 0 ? 'negative' : 'neutral'}`}>
+                        {page.change > 0 ? '+' : ''}{page.change}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="data-card">
+              <div className="data-card-header">Top 5 Páginas de Salida</div>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Página</th>
+                    <th style={{ textAlign: 'right' }}>Salidas</th>
+                    <th style={{ textAlign: 'right' }}>Cambio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exitPages.map((page, i) => (
+                    <tr key={i}>
+                      <td className="data-table-metric">{page.page}</td>
+                      <td className="data-table-value">{page.exits.toLocaleString()}</td>
+                      <td className={`data-table-change ${page.change > 0 ? 'positive' : page.change < 0 ? 'negative' : 'neutral'}`}>
+                        {page.change > 0 ? '+' : ''}{page.change}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Alerts Inbox */}
+          <div className="alerts-inbox">
+            <div className="alerts-inbox-header">
+              <div className="alerts-inbox-title">
+                Alertas Activas
+                {alertsActive && <span className="alerts-count-badge">1</span>}
+              </div>
+            </div>
+
+            {alertsActive ? (
+              <div className="alerts-list">
+                <div className="alert-item critical">
+                  <svg className="alert-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="alert-content">
+                    <div className="alert-title">Sesiones cayeron 23% vs promedio 7 días</div>
+                    <div className="alert-description">
+                      Se registraron 1,247 sesiones hoy vs 1,620 promedio. Umbral configurado: -20%.
+                    </div>
+                    <div className="alert-actions">
+                      <button className="alert-btn" onClick={handleAcknowledge}>Confirmar</button>
+                      <button className="alert-btn">Ver configuración</button>
+                    </div>
+                  </div>
+                  <div className="alert-time">Hace 2h</div>
+                </div>
+              </div>
+            ) : (
+              <div className="alerts-empty">
+                <svg className="alerts-empty-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="alerts-empty-title">No hay alertas activas</div>
+                <div className="alerts-empty-text">Todas las métricas dentro de rangos normales</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<TrafficDetail />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart Library Comparison — Scout Dashboard</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="../src/app/globals.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      background: #FAFAF9;
+      color: #1A1A1A;
+      padding: 40px 24px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #5F5E5A;
+      margin-bottom: 40px;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .chart-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .chart-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .chart-size {
+      font-size: 11px;
+      color: #888780;
+      font-family: ui-monospace, monospace;
+    }
+
+    .chart-container {
+      height: 240px;
+      position: relative;
+    }
+
+    .pros-cons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .pros, .cons {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .pros-title, .cons-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      color: #5F5E5A;
+    }
+
+    .pros-title { color: #1D9E75; }
+    .cons-title { color: #A32D2D; }
+
+    .pros ul, .cons ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .pros li::before {
+      content: "✓ ";
+      color: #1D9E75;
+      font-weight: 600;
+    }
+
+    .cons li::before {
+      content: "✗ ";
+      color: #A32D2D;
+      font-weight: 600;
+    }
+
+    .pros li, .cons li {
+      font-size: 12px;
+      line-height: 1.6;
+      color: #5F5E5A;
+    }
+
+    .recommendation {
+      background: #E6F1FB;
+      border-left: 3px solid #378ADD;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .recommendation-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0C447C;
+      margin-bottom: 8px;
+    }
+
+    .recommendation-text {
+      font-size: 13px;
+      color: #0C447C;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1200px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Comparación de Librerías de Gráficos</h1>
+    <p class="subtitle">Tres implementaciones del mismo chart de sesiones para evaluar pros/cons</p>
+
+    <div id="root"></div>
+
+    <div class="recommendation">
+      <div class="recommendation-title">Recomendación</div>
+      <div class="recommendation-text">
+        Para Scout Dashboard, <strong>Recharts</strong> es la mejor opción: código declarativo React, bundle razonable (~90KB), interactividad built-in, y muy fácil de mantener. Chart.js es excelente si necesitas vanilla JS, pero en un stack React puro es más código. Canvas nativo es solo para casos edge donde bundle size es crítico (~5KB total).
+      </div>
+    </div>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Datos fake para las 2 últimas semanas
+    const generateData = () => {
+      const data = [];
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        data.push({
+          date: date.toLocaleDateString('es-GT', { month: 'short', day: 'numeric' }),
+          sessions: Math.floor(120 + Math.random() * 80 + i * 5),
+          avg: 160
+        });
+      }
+      return data;
+    };
+
+    const data = generateData();
+
+    // 1. Native SVG Example (replacing Recharts)
+    const NativeSVGExample = () => {
+      const [hoveredIndex, setHoveredIndex] = useState(null);
+      
+      const values = data.map(d => d.sessions);
+      const min = Math.min(...values) * 0.95;
+      const max = Math.max(...values) * 1.05;
+      
+      const padding = { top: 20, right: 30, bottom: 30, left: 50 };
+      const width = 100;
+      const height = 100;
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+      
+      const scaleY = (val) => {
+        const normalized = (val - min) / (max - min);
+        return padding.top + chartHeight - (normalized * chartHeight);
+      };
+      
+      const scaleX = (index) => {
+        return padding.left + (index / (data.length - 1)) * chartWidth;
+      };
+      
+      const points = data.map((d, i) => `${scaleX(i)},${scaleY(d.sessions)}`).join(' ');
+      const avgPoints = data.map((d, i) => `${scaleX(i)},${scaleY(d.avg)}`).join(' ');
+
+      return (
+        <div className="chart-card">
+          <div className="chart-header">
+            <div className="chart-title">Native SVG</div>
+            <div className="chart-size">~5KB (no deps)</div>
+          </div>
+          <div className="chart-container">
+            <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+              {/* Grid */}
+              {[0, 1, 2, 3, 4].map(i => {
+                const y = padding.top + (chartHeight / 4) * i;
+                return (
+                  <line key={i} x1={padding.left} y1={y} x2={padding.left + chartWidth} y2={y} stroke="#EFEFEE" strokeWidth="0.5"/>
+                );
+              })}
+              
+              {/* Y axis */}
+              {[0, 1, 2, 3, 4].map(i => {
+                const val = max - ((max - min) / 4) * i;
+                const y = padding.top + (chartHeight / 4) * i;
+                return <text key={i} x={padding.left - 8} y={y + 1.5} textAnchor="end" fontSize="4" fill="#888780">{Math.round(val)}</text>;
+              })}
+              
+              {/* X axis */}
+              {data.map((d, i) => {
+                if (i % 3 !== 0) return null;
+                return <text key={i} x={scaleX(i)} y={padding.top + chartHeight + 8} textAnchor="middle" fontSize="4" fill="#888780">{d.date}</text>;
+              })}
+              
+              {/* Average line */}
+              <polyline fill="none" stroke="#888780" strokeWidth="0.5" strokeDasharray="2 2" points={avgPoints}/>
+              
+              {/* Main line */}
+              <polyline fill="none" stroke="#378ADD" strokeWidth="0.8" points={points}/>
+              
+              {/* Dots */}
+              {data.map((d, i) => (
+                <circle
+                  key={i}
+                  cx={scaleX(i)}
+                  cy={scaleY(d.sessions)}
+                  r={hoveredIndex === i ? 2 : 1.2}
+                  fill="#378ADD"
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={() => setHoveredIndex(i)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                />
+              ))}
+              
+              {hoveredIndex !== null && (
+                <g>
+                  <rect x={scaleX(hoveredIndex) - 12} y={scaleY(data[hoveredIndex].sessions) - 10} width="24" height="8" fill="white" stroke="rgba(0,0,0,0.1)" strokeWidth="0.3" rx="1.5"/>
+                  <text x={scaleX(hoveredIndex)} y={scaleY(data[hoveredIndex].sessions) - 4} textAnchor="middle" fontSize="3.5" fill="#1A1A1A" fontWeight="600">{data[hoveredIndex].sessions}</text>
+                </g>
+              )}
+            </svg>
+          </div>
+          <div className="pros-cons">
+            <div className="pros">
+              <div className="pros-title">Pros</div>
+              <ul>
+                <li>Bundle mínimo (~5KB código propio)</li>
+                <li>Control total del rendering</li>
+                <li>Performance excelente (miles de puntos)</li>
+                <li>Funciona en cualquier stack</li>
+              </ul>
+            </div>
+            <div className="cons">
+              <div className="cons-title">Contras</div>
+              <ul>
+                <li>Más código para escribir/mantener</li>
+                <li>Tooltips requieren estado manual</li>
+                <li>Responsive requiere viewBox scaling</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 2. Recharts Component (removed, replaced above)
+    const ChartJsExample = () => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current) return;
+
+        const ctx = canvasRef.current.getContext('2d');
+        
+        if (chartRef.current) {
+          chartRef.current.destroy();
+        }
+
+        chartRef.current = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.map(d => d.date),
+            datasets: [
+              {
+                label: 'Sesiones',
+                data: data.map(d => d.sessions),
+                borderColor: '#378ADD',
+                backgroundColor: 'rgba(55, 138, 221, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: '#378ADD',
+                tension: 0.3
+              },
+              {
+                label: 'Promedio 7 días',
+                data: data.map(d => d.avg),
+                borderColor: '#888780',
+                borderWidth: 1.5,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                tension: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'white',
+                titleColor: '#1A1A1A',
+                bodyColor: '#5F5E5A',
+                borderColor: 'rgba(0,0,0,0.08)',
+                borderWidth: 1,
+                padding: 10,
+                displayColors: false,
+                callbacks: {
+                  label: function(context) {
+                    return context.parsed.y + ' sesiones';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                ticks: {
+                  color: '#888780',
+                  font: {
+                    size: 11
+                  }
+                },
+                grid: {
+                  color: '#EFEFEE'
+                }
+              },
+              x: {
+                ticks: {
+                  color: '#888780',
+                  font: {
+                    size: 11
+                  }
+                },
+                grid: {
+                  display: false
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartRef.current) {
+            chartRef.current.destroy();
+          }
+        };
+      }, []);
+
+      return (
+        <div className="chart-card">
+          <div className="chart-header">
+            <div className="chart-title">Chart.js</div>
+            <div className="chart-size">~65KB gzip</div>
+          </div>
+          <div className="chart-container">
+            <canvas ref={canvasRef}></canvas>
+          </div>
+          <div className="pros-cons">
+            <div className="pros">
+              <div className="pros-title">Pros</div>
+              <ul>
+                <li>Bundle más pequeño (~65KB)</li>
+                <li>Muy popular, excelente documentación</li>
+                <li>Funciona en cualquier stack (vanilla JS)</li>
+                <li>Buen performance con datasets grandes</li>
+              </ul>
+            </div>
+            <div className="cons">
+              <div className="cons-title">Contras</div>
+              <ul>
+                <li>API imperativa (no declarativa)</li>
+                <li>Más boilerplate en React</li>
+                <li>Necesitas manejar refs y cleanup manual</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 3. Canvas Nativo Component
+    const CanvasNativeExample = () => {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Set canvas size
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const width = rect.width;
+        const height = rect.height;
+        const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Get min/max values
+        const values = data.map(d => d.sessions);
+        const minVal = Math.min(...values) - 10;
+        const maxVal = Math.max(...values) + 10;
+
+        // Draw grid
+        ctx.strokeStyle = '#EFEFEE';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+          const y = padding.top + (chartHeight / 5) * i;
+          ctx.beginPath();
+          ctx.moveTo(padding.left, y);
+          ctx.lineTo(padding.left + chartWidth, y);
+          ctx.stroke();
+        }
+
+        // Draw Y axis labels
+        ctx.fillStyle = '#888780';
+        ctx.font = '11px -apple-system, sans-serif';
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 5; i++) {
+          const val = maxVal - ((maxVal - minVal) / 5) * i;
+          const y = padding.top + (chartHeight / 5) * i;
+          ctx.fillText(Math.round(val), padding.left - 8, y + 4);
+        }
+
+        // Draw line
+        const pointSpacing = chartWidth / (data.length - 1);
+        
+        ctx.strokeStyle = '#378ADD';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        data.forEach((point, i) => {
+          const x = padding.left + pointSpacing * i;
+          const normalizedVal = (point.sessions - minVal) / (maxVal - minVal);
+          const y = padding.top + chartHeight - (normalizedVal * chartHeight);
+          
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+
+        // Draw points
+        ctx.fillStyle = '#378ADD';
+        data.forEach((point, i) => {
+          const x = padding.left + pointSpacing * i;
+          const normalizedVal = (point.sessions - minVal) / (maxVal - minVal);
+          const y = padding.top + chartHeight - (normalizedVal * chartHeight);
+          
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Draw X axis labels (every 3rd)
+        ctx.fillStyle = '#888780';
+        ctx.textAlign = 'center';
+        data.forEach((point, i) => {
+          if (i % 3 === 0) {
+            const x = padding.left + pointSpacing * i;
+            ctx.fillText(point.date, x, height - 10);
+          }
+        });
+
+        // Draw average line
+        ctx.strokeStyle = '#888780';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 5]);
+        const avgNormalized = (160 - minVal) / (maxVal - minVal);
+        const avgY = padding.top + chartHeight - (avgNormalized * chartHeight);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, avgY);
+        ctx.lineTo(padding.left + chartWidth, avgY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+      }, []);
+
+      return (
+        <div className="chart-card">
+          <div className="chart-header">
+            <div className="chart-title">Canvas Nativo</div>
+            <div className="chart-size">~5KB (sin deps)</div>
+          </div>
+          <div className="chart-container">
+            <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }}></canvas>
+          </div>
+          <div className="pros-cons">
+            <div className="pros">
+              <div className="pros-title">Pros</div>
+              <ul>
+                <li>Bundle mínimo (~5KB código propio)</li>
+                <li>Control total del rendering</li>
+                <li>Performance excelente (miles de puntos)</li>
+                <li>Funciona en cualquier stack</li>
+              </ul>
+            </div>
+            <div className="cons">
+              <div className="cons-title">Contras</div>
+              <ul>
+                <li>Más código para escribir/mantener</li>
+                <li>Sin tooltips o interactividad built-in</li>
+                <li>Tienes que implementar todo (responsive, etc.)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const App = () => {
+      return (
+        <div className="comparison-grid">
+          <NativeSVGExample />
+          <ChartJsExample />
+          <CanvasNativeExample />
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

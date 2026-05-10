@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Analytics 4 — Scout</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="../src/app/globals.css">
+  <style>
+    .config-container {
+      padding: 32px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .config-header {
+      margin-bottom: 32px;
+    }
+
+    .config-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--s-text);
+      margin-bottom: 8px;
+    }
+
+    .config-description {
+      font-size: 14px;
+      color: var(--s-text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Pre-connection state */
+    .pre-connection-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 32px;
+    }
+
+    .pre-connection-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 20px;
+      display: block;
+    }
+
+    .pre-connection-title {
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .pre-connection-text {
+      font-size: 14px;
+      color: var(--s-text-secondary);
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .benefits-list {
+      margin-bottom: 28px;
+      padding: 20px;
+      background: var(--s-surface-alt);
+      border-radius: var(--s-radius-md);
+    }
+
+    .benefits-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--s-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .benefit-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--s-text-secondary);
+    }
+
+    .benefit-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .benefit-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--scout-accent);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .connect-btn {
+      width: 100%;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      background: var(--scout-accent);
+      color: white;
+      border: none;
+      border-radius: var(--s-radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .connect-btn:hover {
+      background: var(--scout-accent-hover);
+    }
+
+    .connect-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .help-text {
+      text-align: center;
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+      margin-top: 16px;
+    }
+
+    .help-text a {
+      color: var(--scout-accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .help-text a:hover {
+      text-decoration: underline;
+    }
+
+    /* Post-connection state */
+    .status-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 0.5px solid var(--s-border);
+    }
+
+    .status-icon-container {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--s-radius-md);
+      background: var(--s-success-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-icon-container svg {
+      width: 24px;
+      height: 24px;
+      color: var(--s-success);
+    }
+
+    .status-title-group {
+      flex: 1;
+    }
+
+    .status-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .status-subtitle {
+      font-size: 12px;
+      color: var(--s-text-tertiary);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--s-success-bg);
+      color: var(--s-success-text);
+    }
+
+    .status-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .status-details {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .status-label {
+      color: var(--s-text-tertiary);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+      padding-top: 2px;
+    }
+
+    .status-value {
+      color: var(--s-text);
+      font-weight: 500;
+    }
+
+    .status-value-mono {
+      font-family: var(--s-font-mono);
+      font-size: 12px;
+    }
+
+    .status-timestamp {
+      color: var(--s-text-secondary);
+      font-size: 12px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 0.5px solid var(--s-border);
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      background: transparent;
+      color: var(--s-text);
+      border: 0.5px solid var(--s-border-strong);
+      border-radius: var(--s-radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-secondary:hover {
+      background: var(--s-surface-alt);
+    }
+
+    .btn-danger {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--s-danger-bg);
+      color: var(--s-danger-text);
+      border: none;
+      border-radius: var(--s-radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-danger:hover {
+      background: var(--s-danger);
+      color: white;
+    }
+
+    /* Alert configuration card */
+    .alert-config-card {
+      background: var(--s-surface);
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-lg);
+      padding: 24px;
+    }
+
+    .alert-config-header {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .alert-config-description {
+      font-size: 12px;
+      color: var(--s-text-secondary);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .alert-threshold-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    }
+
+    .alert-threshold-row:last-child {
+      border-bottom: none;
+    }
+
+    .alert-threshold-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--s-text);
+    }
+
+    .alert-threshold-input {
+      width: 100px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 0.5px solid var(--s-border);
+      border-radius: var(--s-radius-sm);
+      font-family: inherit;
+      text-align: right;
+    }
+
+    .alert-threshold-input:focus {
+      outline: none;
+      border-color: var(--scout-accent);
+      box-shadow: 0 0 0 2px var(--scout-accent-50);
+    }
+
+    @media (max-width: 768px) {
+      .config-container {
+        padding: 24px 20px;
+      }
+
+      .pre-connection-card {
+        padding: 24px 20px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="s-app">
+    <!-- Sidebar navigation -->
+    <nav class="s-nav">
+      <div class="s-brand">
+        <div class="s-brand-mark"></div>
+        <div class="s-brand-name">Scout</div>
+      </div>
+
+      <div class="s-nav-section">Principal</div>
+      <a href="Dashboard Landing.html" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        Dashboard
+      </a>
+      
+      <div class="s-nav-section">Catálogo</div>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        Productos
+      </a>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+        Categorías
+      </a>
+      
+      <div class="s-nav-section">Operaciones</div>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Precios
+      </a>
+      <a href="#" class="s-nav-item">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Sincronización
+      </a>
+      
+      <div class="s-nav-section">Configuración</div>
+      <a href="GA4 Configuration.html" class="s-nav-item active">
+        <svg class="s-nav-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Integraciones
+      </a>
+    </nav>
+
+    <!-- Main content -->
+    <main class="s-main">
+      <div id="root"></div>
+    </main>
+  </div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const GA4Configuration = () => {
+      const [connected, setConnected] = useState(false);
+      const [thresholds, setThresholds] = useState({
+        sessions: -20,
+        engagement: -15,
+        trafficMix: 10
+      });
+
+      const handleConnect = () => {
+        // Simulate OAuth flow
+        setTimeout(() => {
+          setConnected(true);
+        }, 500);
+      };
+
+      const handleDisconnect = () => {
+        if (confirm('¿Estás seguro de que deseas desconectar Google Analytics? Se detendrá la recolección de datos.')) {
+          setConnected(false);
+        }
+      };
+
+      const handlePullNow = () => {
+        alert('Actualizando datos de Google Analytics...');
+      };
+
+      const handleThresholdChange = (key, value) => {
+        setThresholds(prev => ({
+          ...prev,
+          [key]: parseFloat(value) || 0
+        }));
+      };
+
+      return (
+        <div className="config-container">
+          <div className="config-header">
+            <div className="config-title">Google Analytics 4</div>
+            <div className="config-description">
+              Conecta tu propiedad de GA4 para monitorear tráfico, sesiones, engagement y recibir alertas automáticas cuando las métricas cambien significativamente.
+            </div>
+          </div>
+
+          {!connected ? (
+            <div className="pre-connection-card">
+              <svg className="pre-connection-icon" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+              </svg>
+
+              <div className="pre-connection-title">
+                Conecta tu cuenta de Google Analytics
+              </div>
+
+              <div className="pre-connection-text">
+                Autoriza a Scout para leer datos de tu propiedad GA4. Solo solicitamos permisos de lectura, nunca modificamos tus datos.
+              </div>
+
+              <div className="benefits-list">
+                <div className="benefits-title">Qué obtendrás:</div>
+                <div className="benefit-item">
+                  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Dashboard con KPIs principales (sesiones, engagement, activos ahora)
+                </div>
+                <div className="benefit-item">
+                  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Alertas automáticas cuando las métricas salen de rango
+                </div>
+                <div className="benefit-item">
+                  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Gráficos de tendencias de 14 días para sesiones y engagement
+                </div>
+                <div className="benefit-item">
+                  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Top 5 páginas de entrada y salida con comparación WoW
+                </div>
+              </div>
+
+              <button className="connect-btn" onClick={handleConnect}>
+                <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Conectar con Google
+              </button>
+
+              <div className="help-text">
+                ¿Necesitas ayuda? <a href="#">Lee la guía paso a paso</a>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="status-card">
+                <div className="status-header">
+                  <div className="status-icon-container">
+                    <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="status-title-group">
+                    <div className="status-title">Google Analytics conectado</div>
+                    <div className="status-subtitle">Datos actualizados cada 30 minutos</div>
+                  </div>
+                  <div className="status-badge">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Activo
+                  </div>
+                </div>
+
+                <div className="status-details">
+                  <div className="status-row">
+                    <div className="status-label">Cuenta</div>
+                    <div className="status-value">maria.gonzalez@petshopgt.com</div>
+                  </div>
+                  <div className="status-row">
+                    <div className="status-label">Propiedad</div>
+                    <div className="status-value status-value-mono">GA4-12345678</div>
+                  </div>
+                  <div className="status-row">
+                    <div className="status-label">Última sincronización</div>
+                    <div className="status-timestamp">Hoy 14:32 · 127 sesiones procesadas</div>
+                  </div>
+                </div>
+
+                <div className="action-buttons">
+                  <button className="btn-secondary" onClick={handlePullNow}>
+                    Actualizar ahora
+                  </button>
+                  <button className="btn-danger" onClick={handleDisconnect}>
+                    Desconectar
+                  </button>
+                </div>
+              </div>
+
+              <div className="alert-config-card">
+                <div className="alert-config-header">Configuración de Alertas</div>
+                <div className="alert-config-description">
+                  Define los umbrales de cambio que activarán alertas. Se comparan los valores actuales contra el promedio de 7 días.
+                </div>
+
+                <div className="alert-threshold-row">
+                  <div className="alert-threshold-label">Sesiones - caída</div>
+                  <input 
+                    type="number" 
+                    className="alert-threshold-input"
+                    value={thresholds.sessions}
+                    onChange={(e) => handleThresholdChange('sessions', e.target.value)}
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--s-text-tertiary)' }}>%</span>
+                </div>
+
+                <div className="alert-threshold-row">
+                  <div className="alert-threshold-label">Engagement - caída</div>
+                  <input 
+                    type="number" 
+                    className="alert-threshold-input"
+                    value={thresholds.engagement}
+                    onChange={(e) => handleThresholdChange('engagement', e.target.value)}
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--s-text-tertiary)' }}>%</span>
+                </div>
+
+                <div className="alert-threshold-row">
+                  <div className="alert-threshold-label">Mix de fuentes - cambio</div>
+                  <input 
+                    type="number" 
+                    className="alert-threshold-input"
+                    value={thresholds.trafficMix}
+                    onChange={(e) => handleThresholdChange('trafficMix', e.target.value)}
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--s-text-tertiary)' }}>pp</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<GA4Configuration />);
+  </script>
+</body>
+</html>

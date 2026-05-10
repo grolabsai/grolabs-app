@@ -38,3 +38,113 @@ export type MeilisearchHealth = {
   latencyMs: number;
   message?: string;
 };
+
+// ── Stage 1: Document schema ──────────────────────────────────────────────
+//
+// Per docs/policy/search-foundations.md §4.
+
+/** A single variant inside `ScoutSearchDocument.variants[]`.
+ *
+ * `attributes` keys MUST be slugs (e.g. `pa_size`, not `Tamaño`). Per the
+ * locked contract in PR #68 (plugin v0.2 consumer): keys come from the WC
+ * taxonomy slug; values stay as the human-readable option label.
+ */
+export type ScoutSearchVariant = {
+  variation_id: number;
+  sku: string | null;
+  attributes: Record<string, string>;
+  price: number | null;
+  sale_price: number | null;
+  in_stock: boolean;
+  stock_quantity: number | null;
+  image_url: string | null;
+};
+
+export type VariationSummaryType = "simple" | "variable_single" | "variable_multi";
+
+export type VariationSummary = {
+  type: VariationSummaryType;
+  purchasable_variation_count: number;
+  default_variation_id: number | null;
+  default_variation_sku: string | null;
+  price_range: { min: number | null; max: number | null };
+  in_stock_summary: { any_in_stock: boolean; all_in_stock: boolean };
+};
+
+export type ScoutAttributes = {
+  species: string[];
+  lifestage: string[];
+  breed_compatibility: string[];
+  size: string | null;
+  weight_grams: number | null;
+  food_type: string | null;
+  medical_conditions: string[];
+  age_min_months: number | null;
+  age_max_months: number | null;
+};
+
+/** The full document indexed in Meilisearch. Per §4. */
+export type ScoutSearchDocument = {
+  id: number;
+  instance_id: number;
+  woocommerce_id: number | null;
+
+  name: string;
+  slug: string;
+  description: string;
+  short_description: string;
+  url: string;
+  image_url: string | null;
+  thumbnail_url: string | null;
+
+  categories: string[];
+  category_ids: number[];
+  tags: string[];
+  brand: string | null;
+
+  scout_attributes: ScoutAttributes;
+  variation_summary: VariationSummary;
+  variants: ScoutSearchVariant[];
+
+  price: number | null;
+  sale_price: number | null;
+  currency: string;
+  in_stock: boolean;
+  sku: string | null;
+
+  popularity: number;
+  created_at: string;
+  updated_at: string;
+  indexed_at: string;
+  _schema_version: 1;
+};
+
+// ── Stage 1: Search proxy request/response ────────────────────────────────
+//
+// Per docs/policy/search-foundations.md §7.
+
+export type SearchRequest = {
+  instance_id: number;
+  query: string;
+  limit?: number;
+  offset?: number;
+  filters?: string;
+  sort?: string[];
+};
+
+/** Per the PR #68 contract: matched_variation is a full variant object,
+ * not a reference. Same shape as `document.variants[]` entries. */
+export type MatchedVariation = ScoutSearchVariant;
+
+export type SearchHit = {
+  document: ScoutSearchDocument;
+  matched_variation: MatchedVariation | null;
+  _score?: number;
+};
+
+export type SearchResponse = {
+  hits: SearchHit[];
+  total_hits: number;
+  processing_time_ms: number;
+  query_uid: string;
+};

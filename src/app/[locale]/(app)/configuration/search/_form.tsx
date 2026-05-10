@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Copy, Plus, X, RefreshCw, Database } from "lucide-react";
+import { CheckCircle2, XCircle, Copy, Plus, X, RefreshCw, Database, FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,10 @@ import {
   testMeilisearchConnection,
   saveStorefrontDomains,
   initializeIndex,
+  runFullBackfill,
+  getIndexingStatus,
   type ConnectionTestResult,
+  type IndexingStatus,
 } from "./actions";
 
 type Props = {
@@ -20,6 +23,7 @@ type Props = {
   indexUid: string;
   initialDomains: string[];
   initialHealth: ConnectionTestResult;
+  initialStatus: IndexingStatus | null;
 };
 
 export function SearchSettingsForm({
@@ -27,15 +31,19 @@ export function SearchSettingsForm({
   indexUid,
   initialDomains,
   initialHealth,
+  initialStatus,
 }: Props) {
   const t = useTranslations("configuration.search");
 
   const [health, setHealth] = useState<ConnectionTestResult>(initialHealth);
   const [domains, setDomains] = useState<string[]>(initialDomains);
   const [newDomain, setNewDomain] = useState("");
+  const [status, setStatus] = useState<IndexingStatus | null>(initialStatus);
   const [isTesting, startTest] = useTransition();
   const [isSaving, startSave] = useTransition();
   const [isInit, startInit] = useTransition();
+  const [isReindexing, startReindex] = useTransition();
+  const [isRefreshingStatus, startRefreshStatus] = useTransition();
 
   function handleTest() {
     startTest(async () => {
@@ -102,6 +110,32 @@ export function SearchSettingsForm({
       } else {
         toast.error(t("toast.indexFailed"), { description: result.error });
       }
+    });
+  }
+
+  function handleReindex() {
+    if (!confirm(t("indexing.confirmReindex"))) return;
+    startReindex(async () => {
+      const result = await runFullBackfill(instanceId);
+      if (result.ok) {
+        toast.success(t("toast.reindexDone"), {
+          description: t("toast.reindexCounts", {
+            indexed: result.indexed,
+            failed: result.failed,
+          }),
+        });
+        const next = await getIndexingStatus(instanceId);
+        setStatus(next);
+      } else {
+        toast.error(t("toast.reindexFailed"), { description: result.error });
+      }
+    });
+  }
+
+  function handleRefreshStatus() {
+    startRefreshStatus(async () => {
+      const next = await getIndexingStatus(instanceId);
+      setStatus(next);
     });
   }
 
@@ -227,6 +261,83 @@ export function SearchSettingsForm({
           </Button>
         </div>
       </section>
+
+      {/* ── Indexing status (Stage 1) ────────────────────────────────── */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>{t("indexing.label")}</Label>
+            <p className="text-xs text-muted-foreground">{t("indexing.help")}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshStatus}
+            disabled={isRefreshingStatus}
+          >
+            <Icon icon={RefreshCw} />
+            {isRefreshingStatus ? t("indexing.refreshing") : t("indexing.refresh")}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatusTile
+            label={t("indexing.scoutCount")}
+            value={status ? String(status.scoutProductCount) : "—"}
+          />
+          <StatusTile
+            label={t("indexing.meiliCount")}
+            value={status ? String(status.meiliDocCount) : "—"}
+            tone={status && !status.inSync ? "warn" : "ok"}
+          />
+          <StatusTile
+            label={t("indexing.failed")}
+            value={status ? String(status.failedCount) : "—"}
+            tone={status && status.failedCount > 0 ? "warn" : "ok"}
+          />
+          <StatusTile
+            label={t("indexing.lastSync")}
+            value={status?.lastSearchSyncAt ? formatTimestamp(status.lastSearchSyncAt) : t("indexing.never")}
+          />
+        </div>
+
+        <div>
+          <Button type="button" onClick={handleReindex} disabled={isReindexing}>
+            <Icon icon={FileSearch} />
+            {isReindexing ? t("indexing.reindexing") : t("indexing.reindex")}
+          </Button>
+        </div>
+      </section>
     </div>
   );
+}
+
+function StatusTile({
+  label,
+  value,
+  tone = "ok",
+}: {
+  label: string;
+  value: string;
+  tone?: "ok" | "warn";
+}) {
+  const toneClass =
+    tone === "warn"
+      ? "border-amber-500/40 bg-amber-500/5 text-amber-700"
+      : "border-border bg-background text-foreground";
+  return (
+    <div className={`flex flex-col gap-1 rounded-md border px-3 py-2 ${toneClass}`}>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-base font-medium font-mono">{value}</span>
+    </div>
+  );
+}
+
+function formatTimestamp(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
 }

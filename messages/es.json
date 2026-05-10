@@ -1046,6 +1046,20 @@
         "create": "Inicializar índice",
         "creating": "Inicializando…"
       },
+      "indexing": {
+        "label": "Estado del indexado",
+        "help": "Compara el catálogo de Scout con los documentos en Meilisearch. Reindexar reconstruye todo el índice de esta instancia.",
+        "scoutCount": "Productos en Scout",
+        "meiliCount": "Documentos en Meilisearch",
+        "failed": "Indexados fallidos",
+        "lastSync": "Última sincronización",
+        "never": "Nunca",
+        "refresh": "Actualizar",
+        "refreshing": "Actualizando…",
+        "reindex": "Reindexar todo",
+        "reindexing": "Reindexando…",
+        "confirmReindex": "Esto reconstruirá el índice de búsqueda completo para esta instancia. Puede tardar varios minutos. ¿Continuar?"
+      },
       "toast": {
         "connectionOk": "Conexión exitosa",
         "connectionFailed": "No se pudo conectar",
@@ -1057,7 +1071,10 @@
         "copied": "ID copiado al portapapeles",
         "indexReady": "Índice listo",
         "indexUid": "UID: {uid}",
-        "indexFailed": "No se pudo crear el índice"
+        "indexFailed": "No se pudo crear el índice",
+        "reindexDone": "Reindexado completado",
+        "reindexCounts": "{indexed} indexados · {failed} con error",
+        "reindexFailed": "No se pudo completar el reindexado"
       }
     }
   },

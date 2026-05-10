@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ping } from "@/lib/search/meilisearch-client";
 import { indexUidFor } from "@/lib/search/types";
+import { getIndexingStatus } from "./actions";
 import { SearchSettingsForm } from "./_form";
 
 /**
@@ -44,6 +45,7 @@ export default async function SearchConfigPage() {
 
   // Initial health probe (server side). The form re-tests on demand.
   const initialHealth = await ping();
+  const initialStatus = await getIndexingStatus(instanceId);
 
   return (
     <div className="s-page-content">
@@ -58,6 +60,7 @@ export default async function SearchConfigPage() {
             indexUid={indexUidFor(instanceId)}
             initialDomains={initialDomains}
             initialHealth={initialHealth}
+            initialStatus={initialStatus}
           />
         </CardContent>
       </Card>

@@ -64,6 +64,13 @@ export default async function ProductEditorPage({
       product_category_link (
         is_primary,
         category:category_id ( category_name, slug )
+      ),
+      product_media (
+        media_id,
+        image_url,
+        alt_text,
+        is_primary,
+        sort_order
       )
     `,
     )

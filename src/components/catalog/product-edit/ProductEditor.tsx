@@ -17,9 +17,11 @@ import {
   InlineTextarea,
 } from "./InlineFields";
 import { VariantsTable } from "./VariantsTable";
+import { PhotoManager, type PhotoState } from "./PhotoManager";
 import {
   deleteProduct,
   updateProductField,
+  updateProductPhotos,
 } from "@/lib/actions/product";
 import { formatRelative } from "@/lib/format";
 
@@ -75,6 +77,13 @@ export type ProductDetail = {
     is_primary: boolean;
     category: { category_name: string; slug: string } | null;
   }>;
+  product_media: Array<{
+    media_id: number;
+    image_url: string;
+    alt_text: string | null;
+    is_primary: boolean;
+    sort_order: number;
+  }>;
 };
 
 export type ProductTypeOption = {
@@ -125,6 +134,92 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
 
   const variants = product.product_variant ?? [];
   const primaryCategory = product.product_category_link?.find((l) => l.is_primary)?.category;
+
+  // Photo gallery state — seeded from product_media, persisted via
+  // updateProductPhotos on every mutation. The action reconciles
+  // INSERT/UPDATE/DELETE against the desired set and triggers the
+  // search index refresh.
+  const initialPhotos: PhotoState[] = (product.product_media ?? [])
+    .slice()
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    })
+    .map((m, idx) => ({
+      mediaId: m.media_id,
+      url: m.image_url,
+      isPrimary: m.is_primary,
+      sortOrder: m.sort_order ?? idx,
+    }));
+  const [photos, setPhotos] = useState<PhotoState[]>(initialPhotos);
+  const [photosSaving, setPhotosSaving] = useState(false);
+
+  const persistPhotos = useCallback(
+    async (next: PhotoState[]) => {
+      setPhotosSaving(true);
+      const r = await updateProductPhotos({
+        productId: product.product_id,
+        photos: next.map((p, idx) => ({
+          mediaId: p.mediaId,
+          url: p.url,
+          isPrimary: p.isPrimary,
+          sortOrder: idx,
+        })),
+      });
+      setPhotosSaving(false);
+      if ("error" in r) {
+        toast.error(t("saveError"), { description: r.error });
+        return;
+      }
+      onSaved();
+      router.refresh();
+    },
+    [product.product_id, onSaved, router, t],
+  );
+
+  const onPhotoAdd = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    setPhotos((ps) => {
+      const next: PhotoState[] = [
+        ...ps,
+        { url: trimmed, isPrimary: ps.length === 0, sortOrder: ps.length },
+      ];
+      void persistPhotos(next);
+      return next;
+    });
+  };
+
+  const onPhotoRemove = (idx: number) => {
+    setPhotos((ps) => {
+      const next = ps.filter((_, i) => i !== idx).map((p, i) => ({ ...p, sortOrder: i }));
+      if (next.length > 0 && !next.some((p) => p.isPrimary)) {
+        next[0] = { ...next[0], isPrimary: true };
+      }
+      void persistPhotos(next);
+      return next;
+    });
+  };
+
+  const onPhotoSetPrimary = (idx: number) => {
+    setPhotos((ps) => {
+      const next = ps.map((p, i) => ({ ...p, isPrimary: i === idx }));
+      void persistPhotos(next);
+      return next;
+    });
+  };
+
+  const onPhotoReorder = (from: number, to: number) => {
+    setPhotos((ps) => {
+      if (from === to || from < 0 || to < 0 || from >= ps.length || to >= ps.length) return ps;
+      const next = ps.slice();
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      const renumbered = next.map((p, i) => ({ ...p, sortOrder: i }));
+      void persistPhotos(renumbered);
+      return renumbered;
+    });
+  };
 
   return (
     <>
@@ -328,40 +423,18 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
           </div>
         </div>
 
-        {/* ── Right column: gallery + summary (read-only) ── */}
+        {/* ── Right column: gallery + summary ── */}
         <div className="s-col-stack">
           <div className="s-card">
-            <div className="s-card-header">
-              <p className="s-card-label" style={{ margin: 0 }}>
-                {t("sections.gallery")}
-              </p>
-              <button className="s-card-link" type="button" disabled>
-                {t("gallery.uploadNew")}
-              </button>
-            </div>
-            <div className="s-gallery-main">
-              <div className="s-gallery-main-label">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  width="24"
-                  height="24"
-                >
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <circle cx="9" cy="11" r="2" />
-                  <path d="M21 16l-5-5-8 8" />
-                </svg>
-                <span>{t("gallery.noPrimary")}</span>
-              </div>
-            </div>
-            <div className="s-gallery-thumbs">
-              <div className="s-thumb" />
-              <div className="s-thumb" />
-              <div className="s-thumb" />
-              <div className="s-thumb" />
-            </div>
+            <p className="s-card-label">{t("sections.gallery")}</p>
+            <PhotoManager
+              photos={photos}
+              onAdd={onPhotoAdd}
+              onRemove={onPhotoRemove}
+              onSetPrimary={onPhotoSetPrimary}
+              onReorder={onPhotoReorder}
+              disabled={photosSaving}
+            />
           </div>
 
           <div

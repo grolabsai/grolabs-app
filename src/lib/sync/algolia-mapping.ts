@@ -20,6 +20,10 @@ export type AlgoliaSourceProduct = {
   short_description: string | null;
   long_description: string | null;
   is_active: boolean;
+  // Legacy single-image column kept on `product` for products imported
+  // before product_media existed. The WC sync uses it as a fallback
+  // when product_media is empty (see woocommerce-mapping.ts).
+  image_url: string | null;
   brand: { brand_name: string } | null;
   product_category_link: Array<{
     is_primary: boolean;

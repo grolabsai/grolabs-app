@@ -16,6 +16,10 @@ rather than working around it.
   tables. Categories and products only; raw data preservation, no
   enrichment, no variant restructuring. Future processes handle those.
   Owner: Tuncho.
+- **ga4-integration.md** — Read-only Google Analytics 4 integration.
+  Daily snapshots into Scout's DB plus on-demand real-time queries.
+  Alert pipeline for top-3 traffic-health metrics. Daily-digest
+  dashboard surface at `/dashboard/traffic`. Owner: Tuncho.
 
 ## Conventions
 

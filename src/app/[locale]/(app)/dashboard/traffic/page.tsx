@@ -1,365 +1,313 @@
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
-import { createClient } from "@/lib/supabase/server";
 import {
   getActiveAlerts,
-  getDashboardKpiSummary,
+  getAlertTiles,
   getGa4Config,
+  getGeoTop,
   getSessionTimeseries,
+  getTopChannels,
   getTopExitPages,
   getTopLandingPages,
-  getTrafficSourcesAggregated,
-  isDashboardRange,
   isGa4Connected,
-  type DashboardRange,
 } from "@/lib/integrations/ga4/fetchers";
-import { LiveActiveUsersCompact } from "@/components/dashboard/LiveActiveUsersCompact";
-import { AlertTile } from "@/components/dashboard/AlertTile";
-import { SessionsLineChart } from "@/components/dashboard/SessionsLineChart";
-import { EngagementLineChart } from "@/components/dashboard/EngagementLineChart";
-import { TrafficSourcesBar } from "@/components/dashboard/TrafficSourcesBar";
-import { PagesTable } from "@/components/dashboard/PagesTable";
-import { AlertsInbox } from "@/components/dashboard/AlertsInbox";
-import { TimeRangeSelector } from "@/components/dashboard/TimeRangeSelector";
-import { TrafficEmptyState } from "./_empty-state";
-import type { Ga4Alert } from "@/lib/integrations/ga4/types";
+import { createClient } from "@/lib/supabase/server";
+import { LiveActiveUsers } from "./_live-active-users";
 
-function timeAgoEs(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return `Hace ${diff}s`;
-  if (diff < 3600) return `Hace ${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)}h`;
-  return `Hace ${Math.floor(diff / 86400)}d`;
-}
-
-export default async function TrafficDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ range?: string }>;
-}) {
-  const t = await getTranslations("traffic");
-
-  const params = await searchParams;
-  const range: DashboardRange = isDashboardRange(params.range)
-    ? params.range
-    : "7d";
-
+/**
+ * /dashboard/traffic — barebones data-layer exerciser.
+ *
+ * Renders every server-side fetcher's output as labeled blocks. Intentionally
+ * unstyled: the visual implementation lands once the design mockups arrive
+ * (docs/design/dashboard.md). The point is to prove every fetcher works
+ * end-to-end against real data.
+ */
+export default async function TrafficDashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-
   const { data: membership } = await supabase
     .from("instance_member")
     .select("instance_id")
     .eq("user_id", user.id)
-    .eq("is_current", true)
+    .eq("is_active", true)
     .maybeSingle();
   if (!membership) redirect("/login");
   const instanceId: number = membership.instance_id;
 
   const connected = await isGa4Connected(instanceId);
   if (!connected) {
-    return <TrafficEmptyState />;
+    return (
+      <div className="s-page-content">
+        <h1 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>
+          Traffic dashboard
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--s-text-secondary)" }}>
+          Google Analytics no está conectado para esta instancia.
+        </p>
+        <Link href="/configuration/ga4" style={{ color: "var(--scout-accent)" }}>
+          Conectar Google Analytics →
+        </Link>
+      </div>
+    );
   }
 
-  const [cfg, kpis, timeseries, sources, landings, exits, alerts] =
-    await Promise.all([
-      getGa4Config(instanceId),
-      getDashboardKpiSummary(instanceId, range),
-      getSessionTimeseries(instanceId),
-      getTrafficSourcesAggregated(instanceId, range),
-      getTopLandingPages(instanceId, 5),
-      getTopExitPages(instanceId, 5),
-      getActiveAlerts(instanceId),
-    ]);
-
-  function describeAlert(a: Ga4Alert): { headline: string; detail: string } {
-    if (a.metric === "sessions") {
-      const direction = a.delta_pct < 0 ? "cayeron" : "subieron";
-      return {
-        headline: `Sesiones ${direction} ${Math.abs(Number(a.delta_pct)).toFixed(0)}% vs promedio 7 días`,
-        detail: `${Number(a.observed_value).toFixed(0)} sesiones vs ${Number(a.baseline_value).toFixed(0)} promedio.`,
-      };
-    }
-    if (a.metric === "engagement_rate") {
-      return {
-        headline: `Tasa de engagement bajó ${Math.abs(Number(a.delta_pct)).toFixed(1)}pp vs promedio 7 días`,
-        detail: `${(Number(a.observed_value) * 100).toFixed(1)}% vs ${(Number(a.baseline_value) * 100).toFixed(1)}% promedio.`,
-      };
-    }
-    return {
-      headline: `Mix de fuentes cambió ${Math.abs(Number(a.delta_pct)).toFixed(1)}pp`,
-      detail: a.dimension_key ?? "",
-    };
-  }
-
-  // Derived comparisons for the alert tiles
-  const sessionsTile = kpis
-    ? {
-        value: kpis.sessions.current.toLocaleString(),
-        status: (kpis.sessions.status === "firing" ? "critical" : "ok") as
-          | "critical"
-          | "ok",
-        comparisons: [
-          {
-            label: "vs promedio 7d:",
-            value: `${kpis.sessions.deltaPct >= 0 ? "+" : ""}${kpis.sessions.deltaPct.toFixed(1)}%`,
-            tone: (kpis.sessions.deltaPct < 0 ? "negative" : "positive") as
-              | "positive"
-              | "negative",
-          },
-        ],
-        spark: kpis.sessions.spark,
-      }
-    : null;
-
-  const engagementTile = kpis
-    ? {
-        value: `${(kpis.engagement.current * 100).toFixed(1)}%`,
-        status: (kpis.engagement.status === "firing" ? "critical" : "ok") as
-          | "critical"
-          | "ok",
-        comparisons: [
-          {
-            label: "vs promedio 7d:",
-            value: `${kpis.engagement.deltaPct >= 0 ? "+" : ""}${kpis.engagement.deltaPct.toFixed(1)}pp`,
-            tone: (kpis.engagement.deltaPct < 0 ? "negative" : "positive") as
-              | "positive"
-              | "negative",
-          },
-        ],
-        spark: kpis.engagement.spark,
-      }
-    : null;
+  const [
+    cfg,
+    tiles,
+    timeseries,
+    channels,
+    landings,
+    exits,
+    geo,
+    alerts,
+  ] = await Promise.all([
+    getGa4Config(instanceId),
+    getAlertTiles(instanceId),
+    getSessionTimeseries(instanceId),
+    getTopChannels(instanceId),
+    getTopLandingPages(instanceId),
+    getTopExitPages(instanceId),
+    getGeoTop(instanceId),
+    getActiveAlerts(instanceId),
+  ]);
 
   return (
-    <div className="s-page-content">
-      <div style={{ fontSize: 12, color: "var(--s-text-tertiary)", marginBottom: 16 }}>
-        <Link
-          href="/dashboard"
-          style={{ color: "var(--s-text-secondary)", textDecoration: "none" }}
-        >
-          {t("breadcrumb.dashboard")}
-        </Link>
-        <span style={{ margin: "0 6px" }}>›</span>
-        <span>{t("breadcrumb.current")}</span>
-      </div>
+    <div className="s-page-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <h1 style={{ fontSize: 18, fontWeight: 600 }}>Traffic dashboard (data wiring)</h1>
+      <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+        Property: {cfg?.property_id ?? "—"} · Last pull:{" "}
+        {cfg?.last_pull_at
+          ? new Date(cfg.last_pull_at).toLocaleString()
+          : "never"}
+      </p>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 24,
-        }}
-      >
+      <section>
+        <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+          Right-now widget
+        </h2>
+        <LiveActiveUsers />
+      </section>
+
+      <section>
+        <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+          Alert tiles
+        </h2>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {tiles.map((tile) => (
+            <div
+              key={tile.metric}
+              style={{
+                padding: 12,
+                border: "0.5px solid var(--s-border)",
+                borderRadius: 6,
+                minWidth: 200,
+                background:
+                  tile.status === "firing" ? "var(--s-danger-bg)" : undefined,
+              }}
+            >
+              <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+                {tile.metric}
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 600 }}>
+                {tile.metric === "engagement_rate"
+                  ? `${(tile.current * 100).toFixed(1)}%`
+                  : tile.current.toFixed(0)}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--s-text-secondary)" }}>
+                Δ {tile.delta.toFixed(1)}
+                {tile.metric === "engagement_rate" ? "pp" : "%"} vs baseline{" "}
+                {tile.metric === "engagement_rate"
+                  ? `${(tile.baseline * 100).toFixed(1)}%`
+                  : tile.baseline.toFixed(0)}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  marginTop: 4,
+                  color:
+                    tile.status === "firing"
+                      ? "var(--s-danger-text)"
+                      : "var(--s-success-text)",
+                }}
+              >
+                {tile.status}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+          Session time series (14d, with 7d rolling avg)
+        </h2>
+        <table style={{ fontSize: 12, borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", paddingRight: 12 }}>date</th>
+              <th style={{ textAlign: "right", paddingRight: 12 }}>sessions</th>
+              <th style={{ textAlign: "right", paddingRight: 12 }}>rolling avg</th>
+              <th style={{ textAlign: "right" }}>engagement_rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {timeseries.map((p) => (
+              <tr key={p.date}>
+                <td style={{ paddingRight: 12 }}>{p.date}</td>
+                <td style={{ textAlign: "right", paddingRight: 12 }}>
+                  {p.sessions}
+                </td>
+                <td style={{ textAlign: "right", paddingRight: 12 }}>
+                  {p.rolling_avg_sessions.toFixed(1)}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  {(p.engagement_rate * 100).toFixed(1)}%
+                </td>
+              </tr>
+            ))}
+            {timeseries.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ color: "var(--s-text-tertiary)" }}>
+                  no data yet
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+          Channel mix (today vs 7d)
+        </h2>
+        <table style={{ fontSize: 12, borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", paddingRight: 12 }}>channel</th>
+              <th style={{ textAlign: "right", paddingRight: 12 }}>sessions today</th>
+              <th style={{ textAlign: "right", paddingRight: 12 }}>share today</th>
+              <th style={{ textAlign: "right" }}>Δ pp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {channels.map((c) => (
+              <tr key={c.channel}>
+                <td style={{ paddingRight: 12 }}>{c.channel}</td>
+                <td style={{ textAlign: "right", paddingRight: 12 }}>
+                  {c.sessions_today}
+                </td>
+                <td style={{ textAlign: "right", paddingRight: 12 }}>
+                  {(c.share_today * 100).toFixed(1)}%
+                </td>
+                <td style={{ textAlign: "right" }}>{c.delta_share_pp.toFixed(1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
         <div>
-          <h1
-            style={{
-              fontSize: 24,
-              fontWeight: 500,
-              marginBottom: 4,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {t("title")}
-          </h1>
-          <div style={{ fontSize: 13, color: "var(--s-text-secondary)" }}>
-            {t("subtitle", {
-              property: cfg?.property_id ? `GA4-${cfg.property_id}` : "—",
-            })}
-          </div>
-        </div>
-        <TimeRangeSelector current={range} />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <LiveActiveUsersCompact />
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 16,
-          }}
-        >
-          {sessionsTile ? (
-            <AlertTile
-              label={t("tiles.sessions")}
-              value={sessionsTile.value}
-              status={sessionsTile.status}
-              spark={sessionsTile.spark}
-              comparisons={sessionsTile.comparisons}
-            />
-          ) : null}
-          {engagementTile ? (
-            <AlertTile
-              label={t("tiles.engagement")}
-              value={engagementTile.value}
-              status={engagementTile.status}
-              spark={engagementTile.spark}
-              comparisons={engagementTile.comparisons}
-            />
-          ) : null}
-          <div
-            style={{
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-lg)",
-              padding: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                color: "var(--s-text-tertiary)",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                fontWeight: 500,
-              }}
-            >
-              {t("tiles.trafficSources")}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                marginTop: 4,
-              }}
-            >
-              {sources.segments.slice(0, 4).map((s) => (
-                <div
-                  key={s.channel}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 12,
-                  }}
-                >
-                  <span
-                    style={{
-                      color: "var(--s-text)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {s.channel}
-                  </span>
-                  <span
-                    style={{
-                      color: "var(--s-text-tertiary)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {s.sessions.toLocaleString()} ·{" "}
-                    {Math.round(s.share * 100)}%
-                  </span>
-                </div>
+          <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+            Top landing pages
+          </h2>
+          <table style={{ fontSize: 12 }}>
+            <tbody>
+              {landings.map((p) => (
+                <tr key={p.page_path}>
+                  <td style={{ paddingRight: 12 }}>{p.page_path}</td>
+                  <td style={{ paddingRight: 12, textAlign: "right" }}>
+                    {p.value}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {p.delta_pct.toFixed(1)}%
+                  </td>
+                </tr>
               ))}
-              {sources.segments.length === 0 ? (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--s-text-tertiary)",
-                  }}
-                >
-                  {t("tiles.noSources")}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+            Top exit pages
+          </h2>
+          <table style={{ fontSize: 12 }}>
+            <tbody>
+              {exits.map((p) => (
+                <tr key={p.page_path}>
+                  <td style={{ paddingRight: 12 }}>{p.page_path}</td>
+                  <td style={{ paddingRight: 12, textAlign: "right" }}>
+                    {p.value}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {p.delta_pct.toFixed(1)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>Geo top 5</h2>
+        <table style={{ fontSize: 12 }}>
+          <tbody>
+            {geo.map((g) => (
+              <tr key={g.country}>
+                <td style={{ paddingRight: 12 }}>{g.country}</td>
+                <td style={{ paddingRight: 12, textAlign: "right" }}>
+                  {g.sessions}
+                </td>
+                <td style={{ textAlign: "right" }}>{g.users}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2 style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+          Active alerts ({alerts.length})
+        </h2>
+        {alerts.length === 0 ? (
+          <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+            No hay alertas activas
+          </p>
+        ) : (
+          <ul style={{ fontSize: 12, paddingLeft: 0, listStyle: "none" }}>
+            {alerts.map((a) => (
+              <li
+                key={a.alert_id}
+                style={{
+                  padding: 8,
+                  border: "0.5px solid var(--s-border)",
+                  borderRadius: 6,
+                  marginBottom: 8,
+                }}
+              >
+                <div>
+                  <strong>{a.metric}</strong>
+                  {a.dimension_key ? ` · ${a.dimension_key}` : null} ·{" "}
+                  {a.status}
                 </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-          }}
-        >
-          <div
-            style={{
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-lg)",
-              padding: 20,
-            }}
-          >
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>
-                {t("charts.sessions.title")}
-              </div>
-              <div
-                style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}
-              >
-                {t("charts.sessions.subtitle")}
-              </div>
-            </div>
-            <SessionsLineChart data={timeseries} />
-          </div>
-          <div
-            style={{
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-lg)",
-              padding: 20,
-            }}
-          >
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>
-                {t("charts.engagement.title")}
-              </div>
-              <div
-                style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}
-              >
-                {t("charts.engagement.subtitle")}
-              </div>
-            </div>
-            <EngagementLineChart data={timeseries} />
-          </div>
-        </div>
-
-        <TrafficSourcesBar
-          title={t("trafficSources.title")}
-          segments={sources.segments}
-          total={sources.total}
-        />
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-          }}
-        >
-          <PagesTable
-            title={t("topLanding.title")}
-            rows={landings}
-            valueLabel={t("topLanding.value")}
-            showDelta
-          />
-          <PagesTable
-            title={t("topExit.title")}
-            rows={exits}
-            valueLabel={t("topExit.value")}
-            showDelta
-          />
-        </div>
-
-        <AlertsInbox
-          alerts={alerts}
-          describe={describeAlert}
-          timeAgo={timeAgoEs}
-        />
-      </div>
+                <div style={{ color: "var(--s-text-secondary)" }}>
+                  observed {Number(a.observed_value).toFixed(2)} vs baseline{" "}
+                  {Number(a.baseline_value).toFixed(2)} · Δ{" "}
+                  {Number(a.delta_pct).toFixed(1)}%
+                </div>
+                <div style={{ color: "var(--s-text-tertiary)" }}>
+                  fired {new Date(a.fired_at).toLocaleString()}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

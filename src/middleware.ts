@@ -55,7 +55,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Run on everything EXCEPT:
+    //   /api/* (route handlers serving external clients — must not be locale-prefixed)
     //   static files, images, favicons, the Next.js internals
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

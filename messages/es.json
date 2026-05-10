@@ -1611,6 +1611,7 @@
       "add": "Agregar proveedor",
       "inactiveBadge": "Inactivo",
       "consignmentTag": "Consignación",
+      "brandsLabel": "Marcas",
       "empty": {
         "title": "Sin proveedores aún",
         "text": "Agrega tu primer proveedor para empezar a importar listas de costos. Puedes editar todos sus datos después."
@@ -1655,8 +1656,12 @@
       "active": "Activo",
       "inactive": "Inactivo",
       "brands": {
-        "hint": "Selecciona las marcas que este proveedor distribuye.",
-        "empty": "Aún no hay marcas registradas. Crea marcas en el catálogo antes de asociarlas."
+        "hint": "Busca y selecciona las marcas que este proveedor distribuye. Puedes elegir varias.",
+        "empty": "Aún no hay marcas registradas. Crea marcas en el catálogo antes de asociarlas.",
+        "placeholder": "Selecciona marcas…",
+        "searchPlaceholder": "Buscar marca…",
+        "searchEmpty": "Ninguna marca coincide con la búsqueda.",
+        "removeTag": "Quitar marca"
       },
       "buttons": {
         "save": "Guardar",

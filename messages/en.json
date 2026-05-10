@@ -1611,6 +1611,7 @@
       "add": "Add provider",
       "inactiveBadge": "Inactive",
       "consignmentTag": "Consignment",
+      "brandsLabel": "Brands",
       "empty": {
         "title": "No providers yet",
         "text": "Add your first provider to start importing cost lists. You can edit all their details later."
@@ -1655,8 +1656,12 @@
       "active": "Active",
       "inactive": "Inactive",
       "brands": {
-        "hint": "Select the brands this provider distributes.",
-        "empty": "No brands registered yet. Create brands in the catalogue before linking them."
+        "hint": "Search and select the brands this provider distributes. You can choose multiple.",
+        "empty": "No brands registered yet. Create brands in the catalogue before linking them.",
+        "placeholder": "Select brands…",
+        "searchPlaceholder": "Search brand…",
+        "searchEmpty": "No brands match the search.",
+        "removeTag": "Remove brand"
       },
       "buttons": {
         "save": "Save",

@@ -2,17 +2,25 @@
  * Apply a charm-pricing rule to a calculated target price.
  *
  * Strategies:
- *   ends_in       — bump the price up to the nearest value whose decimal
- *                   part equals strategy_value (0.95 / 0.99 / 0.50).
- *   round_to      — round the price up to the nearest multiple of
- *                   strategy_value (5, 10, 50). Always rounds up so the
- *                   merchant never loses margin.
- *   fixed_offset  — first round up to the next whole unit, then subtract
- *                   strategy_value. Produces things like 99.95 from a
- *                   raw 99.13 with strategy_value = 0.05.
+ *   ends_in        — bump the price up to the nearest value whose decimal
+ *                    part equals strategy_value (0.95 / 0.99 / 0.50).
+ *   round_to       — round the price up to the nearest multiple of
+ *                    strategy_value (5, 10, 50). Always rounds up so the
+ *                    merchant never loses margin.
+ *   fixed_offset   — first round up to the next whole unit, then subtract
+ *                    strategy_value. Produces things like 99.95 from a
+ *                    raw 99.13 with strategy_value = 0.05.
+ *   ends_in_whole  — snap the integer portion up to the smallest integer
+ *                    ≥ price whose last digit-count(strategy_value) digits
+ *                    equal strategy_value. Cents are cleared to .00.
+ *                    Examples: value=9 → Q142.50→Q149; value=99 → Q142→Q199.
  */
 
-export type CharmStrategy = "ends_in" | "round_to" | "fixed_offset";
+export type CharmStrategy =
+  | "ends_in"
+  | "round_to"
+  | "fixed_offset"
+  | "ends_in_whole";
 
 export type CharmRule = {
   charm_rule_id: number;
@@ -70,6 +78,20 @@ export function applyCharmRule(price: number, rule: CharmRule): number {
       const next = Math.ceil(price);
       const out = next - v;
       return roundCents(Math.max(0, out));
+    }
+    case "ends_in_whole": {
+      // Snap UP to the smallest integer ≥ price whose last K digits
+      // equal v (where K = digit count of v). Cents cleared to .00.
+      // value=9 + price=142.50 → 149; value=99 + price=142 → 199.
+      const target = Math.floor(v); // integer-only
+      if (target < 0) return price;
+      const k = target === 0 ? 1 : Math.floor(Math.log10(target)) + 1;
+      const base = Math.pow(10, k);
+      let bucket = Math.ceil((price - target) / base);
+      if (bucket < 0) bucket = 0;
+      let candidate = bucket * base + target;
+      if (candidate < price) candidate += base;
+      return roundCents(candidate);
     }
     default:
       return price;

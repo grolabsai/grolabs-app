@@ -59,7 +59,7 @@ export function EngagementLineChart({
             width={42}
           />
           <Tooltip
-            formatter={(v) =>
+            formatter={(v: unknown) =>
               typeof v === "number" ? `${(v * 100).toFixed(1)}%` : String(v)
             }
             contentStyle={{

@@ -455,3 +455,4 @@ Items here are intentional shortcuts or pre-rename artifacts that need follow-up
 
 - [`search-foundations.md`](docs/policy/search-foundations.md) — Stages 0 & 1 of the search roadmap. Foundations + basic search live on Wazú via Meilisearch Cloud. Read before any search-related implementation.
 - [`wc-import.md`](docs/policy/wc-import.md) — One-way pull from WooCommerce into Scout's catalog tables (categories + products). v1 is raw preservation only; enrichment, variant restructuring, and category matching are explicitly deferred to future processes.
+- [`ga4-integration.md`](docs/policy/ga4-integration.md) — Read-only Google Analytics 4 integration. Hybrid storage (daily snapshots in Scout DB + on-demand real-time queries). Alert pipeline for top-3 traffic-health metrics. New `/dashboard/traffic` surface as part of the multi-section dashboard described in [`docs/design/dashboard.md`](docs/design/dashboard.md).

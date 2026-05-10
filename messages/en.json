@@ -1034,6 +1034,61 @@
         "indexUid": "UID: {uid}",
         "indexFailed": "Could not create index"
       }
+    },
+    "ga4": {
+      "navLabel": "Google Analytics",
+      "pageTitle": "Google Analytics",
+      "pageDescription": "Connect your Google Analytics 4 property to power the traffic dashboard and daily alerts.",
+      "preConnect": {
+        "intro": "Connect a GA4 property (read-only) to pull daily traffic metrics and enable health alerts.",
+        "bulletDaily": "Sessions, users, engagement, top pages — refreshed every 6 hours.",
+        "bulletAlerts": "Auto-alerts when sessions, engagement, or channel mix change meaningfully.",
+        "bulletRealtime": "Live active-users widget on the traffic dashboard."
+      },
+      "fields": {
+        "propertyId": "GA4 property ID",
+        "propertyIdHint": "Numeric ID of your GA4 property (Admin → Property settings). Digits only."
+      },
+      "status": {
+        "connected": "Connected",
+        "lastPullOk": "Last pull {time} ago · {latency} ms",
+        "lastPullFailed": "Last pull failed {time} ago: {error}",
+        "neverPulled": "No pull recorded yet."
+      },
+      "actions": {
+        "connect": "Connect Google Analytics",
+        "savePropertyId": "Save ID",
+        "test": "Test connection",
+        "pullNow": "Pull now",
+        "disconnect": "Disconnect"
+      },
+      "disconnect": {
+        "confirm": "Disconnect Google Analytics? This deletes the stored token and stops pulls."
+      },
+      "toast": {
+        "connected": "Google Analytics connected",
+        "disconnected": "Google Analytics disconnected",
+        "disconnectFailed": "Could not disconnect",
+        "propertyIdSaved": "Property ID saved",
+        "saveFailed": "Could not save",
+        "missingPropertyId": "Enter the property ID",
+        "testSuccess": "Connection succeeded",
+        "testFailed": "Test failed",
+        "pullSuccess": "Pull succeeded",
+        "pullFailed": "Pull failed",
+        "pullSummary": "{rows} rows written"
+      },
+      "oauthErrors": {
+        "generic": "Try connecting again.",
+        "user_denied": "You cancelled the authorization.",
+        "missing_params": "Google's response was incomplete.",
+        "state_mismatch": "OAuth state mismatch.",
+        "invalid_state": "Invalid OAuth state.",
+        "membership_mismatch": "Membership mismatch.",
+        "exchange_failed": "Token exchange with Google failed.",
+        "no_refresh_token": "Google did not return a refresh token.",
+        "save_failed": "Could not save credentials."
+      }
     }
   },
   "sync": {

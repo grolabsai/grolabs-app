@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   Receipt,
   Truck,
+  LineChart,
   type LucideIcon,
 } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
@@ -66,6 +67,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
   const tNav = useTranslations("nav");
   const t = useTranslations("configuration.algolia");
   const tSearch = useTranslations("configuration.search");
+  const tGa4 = useTranslations("configuration.ga4");
 
   const NAV: NavGroup[] = [
     {
@@ -130,6 +132,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         { href: "/configuration/search" as Route, label: tSearch("navLabel"), icon: Telescope, useIconWrapper: true },
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
         { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
+        { href: "/configuration/ga4" as Route, label: tGa4("navLabel"), icon: LineChart, useIconWrapper: true },
         { href: null, label: tNav("storeSettings"), icon: Settings },
       ],
     },

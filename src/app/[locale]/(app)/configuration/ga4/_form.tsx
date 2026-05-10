@@ -1,0 +1,261 @@
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { CheckCircle2, XCircle, RefreshCw, Unplug, ExternalLink } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import {
+  disconnectGa4,
+  pullNowGa4,
+  saveGa4PropertyId,
+  testGa4Connection,
+} from "./actions";
+
+function timeAgo(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  const days = Math.floor(diff / 86400);
+  if (days < 30) return `${days}d`;
+  return new Date(iso).toLocaleDateString();
+}
+
+type InitialValues = {
+  propertyId?: string;
+  oauthAccountEmail?: string;
+  connectedAt?: string;
+  lastPullAt?: string;
+  lastPullStatus?: "ok" | "error";
+  lastPullError?: string;
+  lastPullLatencyMs?: number;
+};
+
+type Props = {
+  initialValues: InitialValues;
+  hasRefreshToken: boolean;
+};
+
+export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
+  const t = useTranslations("configuration.ga4");
+  const params = useSearchParams();
+
+  const [propertyId, setPropertyId] = useState(initialValues.propertyId ?? "");
+  const [pending, startTransition] = useTransition();
+
+  // OAuth callback toasts
+  useEffect(() => {
+    const err = params.get("error");
+    if (err) {
+      toast.error(t(`oauthErrors.${err}` as never), {
+        description: t("oauthErrors.generic"),
+      });
+    } else if (params.get("connected") === "1") {
+      toast.success(t("toast.connected"));
+    }
+  }, [params, t]);
+
+  // ── Pre-connect: render CTA only ────────────────────────────────────────
+  if (!hasRefreshToken) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
+        <p style={{ fontSize: 14, color: "var(--s-text-secondary)" }}>
+          {t("preConnect.intro")}
+        </p>
+        <ul style={{ fontSize: 13, color: "var(--s-text-secondary)", paddingLeft: 18 }}>
+          <li>{t("preConnect.bulletDaily")}</li>
+          <li>{t("preConnect.bulletAlerts")}</li>
+          <li>{t("preConnect.bulletRealtime")}</li>
+        </ul>
+        <div>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- /api/v1/* is an API route, not a Next page; <Link> is wrong here. */}
+          <a href="/api/v1/integrations/ga4/auth">
+            <Button type="button">
+              <ExternalLink size={16} />
+              <span style={{ marginLeft: 6 }}>{t("actions.connect")}</span>
+            </Button>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Post-connect: status panel + property ID + actions ──────────────────
+  const lastPull = initialValues.lastPullAt;
+  const lastOk = initialValues.lastPullStatus === "ok";
+
+  function onSavePropertyId() {
+    if (!propertyId.trim()) {
+      toast.error(t("toast.missingPropertyId"));
+      return;
+    }
+    startTransition(async () => {
+      const r = await saveGa4PropertyId({ propertyId });
+      if (!r.ok) {
+        toast.error(t("toast.saveFailed"), { description: r.error });
+        return;
+      }
+      toast.success(t("toast.propertyIdSaved"));
+    });
+  }
+
+  function onTest() {
+    startTransition(async () => {
+      const r = await testGa4Connection();
+      if (r.ok) {
+        toast.success(t("toast.testSuccess"), {
+          description: `${r.latencyMs} ms`,
+        });
+      } else {
+        toast.error(t("toast.testFailed"), { description: r.message });
+      }
+    });
+  }
+
+  function onPullNow() {
+    startTransition(async () => {
+      const r = await pullNowGa4();
+      if (r.ok) {
+        const total =
+          r.rowsBySurface.session +
+          r.rowsBySurface.traffic +
+          r.rowsBySurface.page +
+          r.rowsBySurface.geo +
+          r.rowsBySurface.device;
+        toast.success(t("toast.pullSuccess"), {
+          description: t("toast.pullSummary", { rows: total }),
+        });
+      } else {
+        toast.error(t("toast.pullFailed"), { description: r.error });
+      }
+    });
+  }
+
+  function onDisconnect() {
+    if (!window.confirm(t("disconnect.confirm"))) return;
+    startTransition(async () => {
+      const r = await disconnectGa4();
+      if (r.ok) toast.success(t("toast.disconnected"));
+      else toast.error(t("toast.disconnectFailed"), { description: r.error });
+    });
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
+      {/* Connection status */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 12px",
+          borderRadius: "var(--s-radius-md)",
+          background: "var(--s-success-bg)",
+          color: "var(--s-success-text)",
+          fontSize: 12,
+        }}
+      >
+        <CheckCircle2 size={14} />
+        <span>{t("status.connected")}</span>
+        {initialValues.oauthAccountEmail ? (
+          <span style={{ color: "var(--s-text-secondary)" }}>
+            · {initialValues.oauthAccountEmail}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Property ID */}
+      <div>
+        <FloatingLabelInput
+          id="ga4-property-id"
+          label={t("fields.propertyId")}
+          placeholder="123456789"
+          value={propertyId}
+          onChange={(e) => setPropertyId(e.target.value.replace(/[^0-9]/g, ""))}
+          disabled={pending}
+        />
+        <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+          {t("fields.propertyIdHint")}
+        </p>
+        <div style={{ marginTop: 8 }}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSavePropertyId}
+            disabled={pending}
+          >
+            {t("actions.savePropertyId")}
+          </Button>
+        </div>
+      </div>
+
+      {/* Last pull */}
+      <div
+        style={{
+          padding: "10px 12px",
+          border: "0.5px solid var(--s-border)",
+          borderRadius: "var(--s-radius-md)",
+          fontSize: 12,
+          color: "var(--s-text-secondary)",
+        }}
+      >
+        {lastPull ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {lastOk ? (
+              <CheckCircle2 size={14} color="var(--s-success-text)" />
+            ) : (
+              <XCircle size={14} color="var(--s-danger-text)" />
+            )}
+            <span>
+              {lastOk
+                ? t("status.lastPullOk", {
+                    time: timeAgo(lastPull),
+                    latency: initialValues.lastPullLatencyMs ?? 0,
+                  })
+                : t("status.lastPullFailed", {
+                    time: timeAgo(lastPull),
+                    error: initialValues.lastPullError ?? "",
+                  })}
+            </span>
+          </div>
+        ) : (
+          <span>{t("status.neverPulled")}</span>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: 8 }}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onTest}
+          disabled={pending || !propertyId}
+        >
+          {t("actions.test")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onPullNow}
+          disabled={pending || !propertyId}
+        >
+          <RefreshCw size={14} />
+          <span style={{ marginLeft: 6 }}>{t("actions.pullNow")}</span>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onDisconnect}
+          disabled={pending}
+        >
+          <Unplug size={14} />
+          <span style={{ marginLeft: 6 }}>{t("actions.disconnect")}</span>
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -1114,6 +1114,61 @@
         "reindexCounts": "{indexed} indexados · {failed} con error",
         "reindexFailed": "No se pudo completar el reindexado"
       }
+    },
+    "ga4": {
+      "navLabel": "Google Analytics",
+      "pageTitle": "Google Analytics",
+      "pageDescription": "Conecta tu propiedad de Google Analytics 4 para alimentar el panel de tráfico y las alertas diarias.",
+      "preConnect": {
+        "intro": "Conecta una propiedad de GA4 (cuenta de solo lectura) para extraer las métricas diarias de tráfico y habilitar las alertas de salud.",
+        "bulletDaily": "Sesiones, usuarios, engagement y páginas top — actualizado cada 6 horas.",
+        "bulletAlerts": "Alertas automáticas cuando las sesiones, el engagement o el mix de canales cambian de forma significativa.",
+        "bulletRealtime": "Widget de usuarios activos en vivo en el panel de tráfico."
+      },
+      "fields": {
+        "propertyId": "ID de propiedad GA4",
+        "propertyIdHint": "El ID numérico de tu propiedad GA4 (Admin → Property settings). Solo dígitos."
+      },
+      "status": {
+        "connected": "Conectado",
+        "lastPullOk": "Última extracción hace {time} · {latency} ms",
+        "lastPullFailed": "Última extracción falló hace {time}: {error}",
+        "neverPulled": "Aún no se ha hecho la primera extracción."
+      },
+      "actions": {
+        "connect": "Conectar Google Analytics",
+        "savePropertyId": "Guardar ID",
+        "test": "Probar conexión",
+        "pullNow": "Extraer ahora",
+        "disconnect": "Desconectar"
+      },
+      "disconnect": {
+        "confirm": "¿Desconectar Google Analytics? Esto borra el token y detiene las extracciones."
+      },
+      "toast": {
+        "connected": "Google Analytics conectado",
+        "disconnected": "Google Analytics desconectado",
+        "disconnectFailed": "No se pudo desconectar",
+        "propertyIdSaved": "ID de propiedad guardado",
+        "saveFailed": "No se pudo guardar",
+        "missingPropertyId": "Ingresa el ID de propiedad",
+        "testSuccess": "Conexión exitosa",
+        "testFailed": "Falló la prueba",
+        "pullSuccess": "Extracción exitosa",
+        "pullFailed": "Falló la extracción",
+        "pullSummary": "{rows} filas escritas"
+      },
+      "oauthErrors": {
+        "generic": "Vuelve a intentar la conexión.",
+        "user_denied": "Cancelaste la autorización.",
+        "missing_params": "La respuesta de Google fue incompleta.",
+        "state_mismatch": "El estado de OAuth no coincide.",
+        "invalid_state": "Estado de OAuth inválido.",
+        "membership_mismatch": "La membresía no coincide.",
+        "exchange_failed": "Falló el intercambio de tokens con Google.",
+        "no_refresh_token": "Google no devolvió refresh token.",
+        "save_failed": "No se pudieron guardar las credenciales."
+      }
     }
   },
   "sync": {

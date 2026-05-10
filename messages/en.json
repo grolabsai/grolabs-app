@@ -39,6 +39,31 @@
     "userMenu": "User menu: {email}",
     "signOut": "Sign out"
   },
+  "shell": {
+    "instanceSwitcher": {
+      "triggerLabel": "Switch instance",
+      "currentBadge": "Current",
+      "noInstance": "No instance",
+      "createEntry": "New instance",
+      "switching": "Switching…",
+      "switchFailed": "Could not switch instance.",
+      "modal": {
+        "title": "Create new instance",
+        "description": "Your new instance starts empty. Configure WooCommerce, Meilisearch, and other integrations from Configuration after you create it.",
+        "nameLabel": "Name",
+        "namePlaceholder": "My Store",
+        "slugLabel": "URL slug",
+        "slugPlaceholder": "auto-generated",
+        "cancel": "Cancel",
+        "submit": "Create instance",
+        "submitting": "Creating…",
+        "errors": {
+          "invalidName": "Enter a name with at least one letter or number.",
+          "saveFailed": "Could not create instance. Try again."
+        }
+      }
+    }
+  },
   "localeSwitcher": {
     "label": "Language",
     "es": "Español",

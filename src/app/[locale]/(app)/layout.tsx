@@ -28,24 +28,32 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Grab the user's current instance (they should have exactly one in
-  // Phase 1 per D19). Used by the sidebar to show which instance is active.
+  // Pull every active membership for the user. We need the full set so the
+  // topbar dropdown can list all instances; the current one is the row with
+  // is_current=true (the partial unique index guarantees at most one).
   // Supabase types the joined `instance` relation as an array; in practice a
-  // single instance_member row has exactly one instance, so we normalize here.
-  const { data: membership } = await supabase
+  // membership row has exactly one instance, so we normalize at the boundary.
+  const { data: memberships } = await supabase
     .from("instance_member")
-    .select("instance_id, role, instance:instance_id(name, slug, kind)")
+    .select("instance_id, is_current, instance:instance_id(name, slug, kind)")
     .eq("user_id", user.id)
-    .eq("is_current", true)
-    .maybeSingle();
+    .eq("is_active", true);
 
-  const instanceRel = membership?.instance as
-    | { name: string; slug: string; kind: string }
-    | { name: string; slug: string; kind: string }[]
-    | null
-    | undefined;
-  const instanceObj = Array.isArray(instanceRel) ? instanceRel[0] : instanceRel;
-  const instanceName = instanceObj?.name ?? "Sin instancia";
+  type InstanceRel = { name: string; slug: string; kind: string } | null;
+  const normalized = (memberships ?? []).map((m) => {
+    const rel = m.instance as InstanceRel | InstanceRel[] | null | undefined;
+    const obj: InstanceRel = Array.isArray(rel) ? rel[0] ?? null : rel ?? null;
+    return {
+      instanceId: m.instance_id as number,
+      name: obj?.name ?? "",
+      isCurrent: !!m.is_current,
+    };
+  });
+  const instances = normalized
+    .filter((i) => i.name.length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const currentInstance = instances.find((i) => i.isCurrent) ?? null;
+  const instanceName = currentInstance?.name ?? "Sin instancia";
 
   // User initials for the topbar avatar — from email local part if no name.
   const initials = (user.email ?? "??").slice(0, 2).toUpperCase();
@@ -55,7 +63,12 @@ export default async function AppLayout({
       <div className="s-app">
         <Sidebar instanceName={instanceName} />
         <main className="s-main">
-          <TopBar initials={initials} userEmail={user.email ?? ""} />
+          <TopBar
+            initials={initials}
+            userEmail={user.email ?? ""}
+            instances={instances}
+            currentInstanceId={currentInstance?.instanceId ?? null}
+          />
           <div className="s-shell-body">
             <div className="s-shell-content">{children}</div>
             <AgentPanel />

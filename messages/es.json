@@ -39,6 +39,31 @@
     "userMenu": "Menú de usuario: {email}",
     "signOut": "Cerrar sesión"
   },
+  "shell": {
+    "instanceSwitcher": {
+      "triggerLabel": "Cambiar de instancia",
+      "currentBadge": "Actual",
+      "noInstance": "Sin instancia",
+      "createEntry": "Nueva instancia",
+      "switching": "Cambiando…",
+      "switchFailed": "No se pudo cambiar de instancia.",
+      "modal": {
+        "title": "Crear nueva instancia",
+        "description": "Tu nueva instancia empezará vacía. Configura WooCommerce, Meilisearch y demás integraciones desde Configuración después de crearla.",
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Mi Tienda",
+        "slugLabel": "URL slug",
+        "slugPlaceholder": "se-genera-automaticamente",
+        "cancel": "Cancelar",
+        "submit": "Crear instancia",
+        "submitting": "Creando…",
+        "errors": {
+          "invalidName": "Ingresa un nombre con al menos una letra o número.",
+          "saveFailed": "No se pudo crear la instancia. Intenta de nuevo."
+        }
+      }
+    }
+  },
   "localeSwitcher": {
     "label": "Idioma",
     "es": "Español",

@@ -192,6 +192,46 @@ export default async function PricingProvidersPage() {
                   </span>
                 ) : null}
               </div>
+              {p.brand_names.length > 0 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 4,
+                    marginTop: 8,
+                    paddingTop: 8,
+                    borderTop: "1px solid var(--s-border)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      color: "var(--s-text-tertiary)",
+                      width: "100%",
+                      marginBottom: 2,
+                    }}
+                  >
+                    {t("brandsLabel")}
+                  </span>
+                  {p.brand_names.map((name) => (
+                    <span
+                      key={name}
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 8px",
+                        borderRadius: 4,
+                        background: "var(--s-surface-alt)",
+                        color: "var(--s-text-secondary)",
+                      }}
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </Link>
           ))}
         </div>

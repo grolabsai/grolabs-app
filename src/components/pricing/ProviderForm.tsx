@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import {
   saveProvider,
   setProviderActive,
@@ -70,24 +71,14 @@ export function ProviderForm({
     is_active: initial?.is_active ?? true,
   });
 
-  const [selectedBrandIds, setSelectedBrandIds] = useState<Set<number>>(
-    () => new Set(initialBrandIds),
-  );
+  const [selectedBrandIds, setSelectedBrandIds] =
+    useState<number[]>(initialBrandIds);
 
   function update<K extends keyof ProviderInput>(
     key: K,
     value: ProviderInput[K],
   ) {
     setForm((f) => ({ ...f, [key]: value }));
-  }
-
-  function toggleBrand(brandId: number) {
-    setSelectedBrandIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(brandId)) next.delete(brandId);
-      else next.add(brandId);
-      return next;
-    });
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -104,10 +95,7 @@ export function ProviderForm({
       }
       // Brand assignment is best-effort — failures here surface as a toast
       // but don't roll back the provider write.
-      const brandRes = await setProviderBrands(
-        res.providerId,
-        Array.from(selectedBrandIds),
-      );
+      const brandRes = await setProviderBrands(res.providerId, selectedBrandIds);
       if (!brandRes.ok) {
         toast.warning(t("toastBrandsError"), { description: brandRes.error });
       } else {
@@ -167,6 +155,31 @@ export function ProviderForm({
             />
           </Field>
         </Row>
+      </Section>
+
+      {/* Brands distributed — sits right after identity so the user
+         tags the provider with what they sell before getting into
+         contact/banking detail. Uses TreeMultiSelectCombobox so we
+         scale gracefully past hundreds of brands. */}
+      <Section
+        title={t("sections.brands")}
+        hint={brands.length === 0 ? t("brands.empty") : t("brands.hint")}
+      >
+        {brands.length > 0 ? (
+          <TreeMultiSelectCombobox
+            value={selectedBrandIds}
+            onChange={setSelectedBrandIds}
+            nodes={brands.map((b) => ({
+              id: b.brand_id,
+              label: b.brand_name,
+              parentId: null,
+            }))}
+            placeholder={t("brands.placeholder")}
+            searchPlaceholder={t("brands.searchPlaceholder")}
+            emptyText={t("brands.searchEmpty")}
+            removeTagAriaLabel={t("brands.removeTag")}
+          />
+        ) : null}
       </Section>
 
       {/* Contact */}
@@ -323,37 +336,6 @@ export function ProviderForm({
             />
           </Field>
         </Row>
-      </Section>
-
-      {/* Brands */}
-      <Section
-        title={t("sections.brands")}
-        hint={brands.length === 0 ? t("brands.empty") : t("brands.hint")}
-      >
-        {brands.length > 0 ? (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-            }}
-          >
-            {brands.map((b) => {
-              const active = selectedBrandIds.has(b.brand_id);
-              return (
-                <button
-                  type="button"
-                  key={b.brand_id}
-                  onClick={() => toggleBrand(b.brand_id)}
-                  className="pricing-brand-chip"
-                  data-active={active}
-                >
-                  {b.brand_name}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
       </Section>
 
       {/* Status — only show on edit; create defaults to active */}

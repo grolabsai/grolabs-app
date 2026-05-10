@@ -87,24 +87,71 @@ const PROVIDER_DETAIL_COLUMNS = `
 ` as const;
 
 /**
+ * Item returned by listProviders — same shape as ProviderDetail with the
+ * names of every active brand the provider distributes attached for the
+ * card grid. brand_names is alphabetically sorted.
+ */
+export type ProviderListItem = ProviderDetail & {
+  brand_names: string[];
+};
+
+/**
  * List providers visible on the provider grid. Returns active and inactive
  * rows so the UI can show a "ver inactivos" toggle later. Sorted by name.
+ *
+ * Each provider also carries the names of the brands it currently
+ * distributes (active provider_brand rows only) so the card can show them
+ * inline.
  */
 export async function listProviders(): Promise<
-  | { ok: true; providers: ProviderDetail[] }
+  | { ok: true; providers: ProviderListItem[] }
   | { ok: false; error: string }
 > {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { ok: false, error: "no_instance" };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("provider")
-    .select(PROVIDER_DETAIL_COLUMNS)
-    .order("provider_name", { ascending: true });
+  const [{ data: provRows, error: provErr }, { data: linkRows, error: linkErr }] =
+    await Promise.all([
+      supabase
+        .from("provider")
+        .select(PROVIDER_DETAIL_COLUMNS)
+        .order("provider_name", { ascending: true }),
+      supabase
+        .from("provider_brand")
+        .select("provider_id, brand:brand_id(brand_name)")
+        .eq("is_active", true),
+    ]);
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, providers: (data ?? []) as ProviderDetail[] };
+  if (provErr) return { ok: false, error: provErr.message };
+  if (linkErr) return { ok: false, error: linkErr.message };
+
+  // The Supabase typings flatten the FK as an array even when it's
+  // many-to-one in practice. Cast through unknown and read defensively.
+  const namesByProvider = new Map<number, string[]>();
+  type LinkRow = {
+    provider_id: number;
+    brand: { brand_name: string } | { brand_name: string }[] | null;
+  };
+  for (const r of (linkRows ?? []) as unknown as LinkRow[]) {
+    const brand = Array.isArray(r.brand) ? r.brand[0] : r.brand;
+    const name = brand?.brand_name;
+    if (!name) continue;
+    const list = namesByProvider.get(r.provider_id) ?? [];
+    list.push(name);
+    namesByProvider.set(r.provider_id, list);
+  }
+  for (const list of namesByProvider.values()) {
+    list.sort((a, b) => a.localeCompare(b, "es"));
+  }
+
+  const providers: ProviderListItem[] = ((provRows ?? []) as ProviderDetail[]).map(
+    (p) => ({
+      ...p,
+      brand_names: namesByProvider.get(p.provider_id) ?? [],
+    }),
+  );
+  return { ok: true, providers };
 }
 
 /** Used by the import dialog dropdown — only active providers, minimal cols. */

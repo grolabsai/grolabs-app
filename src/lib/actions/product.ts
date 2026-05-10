@@ -147,6 +147,7 @@ export type CreateProductFullAttributeValue = {
 
 export type CreateProductFullPhoto = {
   url: string;
+  altText: string | null;
   isPrimary: boolean;
 };
 
@@ -320,6 +321,7 @@ export async function createProductFull(input: CreateProductFullInput) {
       instance_id: instanceId,
       product_id: productId,
       image_url: p.url.trim(),
+      alt_text: p.altText?.trim() || null,
       is_primary: p.isPrimary,
       sort_order: idx,
     }));
@@ -335,43 +337,60 @@ export async function createProductFull(input: CreateProductFullInput) {
   return { ok: true as const, productId };
 }
 
+export type PhotoInput = {
+  mediaId?: number;
+  url: string;
+  altText: string | null;
+  isPrimary: boolean;
+  sortOrder: number;
+};
+
 export type UpdateProductPhotosInput = {
   productId: number;
-  photos: Array<{
-    mediaId?: number;
-    url: string;
-    isPrimary: boolean;
-    sortOrder: number;
-  }>;
+  photos: PhotoInput[];
+};
+
+export type UpdateVariantPhotosInput = {
+  productId: number;
+  variantId: number;
+  photos: PhotoInput[];
 };
 
 /**
- * Reconcile product_media against the desired set:
- *   - any existing row with a mediaId not present in the input is deleted
- *   - rows with a mediaId are UPDATEd in place (image_url / is_primary / sort_order)
+ * Reconcile product_media for a given (product_id, variant_id) scope.
+ *
+ *   - any existing row in scope with a mediaId not present in the
+ *     input is deleted
+ *   - rows with a mediaId are UPDATEd in place (image_url, alt_text,
+ *     is_primary, sort_order)
  *   - rows without a mediaId are INSERTed
  *
- * Enforces exactly-one is_primary when the desired set is non-empty: if
- * the caller submitted zero primaries we promote the first row; if they
- * submitted more than one we keep the first and demote the rest. Empty
- * sets are allowed (a product can have no images).
+ * Enforces exactly-one is_primary per scope when the desired set is
+ * non-empty: variant-scoped galleries each have their own primary, and
+ * product-scoped (variant_id IS NULL) photos have one too. Variant
+ * primaries override the parent primary at render time (see search
+ * document-builder and woocommerce-mapping).
  */
-export async function updateProductPhotos(input: UpdateProductPhotosInput) {
+async function reconcilePhotos(
+  productId: number,
+  variantId: number | null,
+  photos: PhotoInput[],
+): Promise<{ ok: true } | { error: string }> {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "No instance" };
 
   const supabase = await createClient();
 
-  const desired = input.photos
+  const desired = photos
     .map((p, idx) => ({
       mediaId: p.mediaId,
       url: p.url.trim(),
+      altText: p.altText?.trim() ? p.altText.trim() : null,
       isPrimary: !!p.isPrimary,
       sortOrder: Number.isFinite(p.sortOrder) ? p.sortOrder : idx,
     }))
     .filter((p) => p.url.length > 0);
 
-  // Enforce exactly-one primary when there's at least one photo.
   if (desired.length > 0) {
     const firstPrimaryIdx = desired.findIndex((p) => p.isPrimary);
     const promote = firstPrimaryIdx === -1 ? 0 : firstPrimaryIdx;
@@ -380,10 +399,17 @@ export async function updateProductPhotos(input: UpdateProductPhotosInput) {
     });
   }
 
-  const { data: existing, error: existErr } = await supabase
+  // Read existing rows in scope. variantId === null filters with .is(),
+  // a number with .eq() — Supabase needs the right operator either way.
+  let existingQuery = supabase
     .from("product_media")
     .select("media_id")
-    .eq("product_id", input.productId);
+    .eq("product_id", productId);
+  existingQuery =
+    variantId === null
+      ? existingQuery.is("variant_id", null)
+      : existingQuery.eq("variant_id", variantId);
+  const { data: existing, error: existErr } = await existingQuery;
   if (existErr) return { error: existErr.message };
 
   const existingIds = new Set(
@@ -398,7 +424,7 @@ export async function updateProductPhotos(input: UpdateProductPhotosInput) {
     const { error: delErr } = await supabase
       .from("product_media")
       .delete()
-      .eq("product_id", input.productId)
+      .eq("product_id", productId)
       .in("media_id", toDelete);
     if (delErr) return { error: delErr.message };
   }
@@ -409,6 +435,7 @@ export async function updateProductPhotos(input: UpdateProductPhotosInput) {
         .from("product_media")
         .update({
           image_url: p.url,
+          alt_text: p.altText,
           is_primary: p.isPrimary,
           sort_order: p.sortOrder,
         })
@@ -417,8 +444,10 @@ export async function updateProductPhotos(input: UpdateProductPhotosInput) {
     } else {
       const { error: insErr } = await supabase.from("product_media").insert({
         instance_id: instanceId,
-        product_id: input.productId,
+        product_id: productId,
+        variant_id: variantId,
         image_url: p.url,
+        alt_text: p.altText,
         is_primary: p.isPrimary,
         sort_order: p.sortOrder,
       });
@@ -426,9 +455,19 @@ export async function updateProductPhotos(input: UpdateProductPhotosInput) {
     }
   }
 
-  await triggerProductIndex(instanceId, input.productId);
-  revalidatePath(`/catalog/products/${input.productId}`, "page");
+  await triggerProductIndex(instanceId, productId);
+  revalidatePath(`/catalog/products/${productId}`, "page");
   return { ok: true as const };
+}
+
+/** Reconcile the product-level (variant_id IS NULL) gallery. */
+export async function updateProductPhotos(input: UpdateProductPhotosInput) {
+  return reconcilePhotos(input.productId, null, input.photos);
+}
+
+/** Reconcile a single variant's gallery (variant_id = X). */
+export async function updateVariantPhotos(input: UpdateVariantPhotosInput) {
+  return reconcilePhotos(input.productId, input.variantId, input.photos);
 }
 
 export async function deleteProduct(input: { productId: number }) {

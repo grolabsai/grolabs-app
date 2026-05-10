@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, ImageIcon, Trash2, Plus } from "lucide-react";
 import {
   createVariant,
   deleteVariant,
@@ -20,10 +20,13 @@ import {
 } from "@/lib/actions/variant";
 import { formatGTQ } from "@/lib/format";
 import { WoocommerceIdBadge, type VariantForDisplay } from "./ProductEditor";
+import { PhotoManager, type PhotoState } from "./PhotoManager";
 
 type Props = {
   productId: number;
   variants: VariantForDisplay[];
+  variantPhotosById: Map<number, PhotoState[]>;
+  onVariantPhotosChange: (variantId: number, next: PhotoState[]) => Promise<void>;
   onSaved: () => void;
 };
 
@@ -41,10 +44,26 @@ type Props = {
  * data_type='quantity' axes. The action surface to support that
  * (updateVariantAxisValue) is already in place.
  */
-export function VariantsTable({ productId, variants, onSaved }: Props) {
+export function VariantsTable({
+  productId,
+  variants,
+  variantPhotosById,
+  onVariantPhotosChange,
+  onSaved,
+}: Props) {
   const t = useTranslations("product.variants");
 
   const [draft, setDraft] = useState<DraftRow | null>(null);
+  const [openPhotosFor, setOpenPhotosFor] = useState<Set<number>>(new Set());
+
+  function togglePhotos(variantId: number) {
+    setOpenPhotosFor((prev) => {
+      const next = new Set(prev);
+      if (next.has(variantId)) next.delete(variantId);
+      else next.add(variantId);
+      return next;
+    });
+  }
   const [pending, startTransition] = useTransition();
   const draftFirstInputRef = useRef<HTMLInputElement>(null);
 
@@ -131,13 +150,16 @@ export function VariantsTable({ productId, variants, onSaved }: Props) {
               <th className="text-right">Costo</th>
               <th>WC ID</th>
               <th>Estado</th>
+              <th className="text-center" title={t("photosColTitle")}>
+                <Icon icon={ImageIcon} size={12} />
+              </th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {variants.length === 0 && !draft ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <div className="s-empty" style={{ padding: "32px 20px" }}>
                     <div className="s-empty-sub">
                       Este producto aún no tiene variantes.
@@ -151,6 +173,11 @@ export function VariantsTable({ productId, variants, onSaved }: Props) {
                   <VariantRow
                     key={v.variant_id}
                     variant={v}
+                    photosOpen={openPhotosFor.has(v.variant_id)}
+                    photoCount={variantPhotosById.get(v.variant_id)?.length ?? 0}
+                    onTogglePhotos={() => togglePhotos(v.variant_id)}
+                    photos={variantPhotosById.get(v.variant_id) ?? []}
+                    onPhotosChange={(next) => onVariantPhotosChange(v.variant_id, next)}
                     onSaved={onSaved}
                   />
                 ))}
@@ -188,9 +215,19 @@ export function VariantsTable({ productId, variants, onSaved }: Props) {
 
 function VariantRow({
   variant,
+  photosOpen,
+  photoCount,
+  onTogglePhotos,
+  photos,
+  onPhotosChange,
   onSaved,
 }: {
   variant: VariantForDisplay;
+  photosOpen: boolean;
+  photoCount: number;
+  onTogglePhotos: () => void;
+  photos: PhotoState[];
+  onPhotosChange: (next: PhotoState[]) => Promise<void>;
   onSaved: () => void;
 }) {
   const t = useTranslations("product.variants");
@@ -243,6 +280,7 @@ function VariantRow({
   }
 
   return (
+    <>
     <tr>
       <td>
         <CellText
@@ -306,6 +344,30 @@ function VariantRow({
           }}
         />
       </td>
+      <td className="text-center">
+        <button
+          type="button"
+          onClick={onTogglePhotos}
+          aria-label={t("togglePhotos")}
+          aria-expanded={photosOpen}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            background: "transparent",
+            border: "0.5px solid var(--s-border)",
+            borderRadius: "var(--s-radius-sm)",
+            padding: "3px 8px",
+            cursor: "pointer",
+            fontSize: 11,
+            color: photoCount > 0 ? "var(--s-text)" : "var(--s-text-muted)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          <Icon icon={photosOpen ? ChevronDown : ChevronRight} size={12} />
+          {photoCount}
+        </button>
+      </td>
       <td>
         {confirmingDelete ? (
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -348,6 +410,116 @@ function VariantRow({
         )}
       </td>
     </tr>
+    {photosOpen ? (
+      <tr>
+        <td colSpan={10} style={{ padding: 0, background: "var(--s-surface-alt)" }}>
+          <VariantPhotosPanel
+            variantName={variant.variant_name ?? variant.sku ?? `#${variant.variant_id}`}
+            photos={photos}
+            onChange={onPhotosChange}
+          />
+        </td>
+      </tr>
+    ) : null}
+    </>
+  );
+}
+
+// ─── Variant photos disclosure ──────────────────────────────────────────────
+
+/**
+ * Per-variant gallery embedded under a variant row when expanded.
+ * Variant-scoped photos override the parent's primary in WC sync and
+ * the search document — useful for variable products where each
+ * variation has a distinct hero (e.g. color swatches).
+ */
+function VariantPhotosPanel({
+  variantName,
+  photos,
+  onChange,
+}: {
+  variantName: string;
+  photos: PhotoState[];
+  onChange: (next: PhotoState[]) => Promise<void>;
+}) {
+  const t = useTranslations("product.variants");
+  const [saving, setSaving] = useState(false);
+
+  async function persist(next: PhotoState[]) {
+    setSaving(true);
+    try {
+      await onChange(next);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const onAdd = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    const next: PhotoState[] = [
+      ...photos,
+      {
+        url: trimmed,
+        altText: null,
+        isPrimary: photos.length === 0,
+        sortOrder: photos.length,
+      },
+    ];
+    void persist(next);
+  };
+
+  const onRemove = (idx: number) => {
+    const next = photos
+      .filter((_, i) => i !== idx)
+      .map((p, i) => ({ ...p, sortOrder: i }));
+    if (next.length > 0 && !next.some((p) => p.isPrimary)) {
+      next[0] = { ...next[0], isPrimary: true };
+    }
+    void persist(next);
+  };
+
+  const onSetPrimary = (idx: number) => {
+    const next = photos.map((p, i) => ({ ...p, isPrimary: i === idx }));
+    void persist(next);
+  };
+
+  const onReorder = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= photos.length || to >= photos.length) return;
+    const next = photos.slice();
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    const renumbered = next.map((p, i) => ({ ...p, sortOrder: i }));
+    void persist(renumbered);
+  };
+
+  const onAltTextChange = (idx: number, altText: string) => {
+    const next = photos.map((p, i) =>
+      i === idx ? { ...p, altText: altText || null } : p,
+    );
+    void persist(next);
+  };
+
+  return (
+    <div style={{ padding: 16, borderTop: "0.5px solid var(--s-border)" }}>
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
+          {t("photosTitle", { name: variantName })}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+          {t("photosSub")}
+        </div>
+      </div>
+      <PhotoManager
+        photos={photos}
+        onAdd={onAdd}
+        onRemove={onRemove}
+        onSetPrimary={onSetPrimary}
+        onReorder={onReorder}
+        onAltTextChange={onAltTextChange}
+        disabled={saving}
+      />
+    </div>
   );
 }
 
@@ -486,6 +658,9 @@ function DraftVariantRow({
           onCheckedChange={(c) => set("is_active", c)}
           disabled={pending}
         />
+      </td>
+      <td className="text-center">
+        <span style={{ color: "var(--s-text-muted)", fontSize: 11 }}>—</span>
       </td>
       <td>
         <button

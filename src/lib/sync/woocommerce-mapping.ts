@@ -98,24 +98,26 @@ export function mapProductToWooCommerce(
   const skippedVariantIds: number[] = [];
   const unmappedCategoryIds: number[] = [];
 
-  // Image set, primary first. If product_media is empty but the legacy
-  // `product.image_url` column is populated (which is the state of
-  // every WC-imported row before the product_media backfill /
-  // pull-products materialisation lands), fabricate a single entry so
-  // the sync still pushes an image to WC.
-  const sortedImages = (p.product_media ?? [])
+  // Parent-level images, primary first. Variant-scoped media (variant_id
+  // not null) belongs to a single variant and is plucked separately when
+  // each variation is mapped below. If the product has no parent-level
+  // media but the legacy `product.image_url` is populated (the state of
+  // WC-imported rows from before the product_media backfill landed),
+  // fabricate a single entry so the sync still pushes an image to WC.
+  const parentMedia = (p.product_media ?? [])
+    .filter((m) => m.variant_id == null)
     .slice()
     .sort((a, b) => {
       if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
       return (a.sort_order ?? 0) - (b.sort_order ?? 0);
     });
   const images: Array<{ src: string; alt?: string }> =
-    sortedImages.length > 0
-      ? sortedImages.map((m) => ({ src: m.image_url }))
+    parentMedia.length > 0
+      ? parentMedia.map((m) => ({ src: m.image_url }))
       : p.image_url
         ? [{ src: p.image_url }]
         : [];
-  const primaryImage = images[0];
+  const parentPrimaryImage = images[0];
 
   // Categories — emit WC ids from the pre-built map. Unmapped Scout
   // categories are reported back so the caller can surface a warning.
@@ -202,13 +204,28 @@ export function mapProductToWooCommerce(
     if (v.barcode) meta.push({ key: "barcode", value: v.barcode });
     if (Number.isFinite(costPrice) && costPrice !== null) meta.push({ key: "scout_cost", value: costPrice });
 
+    // Per-variation image: prefer the variant's own primary product_media
+    // row when present; otherwise inherit the parent's primary. WC
+    // expects a single { src } object on `variation.image`.
+    const variantOwnMedia = (p.product_media ?? [])
+      .filter((m) => m.variant_id === v.variant_id)
+      .slice()
+      .sort((a, b) => {
+        if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      });
+    const variantPrimary =
+      variantOwnMedia[0] !== undefined
+        ? { src: variantOwnMedia[0].image_url }
+        : undefined;
+
     variations.push({
       sku: v.sku.trim(),
       regular_price:
         Number.isFinite(listPrice) && listPrice !== null ? listPrice.toString() : undefined,
       stock_status: v.is_active ? "instock" : "outofstock",
       weight: Number.isFinite(weightKg) && weightKg !== null ? weightKg.toString() : undefined,
-      image: primaryImage,
+      image: variantPrimary ?? parentPrimaryImage,
       attributes: [
         {
           name: variantAxisName,

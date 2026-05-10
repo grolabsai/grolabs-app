@@ -73,6 +73,18 @@ export async function pullProducts(
           mapped.woocommerce_id,
           errors,
         );
+        // TODO: variant-level images. WC variations carry their own
+        // .image field on each entry of row.variations[]. Today the
+        // raw variations array is preserved on product.wc_raw (via
+        // map.ts — `variations` is not in MAPPED_KEYS) but Scout does
+        // not yet create product_variant rows from WC variations
+        // (variant restructuring is deferred per docs/policy/wc-import.md).
+        // When that lands, materialise one variant-scoped product_media
+        // row per variation.image, keyed on the corresponding
+        // product_variant.variant_id. Until then, parent-only media is
+        // the correct shape — variant_id stays NULL on every WC-imported
+        // media row, and the search/sync layers fall back to the parent
+        // primary for each variant.
         upserted += 1;
       } catch (err) {
         errors.push({

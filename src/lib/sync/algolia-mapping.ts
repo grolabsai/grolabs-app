@@ -30,7 +30,16 @@ export type AlgoliaSourceProduct = {
     category_id: number | null;
     category: { category_name: string; slug: string } | null;
   }>;
-  product_media: Array<{ image_url: string; is_primary: boolean; sort_order: number }>;
+  // variant_id is non-null for variant-scoped photos and null for
+  // product-level photos. Mappers filter on it: the parent payload
+  // uses null-only rows; each variation's .image prefers its own
+  // variant_id rows and falls back to the parent set.
+  product_media: Array<{
+    image_url: string;
+    is_primary: boolean;
+    sort_order: number;
+    variant_id: number | null;
+  }>;
   product_variant: Array<{
     variant_id: number;
     variant_name: string | null;
@@ -110,15 +119,18 @@ export const ALGOLIA_FIELD_MAPPINGS: FieldMappingRow[] = [
  * records. Skips variants without a SKU — Algolia rejects them.
  */
 export function mapProductToAlgoliaRecords(p: AlgoliaSourceProduct): AlgoliaRecord[] {
-  const sortedImages = (p.product_media ?? [])
+  // Parent-level media only — variant-scoped rows belong to a single
+  // variant and are projected onto that variant's record below.
+  const parentMedia = (p.product_media ?? [])
+    .filter((m) => m.variant_id == null)
     .slice()
     .sort((a, b) => {
       // Primary first, then by sort_order
       if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
       return (a.sort_order ?? 0) - (b.sort_order ?? 0);
     });
-  const primaryImage = sortedImages[0]?.image_url ?? null;
-  const allImageUrls = sortedImages.map((m) => m.image_url);
+  const parentPrimaryImage = parentMedia[0]?.image_url ?? null;
+  const allImageUrls = parentMedia.map((m) => m.image_url);
 
   const categories = (p.product_category_link ?? [])
     .map((l) => l.category?.category_name)
@@ -140,6 +152,20 @@ export function mapProductToAlgoliaRecords(p: AlgoliaSourceProduct): AlgoliaReco
     const variantSuffix = v.variant_name ? ` ${v.variant_name}` : "";
     const fullName = `${p.product_name}${variantSuffix}`.trim();
 
+    // Variant-scoped images take precedence over the parent set when
+    // present; otherwise the variant inherits the parent primary.
+    const variantMedia = (p.product_media ?? [])
+      .filter((m) => m.variant_id === v.variant_id)
+      .slice()
+      .sort((a, b) => {
+        if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      });
+    const variantPrimary = variantMedia[0]?.image_url ?? null;
+    const recordImages = variantMedia.length > 0
+      ? variantMedia.map((m) => m.image_url)
+      : allImageUrls;
+
     records.push({
       objectID: v.sku.trim(),
       product_id: p.product_id,
@@ -157,8 +183,8 @@ export function mapProductToAlgoliaRecords(p: AlgoliaSourceProduct): AlgoliaReco
       price: Number.isFinite(listPrice) ? (listPrice as number) : null,
       cost_price: Number.isFinite(costPrice) ? (costPrice as number) : null,
       currency,
-      image: primaryImage,
-      images: allImageUrls,
+      image: variantPrimary ?? parentPrimaryImage,
+      images: recordImages,
       in_stock: !!(p.is_active && v.is_active),
       is_active: !!v.is_active,
     });

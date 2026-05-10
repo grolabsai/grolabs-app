@@ -331,7 +331,14 @@ function displayValueForVariantAttribute(a: SourceVariantAttribute): string | nu
 function projectVariant(
   v: SourceVariantRow,
   wcRaw: WcRawShape | null,
-  scoutAttrs: SourceVariantAttribute[]
+  scoutAttrs: SourceVariantAttribute[],
+  /** product_media rows for this product (mixed product- and variant-
+   * scoped). projectVariant filters to variant_id === v.variant_id. */
+  media: SourceMediaRow[],
+  /** Parent primary image URL — used as the fallback when this variant
+   * has no variant-scoped media of its own. Pass null when the parent
+   * has no media either; projectVariant returns null in that case. */
+  parentPrimary: string | null
 ): ScoutSearchVariant {
   const wc = matchWcVariation(v, wcRaw?.variations);
   const pricing = variantPricing(v);
@@ -346,6 +353,28 @@ function projectVariant(
       ? wc.stock_status === "instock"
       : !!v.is_active;
 
+  // Image precedence (matches woocommerce-mapping and algolia-mapping):
+  //   1. variant-scoped product_media primary
+  //   2. legacy product_variant.image_url column
+  //   3. wc_raw variation.image (when WC pulled with full expansion)
+  //   4. parent primary
+  // Final fallback is null — never undefined or "" — so the storefront
+  // plugin's null-check renders the placeholder.
+  const variantMedia = media
+    .filter((m) => m.variant_id === v.variant_id)
+    .slice()
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    });
+  const variantPrimary = variantMedia[0]?.image_url ?? null;
+  const imageUrl =
+    variantPrimary ??
+    v.image_url ??
+    wc?.image?.src ??
+    parentPrimary ??
+    null;
+
   // variation_id MUST be the WC variation post ID — the storefront plugin
   // builds add-to-cart URLs against it. Variants without a WC id are
   // filtered upstream of this projector (see buildScoutSearchDocument);
@@ -359,7 +388,7 @@ function projectVariant(
     sale_price: pricing.sale ?? num(wc?.sale_price ?? null),
     in_stock: inStock,
     stock_quantity: stockQty,
-    image_url: v.image_url ?? wc?.image?.src ?? null,
+    image_url: imageUrl,
   };
 }
 
@@ -487,7 +516,29 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
     throw new NotIndexableError("no-variants-with-wc-id");
   }
 
-  const variants = indexableVariantRows.map((v) => projectVariant(v, product.wc_raw, scoutAttrs));
+  // Parent media — primary first, then sort_order. Product-scoped only
+  // (variant_id IS NULL); variant rows are projected per-variant.
+  const productMedia = media
+    .filter((m) => m.product_id === product.product_id && m.variant_id == null)
+    .slice()
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    });
+  // Top-level hero. Falls back through media → legacy product.image_url
+  // → null (never "" or undefined — the storefront plugin checks for
+  // null and renders a placeholder).
+  const primary: string | null =
+    productMedia[0]?.image_url ?? product.image_url ?? null;
+
+  // Pass the (full, unfiltered for this product) media set into the
+  // variant projector so it can pluck its own variant_id rows.
+  const productScopedAllMedia = media.filter(
+    (m) => m.product_id === product.product_id,
+  );
+  const variants = indexableVariantRows.map((v) =>
+    projectVariant(v, product.wc_raw, scoutAttrs, productScopedAllMedia, primary),
+  );
 
   const summary = computeVariationSummary(product, variants);
 
@@ -499,17 +550,6 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
   const category_ids = links
     .map((l) => l.category?.woocommerce_id)
     .filter((id): id is number => typeof id === "number");
-
-  // Media — primary first, then sort_order. Product-scoped only (variant
-  // media has its own image_url on the variant).
-  const productMedia = media
-    .filter((m) => m.product_id === product.product_id && m.variant_id == null)
-    .slice()
-    .sort((a, b) => {
-      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
-      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-    });
-  const primary = productMedia[0]?.image_url ?? product.image_url ?? null;
 
   // Tags — pulled from wc_raw.tags if present (Scout has no native tag table).
   const tags = (product.wc_raw?.tags ?? [])

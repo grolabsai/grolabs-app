@@ -606,13 +606,20 @@
         "no": "No"
       },
       "photos": {
-        "subhead": "Agregue URLs de fotos. Arrastre para reordenar. La primera foto es la principal por defecto.",
+        "subhead": "Agregue URLs de fotos. Arrastre o use las flechas para reordenar. La primera foto es la principal por defecto.",
         "urlPlaceholder": "https://ejemplo.com/imagen.jpg",
         "addBtn": "Agregar",
         "primaryBadge": "Principal",
         "primaryAria": "Marcar como principal",
         "removeAria": "Eliminar foto",
-        "emptyTitle": "Sin fotos",
+        "moveUpAria": "Mover hacia arriba",
+        "moveDownAria": "Mover hacia abajo",
+        "altPlaceholder": "Texto alternativo (alt)…",
+        "altAria": "Texto alternativo de la foto",
+        "deleteConfirm": "¿Eliminar esta foto?",
+        "deleteConfirmYes": "Eliminar",
+        "deleteConfirmNo": "Cancelar",
+        "emptyTitle": "Aún no has agregado fotos",
         "emptySub": "Agregue URLs de imágenes para este producto",
         "errorLoading": "Error al cargar",
         "techDebtLabel": "Nota técnica:",
@@ -716,7 +723,11 @@
       "deleteConfirm": "¿Eliminar variante?",
       "confirm": "Confirmar",
       "cancel": "Cancelar",
-      "deleteSuccess": "Variante eliminada"
+      "deleteSuccess": "Variante eliminada",
+      "photosColTitle": "Fotos por variante",
+      "togglePhotos": "Mostrar/ocultar fotos de la variante",
+      "photosTitle": "Fotos de la variante {name}",
+      "photosSub": "Estas fotos sustituyen a la principal del producto cuando la variante se muestra individualmente (catálogo, sincronización a WooCommerce, índice de búsqueda)."
     },
     "breadcrumb": {
       "products": "Productos",

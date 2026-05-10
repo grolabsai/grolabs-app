@@ -19,6 +19,7 @@ import {
   type WooClient,
 } from "@/lib/sync/woocommerce-client";
 import { mapProductToWooCommerce } from "@/lib/sync/woocommerce-mapping";
+import { syncCategoryTreeToWoocommerce } from "@/lib/sync/woocommerce-categories";
 import { currentInstanceId } from "@/lib/instance";
 import { createClient } from "@/lib/supabase/server";
 
@@ -160,7 +161,7 @@ export async function syncProductsToAlgolia(
     .select(
       `product_id, product_name, slug, short_description, long_description, is_active,
        brand:brand_id ( brand_name ),
-       product_category_link ( is_primary, category:category_id ( category_name, slug ) ),
+       product_category_link ( is_primary, category_id, category:category_id ( category_name, slug ) ),
        product_media ( image_url, is_primary, sort_order ),
        product_variant (
          variant_id, variant_name, sku, barcode, weight_grams, is_active,
@@ -350,7 +351,7 @@ export async function syncProductsToWordPress(
     .select(
       `product_id, product_name, slug, short_description, long_description, is_active,
        brand:brand_id ( brand_name ),
-       product_category_link ( is_primary, category:category_id ( category_name, slug ) ),
+       product_category_link ( is_primary, category_id, category:category_id ( category_name, slug ) ),
        product_media ( image_url, is_primary, sort_order ),
        product_variant (
          variant_id, variant_name, sku, barcode, weight_grams, is_active,
@@ -364,6 +365,29 @@ export async function syncProductsToWordPress(
     return { error: pErr.message };
   }
   const products = rows ?? [];
+
+  // ── Pre-sync the category tree ────────────────────────────────────────────
+  // WC's REST API requires categories: [{ id }] on products. Sending name
+  // alone is silently ignored — that's why products were landing with no
+  // categories assigned. Build (or refresh) the Scout→WC category id map
+  // before pushing products so each product can carry the right ids.
+  const distinctCategoryIds = new Set<number>();
+  for (const p of products) {
+    for (const link of p.product_category_link ?? []) {
+      if (typeof link.category_id === "number") {
+        distinctCategoryIds.add(link.category_id);
+      }
+    }
+  }
+  const categorySync = await syncCategoryTreeToWoocommerce(
+    supabase,
+    wc,
+    instanceId,
+    Array.from(distinctCategoryIds),
+  );
+  const failedCategoryIds = new Set(
+    categorySync.failures.map((f) => f.categoryId),
+  );
 
   // Pre-fetch cached external ids so we can update-by-id when possible
   const { data: existingStatuses } = await supabase
@@ -388,7 +412,9 @@ export async function syncProductsToWordPress(
   }> = [];
 
   for (const p of products) {
-    const projection = mapProductToWooCommerce(p);
+    const projection = mapProductToWooCommerce(p, {
+      categoryIdByScoutId: categorySync.idMap,
+    });
     if (projection.variations.length === 0) {
       productResults.push({
         productId: p.product_id,
@@ -396,6 +422,25 @@ export async function syncProductsToWordPress(
         error: "No hay variantes con SKU; WooCommerce las requiere.",
       });
       continue;
+    }
+    // Surface category-sync misses as a soft warning. We still push the
+    // product (with whatever categories did resolve) — better to have a
+    // partially-categorised product than to block the push entirely.
+    const productMissedCategories = (p.product_category_link ?? [])
+      .map((l) => l.category_id)
+      .filter((cid): cid is number => typeof cid === "number")
+      .filter((cid) => failedCategoryIds.has(cid));
+    if (productMissedCategories.length > 0) {
+      const failureLookup = new Map(
+        categorySync.failures.map((f) => [f.categoryId, f.error]),
+      );
+      const errs = productMissedCategories
+        .map((cid) => `${cid}:${failureLookup.get(cid) ?? "unknown"}`)
+        .join(", ");
+      // Log to the server console for support; the product still pushes.
+      console.warn(
+        `[woo-sync] product ${p.product_id} has unresolved categories — ${errs}`,
+      );
     }
 
     let parentId: number | null = null;

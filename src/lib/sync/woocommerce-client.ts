@@ -193,3 +193,37 @@ export async function batchVariations(
     payload,
   );
 }
+
+// ─── Categories ────────────────────────────────────────────────────────────
+
+export type WooCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  parent: number;
+};
+
+export type CategoryPayload = {
+  name: string;
+  slug?: string;
+  parent?: number;
+  description?: string;
+};
+
+export async function listCategories(
+  client: WooClient,
+  params: { slug?: string; perPage?: number } = {},
+): Promise<WooHttpResult<WooCategory[]>> {
+  const qs = new URLSearchParams();
+  if (params.slug) qs.set("slug", params.slug);
+  qs.set("per_page", String(params.perPage ?? 100));
+  const path = `/products/categories?${qs.toString()}`;
+  return request<WooCategory[]>(client, "GET", path);
+}
+
+export async function createCategory(
+  client: WooClient,
+  payload: CategoryPayload,
+): Promise<WooHttpResult<WooCategory>> {
+  return request<WooCategory>(client, "POST", "/products/categories", payload);
+}

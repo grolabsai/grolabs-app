@@ -23,6 +23,7 @@ export type AlgoliaSourceProduct = {
   brand: { brand_name: string } | null;
   product_category_link: Array<{
     is_primary: boolean;
+    category_id: number | null;
     category: { category_name: string; slug: string } | null;
   }>;
   product_media: Array<{ image_url: string; is_primary: boolean; sort_order: number }>;

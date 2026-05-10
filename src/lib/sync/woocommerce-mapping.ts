@@ -14,10 +14,14 @@
  *   - WC requires SKU on every variation. Variants without SKU are skipped.
  *
  * Categories:
- *   - WooCommerce assigns its own numeric category IDs. Scout's category
- *     names are sent as `categories: [{ name: "..." }]`. WC will create
- *     missing categories on first push when name-only is supplied.
- *   - Future: cache the WC category id per Scout category to avoid re-creates.
+ *   - WooCommerce's REST API requires `categories: [{ id }]`. Name-only
+ *     entries are silently ignored — products land with no categories.
+ *   - The caller pre-syncs the category tree (see
+ *     `syncCategoryTreeToWoocommerce` in woocommerce-categories.ts), then
+ *     passes the resulting Scout→WC id map into this function. We emit
+ *     `categories: [{ id: wcId }]` for every Scout category we have a
+ *     mapping for. Unmapped categories surface via `unmappedCategoryIds`
+ *     so the caller can warn the user.
  *
  * Brand:
  *   - WC core has no brand entity. Many sites use the "Perfect Brands for
@@ -47,7 +51,7 @@ export const WOOCOMMERCE_FIELD_MAPPINGS: FieldMappingRow[] = [
   { scoutField: "product.short_description", wpField: "short_description", required: false, note: "Descripción corta para tarjetas y subtítulos." },
   { scoutField: "product.slug", wpField: "slug", required: false, note: "Slug del permalink." },
   { scoutField: "product.is_active", wpField: "status", required: false, note: "publish | draft según el estado del producto en Scout." },
-  { scoutField: "product.product_category_link.category.category_name", wpField: "categories", required: false, note: "Array de nombres; WooCommerce crea las categorías ausentes." },
+  { scoutField: "product.product_category_link.category_id", wpField: "categories", required: false, note: "Array de ids de categoría WooCommerce; el árbol se sincroniza primero (category_sync_status mapea Scout → WC)." },
   { scoutField: "product.brand.brand_name", wpField: "attributes / meta_data[scout_brand]", required: false, note: "Atributo \"Marca\" + meta. Para sitios con Perfect Brands, cambiar a la taxonomía pwb-brand." },
   { scoutField: "product_variant.variant_name", wpField: "attributes (per variant)", required: false, note: "Cada eje del variant_name se envía como atributo de variación." },
   { scoutField: "product_variant.sku", wpField: "variation.sku", required: true, note: "Cada variación necesita un SKU único en WC." },
@@ -66,14 +70,33 @@ export type ScoutToWcResult = {
   variations: VariationPayload[];
   /** SKUs of the variants that were skipped because they had no SKU. */
   skippedVariantIds: number[];
+  /**
+   * Scout category ids on the product that we couldn't map to a WC
+   * category id (sync helper failed for those). Caller surfaces a
+   * per-product warning when this list is non-empty.
+   */
+  unmappedCategoryIds: number[];
+};
+
+export type WcMappingOptions = {
+  /**
+   * Scout category_id → WooCommerce category id. Built by
+   * syncCategoryTreeToWoocommerce. Categories not in the map are emitted
+   * to `unmappedCategoryIds` and not included in the WC payload.
+   */
+  categoryIdByScoutId?: Map<number, number>;
 };
 
 /**
  * Project a Scout product (with variants) onto a WooCommerce parent +
  * variation set. Mirrors `mapProductToAlgoliaRecords` for symmetry.
  */
-export function mapProductToWooCommerce(p: AlgoliaSourceProduct): ScoutToWcResult {
+export function mapProductToWooCommerce(
+  p: AlgoliaSourceProduct,
+  opts: WcMappingOptions = {},
+): ScoutToWcResult {
   const skippedVariantIds: number[] = [];
+  const unmappedCategoryIds: number[] = [];
 
   // Image set, primary first
   const sortedImages = (p.product_media ?? [])
@@ -85,11 +108,20 @@ export function mapProductToWooCommerce(p: AlgoliaSourceProduct): ScoutToWcResul
   const images = sortedImages.map((m) => ({ src: m.image_url }));
   const primaryImage = images[0];
 
-  // Categories — name-only; WC creates missing
-  const categories = (p.product_category_link ?? [])
-    .map((l) => l.category?.category_name)
-    .filter((n): n is string => !!n)
-    .map((name) => ({ name }));
+  // Categories — emit WC ids from the pre-built map. Unmapped Scout
+  // categories are reported back so the caller can surface a warning.
+  const categoryMap = opts.categoryIdByScoutId;
+  const categories: Array<{ id: number }> = [];
+  for (const link of p.product_category_link ?? []) {
+    const scoutId = link.category_id;
+    if (typeof scoutId !== "number") continue;
+    const wcId = categoryMap?.get(scoutId);
+    if (wcId === undefined) {
+      unmappedCategoryIds.push(scoutId);
+      continue;
+    }
+    categories.push({ id: wcId });
+  }
 
   // Brand
   const brandName = p.brand?.brand_name ?? null;
@@ -178,5 +210,5 @@ export function mapProductToWooCommerce(p: AlgoliaSourceProduct): ScoutToWcResul
     });
   }
 
-  return { parent, variations, skippedVariantIds };
+  return { parent, variations, skippedVariantIds, unmappedCategoryIds };
 }

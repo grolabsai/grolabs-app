@@ -1021,6 +1021,20 @@
         "create": "Initialize index",
         "creating": "Initializing…"
       },
+      "indexing": {
+        "label": "Indexing status",
+        "help": "Compares Scout's catalog against documents in Meilisearch. Reindex rebuilds the entire index for this instance.",
+        "scoutCount": "Products in Scout",
+        "meiliCount": "Documents in Meilisearch",
+        "failed": "Failed indexings",
+        "lastSync": "Last sync",
+        "never": "Never",
+        "refresh": "Refresh",
+        "refreshing": "Refreshing…",
+        "reindex": "Reindex all",
+        "reindexing": "Reindexing…",
+        "confirmReindex": "This rebuilds the entire search index for this instance. May take several minutes. Continue?"
+      },
       "toast": {
         "connectionOk": "Connection succeeded",
         "connectionFailed": "Could not connect",
@@ -1032,7 +1046,10 @@
         "copied": "ID copied to clipboard",
         "indexReady": "Index ready",
         "indexUid": "UID: {uid}",
-        "indexFailed": "Could not create index"
+        "indexFailed": "Could not create index",
+        "reindexDone": "Reindex complete",
+        "reindexCounts": "{indexed} indexed · {failed} failed",
+        "reindexFailed": "Reindex did not complete"
       }
     }
   },

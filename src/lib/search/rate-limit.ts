@@ -46,3 +46,19 @@ export function tokenIpBucketKey(ip: string): string {
 export const TOKEN_PER_INSTANCE_ORIGIN_PER_MIN = 60;
 export const TOKEN_PER_IP_PER_MIN = 600;
 export const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+/** Bucket key for the search proxy, scoped per (instance, origin). */
+export function searchBucketKey(instanceId: number, origin: string): string {
+  return `srch:inst=${instanceId}:origin=${origin}`;
+}
+
+/** Bucket key for the search proxy, scoped per source IP. */
+export function searchIpBucketKey(ip: string): string {
+  return `srch:ip=${ip}`;
+}
+
+// Search caps are higher than token caps — every keystroke from a
+// search-as-you-type widget hits this endpoint, while the plugin only
+// re-mints a token every ~14 minutes.
+export const SEARCH_PER_INSTANCE_ORIGIN_PER_MIN = 600;
+export const SEARCH_PER_IP_PER_MIN = 1200;

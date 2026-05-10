@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { ping, ensureIndex } from "@/lib/search/meilisearch-client";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { ping, ensureIndex, getDocumentCount } from "@/lib/search/meilisearch-client";
+import { indexAllForInstance } from "@/lib/search/indexer";
 
 /**
  * Server actions for /configuration/search (Stage 0 admin panel).
@@ -110,6 +112,107 @@ export async function initializeIndex(instanceId: number): Promise<InitIndexResu
   try {
     const indexUid = await ensureIndex(instanceId);
     return { ok: true, indexUid };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "unknown" };
+  }
+}
+
+// ── Stage 1: indexing status + reindex ────────────────────────────────────
+
+export type IndexingStatus = {
+  meiliDocCount: number;
+  scoutProductCount: number;
+  lastSearchSyncAt: string | null;
+  failedCount: number;
+  pendingCount: number;
+  /** True when the Meili count and Scout count agree. */
+  inSync: boolean;
+};
+
+async function authorizeMembership(instanceId: number): Promise<boolean> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return false;
+  const { data: membership } = await sb
+    .from("instance_member")
+    .select("instance_id")
+    .eq("user_id", user.id)
+    .eq("instance_id", instanceId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return !!membership;
+}
+
+export async function getIndexingStatus(instanceId: number): Promise<IndexingStatus | null> {
+  if (!(await authorizeMembership(instanceId))) return null;
+
+  // Service-role for counts: we want exact totals regardless of RLS.
+  const sb = createServiceRoleClient();
+
+  const [meiliCount, scoutCount, instanceRow, failedCount, pendingCount] = await Promise.all([
+    getDocumentCount(instanceId).catch(() => 0),
+    sb
+      .from("product")
+      .select("product_id", { count: "exact", head: true })
+      .eq("instance_id", instanceId)
+      .eq("is_active", true),
+    sb
+      .from("instance")
+      .select("last_search_sync_at")
+      .eq("instance_id", instanceId)
+      .maybeSingle(),
+    sb
+      .from("failed_indexing")
+      .select("id", { count: "exact", head: true })
+      .eq("instance_id", instanceId),
+    sb
+      .from("product_sync_status")
+      .select("id", { count: "exact", head: true })
+      .eq("instance_id", instanceId)
+      .eq("platform", "meilisearch")
+      .eq("last_status", "error"),
+  ]);
+
+  const scoutProductCount = scoutCount.count ?? 0;
+  const meiliDocCount = meiliCount;
+  const lastSearchSyncAt = (instanceRow.data?.last_search_sync_at as string | null) ?? null;
+
+  return {
+    meiliDocCount,
+    scoutProductCount,
+    lastSearchSyncAt,
+    failedCount: failedCount.count ?? 0,
+    pendingCount: pendingCount.count ?? 0,
+    inSync: meiliDocCount === scoutProductCount,
+  };
+}
+
+export type RunBackfillResult =
+  | { ok: true; indexed: number; failed: number }
+  | { ok: false; error: string };
+
+export async function runFullBackfill(instanceId: number): Promise<RunBackfillResult> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "unauthorized" };
+  const { data: membership } = await sb
+    .from("instance_member")
+    .select("instance_id")
+    .eq("user_id", user.id)
+    .eq("instance_id", instanceId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!membership) return { ok: false, error: "unauthorized" };
+
+  try {
+    const result = await indexAllForInstance(instanceId, user.id);
+    revalidatePath("/configuration/search");
+    if (!result.ok) return { ok: false, error: result.error ?? "backfill failed" };
+    return { ok: true, indexed: result.indexed, failed: result.failed };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "unknown" };
   }

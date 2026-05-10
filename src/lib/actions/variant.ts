@@ -3,6 +3,26 @@
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { revalidatePath } from "next/cache";
+import { triggerProductIndex } from "@/lib/search/trigger";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Look up the parent product_id for a variant so we can re-index after a
+ * variant or pricing mutation. Returns null if the variant is missing or the
+ * lookup failed — callers swallow that and skip the trigger. */
+async function productIdForVariant(
+  sb: SupabaseClient,
+  instanceId: number,
+  variantId: number
+): Promise<number | null> {
+  const { data, error } = await sb
+    .from("product_variant")
+    .select("product_id")
+    .eq("variant_id", variantId)
+    .eq("instance_id", instanceId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return (data.product_id as number) ?? null;
+}
 
 /**
  * Server actions for `product_variant` and its companions
@@ -108,6 +128,7 @@ export async function createVariant(input: {
     }
   }
 
+  await triggerProductIndex(instanceId, input.productId);
   revalidatePath(`/catalog/products/${input.productId}`, "page");
   return { ok: true as const, variantId };
 }
@@ -134,6 +155,8 @@ export async function updateVariantField(input: {
     .eq("instance_id", instanceId);
 
   if (error) return { error: error.message };
+  const productId = await productIdForVariant(supabase, instanceId, input.variantId);
+  if (productId !== null) await triggerProductIndex(instanceId, productId);
   revalidatePath("/catalog/products", "layout");
   return { ok: true as const };
 }
@@ -172,6 +195,8 @@ export async function updateVariantAxisValue(input: {
     );
 
   if (error) return { error: error.message };
+  const productId = await productIdForVariant(supabase, instanceId, input.variantId);
+  if (productId !== null) await triggerProductIndex(instanceId, productId);
   revalidatePath("/catalog/products", "layout");
   return { ok: true as const };
 }
@@ -181,6 +206,10 @@ export async function deleteVariant(input: { variantId: number }) {
   if (instanceId === null) return { error: "No instance" };
 
   const supabase = await createClient();
+
+  // Capture parent before delete so we can re-index after.
+  const productId = await productIdForVariant(supabase, instanceId, input.variantId);
+
   const { error } = await supabase
     .from("product_variant")
     .delete()
@@ -188,6 +217,7 @@ export async function deleteVariant(input: { variantId: number }) {
     .eq("instance_id", instanceId);
 
   if (error) return { error: error.message };
+  if (productId !== null) await triggerProductIndex(instanceId, productId);
   revalidatePath("/catalog/products", "layout");
   return { ok: true as const };
 }
@@ -238,6 +268,8 @@ export async function upsertVariantPricing(input: {
     );
 
   if (error) return { error: error.message };
+  const productId = await productIdForVariant(supabase, instanceId, input.variantId);
+  if (productId !== null) await triggerProductIndex(instanceId, productId);
   revalidatePath("/catalog/products", "layout");
   return { ok: true as const };
 }

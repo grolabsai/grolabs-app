@@ -1,6 +1,10 @@
 import { Meilisearch, MeilisearchApiError } from "meilisearch";
 import { generateTenantToken } from "meilisearch/token";
-import { indexUidFor, type MeilisearchHealth } from "./types";
+import {
+  indexUidFor,
+  type MeilisearchHealth,
+  type ScoutSearchDocument,
+} from "./types";
 
 /**
  * The single place in Scout's codebase that holds the Meilisearch master key.
@@ -181,6 +185,141 @@ export async function deleteIndex(instanceId: number): Promise<void> {
   } catch (err) {
     if (err instanceof MeilisearchApiError && err.response.status === 404) return;
     throw new MeilisearchOpError(`deleteIndex(${instanceId}) failed`, err);
+  }
+}
+
+// ── Document operations (Stage 1) ────────────────────────────────────────────
+
+export type TaskRef = { taskUid: number };
+
+/**
+ * Upsert a batch of documents into an instance's index. Idempotent on `id`
+ * (the index's primary key). Returns the Meilisearch task UID — callers
+ * persist it on `product_sync_status.last_error`-or-similar so failed tasks
+ * are recoverable.
+ *
+ * Per docs/policy/search-foundations.md §5.
+ */
+export async function upsertDocuments(
+  instanceId: number,
+  documents: ScoutSearchDocument[]
+): Promise<TaskRef> {
+  if (documents.length === 0) return { taskUid: -1 };
+  const client = getClient();
+  try {
+    const task = await client.index(indexUidFor(instanceId)).addDocuments(documents, {
+      primaryKey: "id",
+    });
+    return { taskUid: task.taskUid };
+  } catch (err) {
+    throw new MeilisearchOpError(
+      `upsertDocuments(${instanceId}, ${documents.length}) failed`,
+      err
+    );
+  }
+}
+
+export async function deleteDocument(
+  instanceId: number,
+  documentId: number
+): Promise<TaskRef> {
+  const client = getClient();
+  try {
+    const task = await client.index(indexUidFor(instanceId)).deleteDocument(documentId);
+    return { taskUid: task.taskUid };
+  } catch (err) {
+    if (err instanceof MeilisearchApiError && err.response.status === 404) {
+      return { taskUid: -1 };
+    }
+    throw new MeilisearchOpError(`deleteDocument(${instanceId}, ${documentId}) failed`, err);
+  }
+}
+
+export async function deleteAllDocuments(instanceId: number): Promise<TaskRef> {
+  const client = getClient();
+  try {
+    const task = await client.index(indexUidFor(instanceId)).deleteAllDocuments();
+    return { taskUid: task.taskUid };
+  } catch (err) {
+    throw new MeilisearchOpError(`deleteAllDocuments(${instanceId}) failed`, err);
+  }
+}
+
+export async function getDocumentCount(instanceId: number): Promise<number> {
+  const client = getClient();
+  try {
+    const stats = await client.index(indexUidFor(instanceId)).getStats();
+    return stats.numberOfDocuments ?? 0;
+  } catch (err) {
+    if (err instanceof MeilisearchApiError && err.response.status === 404) return 0;
+    throw new MeilisearchOpError(`getDocumentCount(${instanceId}) failed`, err);
+  }
+}
+
+/** Result returned by `searchInstance`. The shape is intentionally narrow —
+ * the search proxy combines this with the variant matcher to build the
+ * public response. */
+export type RawSearchResult = {
+  hits: Array<ScoutSearchDocument & { _matchesPosition?: Record<string, unknown> }>;
+  estimatedTotalHits: number;
+  processingTimeMs: number;
+  query: string;
+};
+
+export type SearchOptions = {
+  query: string;
+  limit?: number;
+  offset?: number;
+  filter?: string | string[];
+  sort?: string[];
+};
+
+/**
+ * Search an instance's index. Always requests `showMatchesPosition: true` so
+ * the variant matcher can read per-field match locations.
+ *
+ * Per docs/policy/search-foundations.md §5 + §7.
+ */
+export async function searchInstance(
+  instanceId: number,
+  opts: SearchOptions
+): Promise<RawSearchResult> {
+  const client = getClient();
+  const { query, limit, offset, filter, sort } = opts;
+  try {
+    const res = await client.index(indexUidFor(instanceId)).search(query, {
+      limit: limit ?? 20,
+      offset: offset ?? 0,
+      filter,
+      sort,
+      showMatchesPosition: true,
+    });
+    return {
+      hits: res.hits as RawSearchResult["hits"],
+      estimatedTotalHits: res.estimatedTotalHits ?? res.hits.length,
+      processingTimeMs: res.processingTimeMs ?? 0,
+      query: res.query ?? query,
+    };
+  } catch (err) {
+    throw new MeilisearchOpError(`searchInstance(${instanceId}) failed`, err);
+  }
+}
+
+export async function getTaskStatus(taskUid: number): Promise<{
+  status: string;
+  error?: { code?: string; message?: string };
+}> {
+  const client = getClient();
+  try {
+    const task = await client.tasks.getTask(taskUid);
+    return {
+      status: task.status,
+      error: task.error
+        ? { code: task.error.code, message: task.error.message }
+        : undefined,
+    };
+  } catch (err) {
+    throw new MeilisearchOpError(`getTaskStatus(${taskUid}) failed`, err);
   }
 }
 

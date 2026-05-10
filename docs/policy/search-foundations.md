@@ -126,12 +126,20 @@ Stage 0 deliverables: connection status panel (green/red), storefront domain reg
 Stage 1 deliverables: indexing status panel (last sync, document counts, mismatch detection), manual reindex button with confirmation modal, WooCommerce credentials form (REST API URL, consumer_key, consumer_secret).
 No search behavior configuration in Stage 1 — that's Stage 5.
 9. Stage 1 — Indexing pipeline
-Cron-based polling, every 5 minutes per active instance (Vercel cron or similar).
-Flow: fetch incremental WooCommerce changes (`modified_after` query param); for each changed parent product, fetch variations, run minimal Stage 1 enrichment, compute `variation_summary`, build document with `variants` array; upsert batch to Meilisearch; update `instance.last_search_sync_at`; log stats.
-Initial full sync paginates through all products. Per-page 100, until empty.
-Failure modes: WooCommerce unreachable → log, retry next tick. Meilisearch upsert fails → log task UID, retry. Single product enrichment fails → log, skip, continue batch. Schema validation fails → log, skip, add to `failed_indexing` table.
-Stage 1 enrichment scope is intentionally minimal — NOT the 7-agent pipeline. It strips HTML, maps WC categories to `species` via hardcoded lookup, detects lifestage from product name keywords (`puppy`, `senior`, `cachorro`, `adulto`), sets `popularity: 0`, computes `variation_summary`, populates `variants` array.
-Variation handling specifics: include all variations including out-of-stock (the `in_stock` flag distinguishes); exclude hidden and draft variations entirely; respect WooCommerce's stock_quantity vs stock_status semantics.
+The pipeline reads from **Scout's `product` / `product_variant` / `product_pricing` / `product_category_link` / `product_media` tables**, not from WooCommerce directly. Per §2's locked decision, Scout is the canonical product database; the WooCommerce → Scout pull is a separate process documented in `docs/policy/wc-import.md`. Meilisearch is fed from Scout.
+
+Trigger: synchronous push from product/variant/pricing server actions. Any mutation that successfully writes to Scout fires `indexProduct(instance_id, product_id)`. A manual full-instance backfill is exposed in the admin panel (`runFullBackfill(instance_id)`). Scheduled cron polling is deferred — Scout is the write path, so app-layer hooks are sufficient at v1 scale. (Future: queueing + Vercel cron for instances that bypass Scout's mutation surface.)
+
+Flow per indexed product: load product + variants + pricing + categories + media in one query batch; build the §4 document (HTML-stripped, `variation_summary` computed, `variants[]` populated with slug-keyed attributes per the locked contract below); upsert to Meilisearch; write `product_sync_status` row with `platform = 'meilisearch'`; on a backfill run, also append a `sync_log` entry.
+Initial full backfill iterates all `is_active` products for the instance, paginated 100/page.
+Failure modes: Meilisearch upsert fails → log task UID in `product_sync_status.last_error`, retry next mutation. Schema validation fails → write to `failed_indexing` table, skip. Single product build fails → log, skip, continue batch.
+Stage 1 enrichment scope is intentionally minimal — NOT the 7-agent pipeline. It strips HTML from descriptions, detects lifestage from product-name keywords (`puppy`, `senior`, `cachorro`, `adulto`), sets `popularity: 0`, computes `variation_summary`, populates `variants` array. `species` mapping is deferred — Scout's `category` table doesn't yet carry species metadata, and the original "hardcoded WC-category → species" lookup is redundant once Scout owns the catalog. Stage 2+ wires species in.
+
+Locked variant contract (per PR #68, plugin v0.2 consumer):
+* `document.variants[].attributes` keys MUST be slugs (e.g. `pa_size`), not display names. Use the WooCommerce taxonomy slug from `product.wc_raw.attributes[].slug` / `wc_raw.variations[].attributes[].slug`. Values stay as the human-readable option label (e.g. `"4kg"`).
+* Search-proxy hits return `matched_variation` as a **full variant object** (same shape as entries in `document.variants[]`), not just a `variation_id` reference.
+
+Variation handling specifics: include all variations including out-of-stock (the `in_stock` flag distinguishes); exclude inactive variations entirely.
 10. Stage 1 — WordPress plugin v0.1
 Distribution: `.zip` file from Scout's CDN. Not initially submitted to WordPress.org plugin directory. Auto-update mechanism out of scope for v0.1.
 Plugin structure: `scout-search.php` (main file), `readme.txt`, `includes/` (settings, search, api, card classes), `admin/settings-page.php`, `assets/css/scout-card.css`.

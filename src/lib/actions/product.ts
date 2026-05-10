@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { revalidatePath } from "next/cache";
+import { triggerProductIndex, triggerProductRemove } from "@/lib/search/trigger";
 
 /**
  * Server actions for the `product` table.
@@ -86,6 +87,7 @@ export async function createProduct(input: { name: string }) {
     .single();
 
   if (error) return { error: error.message };
+  await triggerProductIndex(instanceId, data.product_id as number);
   revalidatePath("/catalog/products", "page");
   return { ok: true as const, productId: data.product_id as number };
 }
@@ -127,6 +129,7 @@ export async function updateProductField(input: {
     .eq("instance_id", instanceId);
 
   if (error) return { error: error.message };
+  await triggerProductIndex(instanceId, input.productId);
   revalidatePath(`/catalog/products/${input.productId}`, "page");
   revalidatePath("/catalog/products", "page");
   return { ok: true as const };
@@ -327,6 +330,7 @@ export async function createProductFull(input: CreateProductFullInput) {
     if (photoError) return rollback(photoError.message);
   }
 
+  await triggerProductIndex(instanceId, productId);
   revalidatePath("/catalog/products", "page");
   return { ok: true as const, productId };
 }
@@ -343,6 +347,7 @@ export async function deleteProduct(input: { productId: number }) {
     .eq("instance_id", instanceId);
 
   if (error) return { error: error.message };
+  await triggerProductRemove(instanceId, input.productId);
   revalidatePath("/catalog/products", "page");
   return { ok: true as const };
 }

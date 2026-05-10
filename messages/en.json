@@ -928,6 +928,44 @@
         "saved": "Hint updated.",
         "saveError": "Couldn't update the hint"
       }
+    },
+    "woocommerce": {
+      "pageTitle": "Import from WooCommerce",
+      "pageDescriptionConfigured": "Pull categories and products from {siteUrl} into Scout. Imports are re-runnable: already-imported records are updated, not duplicated.",
+      "pageDescriptionMissing": "Configure WooCommerce in Configuration → WooCommerce before importing.",
+      "notConfigured": {
+        "title": "WooCommerce is not configured",
+        "body": "Save credentials in Configuration → WooCommerce and return here."
+      },
+      "buttons": {
+        "importCategories": "Import categories",
+        "importProducts": "Import products"
+      },
+      "progress": {
+        "categories": "Importing categories… {processed} processed, {upserted} saved, {failed} failed.",
+        "products": "Importing products… {processed} processed, {upserted} saved, {failed} failed.",
+        "page": "Page {page}"
+      },
+      "summary": {
+        "title": {
+          "categories": "Categories imported: {upserted} of {total}.",
+          "products": "Products imported: {upserted} of {total}."
+        },
+        "duration": "Duration",
+        "failed": "Failed",
+        "renamedSlugs": "Renamed slugs",
+        "completedAt": "Completed"
+      },
+      "errors": {
+        "title": "Error details"
+      },
+      "toast": {
+        "success": {
+          "categories": "Category import finished.",
+          "products": "Product import finished."
+        },
+        "failed": "Could not complete the import"
+      }
     }
   },
   "configuration": {

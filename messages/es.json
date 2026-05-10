@@ -928,6 +928,44 @@
         "saved": "Pista actualizada.",
         "saveError": "No se pudo actualizar la pista"
       }
+    },
+    "woocommerce": {
+      "pageTitle": "Importar desde WooCommerce",
+      "pageDescriptionConfigured": "Trae categorías y productos desde {siteUrl} a Scout. La importación es re-ejecutable: ya importados se actualizan, no se duplican.",
+      "pageDescriptionMissing": "Configura WooCommerce en Configuración → WooCommerce antes de importar.",
+      "notConfigured": {
+        "title": "WooCommerce no está configurado",
+        "body": "Guarda credenciales en Configuración → WooCommerce y vuelve aquí."
+      },
+      "buttons": {
+        "importCategories": "Importar categorías",
+        "importProducts": "Importar productos"
+      },
+      "progress": {
+        "categories": "Importando categorías… {processed} procesadas, {upserted} guardadas, {failed} con error.",
+        "products": "Importando productos… {processed} procesados, {upserted} guardados, {failed} con error.",
+        "page": "Página {page}"
+      },
+      "summary": {
+        "title": {
+          "categories": "Categorías importadas: {upserted} de {total}.",
+          "products": "Productos importados: {upserted} de {total}."
+        },
+        "duration": "Duración",
+        "failed": "Con error",
+        "renamedSlugs": "Slugs renombrados",
+        "completedAt": "Completado"
+      },
+      "errors": {
+        "title": "Detalle de errores"
+      },
+      "toast": {
+        "success": {
+          "categories": "Importación de categorías finalizada.",
+          "products": "Importación de productos finalizada."
+        },
+        "failed": "No se pudo completar la importación"
+      }
     }
   },
   "configuration": {

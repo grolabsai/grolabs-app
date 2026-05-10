@@ -194,7 +194,7 @@ export async function batchVariations(
   );
 }
 
-// ─── Categories ────────────────────────────────────────────────────────────
+// ─── Categories (push direction — used by the WC sync) ────────────────────
 
 export type WooCategory = {
   id: number;
@@ -226,4 +226,65 @@ export async function createCategory(
   payload: CategoryPayload,
 ): Promise<WooHttpResult<WooCategory>> {
   return request<WooCategory>(client, "POST", "/products/categories", payload);
+}
+
+// ─── Listing (pull direction — used by the WC import: docs/policy/wc-import.md)
+//
+// Returned shapes are intentionally permissive — the import path preserves
+// every unmapped field in product.wc_raw, so we keep it as a Record and let
+// the mapper extract what it needs.
+
+export type WooCategoryRaw = {
+  id: number;
+  name: string;
+  slug: string;
+  parent: number;
+  description?: string;
+  [key: string]: unknown;
+};
+
+export type WooProductRaw = {
+  id: number;
+  name: string;
+  slug?: string;
+  sku?: string;
+  status?: string;
+  type?: string;
+  description?: string;
+  short_description?: string;
+  regular_price?: string;
+  sale_price?: string;
+  price?: string;
+  stock_quantity?: number | null;
+  categories?: Array<{ id: number; name?: string; slug?: string }>;
+  images?: Array<{ src: string; alt?: string }>;
+  meta_data?: Array<{ key: string; value: unknown }>;
+  variations?: number[];
+  attributes?: unknown[];
+  [key: string]: unknown;
+};
+
+export async function listProductCategoriesPage(
+  client: WooClient,
+  page: number,
+  perPage = 100,
+): Promise<WooHttpResult<WooCategoryRaw[]>> {
+  return request<WooCategoryRaw[]>(
+    client,
+    "GET",
+    `/products/categories?per_page=${perPage}&page=${page}&orderby=id&order=asc`,
+  );
+}
+
+export async function listProductsPage(
+  client: WooClient,
+  page: number,
+  perPage = 100,
+  status: "publish" | "any" = "publish",
+): Promise<WooHttpResult<WooProductRaw[]>> {
+  return request<WooProductRaw[]>(
+    client,
+    "GET",
+    `/products?per_page=${perPage}&page=${page}&status=${status}&orderby=id&order=asc`,
+  );
 }

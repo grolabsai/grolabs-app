@@ -35,6 +35,7 @@ export type VariantForDisplay = {
   barcode: string | null;
   weight_grams: string | null;
   is_active: boolean;
+  woocommerce_id: number | null;
   product_pricing: Array<{
     list_price: string | null;
     cost_price: string | null;
@@ -62,6 +63,7 @@ export type ProductDetail = {
   created_at: string;
   updated_at: string;
   wazudb1_id: string | null;
+  woocommerce_id: number | null;
   product_type_id: number;
   brand_id: number | null;
   product_type: {
@@ -243,6 +245,9 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
               created: formatRelative(product.created_at),
               updated: formatRelative(product.updated_at),
             })}
+          </p>
+          <p className="s-meta" style={{ marginTop: 2 }}>
+            <WoocommerceIdBadge id={product.woocommerce_id} />
           </p>
         </div>
         <div className="s-title-actions" style={{ alignItems: "center" }}>
@@ -487,6 +492,43 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
         onSaved={onSaved}
       />
     </>
+  );
+}
+
+// ─── WooCommerce ID badge ──────────────────────────────────────────────────
+
+/**
+ * Compact display for product/variant.woocommerce_id. Shows the numeric WC
+ * post id when present; renders a "Pendiente" pill when null. The Scout→WC
+ * push captures the id and writes it back; until that happens, the row is
+ * not yet round-tripped and the search index skips it.
+ */
+export function WoocommerceIdBadge({ id }: { id: number | null }) {
+  const t = useTranslations("product.detail");
+  if (id == null) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "1px 8px",
+          background: "var(--s-surface-alt)",
+          color: "var(--s-text-secondary)",
+          border: "0.5px solid var(--s-border)",
+          borderRadius: 999,
+          fontSize: 11,
+          fontWeight: 500,
+        }}
+      >
+        {t("wcId.pending")}
+      </span>
+    );
+  }
+  return (
+    <span style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+      {t("wcId.label")}{" "}
+      <span style={{ fontFamily: "var(--s-font-mono)", color: "var(--s-text)" }}>{id}</span>
+    </span>
   );
 }
 

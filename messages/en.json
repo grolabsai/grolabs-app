@@ -687,6 +687,10 @@
         "withBarcode": "With barcode",
         "sourceId": "Source ID"
       },
+      "wcId": {
+        "label": "WooCommerce ID:",
+        "pending": "Pending"
+      },
       "attributesEmpty": "No attributes assigned.",
       "loadError": "Failed to load"
     },

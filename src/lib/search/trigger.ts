@@ -16,10 +16,31 @@
  * tens of products.
  */
 
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { indexProduct, removeProduct, type IndexResult } from "./indexer";
 
 function meilisearchEnabled(): boolean {
   return !!(process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_MASTER_KEY);
+}
+
+/** Read just product.woocommerce_id. The Scout→WC round-trip is the gate
+ * for indexing: a doc with no parent WC ID can't be added to the cart by
+ * the storefront plugin, so there's no point indexing it. Once the WC push
+ * captures and writes back the id, the next index trigger will succeed. */
+async function getProductWoocommerceId(
+  instanceId: number,
+  productId: number
+): Promise<number | null | "missing"> {
+  const sb = createServiceRoleClient();
+  const { data, error } = await sb
+    .from("product")
+    .select("woocommerce_id")
+    .eq("instance_id", instanceId)
+    .eq("product_id", productId)
+    .maybeSingle();
+  if (error || !data) return "missing";
+  const wcId = (data as { woocommerce_id: number | null }).woocommerce_id;
+  return wcId ?? null;
 }
 
 export async function triggerProductIndex(
@@ -28,6 +49,20 @@ export async function triggerProductIndex(
 ): Promise<IndexResult | null> {
   if (!meilisearchEnabled()) return null;
   try {
+    const wcId = await getProductWoocommerceId(instanceId, productId);
+    if (wcId === "missing") {
+      // Product not found — make sure the index doesn't carry a stale doc.
+      return await removeProduct(instanceId, productId);
+    }
+    if (wcId === null) {
+      // Not yet round-tripped to WC. Skip indexing AND clear any stale doc
+      // a previous round-trip might have left behind. Debug-level log: this
+      // is normal for freshly-created Scout products.
+      console.debug(
+        `[search/trigger] skip index ${instanceId}/${productId} — woocommerce_id is null`
+      );
+      return await removeProduct(instanceId, productId);
+    }
     return await indexProduct(instanceId, productId);
   } catch (err) {
     console.error(

@@ -271,7 +271,6 @@ export function CategoryMarginsCard({
                       <Switch
                         checked={row.inherits}
                         onCheckedChange={(v) => toggleInherit(idx, v)}
-                        disabled={row.depth === 0}
                         aria-label={t("columns.inherits")}
                       />
                     </Td>

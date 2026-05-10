@@ -68,6 +68,7 @@ export default async function ProductEditorPage({
       ),
       product_media (
         media_id,
+        variant_id,
         image_url,
         alt_text,
         is_primary,

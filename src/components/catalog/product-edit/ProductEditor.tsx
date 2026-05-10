@@ -22,6 +22,7 @@ import {
   deleteProduct,
   updateProductField,
   updateProductPhotos,
+  updateVariantPhotos,
 } from "@/lib/actions/product";
 import { formatRelative } from "@/lib/format";
 
@@ -81,6 +82,7 @@ export type ProductDetail = {
   }>;
   product_media: Array<{
     media_id: number;
+    variant_id: number | null;
     image_url: string;
     alt_text: string | null;
     is_primary: boolean;
@@ -137,11 +139,14 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
   const variants = product.product_variant ?? [];
   const primaryCategory = product.product_category_link?.find((l) => l.is_primary)?.category;
 
-  // Photo gallery state — seeded from product_media, persisted via
-  // updateProductPhotos on every mutation. The action reconciles
-  // INSERT/UPDATE/DELETE against the desired set and triggers the
-  // search index refresh.
-  const initialPhotos: PhotoState[] = (product.product_media ?? [])
+  // Photo gallery state — seeded from product_media (product scope =
+  // variant_id IS NULL). Per-variant galleries live in VariantsTable
+  // and use updateVariantPhotos. Both reconcile INSERT/UPDATE/DELETE
+  // against the desired set and trigger a search index refresh.
+  const productLevelMedia = (product.product_media ?? []).filter(
+    (m) => m.variant_id === null,
+  );
+  const initialPhotos: PhotoState[] = productLevelMedia
     .slice()
     .sort((a, b) => {
       if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
@@ -150,6 +155,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
     .map((m, idx) => ({
       mediaId: m.media_id,
       url: m.image_url,
+      altText: m.alt_text,
       isPrimary: m.is_primary,
       sortOrder: m.sort_order ?? idx,
     }));
@@ -164,6 +170,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
         photos: next.map((p, idx) => ({
           mediaId: p.mediaId,
           url: p.url,
+          altText: p.altText,
           isPrimary: p.isPrimary,
           sortOrder: idx,
         })),
@@ -185,7 +192,12 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
     setPhotos((ps) => {
       const next: PhotoState[] = [
         ...ps,
-        { url: trimmed, isPrimary: ps.length === 0, sortOrder: ps.length },
+        {
+          url: trimmed,
+          altText: null,
+          isPrimary: ps.length === 0,
+          sortOrder: ps.length,
+        },
       ];
       void persistPhotos(next);
       return next;
@@ -222,6 +234,62 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
       return renumbered;
     });
   };
+
+  const onPhotoAltTextChange = (idx: number, altText: string) => {
+    setPhotos((ps) => {
+      const next = ps.map((p, i) =>
+        i === idx ? { ...p, altText: altText || null } : p,
+      );
+      void persistPhotos(next);
+      return next;
+    });
+  };
+
+  // Group variant-scoped media by variant_id for the per-variant
+  // galleries inside VariantsTable. Each entry is keyed on variant_id
+  // so the table can pluck the right initial set.
+  const variantPhotosById = new Map<number, PhotoState[]>();
+  for (const m of product.product_media ?? []) {
+    if (m.variant_id === null) continue;
+    const list = variantPhotosById.get(m.variant_id) ?? [];
+    list.push({
+      mediaId: m.media_id,
+      url: m.image_url,
+      altText: m.alt_text,
+      isPrimary: m.is_primary,
+      sortOrder: m.sort_order ?? list.length,
+    });
+    variantPhotosById.set(m.variant_id, list);
+  }
+  for (const list of variantPhotosById.values()) {
+    list.sort((a, b) => {
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
+  }
+
+  const persistVariantPhotos = useCallback(
+    async (variantId: number, next: PhotoState[]) => {
+      const r = await updateVariantPhotos({
+        productId: product.product_id,
+        variantId,
+        photos: next.map((p, idx) => ({
+          mediaId: p.mediaId,
+          url: p.url,
+          altText: p.altText,
+          isPrimary: p.isPrimary,
+          sortOrder: idx,
+        })),
+      });
+      if ("error" in r) {
+        toast.error(t("saveError"), { description: r.error });
+        return;
+      }
+      onSaved();
+      router.refresh();
+    },
+    [product.product_id, onSaved, router, t],
+  );
 
   return (
     <>
@@ -438,6 +506,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
               onRemove={onPhotoRemove}
               onSetPrimary={onPhotoSetPrimary}
               onReorder={onPhotoReorder}
+              onAltTextChange={onPhotoAltTextChange}
               disabled={photosSaving}
             />
           </div>
@@ -489,6 +558,8 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
       <VariantsTable
         productId={product.product_id}
         variants={variants}
+        variantPhotosById={variantPhotosById}
+        onVariantPhotosChange={persistVariantPhotos}
         onSaved={onSaved}
       />
     </>

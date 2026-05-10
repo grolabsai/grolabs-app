@@ -2,6 +2,8 @@ import { Link } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { formatGTQ, formatRelative, initialsFromName } from "@/lib/format";
+import { Icon } from "@/components/ui/icon";
+import { ImageOff } from "lucide-react";
 
 /**
  * Products list screen. Mirror of Bloom's `screen-products` visually,
@@ -33,6 +35,16 @@ type ProductRow = {
     is_active: boolean;
     updated_at: string;
     product_pricing: Array<{ list_price: string | null; channel: string; updated_at: string }>;
+  }>;
+  // Product-level images only (variant_id IS NULL). Variant-scoped images
+  // override at the variant card level — the list row shows the parent
+  // hero, so we filter to the parent set in JS below.
+  product_media: Array<{
+    image_url: string;
+    alt_text: string | null;
+    is_primary: boolean;
+    sort_order: number;
+    variant_id: number | null;
   }>;
 };
 
@@ -76,7 +88,8 @@ export default async function ProductsPage({
       updated_at,
       product_type:product_type_id ( type_name, type_code, kind ),
       brand:brand_id ( brand_name ),
-      product_variant ( variant_id, is_active, updated_at, product_pricing ( list_price, channel, updated_at ) )
+      product_variant ( variant_id, is_active, updated_at, product_pricing ( list_price, channel, updated_at ) ),
+      product_media ( image_url, alt_text, is_primary, sort_order, variant_id )
     `,
     )
     .order("updated_at", { ascending: false });
@@ -290,6 +303,19 @@ export default async function ProductsPage({
                     ? { dot: "success", label: t("statusActive") }
                     : { dot: "neutral", label: t("statusInactive") };
 
+                  // Pick the parent-level hero image: is_primary first,
+                  // then lowest sort_order. Variant-scoped media (variant_id
+                  // not null) doesn't surface here — the list row shows the
+                  // product, not a specific variant.
+                  const parentMedia = (p.product_media ?? [])
+                    .filter((m) => m.variant_id === null)
+                    .slice()
+                    .sort((a, b) => {
+                      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+                      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+                    });
+                  const heroImage = parentMedia[0] ?? null;
+
                   return (
                     <tr key={p.product_id} className="clickable">
                       <td style={{ paddingLeft: 20 }}>
@@ -298,9 +324,11 @@ export default async function ProductsPage({
                           style={{ display: "block", color: "inherit" }}
                         >
                           <div className="s-prod-cell">
-                            <div className="s-prod-thumb">
-                              {initialsFromName(p.product_name)}
-                            </div>
+                            <ProductThumb
+                              imageUrl={heroImage?.image_url ?? null}
+                              altText={heroImage?.alt_text ?? null}
+                              productName={p.product_name}
+                            />
                             <div>
                               <div className="s-prod-name">
                                 {p.product_name}
@@ -365,6 +393,58 @@ export default async function ProductsPage({
               Real paging lands when tenants grow. */}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Product thumb cell ───────────────────────────────────────────────────
+
+/**
+ * Square thumbnail used in the product list row. Renders the product's
+ * primary product_media image when present; otherwise a neutral
+ * ImageOff placeholder over the existing initials chip background.
+ *
+ * Uses a plain `<img>` because product image URLs are tenant-controlled
+ * and arbitrary — wiring `next/image` would require a permissive
+ * remotePatterns config we don't otherwise need. The rest of the
+ * codebase (PhotoManager, ProductEditor) renders product images the
+ * same way for the same reason.
+ */
+function ProductThumb({
+  imageUrl,
+  altText,
+  productName,
+}: {
+  imageUrl: string | null;
+  altText: string | null;
+  productName: string;
+}) {
+  if (imageUrl) {
+    return (
+      <div className="s-prod-thumb" style={{ padding: 0, overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt={altText ?? productName}
+          width={40}
+          height={40}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="s-prod-thumb"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--s-text-tertiary)",
+      }}
+      aria-label={initialsFromName(productName)}
+    >
+      <Icon icon={ImageOff} size={16} />
     </div>
   );
 }

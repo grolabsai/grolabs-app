@@ -472,7 +472,12 @@ export function NewProductForm({
     if (!trimmed) return;
     setPhotos((ps) => [
       ...ps,
-      { url: trimmed, isPrimary: ps.length === 0, sortOrder: ps.length },
+      {
+        url: trimmed,
+        altText: null,
+        isPrimary: ps.length === 0,
+        sortOrder: ps.length,
+      },
     ]);
   }
 
@@ -501,6 +506,12 @@ export function NewProductForm({
       next.splice(to, 0, moved);
       return next.map((p, i) => ({ ...p, sortOrder: i }));
     });
+  }
+
+  function setPhotoAltText(idx: number, altText: string) {
+    setPhotos((ps) =>
+      ps.map((p, i) => (i === idx ? { ...p, altText: altText || null } : p)),
+    );
   }
 
   function onSubmit() {
@@ -571,7 +582,11 @@ export function NewProductForm({
         if (typeof v !== "string" || v.trim() === "") return [];
         return [{ attributeId: a.attribute_id, valueId: null, valueText: v.trim() }];
       }),
-      photos: photos.map((p) => ({ url: p.url, isPrimary: p.isPrimary })),
+      photos: photos.map((p) => ({
+        url: p.url,
+        altText: p.altText,
+        isPrimary: p.isPrimary,
+      })),
     };
 
     startTransition(async () => {
@@ -825,6 +840,7 @@ export function NewProductForm({
               onRemove={removePhoto}
               onSetPrimary={setPrimaryPhoto}
               onReorder={reorderPhotos}
+              onAltTextChange={setPhotoAltText}
             />
           </div>
         </div>

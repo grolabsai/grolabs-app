@@ -606,13 +606,20 @@
         "no": "No"
       },
       "photos": {
-        "subhead": "Add photo URLs. Drag to reorder. The first photo is the primary by default.",
+        "subhead": "Add photo URLs. Drag or use the arrows to reorder. The first photo is the primary by default.",
         "urlPlaceholder": "https://example.com/image.jpg",
         "addBtn": "Add",
         "primaryBadge": "Primary",
         "primaryAria": "Set as primary",
         "removeAria": "Remove photo",
-        "emptyTitle": "No photos",
+        "moveUpAria": "Move up",
+        "moveDownAria": "Move down",
+        "altPlaceholder": "Alt text…",
+        "altAria": "Photo alt text",
+        "deleteConfirm": "Delete this photo?",
+        "deleteConfirmYes": "Delete",
+        "deleteConfirmNo": "Cancel",
+        "emptyTitle": "No photos yet",
         "emptySub": "Add image URLs for this product",
         "errorLoading": "Failed to load",
         "techDebtLabel": "Tech note:",
@@ -716,7 +723,11 @@
       "deleteConfirm": "Delete variant?",
       "confirm": "Confirm",
       "cancel": "Cancel",
-      "deleteSuccess": "Variant deleted"
+      "deleteSuccess": "Variant deleted",
+      "photosColTitle": "Per-variant photos",
+      "togglePhotos": "Show/hide variant photos",
+      "photosTitle": "Photos for variant {name}",
+      "photosSub": "These photos override the product primary when this variant is shown on its own (storefront, WooCommerce sync, search index)."
     },
     "breadcrumb": {
       "products": "Products",

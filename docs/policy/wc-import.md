@@ -1,0 +1,163 @@
+# Scout WooCommerce Import — v1
+
+Status: Active policy
+Owner: Tuncho
+Scope: One-way pull from WooCommerce into Scout's catalog tables. Categories and products only. Raw data preservation, no enrichment, no restructuring.
+Audience: Claude Code (primary), future Scout contributors
+
+This document is the authoritative spec for the WooCommerce → Scout import. Read it before writing any code. Stop at the two `APPROVAL REQUIRED` checkpoints (§8 and §9) and wait for explicit approval.
+
+## 1. Goals and non-goals
+
+### Goal
+Pull a merchant's existing WooCommerce catalog (categories + products) into Scout's `category` and `product` tables so Scout has the data. Re-runnable. Idempotent. **Lossless** — any source field we don't have a mapped Scout column for is preserved as JSONB for future processes to consume.
+
+### Non-goals
+- Enrichment (lifestage, species, breed, etc.) — separate process
+- Variant restructuring (WC variations → Scout `product_variant` rows) — separate process
+- Category similarity matching against Scout's template categories — separate process
+- Attribute normalization (`product_attribute` ↔ WC attributes) — separate process
+- Push back to WC (already exists in `src/lib/sync/`, this work doesn't touch it)
+- Meilisearch indexing (Stage 1 of `search-foundations.md`, will consume what this produces)
+
+## 2. Architectural decisions (locked)
+
+If implementation surfaces a flaw, raise it as a question — don't work around it silently.
+
+**One-way pull.** WC is the source. Scout writes; never pushes back from this code path. Push-direction sync lives in `src/lib/sync/` and is unchanged.
+
+**Raw preservation.** Any WC field not mapped to a Scout column lands in `product.wc_raw` (JSONB). Future restructuring/enrichment processes read from this column. We never throw away source data.
+
+**Idempotent re-runs.** `category.woocommerce_id` and `product.woocommerce_id` are unique-per-instance and used as the upsert conflict key. Re-importing the same record UPDATEs instead of INSERTing. No checkpoint table needed in v1 — interrupted runs are safe to re-run because already-imported records are matched by `woocommerce_id`.
+
+**Categories preserve hierarchy as-is.** WC's `parent` (id) maps directly to Scout's `category.parent_id` via a second-pass lookup. No restructuring, no merging with Scout's template categories.
+
+**Variations stored, not exploded.** WC variable products become **one** Scout `product` row each. The WC `variations` array is preserved in `wc_raw` for the future restructuring process. v1 does not create `product_variant` rows from imports.
+
+**No enrichment during import.** `scout_attributes` (lifestage, species, breed_compatibility, etc.) stay null on imported records. A separate enrichment process populates them.
+
+**Code lives at `src/lib/import/woocommerce/`.** NOT in `src/lib/sync/` — sync is push-direction (Scout→WC), this is pull-direction (WC→Scout). Different namespaces prevent debugging confusion.
+
+**UI at `/import/woocommerce`.** Matches the existing `/import/text` and `/import/wizard` pattern. Reuses WC credentials already stored in `instance.integrations_config.woocommerce` via `/configuration/woocommerce`.
+
+**Multi-tenancy boundary uses `instance_id`,** consistent with all other Scout tables. Composite uniqueness `(instance_id, woocommerce_id)` lets the same WC ID exist independently in different instances.
+
+## 3. Schema additions
+
+Three changes, applied via Supabase MCP, verified via `information_schema`.
+
+```sql
+-- Stable identity for re-import / future sync.
+alter table category add column woocommerce_id bigint;
+alter table product add column woocommerce_id bigint;
+
+-- Lossless preservation of unmapped fields, including the variations array
+-- on variable products and any meta_data Scout doesn't have a column for.
+alter table product add column wc_raw jsonb not null default '{}'::jsonb;
+
+-- Composite uniqueness — same WC ID can exist in different instances.
+create unique index uq_category_woocommerce_id
+  on category (instance_id, woocommerce_id) where woocommerce_id is not null;
+create unique index uq_product_woocommerce_id
+  on product (instance_id, woocommerce_id) where woocommerce_id is not null;
+```
+
+If `product` is missing any obvious columns (e.g. `barcode`, `cost`), add them in the same migration. When in doubt whether a field is "obvious enough" to deserve a column, leave it in `wc_raw`.
+
+## 4. Field mapping
+
+Only obvious 1:1 mappings get columns. Everything else → `wc_raw`.
+
+### Category (WC `product_cat`)
+| WC field | Scout column |
+|---|---|
+| `id` | `woocommerce_id` |
+| `name` | `name` |
+| `slug` | `slug` |
+| `parent` (id) | `parent_id` (looked up via `woocommerce_id`, second pass after all categories inserted) |
+| everything else | dropped (categories have no `wc_raw`) |
+
+### Product
+| WC field | Scout column |
+|---|---|
+| `id` | `woocommerce_id` |
+| `name` | `name` |
+| `slug` | `slug` |
+| `sku` | `sku` |
+| `description` | `description` |
+| `short_description` | `short_description` |
+| `price` | `price` |
+| `sale_price` | `sale_price` |
+| `stock_quantity` | `stock_quantity` |
+| `images[0].src` | `featured_image_url` (or whatever Scout uses for primary image) |
+| `categories[].id` | `product_category_link` rows (via `category.woocommerce_id` lookup) |
+| `meta_data` entries for barcode / cost (key names vary by WC theme — common: `_barcode`, `_cost`, `_wc_cog_cost`) | `barcode`, `cost` if present |
+| **everything else** including `variations`, `attributes`, all unmapped `meta_data` | `wc_raw` |
+
+## 5. Pull algorithm
+
+1. Verify WC credentials work: `GET /wp-json/wc/v3/products?per_page=1`. If 401/403/network error, abort with a clear UI message.
+2. **Categories pass:**
+   - Page through `GET /wp-json/wc/v3/products/categories?per_page=100&page=N` until empty.
+   - For each: build the Scout row, `INSERT ... ON CONFLICT (instance_id, woocommerce_id) DO UPDATE`.
+   - Second pass: re-walk all imported categories, set `parent_id` via `woocommerce_id` lookup.
+3. **Products pass:**
+   - Page through `GET /wp-json/wc/v3/products?per_page=100&page=N&status=publish` until empty.
+   - For each: extract mapped fields, dump everything else into `wc_raw`.
+   - `INSERT ... ON CONFLICT (instance_id, woocommerce_id) DO UPDATE`.
+   - Refresh `product_category_link` rows from `categories[]` (delete-then-insert is fine — small per-product set).
+4. Update `instance.integrations_config.woocommerce.last_import_at` and `last_import_summary` (counts + duration).
+
+Each upsert is its own transaction. Mid-run failures don't corrupt anything; re-running picks up where it left off because already-imported records match on `woocommerce_id` and get UPDATEd as no-ops if unchanged.
+
+## 6. Admin UI at `/import/woocommerce`
+
+- **Connection status** at top — reuses the test from `/configuration/woocommerce`
+- **Two buttons:** "Importar categorías" and "Importar productos" (disabled if WC not configured)
+- **Progress display** while running: "Importando 234/1000 productos..."
+- **Last-run summary:** counts, duration, timestamp
+- **Error panel** below — show any per-record failures so the merchant can investigate
+
+Both buttons are server actions; progress can be implemented with polling or a streaming response. Pick whatever's simplest given Next.js 15's RSC patterns — don't over-engineer.
+
+## 7. Test cases
+
+- Empty WC catalog → 0 categories, 0 products, no errors
+- Categories import → all rows present, `parent_id` correctly set across the tree
+- Products import → mapped fields populated, `wc_raw` contains everything else (including `variations` array)
+- Re-run import → no duplicates, existing rows updated
+- Variable product → exactly one Scout `product` row, `wc_raw.variations` has all variations
+- Product with multiple categories → multiple `product_category_link` rows
+- Product with no SKU → imports anyway, `sku` is null
+- Network failure mid-import → no partial corruption (each upsert independent)
+- WC credentials missing or invalid → UI buttons disabled with clear message
+- WC products with `status` other than `publish` → ignored
+
+## 8. APPROVAL REQUIRED — Checkpoint 1
+Before writing code:
+1. Confirm understanding of all decisions in this document.
+2. Identify ambiguities or contradictions and ask clarifying questions.
+3. Propose the file tree (migrations, lib code, admin page, server actions).
+4. Wait for explicit approval before writing any code.
+
+## 9. APPROVAL REQUIRED — Checkpoint 2
+After code is written:
+1. Run all test cases in §7 against the live Wazú WC instance (or a staging copy if available).
+2. Report pass/fail with reasons for any failures.
+3. Wait for explicit approval before merging to main.
+
+## 10. Out of scope — handled by separate policies/processes later
+
+- `wc-import-enrichment.md` — populates `scout_attributes` from WC data, LLM, or both
+- `wc-import-variants.md` — explodes `wc_raw.variations` into `product_variant` + `product_variant_attribute` rows
+- `wc-import-category-matching.md` — finds similarities between imported categories and Scout's template, offers a rename/apply UI
+- `search-foundations.md` Stage 1 — indexes Scout's catalog into Meilisearch (consumes the data this policy produces)
+
+## 11. Resolved decisions
+
+These have been resolved through Tuncho's direction (2026-05-09):
+
+1. **Bring categories in as-is.** No matching against template, no restructuring during import. Future process handles similarity detection.
+2. **Don't enhance data during import.** Enrichment is a separate process that runs after.
+3. **Variants: store the raw WC structure, restructure later.** No `product_variant` rows created during import.
+4. **Field mapping is "obvious-only."** When in doubt, leave it in `wc_raw`.

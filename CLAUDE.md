@@ -454,3 +454,4 @@ Items here are intentional shortcuts or pre-rename artifacts that need follow-up
 **Active policy docs:**
 
 - [`search-foundations.md`](docs/policy/search-foundations.md) — Stages 0 & 1 of the search roadmap. Foundations + basic search live on Wazú via Meilisearch Cloud. Read before any search-related implementation.
+- [`wc-import.md`](docs/policy/wc-import.md) — One-way pull from WooCommerce into Scout's catalog tables (categories + products). v1 is raw preservation only; enrichment, variant restructuring, and category matching are explicitly deferred to future processes.

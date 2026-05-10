@@ -12,6 +12,10 @@ rather than working around it.
   connection status) and basic search live on Wazú (indexing pipeline,
   WordPress plugin v0.1, two-button variable-product cards). Owner:
   Tuncho.
+- **wc-import.md** — One-way pull from WooCommerce into Scout's catalog
+  tables. Categories and products only; raw data preservation, no
+  enrichment, no variant restructuring. Future processes handle those.
+  Owner: Tuncho.
 
 ## Conventions
 

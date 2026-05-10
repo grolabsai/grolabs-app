@@ -124,20 +124,24 @@ export default async function ImportPage() {
           <div className="s-import-card-status active">Disponible</div>
         </Link>
 
-        {/* Migration — disabled */}
-        <div className="s-import-card disabled">
+        {/* Migration — WooCommerce active, others coming soon */}
+        <Link
+          href={"/import/woocommerce" as Route}
+          className="s-import-card"
+          style={{ textDecoration: "none" }}
+        >
           <div className="s-import-card-icon">
             <Globe size={24} strokeWidth={1.5} />
           </div>
           <div className="s-import-card-text">
-            <div className="s-import-card-title">Migración de tienda</div>
+            <div className="s-import-card-title">WooCommerce</div>
             <div className="s-import-card-desc">
-              Conectá WooCommerce, Shopify o tu plataforma. Importación
-              automática con mapeo de categorías.
+              Importá categorías y productos desde tu tienda WooCommerce.
+              Re-ejecutable y sin duplicados.
             </div>
           </div>
-          <div className="s-import-card-status pending">Próximamente</div>
-        </div>
+          <div className="s-import-card-status active">Disponible</div>
+        </Link>
       </div>
 
       {/* ── Recent imports ── */}

@@ -1,0 +1,127 @@
+---
+Status: Draft (awaiting approval)
+Owner: Tuncho
+Scope: Introduce a tenant layer above `instance`. A tenant owns one or more instances and carries the "template vs. customer" distinction at the ownership level instead of as a flag on each instance row.
+Audience: Claude Code (primary), future Scout contributors
+---
+
+# Scout Tenant Model — v1
+
+This document is the authoritative spec for the tenant layer. Read it before writing any code that touches tenants, template ownership, or signup. Decisions here are locked — if implementation surfaces a flaw, raise it as a question instead of working around it silently.
+
+## 1. What a tenant is
+
+A **tenant** is the legal/organizational owner of one or more Scout instances.
+
+- A user belongs to **instances**, not tenants. Membership is `instance_member.user_id → instance_id` — unchanged by this work.
+- An instance belongs to exactly one tenant via `instance.tenant_id`.
+- A tenant can own many instances (Wazú will eventually have a production instance, a staging instance, and short-lived test instances — all under one Wazú tenant).
+- A tenant carries a `kind`: either `template_owner` or `customer`.
+
+Tenants are an **organizational/ownership** layer, not a security layer. The security perimeter remains `instance_member` and Postgres RLS keyed on `instance_id`. Cross-instance access is still gated by membership, never by tenant.
+
+(There is no separate `docs/policy/multi-tenancy.md` today. The multi-tenancy rules in `CLAUDE.md` §2 — `instance_id` everywhere, `instance_member` is the security perimeter, RLS reads `instance_id` from the JWT — are unchanged.)
+
+## 2. Why we have tenants now
+
+Three problems converge on the same answer:
+
+1. **Template ownership is a property of an owner, not a flag on a row.** Today `instance.kind = 'template'` says "this instance is a Scout-owned blueprint." That collapses two concepts: (a) who owns it (GroLabs), and (b) how it should be used (as a template). When we add more template instances — e.g. a vertical-specific template — they all share owner=GroLabs. That belongs on a parent record.
+
+2. **Signup needs an owner record before it has an instance.** The new-instance flow from `instance-management.md` creates an instance per user action. With tenants, signup becomes "create a customer tenant + first instance under it" atomically. Future invites land users into the existing tenant's instance, not into a free-floating row.
+
+3. **Multi-template, multi-instance per customer.** Once tenants exist, Wazú can own a production instance and a sandbox instance under one billing/ownership umbrella. GroLabs can own multiple template instances (general retail, pet vertical, …).
+
+The minimum viable shape is: one new table, one FK column, two seeded tenant rows, backfill of three existing instances.
+
+## 3. Tenant kinds
+
+Exactly two values, enforced by a CHECK constraint on `tenant.kind`:
+
+| kind             | Meaning                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `template_owner` | Tenant owns template instances. Today: GroLabs.                                                  |
+| `customer`       | Tenant owns customer-facing instances (real catalogs, real shoppers). Today: Wazú.               |
+
+**Rule:** an instance is a template iff its owning tenant has `kind = 'template_owner'`.
+
+There is no per-instance "is this a template" flag in the target state. The legacy `instance.kind` column is being deprecated (see §5) but kept in place during the transition.
+
+## 4. Backfill — initial tenant data
+
+Two tenant rows are seeded by this migration:
+
+| name    | slug    | kind             |
+| ------- | ------- | ---------------- |
+| GroLabs | grolabs | template_owner   |
+| Wazú    | wazu    | customer         |
+
+Existing instances are reassigned as follows:
+
+| instance_id | name                          | old `kind` | → tenant slug |
+| ----------- | ----------------------------- | ---------- | ------------- |
+| 0           | GRO Scout Template (System)   | template   | grolabs       |
+| 1           | Wazu                          | customer   | wazu          |
+| 3           | Test Wazú                     | customer   | wazu          |
+
+After backfill, `instance.tenant_id` is set NOT NULL.
+
+## 5. Deprecation of `instance.kind`
+
+`instance.kind` is **deprecated, not dropped**, in this migration.
+
+- A column comment marks it deprecated and tells future readers to use `instance.tenant_id → tenant.kind` instead.
+- Existing application code still reads `instance.kind` in a few places (sidebar template badge, admin filters). Those readers will be migrated in a follow-up PR.
+- During the deprecation window, an `instance` INSERT/UPDATE trigger keeps `instance.kind` in sync with the parent tenant's `kind`:
+  - tenant.kind = `template_owner` → instance.kind = `'template'`
+  - tenant.kind = `customer`       → instance.kind = `'customer'`
+- Once all readers move to the tenant join, a follow-up migration drops `instance.kind` and the sync trigger together.
+
+**Rule for new code:** do not read `instance.kind`. Join `instance → tenant` and read `tenant.kind`. New writers do not need to set `instance.kind` — the trigger handles it.
+
+## 6. Future: signup creates tenant + instance atomically
+
+Out of scope for this migration, but the shape it enables:
+
+- `createInstance(name)` becomes `createTenantAndInstance(tenant_name, instance_name)` for new signups.
+- Both rows are inserted in one transaction; the `instance_member` row for the creator is inserted in the same transaction with `role='owner'` and `is_current=true` (per `instance-management.md`).
+- Invitations to existing tenants (later policy doc) attach a new `instance_member` to an existing instance — the tenant doesn't change.
+
+This PR does not ship that flow. It only makes the data shape that supports it possible.
+
+## 7. RLS on the new `tenant` table
+
+Conservative defaults:
+
+- **SELECT:** allowed for any authenticated user who has at least one `instance_member` row pointing to an instance owned by that tenant. Users see the tenants they actually belong to via membership.
+- **INSERT / UPDATE / DELETE:** service_role only.
+
+Tenant rows are low-cardinality and rarely written. The customer-facing signup flow (when it lands) will go through a `SECURITY DEFINER` RPC, so tenant writes from app code via the normal authenticated role stay blocked. This is intentionally tight — loosen later when there's a concrete need.
+
+## 8. Out of scope for this migration
+
+- Tenant-level billing (`tenant.billing_config`, plan, etc.) — `instance` keeps its current billing fields; tenant-level rollup is a later policy doc.
+- Tenant-level branding (logo, color) — out of scope.
+- Multi-instance topbar switching across instances of the same tenant — that lives in `instance-management.md` and is keyed on memberships, not tenants.
+- Dropping `instance.kind` — explicit follow-up migration once readers are migrated.
+- Tightening RLS to role-gated writes — covered when the broader role taxonomy lands.
+
+## 9. Verification checklist (post-migration)
+
+These three queries must all return consistent data before the migration is considered applied:
+
+```sql
+SELECT * FROM tenant ORDER BY tenant_id;
+
+SELECT instance_id, name, kind, tenant_id
+FROM instance
+ORDER BY instance_id;
+
+SELECT t.name AS tenant_name, t.kind AS tenant_kind,
+       i.name AS instance_name, i.kind AS instance_kind
+FROM instance i
+JOIN tenant t ON i.tenant_id = t.tenant_id
+ORDER BY t.tenant_id, i.instance_id;
+```
+
+Expected: two tenant rows; three instance rows all with non-null `tenant_id`; the join shows instance 0 under GroLabs (template/template_owner) and instances 1, 3 under Wazú (customer/customer).

@@ -25,6 +25,11 @@ rather than working around it.
   ones. Adds `instance_member.is_current` column with partial unique
   index. Replaces `.maybeSingle()` on `is_active` ambiguity.
   Owner: Tuncho.
+- **tenant-model.md** — Tenant layer above `instance`. Adds a `tenant`
+  table (kind=`template_owner`|`customer`) and `instance.tenant_id`.
+  Deprecates `instance.kind` (kept + sync-trigger during the
+  deprecation window). Backfills GroLabs → instance 0, Wazú →
+  instances 1 and 3. Owner: Tuncho.
 
 ## Conventions
 

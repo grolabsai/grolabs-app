@@ -30,6 +30,12 @@ rather than working around it.
   Deprecates `instance.kind` (kept + sync-trigger during the
   deprecation window). Backfills GroLabs → instance 0, Wazú →
   instances 1 and 3. Owner: Tuncho.
+- **tenant-membership.md** — Direct user-to-tenant membership via a
+  new `tenant_member` table, parallel to `instance_member` one layer
+  up. Tenant roles `owner|admin|billing|member`. BEFORE INSERT trigger
+  on `instance_member` enforces a matching active `tenant_member`
+  row. Backfills 3 (tenant, user) pairs from existing instance
+  memberships. Owner: Tuncho.
 
 ## Conventions
 

@@ -1,6 +1,6 @@
 # Scout Admin
 
-Multi-tenant catalog management admin for Scout (a GRO Labs product).
+Multi-tenant catalog management admin for Scout (a GroLabs product).
 Dedicated Scout admin, shares visual language with Bloom (D22).
 
 ## What's built (Phase 1.0 slice)

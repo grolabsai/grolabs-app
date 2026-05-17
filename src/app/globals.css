@@ -12,15 +12,15 @@ svg {
 /* =============================================================================
    GroLabs Admin — design system
    =============================================================================
-   Derived directly from the Bloom Admin design system (see the design file
+   Derived directly from the GroLabs Admin design system (see the design file
    for origin). Prefix renamed from `bl-` → `s-` and `bloom-` → `scout-`;
    tokens and values preserved verbatim so the two apps can share a visual
-   language (D22: dedicated GroLabs admin, shared design language with Bloom).
+   language (D22: dedicated GroLabs admin, shared design language with GroLabs).
 
    Scope of this file:
-   - Tokens: GroLabs/Bloom --s-* and --scout-* vars (source of truth)
+   - Tokens: GroLabs --s-* and --scout-* vars (source of truth)
    - shadcn HSL vars: mapped 1:1 to the same colors so shadcn components
-     render in Bloom's visual identity automatically
+     render in GroLabs's visual identity automatically
    - App shell (nav, main, topbar)
    - Core content primitives (card, field, button, tag, table)
    - Screens implemented this pass (products list, product editor)
@@ -34,7 +34,7 @@ svg {
 
 :root {
   /* -------------------------------------------------------------------------
-     shadcn CSS variables — HSL values mapped to GroLabs/Bloom tokens.
+     shadcn CSS variables — HSL values mapped to GroLabs tokens.
      These drive all shadcn/ui component styles.
      Color derivation notes are in CLAUDE.md § Design tokens.
      ----------------------------------------------------------------------- */
@@ -60,7 +60,7 @@ svg {
   --radius: 0.5rem;                  /* 8px — matches --s-radius-md        */
 
   /* -------------------------------------------------------------------------
-     GroLabs/Bloom design tokens — source of truth, kept intact.
+     GroLabs design tokens — source of truth, kept intact.
      Existing CSS using --s-* and --scout-* references continues to work.
      ----------------------------------------------------------------------- */
   --scout-accent: #378ADD;

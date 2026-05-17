@@ -24,7 +24,7 @@ No `components.json` found. shadcn is not installed.
 
 ## Design Tokens
 
-File: `downloads/src/app/globals.css`. Custom CSS-var system, prefix `--s-*` / `--scout-*`, ported verbatim from a sibling app called Bloom (prefix renamed `bl-` → `s-`). No `.dark` block exists.
+File: `downloads/src/app/globals.css`. Custom CSS-var system, prefix `--s-*` / `--scout-*`, ported verbatim from a sibling app called GroLabs (prefix renamed `bl-` → `s-`). No `.dark` block exists.
 
 ```css
 :root {
@@ -134,7 +134,7 @@ From `downloads/scout-admin/.env.example`:
 - **Two Supabase clients**: `server.ts` (RLS-scoped, uses session JWT) and `service-role.ts` (bypasses RLS — server-only, for admin flows).
 - **Auth**: Supabase email/password. Middleware refreshes session cookies on every request; auth enforcement lives in `src/app/[locale]/(app)/layout.tsx`.
 - **i18n**: `defaultLocale: 'es'`, `localePrefix: 'as-needed'`. Spanish URLs have no prefix; English gets `/en/`. Canonical route segments are English-ASCII. Message source of truth is `messages/es.json`. New screens must import `Link`/`redirect` from `@/i18n/routing`, not `next/navigation`.
-- **Design system**: `s-*` CSS classes, 1:1 port of Bloom's `bl-*` tokens. Token values are identical; only the prefix changed.
+- **Design system**: `s-*` CSS classes, 1:1 port of GroLabs's `bl-*` tokens. Token values are identical; only the prefix changed.
 - **Translation tables, not JSONB**: every translatable entity has a companion translation table. BCP 47 locale codes (`es-GT`, `en-US`).
 - **Templates as SQL**: new tenant onboarding uses SQL seed scripts committed to the repo.
 - **Language**: UI copy is in Spanish. Hardcoded user-visible strings in components are forbidden — all strings go through `useTranslations` / `getTranslations`.

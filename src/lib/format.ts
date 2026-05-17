@@ -17,7 +17,7 @@ export function formatGTQ(amount: number | string | null | undefined): string {
 
 /**
  * Human-readable Spanish relative time. Like "hace 2h" / "hace 3d".
- * Keeps the vibe of the Bloom design where updated columns are tight.
+ * Keeps the vibe of the GroLabs design where updated columns are tight.
  */
 export function formatRelative(input: string | Date | null | undefined): string {
   if (!input) return "—";

@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { ImageOff } from "lucide-react";
 
 /**
- * Products list screen. Mirror of Bloom's `screen-products` visually,
+ * Products list screen. Mirror of GroLabs's `screen-products` visually,
  * re-wired to GroLabs's schema and backed by real Supabase data.
  *
  * Data shape per row:

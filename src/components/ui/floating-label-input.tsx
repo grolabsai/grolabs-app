@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
  * An outlined input where the label is always rendered in the "floated"
  * position — absolutely placed at -7px from the top of the wrapper, with
  * horizontal padding and bg-background so it visually cuts through the
- * input's border. Matches the GroLabs/Bloom .s-field pattern, but built
+ * input's border. Matches the GroLabs .s-field pattern, but built
  * on the shadcn Input primitive.
  *
  * The label is ALWAYS visible (not animated). Use this for every form

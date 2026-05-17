@@ -1,4 +1,7 @@
 Scout Search Foundations — Stages 0 & 1
+
+> **Editor's note:** Reshaped 2026-05-17 to conform to Constitution Articles 1 and 12. Previous version contained pet-specific assumptions baked into core search defaults.
+
 Status: Active policy Owner: Tuncho Scope: Stages 0 and 1 of the Scout search roadmap. Foundations and basic search live on Wazú. Audience: Claude Code (primary), future Scout contributors (secondary)
 This document is the authoritative spec for the foundational search infrastructure. Read this before writing any code, viewing the file tree, or proposing implementation details. Stop at the two checkpoints marked APPROVAL REQUIRED and wait for explicit approval before proceeding.
 1. Goals and non-goals
@@ -31,7 +34,7 @@ Meilisearch Cloud over self-hosted. No infrastructure operations burden. Build t
 Single Cloud project, indexes per instance. All Scout instances live in one Meilisearch Cloud project named `scout-production`. Each instance gets its own index named `inst_<instance_id>`.
 Per-instance index, NOT shared index with tenant token filtering. Despite Meilisearch's general recommendation for SaaS, Scout uses per-instance indexes because: (a) per-instance settings (synonyms, stop words, ranking) are a Stage 5 requirement, (b) merchant-level isolation is operationally simpler for support and debugging, (c) at Scout's scale (target 100s of merchants, not millions), the performance penalty is negligible. Revisit at customer #100+ if performance becomes an issue.
 Scout owns Meilisearch keys end-to-end. Merchants paste only an instance ID into the WordPress plugin. The plugin calls Scout's API to obtain a short-lived tenant token. The Meilisearch master key never leaves Scout's backend.
-Scout is the canonical product database, not WooCommerce. WooCommerce holds the storefront-visible subset. Scout holds the enriched catalog (lifestage, breed compatibility, species, normalized attributes, computed product tags). For overlapping fields (name, price, stock), WooCommerce is the source of truth. For Scout-specific fields, Scout is the only source. Meilisearch indexes the enriched record.
+Scout is the canonical product database, not WooCommerce. WooCommerce holds the storefront-visible subset. Scout holds the enriched catalog (normalized attributes, computed product tags, and any template-defined catalog attributes). For overlapping fields (name, price, stock), WooCommerce is the source of truth. For Scout-specific fields, Scout is the only source. Meilisearch indexes the enriched record.
 No webhooks in Stage 1. Polling-based sync every 5 minutes. Webhooks come in Stage 3.
 Search query interception, not Scout-controlled results page. Stage 1 intercepts WordPress's search query before WP_Query runs and rewrites it to use Meilisearch results, preserving the merchant's WooCommerce theme for the search results display.
 One document per parent product. Variable products are indexed as a single document with a `variants` array containing all variation data. Variation attributes are searchable via Meilisearch's nested field support. The variations-as-separate-documents model is explicitly rejected — the parent-level approach with the two-button card UX covers shopper needs, and the data structure is simpler to reason about.
@@ -50,19 +53,23 @@ Project configuration
 Index naming convention
 `inst_<instance_id>` where `instance_id` is the integer primary key from Scout's `instance` table (note: singular table name, consistent with all other Scout tables — see CLAUDE.md §2). The template instance has `instance_id = 0`; that's a valid value, not a falsy sentinel — never use `if (!instanceId)` checks.
 Index settings defaults (applied at creation)
-The `searchableAttributes` MUST include `variants.attributes` and `variants.sku` to enable nested-field matching for variation queries. Spanish stop words and pet-domain synonyms are baked in as defaults; Stage 5 will let merchants override these per-instance. Typo tolerance enabled with `oneTypo` at 4 chars and `twoTypos` at 8 chars. Faceting max 100 values per facet. Pagination max 1000 hits.
-Searchable attributes: `name`, `brand`, `categories`, `description`, `variants.attributes`, `variants.sku`, `scout_attributes.lifestage`, `scout_attributes.species`, `scout_attributes.breed_compatibility`, `scout_attributes.medical_conditions`.
-Filterable attributes: `instance_id`, `category_ids`, `brand`, `in_stock`, `scout_attributes.species`, `scout_attributes.lifestage`, `price`.
+The `searchableAttributes` MUST include `variants.attributes` and `variants.sku` to enable nested-field matching for variation queries. Spanish stop words are baked in as defaults; synonyms start empty per tenant (see "Synonym strategy" below). Stage 5 will let merchants override stop words per-instance. Typo tolerance enabled with `oneTypo` at 4 chars and `twoTypos` at 8 chars. Faceting max 100 values per facet. Pagination max 1000 hits.
+Searchable attributes: `name`, `brand`, `categories`, `description`, `variants.attributes`, `variants.sku`, plus whatever template-defined catalog attributes the tenant's catalog exposes (see "Catalog attributes" below).
+Filterable attributes: `instance_id`, `category_ids`, `brand`, `in_stock`, `price`, plus template-defined catalog attributes exposed as facets (see "Catalog attributes" below).
 Sortable attributes: `price`, `created_at`, `popularity`.
 Ranking rules (in order): `words`, `typo`, `proximity`, `attribute`, `sort`, `exactness`, `popularity:desc`.
 Stop words (Spanish): `el`, `la`, `los`, `las`, `un`, `una`, `de`, `del`, `para`, `con`, `y`, `o`.
-Synonyms (pet-domain Spanish): `comida` ↔ `alimento` ↔ `kibble`, `perro` ↔ `can`, `gato` ↔ `felino`.
+### Synonym strategy
+
+Synonyms start empty per tenant. They are accumulated through the zero-result-query → agent-proposes → merchant-approves loop. No vertical ships default synonyms; the recovery moment (turning a zero-result query into a working synonym) is part of the customer-visible value loop and would be diluted by pre-seeded content.
 4. Document schema
 The schema for documents indexed in Meilisearch.
 Identity fields: `id` (Scout's internal product ID), `instance_id` (defense-in-depth filter), `woocommerce_id` (WC post ID).
 Display fields from WooCommerce: `name`, `slug`, `description` (HTML stripped), `short_description`, `url` (computed), `image_url`, `thumbnail_url`.
 Categorization from WooCommerce: `categories` (names), `category_ids` (WC term IDs), `tags`, `brand`.
-Scout enrichment under `scout_attributes`: `species[]`, `lifestage[]`, `breed_compatibility[]`, `size`, `weight_grams`, `food_type`, `medical_conditions[]`, `age_min_months`, `age_max_months`.
+### Catalog attributes
+
+Attributes are owned by the Catalog module (Module Map §3). The generic attributes system handles all vertical-specific attribute definitions through templates (pet-shop template defines breed-size, lifestage, etc.; jewelry template defines carats, cut, clarity; electronics template defines wattage, form-factor). Core search indexes whichever attributes the tenant's catalog defines.
 Variation summary under `variation_summary`: `type` (`'simple'` | `'variable_single'` | `'variable_multi'`), `purchasable_variation_count`, `default_variation_id`, `default_variation_sku`, `price_range` (`{min, max}`), `in_stock_summary` (`{any_in_stock, all_in_stock}`).
 Variants array — each entry contains: `variation_id`, `sku`, `attributes` (Record<string, string>), `price`, `sale_price`, `in_stock`, `stock_quantity`, `image_url`.
 
@@ -72,7 +79,7 @@ Other: `popularity` (default 0, populated in Stage 4), `created_at`, `updated_at
 Field source rules
 
 * WooCommerce-sourced fields: WooCommerce REST API is source of truth. Scout reads, never writes back.
-* Scout-enriched fields (`scout_attributes.*`): Scout is the only source.
+* Scout-enriched fields (template-defined catalog attributes): Scout is the only source.
 * Computed fields (`url`, `popularity`, `variation_summary`): Computed at indexing time.
 * HTML stripping: `description` and `short_description` must have HTML tags stripped.
 variation_summary computation rules
@@ -137,7 +144,22 @@ Trigger: synchronous push from product/variant/pricing server actions. Any mutat
 Flow per indexed product: load product + variants + pricing + categories + media in one query batch; build the §4 document (HTML-stripped, `variation_summary` computed, `variants[]` populated with slug-keyed attributes per the locked contract below); upsert to Meilisearch; write `product_sync_status` row with `platform = 'meilisearch'`; on a backfill run, also append a `sync_log` entry.
 Initial full backfill iterates all `is_active` products for the instance, paginated 100/page.
 Failure modes: Meilisearch upsert fails → log task UID in `product_sync_status.last_error`, retry next mutation. Schema validation fails → write to `failed_indexing` table, skip. Single product build fails → log, skip, continue batch.
-Stage 1 enrichment scope is intentionally minimal — NOT the 7-agent pipeline. It strips HTML from descriptions, detects lifestage from product-name keywords (`puppy`, `senior`, `cachorro`, `adulto`), sets `popularity: 0`, computes `variation_summary`, populates `variants` array. `species` mapping is deferred — Scout's `category` table doesn't yet carry species metadata, and the original "hardcoded WC-category → species" lookup is redundant once Scout owns the catalog. Stage 2+ wires species in.
+Stage 1 enrichment scope is intentionally minimal — NOT the 7-agent pipeline. It strips HTML from descriptions, sets `popularity: 0`, computes `variation_summary`, populates `variants` array.
+
+Lifestage detection has been removed from core search foundations. Lifestage, like any other domain-specific concept, is expressed as a catalog attribute configured by the relevant template. Search treats it as a normal facet.
+
+### Attribute extraction from product names
+
+Attribute extraction is an industry-agnostic agent capability (Module Map §14, Optimization Agent). The agent reads a product's name and proposes attribute values for the attributes defined on that product's category. The agent does not know or care which vertical it operates in — it operates on whatever attribute schema the template defines.
+
+Examples across verticals:
+- Pet-shop: 'Royal Canin Puppy Medium Breed 4kg' → proposes {lifestage: puppy, breed-size: medium, weight: 4kg}
+- Jewelry: '1.5ct Round Brilliant Diamond VS1' → proposes {carats: 1.5, cut: round-brilliant, clarity: VS1}
+- Electronics: 'Dell XPS 13 9320 i7 16GB 512GB' → proposes {brand: Dell, model: XPS 13 9320, cpu: i7, ram: 16GB, storage: 512GB}
+
+This capability is invoked by Catalog workflows (on import, on demand, on background sweep) and by Sync (first-sync probe). The agent module owns the function; the calling module owns the workflow context.
+
+The attribute-based product-customer matching feature (the dropped bridge table's intended purpose) is a separate future capability tracked in docs/backlog.md.
 
 Locked variant contract (per PR #68, plugin v0.2 consumer):
 * `document.variants[].attributes` keys MUST be slugs (e.g. `pa_size`), not display names. Use the WooCommerce taxonomy slug from `product.wc_raw.attributes[].slug` / `wc_raw.variations[].attributes[].slug`. Values stay as the human-readable option label (e.g. `"4kg"`).
@@ -155,7 +177,7 @@ Failure mode: Scout API unreachable → fall back to WordPress's default search.
 Plugin settings storage: `scout_search_instance_id`, `scout_search_meilisearch_host`, `scout_search_index_uid`, `scout_search_last_token_check`, `scout_search_status`. Tokens in WP transients (14-min TTL). Search-results metadata in transients per request.
 11. Test cases
 Indexing pipeline tests: full sync completes with document count within 1% of WC product count; modified products propagate within 6 minutes; deletions propagate within 6 minutes; HTML stripped from descriptions; stock changes propagate; variable products index with full variants array; variation_summary type computed correctly for simple/variable_single/variable_multi cases.
-Search behavior tests on Wazú: 20 representative Spanish queries with expected behaviors covering keyword search, synonym handling, typo tolerance, brand+species filtering, variation-specific matches (e.g., "royal canin renal 4kg" → 4kg variation matched), broad queries, zero-result queries, empty query, stop word filtering, emoji input safety, XSS sanitization, lifestage detection.
+Search behavior tests on Wazú: 20 representative Spanish queries with expected behaviors covering keyword search, synonym handling, typo tolerance, brand + attribute filtering, variation-specific matches (e.g., a query naming a specific variant attribute → that variation matched), broad queries, zero-result queries, empty query, stop word filtering, emoji input safety, XSS sanitization.
 Variant matching tests: query matching specific variant attribute → correct `matched_variation`; query matching only parent → falls back to default_variation_id; matched variant out of stock → falls back to next in-stock variant; simple product → matched_variation is null.
 Card rendering tests: simple+stock → "Agregar al carrito"; variable_single+stock → "Agregar al carrito" with variation ID; variable_multi+matched+stock → two-button layout; variable_multi+no match+any stock → "Elegir tamaño"; out of stock → "Agotado" badge; mobile (<768px) → two-button stacks vertically.
 Token endpoint tests: valid request → 200; invalid ID → 403 generic; valid ID wrong origin → 403 generic; rate limit → 429; token authorizes search; token expires correctly.

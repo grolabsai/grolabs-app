@@ -1,9 +1,11 @@
-# GroLabs — Vision Document (Draft v0.2)
+# GroLabs — Vision Document (Draft v0.4)
 
 **Status:** Draft, pending review
 **Date:** 2026-05-16
 **Author of record:** Tuncho (with Claude as scribe)
-**Changelog:** v0.2 — renamed plugins to functional, source-based names (catalog-plugin, search-plugin, ga4-plugin, login-plugin). Marketing names deferred.
+**Changelog:**
+- v0.4 — Removed "auto-registration on plugin install" language throughout. Aligned with Constitution Article 3: tenants register through explicit handshake at grolabs.ai. Affected: §4 diagram, §4 selling logic, §6 rule 3, §7 open questions Q4/Q6/Q7.
+- v0.2 — renamed plugins to functional, source-based names (catalog-plugin, search-plugin, ga4-plugin, login-plugin). Marketing names deferred.
 
 ---
 
@@ -131,7 +133,7 @@ flowchart LR
     end
 
     subgraph Free["FREE HOOK"]
-        FH[Login<br/>Auto-registers tenant<br/>Triggers assessment]
+        FH[Login<br/>Plugin install prompts signup<br/>at grolabs.ai]
     end
 
     FH -.upsell.-> P1
@@ -148,7 +150,7 @@ flowchart LR
 
 **The selling logic:**
 - Each entry product is sellable standalone. A merchant can buy just Catalog and never adopt the others.
-- **The login-plugin is the free hook.** Every install auto-registers a tenant, captures the domain, and triggers GroLabs' agent to probe the merchant's store and identify leaks across all three loss categories.
+- **The login-plugin is the free hook.** Installing the plugin prompts the merchant to create a GroLabs account at grolabs.ai through an explicit handshake (Constitution Article 3). Once the merchant signs up and connects their site, GroLabs' agent probes the store and identifies leaks across all three loss categories — turning the assessment into evidence-based upsell.
 - The agent uses those findings to drive personalized, evidence-based upsell: "We found 47 products with no photos and 12 search queries with zero results. Here's what that's costing you."
 - Optimization is the compound product — only meaningful when at least 1+2+3 are active, because the loop requires all three data sources.
 
@@ -181,7 +183,7 @@ The following are non-negotiable rules that flow from the vision. They will be l
 
 1. **Industry-agnostic core.** No vertical-specific naming, schema, or assumptions in core code or docs. Verticals exist only as instance-provisioning templates (Wazú is the pet-shop test case).
 2. **One core codebase, multiple plugin codebases.** Core uses feature-flag entitlements; plugins are physically separate distributable artifacts.
-3. **Every plugin install registers a tenant** — even the free login-plugin. The funnel is plugin-driven, not signup-driven.
+3. **Plugin-driven funnel with explicit signup.** Plugin install is the funnel entry point, but tenant registration happens through an explicit handshake at grolabs.ai — never silently on install. The funnel is plugin-initiated, signup-confirmed.
 4. **Privacy-first defaults.** Any merchant-controlled data-sharing setting defaults to the most data-minimizing option, requires explicit consent to enable, and remains revocable.
 5. **One switch in the search-plugin.** Search-only by default; full event + revenue tracking as a single opt-in upgrade.
 6. **The clerk-delegation problem is solved inside GroLabs, not by plugin configuration.** The `financial_data_visible` role flag determines what each user sees in the dashboard.
@@ -200,10 +202,10 @@ The following are non-negotiable rules that flow from the vision. They will be l
 | Q1 | Final product-name spelling locked as **GroLabs** ✓ | resolved |
 | Q2 | Two SSO repo folders (`scout-wordpress-social-login`, `wp-multi-social-login`) — review and consolidate to one | cleanup task; before any plugin release |
 | Q3 | Marketing names for the four selling shapes (e.g., Insights Suite, Fastlane Checkout) | before any marketing copy is written |
-| Q4 | Exact data captured at plugin-install tenant auto-registration (email? domain? site name? WP owner identity?) | before login-plugin v1 ships |
+| Q4 | Exact data captured at signup handshake (email? domain? site name? WP owner identity?) | before login-plugin v1 ships |
 | Q5 | Consent disclosure language at plugin install | before any plugin lands in WP directory |
-| Q6 | Does the agent's auto-probe-the-store behavior happen on install, or require separate consent? | before agent goes live |
-| Q7 | Relationship between auto-registered tenants and paid tenants — same ID? Claim flow? | before billing layer is built |
+| Q6 | Does the agent's store-probe behavior happen immediately after signup, or require separate consent? | before agent goes live |
+| Q7 | Relationship between free-tier tenants (login-plugin only) and paid tenants — same ID? Upgrade flow? | before billing layer is built |
 | Q8 | If the merchant later refuses to share revenue but had previously consented, what is the retention policy on already-collected data? | before privacy policy is published |
 
 ---

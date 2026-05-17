@@ -1,9 +1,9 @@
-# Scout GA4 Integration — v1
+# GroLabs GA4 Integration — v1
 
 Status: Active policy
 Owner: Tuncho
-Scope: Read-only Google Analytics 4 integration. Daily snapshot pull into Scout's DB plus on-demand real-time queries. Alert pipeline for the top three traffic-health metrics. Daily-digest dashboard surface for the rest.
-Audience: Claude Code (primary), future Scout contributors (secondary)
+Scope: Read-only Google Analytics 4 integration. Daily snapshot pull into GroLabs's DB plus on-demand real-time queries. Alert pipeline for the top three traffic-health metrics. Daily-digest dashboard surface for the rest.
+Audience: Claude Code (primary), future GroLabs contributors (secondary)
 
 This document is the authoritative spec for v1 of the GA4 integration. Read it before writing any code. Stop at the two `APPROVAL REQUIRED` checkpoints (§10 and §11) and wait for explicit approval.
 
@@ -12,7 +12,7 @@ This document is the authoritative spec for v1 of the GA4 integration. Read it b
 ### Goal
 Give a solopreneur a daily-digest cockpit for site traffic that surfaces *what changed* without forcing them to learn GA4. Three layers:
 
-1. **Alerts** for the top-3 traffic-health metrics — pushed to Scout's notification surface when thresholds are breached.
+1. **Alerts** for the top-3 traffic-health metrics — pushed to GroLabs's notification surface when thresholds are breached.
 2. **Daily digest screen** showing those three plus a small set of awareness metrics, with WoW comparison.
 3. **Browse views** with faceted filters for everything else (deferred to v2).
 
@@ -28,7 +28,7 @@ Give a solopreneur a daily-digest cockpit for site traffic that surfaces *what c
 
 If implementation surfaces a flaw, raise it as a question — don't work around it silently.
 
-**Hybrid storage.** Daily snapshots live in Scout's DB; the GA4 Realtime API is hit live for the "Active Users right now" widget only. Anything aggregated daily lives in our tables. This unlocks fast reads, anomaly baselines, and resilience to GA4 access loss; it costs us a polling job and ~25 metrics × N dimensions × ~365 days/year of storage (trivial size).
+**Hybrid storage.** Daily snapshots live in GroLabs's DB; the GA4 Realtime API is hit live for the "Active Users right now" widget only. Anything aggregated daily lives in our tables. This unlocks fast reads, anomaly baselines, and resilience to GA4 access loss; it costs us a polling job and ~25 metrics × N dimensions × ~365 days/year of storage (trivial size).
 
 **One table per dimension grain, not EAV.** `ga4_session_daily`, `ga4_traffic_daily`, `ga4_geo_daily`, `ga4_page_daily`, `ga4_device_daily`. Each table has `(instance_id, date, <dimension columns>, <metric columns>)`. Cleaner queries than EAV-style "metric_name + value" rows; type-safe; indexable.
 
@@ -38,7 +38,7 @@ If implementation surfaces a flaw, raise it as a question — don't work around 
 
 **Server-side OAuth with refresh-token storage.** Standard Google OAuth 2.0 server flow. Refresh token stored in Supabase Vault (same pattern as Algolia admin keys). Access tokens are short-lived; the polling job refreshes as needed.
 
-**Alerts are first-class, not a side-effect.** Dedicated `ga4_alert` table with an explicit lifecycle (`firing → acknowledged → cleared`). Scout's notification UI surfaces them. Anomaly logic is its own job that runs after the polling job completes.
+**Alerts are first-class, not a side-effect.** Dedicated `ga4_alert` table with an explicit lifecycle (`firing → acknowledged → cleared`). GroLabs's notification UI surfaces them. Anomaly logic is its own job that runs after the polling job completes.
 
 **Top-3 alert metrics are fixed in v1.** Sessions (with WoW threshold ±15%), Engagement Rate (absolute drop −10%), and Source/Medium share shift (any source moves >20pp). Merchant-configurable thresholds are v3.
 
@@ -46,7 +46,7 @@ If implementation surfaces a flaw, raise it as a question — don't work around 
 
 **UI lives at `/dashboard/traffic`.** New sub-route under the existing dashboard, not a top-level nav entry. The existing `/dashboard` (no-results analytics from Algolia) becomes one card on a multi-card dashboard surface — see the dashboard design brief at `docs/design/dashboard.md`.
 
-**Multi-tenancy boundary uses `instance_id`,** consistent with all other Scout tables. RLS gates rows to the user's instance.
+**Multi-tenancy boundary uses `instance_id`,** consistent with all other GroLabs tables. RLS gates rows to the user's instance.
 
 ## 3. Schema additions
 
@@ -220,7 +220,7 @@ Layout per `docs/design/dashboard.md`. Functional content:
 - **Geo top 5** (countries by sessions)
 - **Active alerts inbox** at bottom — list of `firing` alerts with "Acknowledge" button
 
-Alerts also appear in Scout's global notification UI (if/when one exists) — for v1, dedicated panel on this screen is sufficient.
+Alerts also appear in GroLabs's global notification UI (if/when one exists) — for v1, dedicated panel on this screen is sufficient.
 
 ## 9. Test cases
 
@@ -264,7 +264,7 @@ After code is written:
 
 These have been resolved through Tuncho's direction (2026-05-09):
 
-1. **Hybrid storage**, daily snapshots in Scout's DB, real-time API hit live for the right-now widget.
+1. **Hybrid storage**, daily snapshots in GroLabs's DB, real-time API hit live for the right-now widget.
 2. **Top 3 alert metrics**: sessions, engagement rate, source/medium share shift.
 3. **Default thresholds** locked in v1 (±15% sessions, −10pp engagement rate, >20pp share shift). Merchant-configurable in v3.
 4. **Polling cadence**: every 6h, re-pull trailing 3 days for late-finalizing data.

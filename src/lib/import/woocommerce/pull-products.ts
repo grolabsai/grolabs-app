@@ -33,7 +33,7 @@ export async function pullProducts(
   const errors: ImportError[] = [];
   const renamedSlugs: ImportSummary["renamedSlugs"] = [];
 
-  // Pre-fetch the category WC-id → Scout-id map once. We need it to
+  // Pre-fetch the category WC-id → GroLabs-id map once. We need it to
   // build product_category_link rows. Re-fetched per import run, not
   // cached across runs, so newly imported categories are visible.
   const categoryIdMap = await loadCategoryIdMap(supabase, instanceId);
@@ -76,7 +76,7 @@ export async function pullProducts(
         // TODO: variant-level images. WC variations carry their own
         // .image field on each entry of row.variations[]. Today the
         // raw variations array is preserved on product.wc_raw (via
-        // map.ts — `variations` is not in MAPPED_KEYS) but Scout does
+        // map.ts — `variations` is not in MAPPED_KEYS) but GroLabs does
         // not yet create product_variant rows from WC variations
         // (variant restructuring is deferred per docs/policy/wc-import.md).
         // When that lands, materialise one variant-scoped product_media
@@ -235,7 +235,7 @@ async function refreshCategoryLinks(
   if (rows.length === 0) {
     errors.push({
       woocommerceId: productWcId,
-      message: `categories ${wcCategoryIds.join(",")} not found in Scout — run category import first`,
+      message: `categories ${wcCategoryIds.join(",")} not found in GroLabs — run category import first`,
     });
     return;
   }
@@ -255,7 +255,7 @@ async function refreshCategoryLinks(
  * - Delete any existing row whose image_url is not in the incoming set
  *   (handles WC-side image removal cleanly).
  * - For each incoming image, update an existing row matched by URL
- *   (preserves the media_id so Scout-side references stay stable), or
+ *   (preserves the media_id so GroLabs-side references stay stable), or
  *   insert a new one. is_primary is set on index 0 only; sort_order
  *   matches the WC ordering.
  *

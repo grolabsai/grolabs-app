@@ -857,10 +857,10 @@
       },
       "step4": {
         "label": "Mapeo",
-        "title": "Mapear columnas a campos de Scout",
-        "subtitle": "Arrastra columnas del archivo (derecha) hacia los campos de Scout (izquierda). Cada lado muestra a qué está vinculado el otro, así puedes leerlo en cualquier dirección.",
+        "title": "Mapear columnas a campos de GroLabs",
+        "subtitle": "Arrastra columnas del archivo (derecha) hacia los campos de GroLabs (izquierda). Cada lado muestra a qué está vinculado el otro, así puedes leerlo en cualquier dirección.",
         "autoHint": "Las coincidencias obvias (sku, barcode, precio…) ya están sugeridas. Cámbialas si es necesario.",
-        "scoutFieldsTitle": "Campos de Scout",
+        "scoutFieldsTitle": "Campos de GroLabs",
         "scoutFieldsSubtitle": "Suelta aquí las columnas del archivo",
         "fileColumnsTitle": "Columnas de tu archivo",
         "fileColumnsSubtitle": "Arrastra hacia la izquierda para mapear",
@@ -946,7 +946,7 @@
     },
     "woocommerce": {
       "pageTitle": "Importar desde WooCommerce",
-      "pageDescriptionConfigured": "Trae categorías y productos desde {siteUrl} a Scout. La importación es re-ejecutable: ya importados se actualizan, no se duplican.",
+      "pageDescriptionConfigured": "Trae categorías y productos desde {siteUrl} a GroLabs. La importación es re-ejecutable: ya importados se actualizan, no se duplican.",
       "pageDescriptionMissing": "Configura WooCommerce en Configuración → WooCommerce antes de importar.",
       "notConfigured": {
         "title": "WooCommerce no está configurado",
@@ -1101,8 +1101,8 @@
       },
       "indexing": {
         "label": "Estado del indexado",
-        "help": "Compara el catálogo de Scout con los documentos en Meilisearch. Reindexar reconstruye todo el índice de esta instancia.",
-        "scoutCount": "Productos en Scout",
+        "help": "Compara el catálogo de GroLabs con los documentos en Meilisearch. Reindexar reconstruye todo el índice de esta instancia.",
+        "scoutCount": "Productos en GroLabs",
         "meiliCount": "Documentos en Meilisearch",
         "failed": "Indexados fallidos",
         "lastSync": "Última sincronización",
@@ -1238,7 +1238,7 @@
     },
     "mappingModal": {
       "title": "Mapeo de campos",
-      "subtitle": "Cómo Scout proyecta cada producto/variante hacia Algolia y WooCommerce. Para v1 el mapeo es de solo lectura.",
+      "subtitle": "Cómo GroLabs proyecta cada producto/variante hacia Algolia y WooCommerce. Para v1 el mapeo es de solo lectura.",
       "close": "Cerrar"
     },
     "toast": {
@@ -1299,7 +1299,7 @@
     },
     "calculationMode": {
       "title": "Método de cálculo",
-      "subtitle": "Cómo Scout calcula los precios de venta a partir del costo. Esta selección afecta todos los porcentajes del módulo de precios.",
+      "subtitle": "Cómo GroLabs calcula los precios de venta a partir del costo. Esta selección afecta todos los porcentajes del módulo de precios.",
       "modes": {
         "margin": {
           "label": "Margen",
@@ -1581,7 +1581,7 @@
     "syncPage": {
       "notConfigured": {
         "title": "WooCommerce no está configurado",
-        "text": "Configura las credenciales de WooCommerce para que Scout pueda enviar los precios aprobados.",
+        "text": "Configura las credenciales de WooCommerce para que GroLabs pueda enviar los precios aprobados.",
         "cta": "Ir a configuración de WooCommerce"
       },
       "ready": {

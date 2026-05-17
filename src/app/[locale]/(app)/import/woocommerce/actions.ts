@@ -83,7 +83,7 @@ export async function runWooCommerceImport(
   };
 
   // Run inline. WC has at most a few hundred products in the wild for
-  // the kind of merchant Scout targets in v1; sub-30s typical. If this
+  // the kind of merchant GroLabs targets in v1; sub-30s typical. If this
   // grows to multi-thousand catalogs, move to a queued job model.
   let summary: ImportSummary;
   try {

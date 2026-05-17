@@ -1,5 +1,5 @@
 /**
- * Typed client for GLPIM's Scout-facing /agents/* endpoints.
+ * Typed client for GLPIM's GroLabs-facing /agents/* endpoints.
  *
  * Both functions are server-only (called from server actions). They read
  * the GLPIM URL from the GLPIM_API_URL env var and fail loudly if it's
@@ -13,7 +13,7 @@ const GLPIM_API_URL = process.env.GLPIM_API_URL;
 function ensureBaseUrl(): string {
   if (!GLPIM_API_URL) {
     throw new Error(
-      "GLPIM_API_URL is not set. Configure it in your environment so Scout can call the GLPIM agent service.",
+      "GLPIM_API_URL is not set. Configure it in your environment so GroLabs can call the GLPIM agent service.",
     );
   }
   return GLPIM_API_URL.replace(/\/+$/, "");
@@ -157,7 +157,7 @@ export type VocabularyIn = {
 
 export async function groupProducts(input: {
   products: ProductIn[];
-  /** Form A: server fetches Scout's vocabulary for this category. */
+  /** Form A: server fetches GroLabs's vocabulary for this category. */
   instanceId?: number;
   categoryId?: number;
   /** Form B: caller supplies vocabulary inline (sandbox / tests). */

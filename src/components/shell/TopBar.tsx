@@ -19,7 +19,7 @@ import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
 import { cn } from "@/lib/utils";
 
 /**
- * Scout topbar.
+ * GroLabs topbar.
  *
  * Rebuilt on shadcn primitives:
  *   - shadcn Input for the search box (visual/disabled in Phase 1)

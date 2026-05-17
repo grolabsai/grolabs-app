@@ -1,4 +1,4 @@
-# Scout repo inventory
+# GroLabs repo inventory
 
 _Generated 2026-04-25_
 

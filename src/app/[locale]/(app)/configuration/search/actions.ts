@@ -125,7 +125,7 @@ export type IndexingStatus = {
   lastSearchSyncAt: string | null;
   failedCount: number;
   pendingCount: number;
-  /** True when the Meili count and Scout count agree. */
+  /** True when the Meili count and GroLabs count agree. */
   inSync: boolean;
 };
 

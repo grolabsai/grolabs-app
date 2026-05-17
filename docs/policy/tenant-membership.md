@@ -2,10 +2,10 @@
 Status: Draft (awaiting approval)
 Owner: Tuncho
 Scope: Introduce `tenant_member` — a user's direct membership in a tenant, parallel to `instance_member` but one layer up. Defines the two-layer membership model, role taxonomy, backfill rule, and the trigger contract that keeps the layers consistent.
-Audience: Claude Code (primary), future Scout contributors
+Audience: Claude Code (primary), future GroLabs contributors
 ---
 
-# Scout Tenant Membership — v1
+# GroLabs Tenant Membership — v1
 
 This document is the authoritative spec for tenant-level membership. Read it before writing any code that touches `tenant_member`, signup flows, invitations, tenant admin, or billing access. Decisions here are locked — if implementation surfaces a flaw, raise it as a question instead of working around it silently.
 
@@ -13,7 +13,7 @@ The prior policy `docs/policy/tenant-model.md` defines what a tenant *is*. This 
 
 ## 1. The two membership layers and why both exist
 
-Scout has two membership tables, each answering a different question:
+GroLabs has two membership tables, each answering a different question:
 
 | Table             | Question it answers                                  | Used for                                                                          |
 | ----------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------- |

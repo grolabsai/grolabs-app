@@ -1,5 +1,5 @@
 /**
- * Type definitions for Scout's search infrastructure.
+ * Type definitions for GroLabs's search infrastructure.
  *
  * Per docs/policy/search-foundations.md.
  *

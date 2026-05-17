@@ -1,5 +1,5 @@
 /**
- * The single place in Scout's codebase that talks to Google's OAuth and GA4
+ * The single place in GroLabs's codebase that talks to Google's OAuth and GA4
  * APIs. Per docs/policy/ga4-integration.md §4 and §5.
  *
  * Mirrors the meilisearch-client pattern: typed errors, never logs

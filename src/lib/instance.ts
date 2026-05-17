@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Per D26, every row in every table is scoped to an `instance_id`.
  * Customer instances (kind='customer') hold tenant data; template
- * instances (kind='template') are Scout-owned source data used only
+ * instances (kind='template') are GroLabs-owned source data used only
  * during signup and ops flows.
  *
  * RLS now allows authenticated users to see ONLY rows in their own

@@ -1,8 +1,8 @@
-Scout Search Foundations — Stages 0 & 1
+GroLabs Search Foundations — Stages 0 & 1
 
 > **Editor's note:** Reshaped 2026-05-17 to conform to Constitution Articles 1 and 12. Previous version contained pet-specific assumptions baked into core search defaults.
 
-Status: Active policy Owner: Tuncho Scope: Stages 0 and 1 of the Scout search roadmap. Foundations and basic search live on Wazú. Audience: Claude Code (primary), future Scout contributors (secondary)
+Status: Active policy Owner: Tuncho Scope: Stages 0 and 1 of the GroLabs search roadmap. Foundations and basic search live on Wazú. Audience: Claude Code (primary), future GroLabs contributors (secondary)
 This document is the authoritative spec for the foundational search infrastructure. Read this before writing any code, viewing the file tree, or proposing implementation details. Stop at the two checkpoints marked APPROVAL REQUIRED and wait for explicit approval before proceeding.
 1. Goals and non-goals
 Stage 0 goals
@@ -10,13 +10,13 @@ Establish infrastructure plumbing so all subsequent stages compose cleanly. No u
 
 * Provision Meilisearch Cloud project for production use.
 * Add `instance.storefront_domains text[]` column — required by the token endpoint's origin validation.
-* Implement Scout-side `meilisearch_client` module for admin operations (index management, document upserts, settings).
-* Implement token-issuing endpoint that exchanges a Scout instance ID for a short-lived Meilisearch tenant token.
-* Surface connection status in Scout admin under each instance's settings, with editor for `storefront_domains` and copy-to-clipboard for the Instance ID.
+* Implement GroLabs-side `meilisearch_client` module for admin operations (index management, document upserts, settings).
+* Implement token-issuing endpoint that exchanges a GroLabs instance ID for a short-lived Meilisearch tenant token.
+* Surface connection status in GroLabs admin under each instance's settings, with editor for `storefront_domains` and copy-to-clipboard for the Instance ID.
 Stage 1 goals
 Replace WooCommerce's default search with Meilisearch-powered search on Wazú. No frontend widget yet — when shoppers hit enter, they get faster, typo-tolerant, more relevant results in WooCommerce's existing search UI. Variable products show two-button cards that respect the shopper's expressed variant preference when matched.
 
-* Implement the indexing pipeline: Scout pulls Wazú's catalog from WooCommerce REST API, runs Scout's enrichment, pushes enriched documents to Meilisearch.
+* Implement the indexing pipeline: GroLabs pulls Wazú's catalog from WooCommerce REST API, runs GroLabs's enrichment, pushes enriched documents to Meilisearch.
 * Implement WordPress plugin v0.1: settings page, instance ID validation, search query interception, two-button card rendering for variable products.
 * Ship to Wazú in production.
 Explicit non-goals for Stage 0+1
@@ -31,27 +31,27 @@ Explicit non-goals for Stage 0+1
 2. Architectural decisions (locked)
 These decisions have been made. Do not relitigate them. If implementation reveals a fundamental flaw, raise it as a question rather than working around it.
 Meilisearch Cloud over self-hosted. No infrastructure operations burden. Build tier ($30/month) covers Stages 0-4 comfortably.
-Single Cloud project, indexes per instance. All Scout instances live in one Meilisearch Cloud project named `scout-production`. Each instance gets its own index named `inst_<instance_id>`.
-Per-instance index, NOT shared index with tenant token filtering. Despite Meilisearch's general recommendation for SaaS, Scout uses per-instance indexes because: (a) per-instance settings (synonyms, stop words, ranking) are a Stage 5 requirement, (b) merchant-level isolation is operationally simpler for support and debugging, (c) at Scout's scale (target 100s of merchants, not millions), the performance penalty is negligible. Revisit at customer #100+ if performance becomes an issue.
-Scout owns Meilisearch keys end-to-end. Merchants paste only an instance ID into the WordPress plugin. The plugin calls Scout's API to obtain a short-lived tenant token. The Meilisearch master key never leaves Scout's backend.
-Scout is the canonical product database, not WooCommerce. WooCommerce holds the storefront-visible subset. Scout holds the enriched catalog (normalized attributes, computed product tags, and any template-defined catalog attributes). For overlapping fields (name, price, stock), WooCommerce is the source of truth. For Scout-specific fields, Scout is the only source. Meilisearch indexes the enriched record.
+Single Cloud project, indexes per instance. All GroLabs instances live in one Meilisearch Cloud project named `scout-production`. Each instance gets its own index named `inst_<instance_id>`.
+Per-instance index, NOT shared index with tenant token filtering. Despite Meilisearch's general recommendation for SaaS, GroLabs uses per-instance indexes because: (a) per-instance settings (synonyms, stop words, ranking) are a Stage 5 requirement, (b) merchant-level isolation is operationally simpler for support and debugging, (c) at GroLabs's scale (target 100s of merchants, not millions), the performance penalty is negligible. Revisit at customer #100+ if performance becomes an issue.
+GroLabs owns Meilisearch keys end-to-end. Merchants paste only an instance ID into the WordPress plugin. The plugin calls GroLabs's API to obtain a short-lived tenant token. The Meilisearch master key never leaves GroLabs's backend.
+GroLabs is the canonical product database, not WooCommerce. WooCommerce holds the storefront-visible subset. GroLabs holds the enriched catalog (normalized attributes, computed product tags, and any template-defined catalog attributes). For overlapping fields (name, price, stock), WooCommerce is the source of truth. For GroLabs-specific fields, GroLabs is the only source. Meilisearch indexes the enriched record.
 No webhooks in Stage 1. Polling-based sync every 5 minutes. Webhooks come in Stage 3.
-Search query interception, not Scout-controlled results page. Stage 1 intercepts WordPress's search query before WP_Query runs and rewrites it to use Meilisearch results, preserving the merchant's WooCommerce theme for the search results display.
+Search query interception, not GroLabs-controlled results page. Stage 1 intercepts WordPress's search query before WP_Query runs and rewrites it to use Meilisearch results, preserving the merchant's WooCommerce theme for the search results display.
 One document per parent product. Variable products are indexed as a single document with a `variants` array containing all variation data. Variation attributes are searchable via Meilisearch's nested field support. The variations-as-separate-documents model is explicitly rejected — the parent-level approach with the two-button card UX covers shopper needs, and the data structure is simpler to reason about.
-Variation matching uses Meilisearch's match positions, not custom query parsing. When a query matches specific variant attributes within a document, Scout's API reads `_matchesPosition` to identify which variant ranked highest within that document. This becomes the `matched_variation` for the search result card. No regex-based query parser, no per-merchant attribute name configuration, no Spanish/English size-word matching code. Meilisearch's relevance scoring does the work.
+Variation matching uses Meilisearch's match positions, not custom query parsing. When a query matches specific variant attributes within a document, GroLabs's API reads `_matchesPosition` to identify which variant ranked highest within that document. This becomes the `matched_variation` for the search result card. No regex-based query parser, no per-merchant attribute name configuration, no Spanish/English size-word matching code. Meilisearch's relevance scoring does the work.
 Two-button card UX for variable products. When a query matches a specific variation within a parent product, the search result card shows two actions: a primary "Agregar [variant] al carrito" button using the matched variation's ID, and a secondary "Ver otros tamaños" link to the product page. When no specific variation matches, the card shows a single "Elegir tamaño" button. Simple products and single-variation products show a standard "Agregar al carrito" button.
-Multi-tenancy boundary uses `instance_id`, consistent with all other Scout tables.
+Multi-tenancy boundary uses `instance_id`, consistent with all other GroLabs tables.
 3. Meilisearch Cloud setup
 Project configuration
 
 * Project name: `scout-production`
 * Region: closest to merchant traffic; default `us-east` for now
 * Plan: Build ($30/month) at launch
-* Master API key: stored in Scout backend env var `MEILISEARCH_MASTER_KEY`
+* Master API key: stored in GroLabs backend env var `MEILISEARCH_MASTER_KEY`
 * Project URL: stored in `MEILISEARCH_HOST`
 * Analytics and monitoring: enabled (free at all tiers)
 Index naming convention
-`inst_<instance_id>` where `instance_id` is the integer primary key from Scout's `instance` table (note: singular table name, consistent with all other Scout tables — see CLAUDE.md §2). The template instance has `instance_id = 0`; that's a valid value, not a falsy sentinel — never use `if (!instanceId)` checks.
+`inst_<instance_id>` where `instance_id` is the integer primary key from GroLabs's `instance` table (note: singular table name, consistent with all other GroLabs tables — see CLAUDE.md §2). The template instance has `instance_id = 0`; that's a valid value, not a falsy sentinel — never use `if (!instanceId)` checks.
 Index settings defaults (applied at creation)
 The `searchableAttributes` MUST include `variants.attributes` and `variants.sku` to enable nested-field matching for variation queries. Spanish stop words are baked in as defaults; synonyms start empty per tenant (see "Synonym strategy" below). Stage 5 will let merchants override stop words per-instance. Typo tolerance enabled with `oneTypo` at 4 chars and `twoTypos` at 8 chars. Faceting max 100 values per facet. Pagination max 1000 hits.
 Searchable attributes: `name`, `brand`, `categories`, `description`, `variants.attributes`, `variants.sku`, plus whatever template-defined catalog attributes the tenant's catalog exposes (see "Catalog attributes" below).
@@ -64,7 +64,7 @@ Stop words (Spanish): `el`, `la`, `los`, `las`, `un`, `una`, `de`, `del`, `para`
 Synonyms start empty per tenant. They are accumulated through the zero-result-query → agent-proposes → merchant-approves loop. No vertical ships default synonyms; the recovery moment (turning a zero-result query into a working synonym) is part of the customer-visible value loop and would be diluted by pre-seeded content.
 4. Document schema
 The schema for documents indexed in Meilisearch.
-Identity fields: `id` (Scout's internal product ID), `instance_id` (defense-in-depth filter), `woocommerce_id` (WC post ID).
+Identity fields: `id` (GroLabs's internal product ID), `instance_id` (defense-in-depth filter), `woocommerce_id` (WC post ID).
 Display fields from WooCommerce: `name`, `slug`, `description` (HTML stripped), `short_description`, `url` (computed), `image_url`, `thumbnail_url`.
 Categorization from WooCommerce: `categories` (names), `category_ids` (WC term IDs), `tags`, `brand`.
 ### Catalog attributes
@@ -78,8 +78,8 @@ Top-level commerce mirrors: `price` (for variable products equals `price_range.m
 Other: `popularity` (default 0, populated in Stage 4), `created_at`, `updated_at`, `indexed_at`, `_schema_version: 1`.
 Field source rules
 
-* WooCommerce-sourced fields: WooCommerce REST API is source of truth. Scout reads, never writes back.
-* Scout-enriched fields (template-defined catalog attributes): Scout is the only source.
+* WooCommerce-sourced fields: WooCommerce REST API is source of truth. GroLabs reads, never writes back.
+* GroLabs-enriched fields (template-defined catalog attributes): GroLabs is the only source.
 * Computed fields (`url`, `popularity`, `variation_summary`): Computed at indexing time.
 * HTML stripping: `description` and `short_description` must have HTML tags stripped.
 variation_summary computation rules
@@ -88,11 +88,11 @@ variation_summary computation rules
 * `type: 'variable_single'`: Type is `variable` AND exactly one variation is published, in_stock, and visible.
 * `type: 'variable_multi'`: Type is `variable` AND two or more variations are purchasable.
 * `default_variation_id`: For `simple`, the parent product ID. For `variable_single`, the one purchasable variation. For `variable_multi`, the variation marked default in WooCommerce, falling back to the first in-stock variation if no default is set, falling back to null if nothing is in stock.
-5. Scout backend — `meilisearch_client` module
+5. GroLabs backend — `meilisearch_client` module
 Stage: 0.
-Module location: `src/lib/search/meilisearch-client.ts`. This is the only place in Scout's codebase that holds the Meilisearch master key.
+Module location: `src/lib/search/meilisearch-client.ts`. This is the only place in GroLabs's codebase that holds the Meilisearch master key.
 Required interface includes index lifecycle (`createIndex`, `deleteIndex`, `indexExists`), settings management (`applyDefaultSettings`, `updateSettings`, `getSettings`), document operations (`upsertDocuments`, `deleteDocument`, `deleteAllDocuments`, `getDocumentCount`), search (with `showMatchesPosition: true` requested — verify exact option name in current SDK), token generation, and health (`ping`, `getTaskStatus`).
-Implementation requirements: use the official `meilisearch` npm package (latest stable); never log the master key; wrap Meilisearch errors with Scout-specific context; all write operations return `TaskInfo` for tracking; search operations request match positions for the variant selection logic.
+Implementation requirements: use the official `meilisearch` npm package (latest stable); never log the master key; wrap Meilisearch errors with GroLabs-specific context; all write operations return `TaskInfo` for tracking; search operations request match positions for the variant selection logic.
 Token generation specifics
 Tenant tokens for `instance_id` X include this filter as defense-in-depth:
 
@@ -108,7 +108,7 @@ const searchRules = {
 `instance_id` is a number — the filter value is unquoted. Meilisearch's filter DSL distinguishes numeric from string equality.
 
 Tokens expire in 15 minutes by default.
-6. Scout backend — token-issuing API endpoint
+6. GroLabs backend — token-issuing API endpoint
 Stage: 0.
 Endpoint: `POST /api/v1/search/token`
 Request body: `{ instance_id: number }`. Origin header required.
@@ -116,7 +116,7 @@ Success response: `{ token, expires_at, meilisearch_host, index_uid }` with `Cac
 Error response (instance unknown OR origin not registered): 403 with generic message `instance_not_found_or_origin_not_authorized`. Error responses MUST NOT distinguish between the two cases (prevents enumeration).
 Validation: `instance_id` parses as a non-negative integer (note: 0 is valid — the template instance); instance must exist and be `active` in the `instance` table; origin must be in `instance.storefront_domains`; rate limit 60/min per (instance_id, origin), 600/min per IP, both → 429; CORS echoes Origin if validated, never `*`.
 Trust model: instance_id is public (like a Stripe publishable key). Origin validation is the security boundary. Rate limiting prevents abuse. No auth header from the WordPress plugin in Stage 1. Future hardening (Stage 4+) adds HMAC signature with per-instance secret.
-7. Scout backend — search proxy endpoint
+7. GroLabs backend — search proxy endpoint
 Stage: 1. The WordPress plugin calls this endpoint, so it lands in the same stage as the plugin.
 Endpoint: `POST /api/v1/search`. The middle-layer endpoint the WordPress plugin calls. Proxies to Meilisearch with server-side tenant token management and adds the variant selection logic.
 Request: `{ instance_id, query, limit, offset, filters, sort }`. Response: `{ hits[], total_hits, processing_time_ms, query_uid }` where each hit is `{ document, matched_variation, _score }`.
@@ -130,16 +130,16 @@ For each Meilisearch hit, compute `matched_variation`:
 * If `'variable_multi'`: read Meilisearch's `_matchesPosition`. Count matches per variant index in the `variants` array. Pick the in-stock variant with the most matches. If no variant had specific matches, fall back to `default_variation_id` (if in stock), then to first in-stock variant, then to null.
 This logic is roughly 15-25 lines of pure, unit-testable TypeScript.
 Validation: validate `instance_id` and `Origin` exactly as token endpoint. Acquire tenant token internally (cached for TTL minus 1 minute). Forward search to Meilisearch with `showMatchesPosition: true`. Process with variant selection. Log query, total_hits, processing_time, variant selection result to `query_log` table.
-8. Scout admin — instance search settings
+8. GroLabs admin — instance search settings
 Stage 0 ships connection panel + storefront-domains editor + Instance-ID copy. Stage 1 adds indexing status + reindex.
 Page lives at `/configuration/search`, matching the existing pattern at `src/app/[locale]/(app)/configuration/<integration>/page.tsx` (see `/configuration/algolia` and `/configuration/woocommerce`). The current instance is resolved from the JWT via `currentInstanceId()`, not from the URL.
 Stage 0 deliverables: connection status panel (green/red), storefront domain registration field (stored in `instance.storefront_domains` text array), plugin instructions with copy-button for Instance ID.
 Stage 1 deliverables: indexing status panel (last sync, document counts, mismatch detection), manual reindex button with confirmation modal, WooCommerce credentials form (REST API URL, consumer_key, consumer_secret).
 No search behavior configuration in Stage 1 — that's Stage 5.
 9. Stage 1 — Indexing pipeline
-The pipeline reads from **Scout's `product` / `product_variant` / `product_pricing` / `product_category_link` / `product_media` tables**, not from WooCommerce directly. Per §2's locked decision, Scout is the canonical product database; the WooCommerce → Scout pull is a separate process documented in `docs/policy/wc-import.md`. Meilisearch is fed from Scout.
+The pipeline reads from **GroLabs's `product` / `product_variant` / `product_pricing` / `product_category_link` / `product_media` tables**, not from WooCommerce directly. Per §2's locked decision, GroLabs is the canonical product database; the WooCommerce → GroLabs pull is a separate process documented in `docs/policy/wc-import.md`. Meilisearch is fed from GroLabs.
 
-Trigger: synchronous push from product/variant/pricing server actions. Any mutation that successfully writes to Scout fires `indexProduct(instance_id, product_id)`. A manual full-instance backfill is exposed in the admin panel (`runFullBackfill(instance_id)`). Scheduled cron polling is deferred — Scout is the write path, so app-layer hooks are sufficient at v1 scale. (Future: queueing + Vercel cron for instances that bypass Scout's mutation surface.)
+Trigger: synchronous push from product/variant/pricing server actions. Any mutation that successfully writes to GroLabs fires `indexProduct(instance_id, product_id)`. A manual full-instance backfill is exposed in the admin panel (`runFullBackfill(instance_id)`). Scheduled cron polling is deferred — GroLabs is the write path, so app-layer hooks are sufficient at v1 scale. (Future: queueing + Vercel cron for instances that bypass GroLabs's mutation surface.)
 
 Flow per indexed product: load product + variants + pricing + categories + media in one query batch; build the §4 document (HTML-stripped, `variation_summary` computed, `variants[]` populated with slug-keyed attributes per the locked contract below); upsert to Meilisearch; write `product_sync_status` row with `platform = 'meilisearch'`; on a backfill run, also append a `sync_log` entry.
 Initial full backfill iterates all `is_active` products for the instance, paginated 100/page.
@@ -167,13 +167,13 @@ Locked variant contract (per PR #68, plugin v0.2 consumer):
 
 Variation handling specifics: include all variations including out-of-stock (the `in_stock` flag distinguishes); exclude inactive variations entirely.
 10. Stage 1 — WordPress plugin v0.1
-Distribution: `.zip` file from Scout's CDN. Not initially submitted to WordPress.org plugin directory. Auto-update mechanism out of scope for v0.1.
+Distribution: `.zip` file from GroLabs's CDN. Not initially submitted to WordPress.org plugin directory. Auto-update mechanism out of scope for v0.1.
 Plugin structure: `scout-search.php` (main file), `readme.txt`, `includes/` (settings, search, api, card classes), `admin/settings-page.php`, `assets/css/scout-card.css`.
-Settings page (WordPress admin → Settings → Scout Search): single text input for Scout Instance ID, Test connection button calling Scout's `/api/v1/search/token`, Status display. On save: POST to Scout API, 200 → "Conectado", 403/404 → invalid ID/domain message, network error → connectivity message.
-Search query interception via `pre_get_posts` when `is_search()` and product post type. Capture search term, call Scout's `/api/v1/search`, cache `matched_variation` map keyed by product ID in transient, override WP_Query with `post__in` and `orderby=post__in`. WordPress renders results via merchant's existing theme.
+Settings page (WordPress admin → Settings → GroLabs Search): single text input for GroLabs Instance ID, Test connection button calling GroLabs's `/api/v1/search/token`, Status display. On save: POST to GroLabs API, 200 → "Conectado", 403/404 → invalid ID/domain message, network error → connectivity message.
+Search query interception via `pre_get_posts` when `is_search()` and product post type. Capture search term, call GroLabs's `/api/v1/search`, cache `matched_variation` map keyed by product ID in transient, override WP_Query with `post__in` and `orderby=post__in`. WordPress renders results via merchant's existing theme.
 Search result card rendering: plugin overrides WooCommerce card on search results pages only (not category or other listings) via WooCommerce template hooks. Look up `matched_variation` from transient. For simple/variable_single: single "Agregar al carrito" button or "Agotado" badge. For variable_multi with matched variation in stock: two buttons stacked vertically on mobile — primary "Agregar [variant attributes] al carrito" with matched variation ID, displaying matched variation's price (not parent's range) and image (if different from parent); secondary "Ver otros tamaños" linking to product page. For variable_multi with no specific match but stock available: single "Elegir tamaño" linking to product page. All out of stock: "Agotado" badge.
 Spanish wording (Latin American / Guatemalan): "Agregar al carrito", "Agregar [size] al carrito", "Ver otros tamaños", "Elegir tamaño", "Agotado", "Conectado", "ID de instancia inválido".
-Failure mode: Scout API unreachable → fall back to WordPress's default search. Log to a WP option for diagnostic visibility. Never break the merchant's storefront.
+Failure mode: GroLabs API unreachable → fall back to WordPress's default search. Log to a WP option for diagnostic visibility. Never break the merchant's storefront.
 Plugin settings storage: `scout_search_instance_id`, `scout_search_meilisearch_host`, `scout_search_index_uid`, `scout_search_last_token_check`, `scout_search_status`. Tokens in WP transients (14-min TTL). Search-results metadata in transients per request.
 11. Test cases
 Indexing pipeline tests: full sync completes with document count within 1% of WC product count; modified products propagate within 6 minutes; deletions propagate within 6 minutes; HTML stripped from descriptions; stock changes propagate; variable products index with full variants array; variation_summary type computed correctly for simple/variable_single/variable_multi cases.
@@ -181,13 +181,13 @@ Search behavior tests on Wazú: 20 representative Spanish queries with expected 
 Variant matching tests: query matching specific variant attribute → correct `matched_variation`; query matching only parent → falls back to default_variation_id; matched variant out of stock → falls back to next in-stock variant; simple product → matched_variation is null.
 Card rendering tests: simple+stock → "Agregar al carrito"; variable_single+stock → "Agregar al carrito" with variation ID; variable_multi+matched+stock → two-button layout; variable_multi+no match+any stock → "Elegir tamaño"; out of stock → "Agotado" badge; mobile (<768px) → two-button stacks vertically.
 Token endpoint tests: valid request → 200; invalid ID → 403 generic; valid ID wrong origin → 403 generic; rate limit → 429; token authorizes search; token expires correctly.
-Plugin tests: install + valid ID → "Conectado" within 10 seconds; invalid ID → clear error; search returns Scout-ranked results; deactivation reverts to WC default; uninstall removes all options cleanly; add-to-cart on matched-variation card adds correct variation ID.
+Plugin tests: install + valid ID → "Conectado" within 10 seconds; invalid ID → clear error; search returns GroLabs-ranked results; deactivation reverts to WC default; uninstall removes all options cleanly; add-to-cart on matched-variation card adds correct variation ID.
 12. APPROVAL REQUIRED — Checkpoint 1
 Before writing any code, Claude Code must:
 
 1. Confirm understanding of all decisions in this document.
 2. Identify any ambiguities or contradictions and ask clarifying questions.
-3. Propose the file tree for both the Scout backend changes and the WordPress plugin, listing every file that will be created or modified.
+3. Propose the file tree for both the GroLabs backend changes and the WordPress plugin, listing every file that will be created or modified.
 4. Wait for explicit approval of the file tree before writing any code.
 13. APPROVAL REQUIRED — Checkpoint 2
 After the file tree is approved and Claude Code has written the code:

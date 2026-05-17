@@ -1,5 +1,5 @@
 /**
- * WC → Scout field mapping helpers. Spec: docs/policy/wc-import.md §4.
+ * WC → GroLabs field mapping helpers. Spec: docs/policy/wc-import.md §4.
  *
  * Mapping principle: only obvious 1:1 mappings get columns. Anything
  * else (variations[], unmapped meta_data, attributes, dates, …) lands
@@ -8,7 +8,7 @@
 
 import type { WooCategoryRaw, WooProductRaw } from "@/lib/sync/woocommerce-client";
 
-/** Keys we explicitly map onto Scout columns and therefore strip from wc_raw. */
+/** Keys we explicitly map onto GroLabs columns and therefore strip from wc_raw. */
 const MAPPED_KEYS = new Set<string>([
   "id",
   "name",
@@ -141,7 +141,7 @@ function normalizeSlug(input: string): string {
 /**
  * Compute hierarchy levels for an imported category set.
  *
- * Scout's category.level has a CHECK constraint of (1, 2) — its taxonomy
+ * GroLabs's category.level has a CHECK constraint of (1, 2) — its taxonomy
  * is two levels deep (root + leaf). WC supports arbitrary depth. We
  * clamp: roots → 1, anything else → 2. Full WC depth is still preserved
  * losslessly via parent_category_id, so the future category-matching

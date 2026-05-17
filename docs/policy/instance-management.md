@@ -1,9 +1,9 @@
-# Scout Instance Management — v1
+# GroLabs Instance Management — v1
 
 Status: Active policy
 Owner: Tuncho
-Scope: A logged-in user's ability to belong to multiple Scout instances, switch between them via a topbar dropdown, and create new ones. v1 is the minimum interactive surface — invitations, role management, renames, and template seeding are deferred.
-Audience: Claude Code (primary), future Scout contributors
+Scope: A logged-in user's ability to belong to multiple GroLabs instances, switch between them via a topbar dropdown, and create new ones. v1 is the minimum interactive surface — invitations, role management, renames, and template seeding are deferred.
+Audience: Claude Code (primary), future GroLabs contributors
 
 This document is the authoritative spec. Read it before writing any code. Stop at the two `APPROVAL REQUIRED` checkpoints (§7 and §8) and wait for explicit approval.
 

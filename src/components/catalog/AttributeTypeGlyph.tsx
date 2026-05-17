@@ -6,7 +6,7 @@
  *
  * Icons are intentionally simple (1.5px stroke, currentColor) so the
  * color comes from the parent's CSS class. The legend is documented in
- * Notion under Scout > UI > Attribute glyphs.
+ * Notion under GroLabs > UI > Attribute glyphs.
  */
 
 export type AttributeDataType =

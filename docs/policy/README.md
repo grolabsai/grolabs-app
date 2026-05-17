@@ -1,4 +1,4 @@
-# Scout — Policy documents
+# GroLabs — Policy documents
 
 Authoritative specs for feature surfaces. Read the relevant policy doc
 **before** writing any code in its scope. Decisions inside a policy doc
@@ -7,17 +7,17 @@ rather than working around it.
 
 ## Active policies
 
-- **search-foundations.md** — Stages 0 & 1 of the Scout search roadmap.
+- **search-foundations.md** — Stages 0 & 1 of the GroLabs search roadmap.
   Foundations (Meilisearch Cloud project, token-issuing endpoint, admin
   connection status) and basic search live on Wazú (indexing pipeline,
   WordPress plugin v0.1, two-button variable-product cards). Owner:
   Tuncho.
-- **wc-import.md** — One-way pull from WooCommerce into Scout's catalog
+- **wc-import.md** — One-way pull from WooCommerce into GroLabs's catalog
   tables. Categories and products only; raw data preservation, no
   enrichment, no variant restructuring. Future processes handle those.
   Owner: Tuncho.
 - **ga4-integration.md** — Read-only Google Analytics 4 integration.
-  Daily snapshots into Scout's DB plus on-demand real-time queries.
+  Daily snapshots into GroLabs's DB plus on-demand real-time queries.
   Alert pipeline for top-3 traffic-health metrics. Daily-digest
   dashboard surface at `/dashboard/traffic`. Owner: Tuncho.
 - **instance-management.md** — Multi-instance support for a single

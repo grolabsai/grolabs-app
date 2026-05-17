@@ -7,9 +7,9 @@ import { Toaster } from "@/components/ui/sonner";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Scout · Administración de catálogo",
+  title: "GroLabs · Administración de catálogo",
   description:
-    "Scout — administración multi-tenant de catálogos de comercio electrónico.",
+    "GroLabs — administración multi-tenant de catálogos de comercio electrónico.",
 };
 
 type Props = {

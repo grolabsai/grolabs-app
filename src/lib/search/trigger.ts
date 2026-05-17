@@ -23,7 +23,7 @@ function meilisearchEnabled(): boolean {
   return !!(process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_MASTER_KEY);
 }
 
-/** Read just product.woocommerce_id. The Scout→WC round-trip is the gate
+/** Read just product.woocommerce_id. The GroLabs→WC round-trip is the gate
  * for indexing: a doc with no parent WC ID can't be added to the cart by
  * the storefront plugin, so there's no point indexing it. Once the WC push
  * captures and writes back the id, the next index trigger will succeed. */
@@ -57,7 +57,7 @@ export async function triggerProductIndex(
     if (wcId === null) {
       // Not yet round-tripped to WC. Skip indexing AND clear any stale doc
       // a previous round-trip might have left behind. Debug-level log: this
-      // is normal for freshly-created Scout products.
+      // is normal for freshly-created GroLabs products.
       console.debug(
         `[search/trigger] skip index ${instanceId}/${productId} — woocommerce_id is null`
       );

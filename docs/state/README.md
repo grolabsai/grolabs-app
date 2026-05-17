@@ -1,6 +1,6 @@
-# Scout — System state
+# GroLabs — System state
 
-These documents describe Scout's current shape. They are updated at the
+These documents describe GroLabs's current shape. They are updated at the
 end of every PR that changes module state, schema, or open work.
 
 - **modules.md** — what each module does, its routes, its actions, its
@@ -33,7 +33,7 @@ At the end of each PR:
 ## Reading this for context
 
 Web/desktop Claude does not have file access. To bring it up to speed
-on Scout, paste the relevant sections of these files at the start of a
+on GroLabs, paste the relevant sections of these files at the start of a
 conversation. **modules.md** alone is usually enough for feature-scoping
 conversations; add **schema.md** when database changes are involved;
 add **in-flight.md** when the question touches what's currently being
@@ -41,7 +41,7 @@ worked on.
 
 A typical context-handoff prompt looks like:
 
-> I'm working on Scout. Current state: [paste modules.md]. Schema for
+> I'm working on GroLabs. Current state: [paste modules.md]. Schema for
 > the relevant domain: [paste the schema.md sections that matter]. The
 > work in flight: [paste the relevant rows of in-flight.md].
 >

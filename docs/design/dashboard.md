@@ -1,4 +1,4 @@
-# Scout Dashboard — Design Brief
+# GroLabs Dashboard — Design Brief
 
 > **Editor's note:** Reframed 2026-05-17 to conform to Constitution Article 1. Previous version positioned the dashboard as for 'pet supply ecommerce stores.' GroLabs is industry-agnostic; the pet-shop angle is one of several vertical templates, not the product's identity.
 
@@ -6,13 +6,13 @@ Status: Brief for visual / UX design (claude.ai/design workflow)
 Owner: Tuncho
 Audience: Designer (Claude in claude.ai), then implementer (Claude Code)
 
-This brief is meant to be copy-pasted into a fresh design conversation. The designer has zero context on Scout — give them everything they need to produce mockups that are immediately implementable. After mockups land, they come back to Claude Code for HTML/CSS implementation matching the existing visual language.
+This brief is meant to be copy-pasted into a fresh design conversation. The designer has zero context on GroLabs — give them everything they need to produce mockups that are immediately implementable. After mockups land, they come back to Claude Code for HTML/CSS implementation matching the existing visual language.
 
 ---
 
-## What Scout is
+## What GroLabs is
 
-Scout is a multi-tenant admin app for **solopreneur-run ecommerce stores** in Latin America (primarily Guatemala, Spanish-speaking). It is **industry-agnostic by design** — merchants come from any vertical (pet-shop, electronics, jewelry, clothing, …), each provisioned from the matching vertical template; no vertical is privileged in the product. Each merchant has one "instance" — their products, categories, attributes, integrations, and now their analytics live there.
+GroLabs is a multi-tenant admin app for **solopreneur-run ecommerce stores** in Latin America (primarily Guatemala, Spanish-speaking). It is **industry-agnostic by design** — merchants come from any vertical (pet-shop, electronics, jewelry, clothing, …), each provisioned from the matching vertical template; no vertical is privileged in the product. Each merchant has one "instance" — their products, categories, attributes, integrations, and now their analytics live there.
 
 Today the merchant logs into a sidebar-driven web app and manages: product catalog, categories, attributes, pricing rules, WooCommerce sync, search configuration, imports. The app is at production at `scout.gro.gt` (or similar — check live URL).
 
@@ -45,7 +45,7 @@ The implementer will be using these — your mockups should respect them:
 
 - **Tailwind CSS v3.4 + shadcn/ui** primitives (cards, buttons, dropdowns, dialogs, badges, tables)
 - **Lucide React icons**, stroke-only style, 16px default through a wrapper (no filled icons)
-- **Color palette**: Tailwind defaults plus Scout's brand. Greens for success, ambers for warning, reds for alert, neutral grays for chrome. Use sparingly — alerts should *pop*; normal-state cards should be calm.
+- **Color palette**: Tailwind defaults plus GroLabs's brand. Greens for success, ambers for warning, reds for alert, neutral grays for chrome. Use sparingly — alerts should *pop*; normal-state cards should be calm.
 - **Typography**: system font stack, no custom fonts. Hierarchy through size + weight, not color.
 - **Layout**: fixed left sidebar (already built, do not redesign it), main content area, **and a reserved right quarter for a future agent panel** — every screen must accommodate a vertical strip on the right that may be empty in v1 but will hold a natural-language assistant later. Don't use that space for content yet.
 - **Spanish (Latin American / Guatemalan)** for all visible copy. We can iterate on exact wording, but design in Spanish from the start.

@@ -52,7 +52,7 @@ export default async function LoginPage({
       <div className="s-auth-card">
         <div className="s-auth-brand">
           <div className="s-brand-mark" />
-          <span className="s-brand-name">Scout</span>
+          <span className="s-brand-name">GroLabs</span>
         </div>
         <h1 className="s-auth-title">Ingresá a tu catálogo</h1>
         <p className="s-auth-sub">
@@ -102,7 +102,7 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="s-auth-footnote">Scout · {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
+        <p className="s-auth-footnote">GroLabs · {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
       </div>
     </div>
   );

@@ -132,7 +132,7 @@ export type ProposedProductBaseRow = {
 // ─── Step 4: Column mapping ────────────────────────────────────────────────
 
 /**
- * Where does each Scout product/variant field get its value from?
+ * Where does each GroLabs product/variant field get its value from?
  *
  *   { columnIndex: number } — copy from this column of the uploaded file
  *   "extract"               — leave to the agent (only valid for fields the

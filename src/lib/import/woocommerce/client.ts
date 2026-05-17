@@ -1,5 +1,5 @@
 /**
- * Resolve a usable WooClient for a given Scout instance.
+ * Resolve a usable WooClient for a given GroLabs instance.
  *
  * Reads non-secret config (site_url, consumer_key) from
  * instance.integrations_config.woocommerce, fetches consumer_secret

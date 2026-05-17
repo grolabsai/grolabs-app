@@ -857,10 +857,10 @@
       },
       "step4": {
         "label": "Mapping",
-        "title": "Map columns to Scout fields",
-        "subtitle": "Drag file columns (right) onto Scout fields (left). Each side shows what the other is bound to, so you can read the pairing from either direction.",
+        "title": "Map columns to GroLabs fields",
+        "subtitle": "Drag file columns (right) onto GroLabs fields (left). Each side shows what the other is bound to, so you can read the pairing from either direction.",
         "autoHint": "Obvious matches (sku, barcode, price…) are pre-suggested. Change anything that's wrong.",
-        "scoutFieldsTitle": "Scout fields",
+        "scoutFieldsTitle": "GroLabs fields",
         "scoutFieldsSubtitle": "Drop file columns here",
         "fileColumnsTitle": "Your file columns",
         "fileColumnsSubtitle": "Drag left to map",
@@ -946,7 +946,7 @@
     },
     "woocommerce": {
       "pageTitle": "Import from WooCommerce",
-      "pageDescriptionConfigured": "Pull categories and products from {siteUrl} into Scout. Imports are re-runnable: already-imported records are updated, not duplicated.",
+      "pageDescriptionConfigured": "Pull categories and products from {siteUrl} into GroLabs. Imports are re-runnable: already-imported records are updated, not duplicated.",
       "pageDescriptionMissing": "Configure WooCommerce in Configuration → WooCommerce before importing.",
       "notConfigured": {
         "title": "WooCommerce is not configured",
@@ -1101,8 +1101,8 @@
       },
       "indexing": {
         "label": "Indexing status",
-        "help": "Compares Scout's catalog against documents in Meilisearch. Reindex rebuilds the entire index for this instance.",
-        "scoutCount": "Products in Scout",
+        "help": "Compares GroLabs's catalog against documents in Meilisearch. Reindex rebuilds the entire index for this instance.",
+        "scoutCount": "Products in GroLabs",
         "meiliCount": "Documents in Meilisearch",
         "failed": "Failed indexings",
         "lastSync": "Last sync",
@@ -1238,7 +1238,7 @@
     },
     "mappingModal": {
       "title": "Field mapping",
-      "subtitle": "How Scout projects each product/variant onto Algolia and WooCommerce. For v1 the mapping is read-only.",
+      "subtitle": "How GroLabs projects each product/variant onto Algolia and WooCommerce. For v1 the mapping is read-only.",
       "close": "Close"
     },
     "toast": {
@@ -1299,7 +1299,7 @@
     },
     "calculationMode": {
       "title": "Calculation method",
-      "subtitle": "How Scout calculates selling prices from cost. This setting drives every percentage in the pricing module.",
+      "subtitle": "How GroLabs calculates selling prices from cost. This setting drives every percentage in the pricing module.",
       "modes": {
         "margin": {
           "label": "Margin",
@@ -1581,7 +1581,7 @@
     "syncPage": {
       "notConfigured": {
         "title": "WooCommerce isn't configured",
-        "text": "Configure WooCommerce credentials so Scout can push approved prices.",
+        "text": "Configure WooCommerce credentials so GroLabs can push approved prices.",
         "cta": "Go to WooCommerce configuration"
       },
       "ready": {

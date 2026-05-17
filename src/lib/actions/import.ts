@@ -56,7 +56,7 @@ export async function analyzeImportCategories(input: {
 /**
  * Step 3 of the wizard: ask the agent to group rows into base products
  * with extracted variant axes + descriptive attributes for the chosen
- * category. GLPIM builds the vocabulary from Scout's tables.
+ * category. GLPIM builds the vocabulary from GroLabs's tables.
  */
 export async function groupImportProducts(input: {
   products: ProductIn[];

@@ -1,14 +1,14 @@
 /**
- * Sync the Scout category tree to WooCommerce ahead of a product push.
+ * Sync the GroLabs category tree to WooCommerce ahead of a product push.
  *
  * Why:
  *   WC's REST API expects products with categories: [{ id }] — name-only
  *   entries are silently ignored, so products land with no categories
- *   assigned. Before pushing products we therefore need a Scout category_id
+ *   assigned. Before pushing products we therefore need a GroLabs category_id
  *   → WC category id mapping. This module owns that mapping.
  *
  * How:
- *   1. Caller passes the Scout category ids touched by the push (the
+ *   1. Caller passes the GroLabs category ids touched by the push (the
  *      categories of all products being synced).
  *   2. We expand the set with every ancestor up to the root — WC requires
  *      a category's parent to exist before the child can be created.
@@ -55,7 +55,7 @@ export type CategorySyncFailure = {
 };
 
 export type CategorySyncResult = {
-  /** Scout category_id → WC category id, for every category that resolved. */
+  /** GroLabs category_id → WC category id, for every category that resolved. */
   idMap: Map<number, number>;
   /** Categories we tried but couldn't sync. Caller should surface as warnings. */
   failures: CategorySyncFailure[];

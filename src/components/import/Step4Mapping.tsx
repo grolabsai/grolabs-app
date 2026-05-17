@@ -12,13 +12,13 @@ import type { ColumnMapping, ScoutFieldId } from "@/lib/import/types";
 /**
  * Two-column drag-and-drop column mapper.
  *
- * Left: Scout fields (the destinations). Top two rows are locked because
+ * Left: GroLabs fields (the destinations). Top two rows are locked because
  * they were picked in Step 2 (product name + photo URL); the rest are
  * optional drop targets. A field shows its bound file column inline so
  * the pairing is readable from either side.
  *
  * Right: file columns from the uploaded file with a sample value for
- * context. Draggable. A column shows the Scout field it's bound to,
+ * context. Draggable. A column shows the GroLabs field it's bound to,
  * once it's been dropped, so reading from either side tells you the
  * full pair.
  *
@@ -95,7 +95,7 @@ export function Step4Mapping() {
     dispatch({ type: "SET_COLUMN_MAPPING_FIELD", field, mapping });
   }
 
-  // Build (column-index → bound Scout field) so each right-side row can
+  // Build (column-index → bound GroLabs field) so each right-side row can
   // show its pairing without scanning the mapping object every render.
   const fieldByColumn = new Map<number, ScoutFieldId>();
   for (const f of ALL_FIELDS) {
@@ -159,7 +159,7 @@ export function Step4Mapping() {
             alignItems: "start",
           }}
         >
-          {/* LEFT: Scout fields */}
+          {/* LEFT: GroLabs fields */}
           <div>
             <ColumnHeader title={t("scoutFieldsTitle")} subtitle={t("scoutFieldsSubtitle")} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -1,4 +1,4 @@
-# Scout — Claude Code conventions
+# GroLabs — Claude Code conventions
 
 ## 1. Repository layout
 
@@ -59,7 +59,7 @@ The atomic data unit is **instance**, not tenant.
 
 ### Instance ID checking
 
-Scout's template instance has `instance_id = 0`. This is intentional — 0 is a meaningful, queryable database value. JavaScript treats `0` as falsy, which means `if (!instanceId)` silently breaks for any user on the template instance.
+GroLabs's template instance has `instance_id = 0`. This is intentional — 0 is a meaningful, queryable database value. JavaScript treats `0` as falsy, which means `if (!instanceId)` silently breaks for any user on the template instance.
 
 **Always use strict null/undefined checks for `instance_id` values:**
 
@@ -358,7 +358,7 @@ A GitHub Action will automate this in a future iteration. Until then, apply manu
 
 Vercel deploys from `main`. Each deploy publishes a build SHA visible in:
 - **Sidebar footer** — `Versión` block below the instance badge
-- **Login page footer** — `Scout · <sha> · <date>`
+- **Login page footer** — `GroLabs · <sha> · <date>`
 
 SHA is set in `next.config.ts`:
 ```ts
@@ -433,7 +433,7 @@ Items here are intentional shortcuts or pre-rename artifacts that need follow-up
 
 - **Quantity attribute dimension filtering** — variant editor shows all units (mass, volume, count) in every quantity dropdown. No filtering by attribute dimension. To enable filtering: add a `dimension` column on `product_attribute` (`mass | volume | count`, nullable for non-quantity attributes — column already exists per migration `20260426000005_product_attribute_dimension.sql`, just unused by the editor), wire the variant editor to filter `unit_of_measure` rows by matching dimension. Cleanup of wrong-unit values entered before the migration is also required.
 
-- **Funnel per-tenant write policies** — currently use `tenant_write_all` (any authenticated `instance_member` can INSERT/UPDATE/DELETE on their instance's funnel data). Tighten to role-gated policies when `instance_member.role` gating is wired up across Scout. Affected tables: `funnel_instance`, `funnel_dataset`, `funnel_dataset_transition_value`, `funnel_benchmark_source`, `funnel_friction_finding`.
+- **Funnel per-tenant write policies** — currently use `tenant_write_all` (any authenticated `instance_member` can INSERT/UPDATE/DELETE on their instance's funnel data). Tighten to role-gated policies when `instance_member.role` gating is wired up across GroLabs. Affected tables: `funnel_instance`, `funnel_dataset`, `funnel_dataset_transition_value`, `funnel_benchmark_source`, `funnel_friction_finding`.
 
 - **Funnel shared-table writes via service-role** — mutations to `funnel_flow`, `funnel_stage`, `funnel_transition`, `funnel_friction_point` go through the service-role client (RLS allows only `service_role`). There is no app-level admin gate yet — any authenticated user calling a shared-write server action will succeed. Add an admin/owner role check in those actions when role taxonomy lands. Affected actions live in `src/lib/actions/funnel.ts` and reference this section in their TODO comments.
 
@@ -454,7 +454,7 @@ Items here are intentional shortcuts or pre-rename artifacts that need follow-up
 **Active policy docs:**
 
 - [`search-foundations.md`](docs/policy/search-foundations.md) — Stages 0 & 1 of the search roadmap. Foundations + basic search live on Wazú via Meilisearch Cloud. Read before any search-related implementation.
-- [`wc-import.md`](docs/policy/wc-import.md) — One-way pull from WooCommerce into Scout's catalog tables (categories + products). v1 is raw preservation only; enrichment, variant restructuring, and category matching are explicitly deferred to future processes.
-- [`ga4-integration.md`](docs/policy/ga4-integration.md) — Read-only Google Analytics 4 integration. Hybrid storage (daily snapshots in Scout DB + on-demand real-time queries). Alert pipeline for top-3 traffic-health metrics. New `/dashboard/traffic` surface as part of the multi-section dashboard described in [`docs/design/dashboard.md`](docs/design/dashboard.md).
+- [`wc-import.md`](docs/policy/wc-import.md) — One-way pull from WooCommerce into GroLabs's catalog tables (categories + products). v1 is raw preservation only; enrichment, variant restructuring, and category matching are explicitly deferred to future processes.
+- [`ga4-integration.md`](docs/policy/ga4-integration.md) — Read-only Google Analytics 4 integration. Hybrid storage (daily snapshots in GroLabs DB + on-demand real-time queries). Alert pipeline for top-3 traffic-health metrics. New `/dashboard/traffic` surface as part of the multi-section dashboard described in [`docs/design/dashboard.md`](docs/design/dashboard.md).
 - [`instance-management.md`](docs/policy/instance-management.md) — Multi-instance support: a single logged-in user can belong to multiple instances, switch via a topbar dropdown, and create new ones. Adds `instance_member.is_current` boolean with partial unique index per user. Replaces the `.maybeSingle()` on `is_active` ambiguity. Anyone can create an instance and becomes its owner; v1 instances start empty (no template seeding).
 - [`tenant-model.md`](docs/policy/tenant-model.md) — Tenant layer above `instance`. New `tenant` table with `kind` (`template_owner` | `customer`) and `instance.tenant_id` FK. An instance is a template iff its tenant is `template_owner`. `instance.kind` is deprecated (kept + sync-trigger during the deprecation window); new code reads `tenant.kind` via the join. Seeded: GroLabs owns instance 0; Wazú owns instances 1 and 3.

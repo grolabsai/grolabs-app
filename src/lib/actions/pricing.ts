@@ -2896,7 +2896,7 @@ export type SyncBatchResult = {
  * If two operators click "Sincronizar" simultaneously, the second
  * update returns 0 rows and we abort with `batch_not_ready`.
  *
- * Per-row strategy (v1): look the WC product up by Scout's variant.sku,
+ * Per-row strategy (v1): look the WC product up by GroLabs's variant.sku,
  * then PUT regular_price on the matched product. Variable parents are
  * out of scope — those rows get tagged `wc_skip_variable_parent` so the
  * operator can handle them by hand.

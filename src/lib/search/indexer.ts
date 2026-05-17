@@ -1,5 +1,5 @@
 /**
- * Push pipeline: Scout catalog tables → Meilisearch.
+ * Push pipeline: GroLabs catalog tables → Meilisearch.
  *
  * Per docs/policy/search-foundations.md §9. Read flow:
  *   product + brand → product_variant + product_pricing → product_category_link → product_media
@@ -245,7 +245,7 @@ export async function indexProduct(
   return { ok: true, taskUid: task.taskUid };
 }
 
-/** Drop a product from the index. Used when a product is deleted in Scout. */
+/** Drop a product from the index. Used when a product is deleted in GroLabs. */
 export async function removeProduct(
   instanceId: number,
   productId: number

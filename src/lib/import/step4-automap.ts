@@ -1,7 +1,7 @@
 import type { ScoutFieldId } from "@/lib/import/types";
 
 /**
- * Lightweight auto-mapper for Step 4. Suggests file-column → Scout-field
+ * Lightweight auto-mapper for Step 4. Suggests file-column → GroLabs-field
  * bindings based on substring keyword matches against normalized column
  * names. Saves the user the obvious work ("barcode" → barcode, "precio"
  * → listPrice, …); they override anything that's wrong by dragging.
@@ -90,7 +90,7 @@ function normalize(s: string): string {
 }
 
 /**
- * For each Scout field, return the index of the best-matching file column
+ * For each GroLabs field, return the index of the best-matching file column
  * (first keyword hit in scan order), or null. Skips columns already
  * consumed by another field or by the Step-2 picks.
  */

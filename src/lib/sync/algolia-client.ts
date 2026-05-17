@@ -1,5 +1,5 @@
 /**
- * Tiny Algolia REST client — just the operations Scout needs.
+ * Tiny Algolia REST client — just the operations GroLabs needs.
  *
  * We don't pull in algoliasearch's full SDK because:
  *   1. We only call two operations (batch upsert + batch delete).

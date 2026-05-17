@@ -17,7 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-export const metadata = { title: "Estilo — Scout" };
+export const metadata = { title: "Estilo — GroLabs" };
 
 const COLORS: { label: string; token: string; hex: string }[] = [
   // Accent

@@ -1,5 +1,5 @@
 /**
- * Read-only Scout → WooCommerce field mapping.
+ * Read-only GroLabs → WooCommerce field mapping.
  *
  * Documented for the user (rendered in the Sync Manager's mapping modal),
  * read at runtime by the push action. To change the mapping, edit this
@@ -7,10 +7,10 @@
  * docs/state/in-flight.md → "Sync field mappings").
  *
  * Push model:
- *   - One Scout product → one WC parent product of `type: variable`
+ *   - One GroLabs product → one WC parent product of `type: variable`
  *     (always; we don't try to detect single-variant products and use
  *     `type: simple`, that complicates round-tripping).
- *   - Each Scout variant → one WC variation under that parent.
+ *   - Each GroLabs variant → one WC variation under that parent.
  *   - WC requires SKU on every variation. Variants without SKU are skipped.
  *
  * Categories:
@@ -18,8 +18,8 @@
  *     entries are silently ignored — products land with no categories.
  *   - The caller pre-syncs the category tree (see
  *     `syncCategoryTreeToWoocommerce` in woocommerce-categories.ts), then
- *     passes the resulting Scout→WC id map into this function. We emit
- *     `categories: [{ id: wcId }]` for every Scout category we have a
+ *     passes the resulting GroLabs→WC id map into this function. We emit
+ *     `categories: [{ id: wcId }]` for every GroLabs category we have a
  *     mapping for. Unmapped categories surface via `unmappedCategoryIds`
  *     so the caller can warn the user.
  *
@@ -50,8 +50,8 @@ export const WOOCOMMERCE_FIELD_MAPPINGS: FieldMappingRow[] = [
   { scoutField: "product.long_description", wpField: "description", required: false, note: "Descripción completa." },
   { scoutField: "product.short_description", wpField: "short_description", required: false, note: "Descripción corta para tarjetas y subtítulos." },
   { scoutField: "product.slug", wpField: "slug", required: false, note: "Slug del permalink." },
-  { scoutField: "product.is_active", wpField: "status", required: false, note: "publish | draft según el estado del producto en Scout." },
-  { scoutField: "product.product_category_link.category_id", wpField: "categories", required: false, note: "Array de ids de categoría WooCommerce; el árbol se sincroniza primero (category_sync_status mapea Scout → WC)." },
+  { scoutField: "product.is_active", wpField: "status", required: false, note: "publish | draft según el estado del producto en GroLabs." },
+  { scoutField: "product.product_category_link.category_id", wpField: "categories", required: false, note: "Array de ids de categoría WooCommerce; el árbol se sincroniza primero (category_sync_status mapea GroLabs → WC)." },
   { scoutField: "product.brand.brand_name", wpField: "attributes / meta_data[scout_brand]", required: false, note: "Atributo \"Marca\" + meta. Para sitios con Perfect Brands, cambiar a la taxonomía pwb-brand." },
   { scoutField: "product_variant.variant_name", wpField: "attributes (per variant)", required: false, note: "Cada eje del variant_name se envía como atributo de variación." },
   { scoutField: "product_variant.sku", wpField: "variation.sku", required: true, note: "Cada variación necesita un SKU único en WC." },
@@ -71,7 +71,7 @@ export type ScoutToWcResult = {
   /** SKUs of the variants that were skipped because they had no SKU. */
   skippedVariantIds: number[];
   /**
-   * Scout category ids on the product that we couldn't map to a WC
+   * GroLabs category ids on the product that we couldn't map to a WC
    * category id (sync helper failed for those). Caller surfaces a
    * per-product warning when this list is non-empty.
    */
@@ -80,7 +80,7 @@ export type ScoutToWcResult = {
 
 export type WcMappingOptions = {
   /**
-   * Scout category_id → WooCommerce category id. Built by
+   * GroLabs category_id → WooCommerce category id. Built by
    * syncCategoryTreeToWoocommerce. Categories not in the map are emitted
    * to `unmappedCategoryIds` and not included in the WC payload.
    */
@@ -88,7 +88,7 @@ export type WcMappingOptions = {
 };
 
 /**
- * Project a Scout product (with variants) onto a WooCommerce parent +
+ * Project a GroLabs product (with variants) onto a WooCommerce parent +
  * variation set. Mirrors `mapProductToAlgoliaRecords` for symmetry.
  */
 export function mapProductToWooCommerce(
@@ -119,7 +119,7 @@ export function mapProductToWooCommerce(
         : [];
   const parentPrimaryImage = images[0];
 
-  // Categories — emit WC ids from the pre-built map. Unmapped Scout
+  // Categories — emit WC ids from the pre-built map. Unmapped GroLabs
   // categories are reported back so the caller can surface a warning.
   const categoryMap = opts.categoryIdByScoutId;
   const categories: Array<{ id: number }> = [];
@@ -150,7 +150,7 @@ export function mapProductToWooCommerce(
   // Build the per-variant attributes set. WC variable products require:
   //   parent.attributes: [{ name, options: [...all options across variants...], variation: true }]
   //   variation.attributes: [{ name, option: "value for this variant" }]
-  // Scout's variant_name carries the variant axis values. For v1 we
+  // GroLabs's variant_name carries the variant axis values. For v1 we
   // collapse them into a single "Variante" attribute. Future: split per
   // axis (Contenido / Tamaño / etc.) once axis data is plumbed through
   // here. For now, single-attribute variation works in WC and the variant

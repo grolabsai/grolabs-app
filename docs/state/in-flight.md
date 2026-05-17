@@ -1,179 +1,59 @@
-# Scout — In-flight (current state)
+# GroLabs — In-flight (current state)
 
-Generated 2026-04-30. Snapshot of open PRs, active branches, and known
-debt. Update at the end of every PR that opens or closes work.
+**Regenerated:** 2026-05-17
+**Source commit:** `2f200e2` (HEAD of branch `claude/strange-gates-28d046`)
+**Method:** `git status`, `git branch -a`, `git log main..HEAD`, doc-header inspection. Repo is source of truth (Constitution Article 10).
 
----
-
-## Open PRs
-
-| # | Title | Branch | Created |
-|---|---|---|---|
-| 24 | feat(catalog): products and variants CRUD | `feat/products-variants-crud` | 2026-04-28 |
-| 23 | chore: update CLAUDE.md to reflect current state of repo | `chore/claude-md-current-state` | 2026-04-28 |
-| 22 | design: standard Combobox component (search + click in one) | `design/combobox-standard` | 2026-04-27 |
-| 17 | feat: attribute screen refactor + category attributes section + agent panel | `screens/attributes-and-category-attr-refactor` | 2026-04-27 |
-
-Pulled via `gh pr list --state open`. Author for all four: `grolabsai`.
-
-**Not yet open** (branches exist with commits ahead of main but no PR):
-- `feat/funnel-diagram` — Phase 2 funnel UI (DiagramTab + canvas + tabs +
-  maintenance CRUD). Builds on PR #25 (funnel schema, merged).
-- `feat/funnel-template-electronics-short` — adds the "Electrónica
-  corta" funnel template via a single migration.
-- `chore/scout-state-docs` — this branch.
+> Supersedes the 2026-04-30 @ `b43157a` snapshot, which predated the constitution and the tenant layer.
 
 ---
 
-## Active branches (local + remote)
+## Working tree
 
-Pulled via `git branch -a --sort=-committerdate`. One-line gloss based on
-branch name + most recent commit message.
+Clean — no uncommitted or untracked files at regeneration time (the `docs/_review/` report and the Pass-4 doc edits are all committed).
 
-| Branch | Status | Purpose |
-|---|---|---|
-| `chore/scout-state-docs` | local + remote (this branch) | docs/state/ system documentation |
-| `feat/funnel-template-electronics-short` | local + remote | new "Electrónica corta" funnel template (migration only) |
-| `feat/funnel-diagram` | local + remote | funnel UI Phase 2 (canvas + inspector + tabs + maintenance) |
-| `main` | local + remote | trunk |
-| `feat/funnel-schema` | local + remote | merged (PR #25), can be deleted |
-| `feat/products-variants-crud` | local + remote | PR #24 — open |
-| `chore/claude-md-current-state` | local + remote | PR #23 — open |
-| `design/flatten-and-styleguide` | local + remote | merged (PR #19), can be deleted |
-| `design/combobox-standard` | local + remote | PR #22 — open |
-| `chore/claude-code-permissions` | local + remote | merged (PR #21), can be deleted |
-| `design/inputs-always-white` | local + remote | merged (PR #20), can be deleted |
-| `fix/instance-id-falsy-checks` | local + remote | merged (PR #18), can be deleted |
-| `screens/attributes-and-category-attr-refactor` | local + remote | PR #17 — open |
+## Current branch vs main
 
----
+Branch `claude/strange-gates-28d046` is **6 commits ahead of `main`**, not yet merged, not yet pushed at the time this section was written:
 
-## Known issues & debt
+| SHA | Commit |
+|---|---|
+| `2f200e2` | docs(design): reframe dashboard for industry-agnostic audience |
+| `d9225f2` | docs(design/pricing): mark as superseded with pointers to authoritative sources |
+| `fbd66bf` | docs(policy): reshape search-foundations.md, move vertical specifics to templates |
+| `8d3e6a7` | docs(vision): align with Constitution Article 3, remove auto-registration language |
+| `2986fc2` | Add Review 1 doc conformance report |
+| `0bf0cda` | Add foundation documents: vision, constitution, module map, backlog |
 
-### Schema-level
+## Draft documents (awaiting approval)
 
-- **Two tenancy patterns coexist.** Catalog and taxonomy tables use
-  `instance_isolation_*` (four policies, no template fallthrough).
-  Funnel per-tenant tables use the newer `tenant_read` +
-  `tenant_write_all` (template fallthrough on SELECT, no template writes).
-  Funnel shared tables use a third pattern
-  (`shared_read_all_authenticated` + `shared_write_service_role_only`).
-  Not actively broken, but worth knowing when designing future tables —
-  the funnel patterns are the canonical shape going forward.
+- `docs/policy/tenant-model.md` — header `Status: Draft (awaiting approval)`. Schema (`tenant` table, `instance.tenant_id`) is **already migrated** (`20260513000001_add_tenant_layer.sql`); the policy doc itself is not yet ratified.
+- `docs/policy/tenant-membership.md` — header `Status: Draft (awaiting approval)`. Schema (`tenant_member`) is **already migrated** (`20260514000001_add_tenant_member.sql`); doc not yet ratified.
+- `docs/vision.md` — self-labelled `Draft v0.4` (pending review); patched this pass to align with Constitution Article 3.
 
-- **`product.manufacturer` is a free-form text column.** Not normalized,
-  not editable from the UI, not surfaced as a `product_attribute`. PR #24
-  (open) likely changes this. Documented in
-  [docs/state/modules.md → Manufacturer field](modules.md).
+## Other branches present (not merged into this branch)
 
-- **`brand` table has only six columns.** No description, no logo, no
-  manufacturer link. Any "brand vs manufacturer" distinction has nowhere
-  to live yet.
+Selected local/remote branches observed via `git branch -a` (not exhaustive history; glosses inferred from branch names):
 
-- **Template fallthrough not consistent.** Catalog templates
-  (`instance_id = 0` rows in `category`, `product_attribute`, etc.) are
-  visible only via service-role — RLS blocks tenant SELECT. Funnel
-  templates ARE visible via tenant SELECT thanks to the
-  `instance_id = 0 OR membership` policy. If we later want catalog
-  templates visible to tenants for "fork from template" flows, the
-  policy shape will need to be ported over.
+- `docs/foundation` — a separate docs branch; **the Pass-4 work was committed on `claude/strange-gates-28d046`, not here** (branch-name mismatch flagged across sessions).
+- `chore/docs-audit-2026-05`, `claude/pedantic-fermat-5cb361`, `claude/goofy-wing-5812e4`, `claude/crazy-zhukovsky-5ef2fa` — assorted working branches.
+- `feat/tenant-layer`, `origin/feat/tenant-member` — tenant-layer feature branches (schema landed in migrations on this branch's history).
+- `feat/images-complete`, `fix/product-images-bundle`, `feat/product-wc-id-roundtrip`, `feat/product-roundtrip` — catalog/image/sync work.
+- `feat/ga4-dashboard-ui`, `tmp-ga4-ui`, `tmp-ga4-backend`, `feat/ga4-integration` — GA4 integration work.
+- `feat/search-stage-1` — Meilisearch search Stage 1.
+- `feat/wc-import`, `feat/instance-management`, `feat/instance-current-backend` — WC import + instance management.
+- `fix/providers-brands-ui`, `fix/charm-ends-in-whole`, `fix/category-margins-editable`, `revert/dashboard-76` — pricing/UI fixes.
+- `docs/search-foundations-contract-clarification`, `docs/instance-management-policy` — policy-doc branches.
 
-- **`scout_schema_version` has RLS disabled.** The only table where
-  RLS is off. Used by ops only; not a functional issue, but it's the
-  single exception in the schema.
+## Known debt (still open; cross-reference CLAUDE.md §17)
 
-- **Funnel shared-table writes have no app-level admin gate.** PR #25
-  ships `service_role` write actions for `funnel_flow`, `funnel_stage`,
-  `funnel_transition`, `funnel_friction_point`. Any authenticated user
-  who calls a `funnel.ts` server action will succeed — there's no
-  `instance_member.role` check yet because the role taxonomy isn't
-  finalized. Tracked in `feat/funnel-diagram`'s pending §17 of CLAUDE.md.
-
-- **Funnel per-tenant write policies use `tenant_write_all`.** Anyone
-  with an `instance_member` row can INSERT / UPDATE / DELETE on funnel
-  per-tenant data for that instance. Same `instance_member.role` debt as
-  above.
-
-### UI-level
-
-- **Catalog → Products is read-only.** All inputs are `disabled`; the
-  "Solo lectura" strip is rendered explicitly. PR #24 addresses this.
-
-- **Variants have no detail screen.** The variants table is rendered
-  inline on the product detail page, with no
-  `/catalog/products/[id]/variants/[variantId]` route. PR #24 adds the
-  detail route + edit forms.
-
-- **Variant attribute values are fetched but not displayed.** The query
-  on the product detail page joins `product_variant_attribute` but the
-  variant table has fixed columns and ignores the attribute join.
-
-- **Translations have no UI.** Every catalog table has a `_translation`
-  sibling, but no admin form edits them. Translations are populated only
-  by import flows (where they exist) and by the seed.
-
-- **Excel/CSV import + migration import are placeholder cards.** Only
-  text-paste import works.
-
-- **Many catalog sidebar entries are disabled.** Marcas, Tipos de
-  producto, Etiquetas, Reglas de coincidencia — all `href: null` in the
-  sidebar.
-
-- **Configuración → Ajustes de la tienda is not built.** No `/configuration/store`
-  route; sidebar entry is disabled.
-
-- **Pet-profile family has no UI.** Five tables exist
-  (`pet_profile_attribute`, `pet_profile_attribute_option`,
-  `pet_product_matching_rule`, plus two translations) and are populated
-  for the Wazu instance, but no admin screen edits them.
-
-- **Service-* family has no UI.** Five tables exist and are seeded for
-  Wazu, but no admin screens for service packs, components, or supply
-  recipes. The compositional schema is in place; the editor is not.
-
-### Code-level (TODO comments in `main`)
-
-- `src/app/[locale]/(app)/dashboard/page.tsx:16` — analytics subdomain
-  mapping for regions `in / sg / au / br / ca / za / uae / uk / jp / hk`
-  is unverified and falls back to `analytics.us.algolia.com`.
-- `src/components/shell/TopBar.tsx:29` — `useRouter` from
-  `next/navigation` should migrate to `@/i18n/routing` once all hrefs
-  are locale-aware.
-- `src/components/shell/Sidebar.tsx:35` — same migration TODO; sidebar
-  uses `next/link` directly. New sidebar items added on
-  `feat/funnel-diagram` route through the shared `<Icon>` wrapper, but
-  the legacy items still use raw lucide imports.
-
-### Naming debt
-
-- **`instance.instance_id` sequence is still
-  `tenant_tenant_id_seq`.** Pre-rename artifact; harmless but visible in
-  the column default. Cleaning it up requires an ALTER SEQUENCE … RENAME.
-
-- **`product.wazudb1_id` and `product_variant.wazudb1_id`** are migration
-  refs from the old WazuDB1 system. Once the migration is fully cut over,
-  these can be dropped.
-
----
+- `instance.instance_id` sequence default still named `tenant_tenant_id_seq` (pre-rename artifact). Note: `20260514000001_add_tenant_member.sql` already renamed the **`instance_member`** dependent objects off their old `tenant_member_*` names; the `instance` sequence rename is still outstanding.
+- `instance.kind` deprecated, not dropped — trigger keeps it in sync with `tenant.kind` during the deprecation window (`20260513000001`).
+- Catalog vs funnel RLS asymmetry (template fallthrough on SELECT) — unchanged.
+- Quantity-attribute dimension filtering in the variant editor — unchanged.
+- Funnel per-tenant / shared-table write policies lack app-level role gating — unchanged.
 
 ## Open architectural decisions
 
-Decisions that aren't blocking current work but will shape future design.
-Each entry: the question, the trade-off, and the trigger condition for
-revisiting.
-
-- **Catalog template-fork pattern.** Catalog data is currently fully
-  tenant-generated — every category, attribute, and product belongs to a
-  specific instance and there is no shared starter content visible to
-  customers. The funnel feature (PR #25) introduced template instances
-  under `instance_id = 0` that are visible to every authenticated user
-  via the `tenant_read` policy with template fallthrough on SELECT.
-  Decide whether catalog should adopt the same template-fork model
-  (likely beneficial for pet-retail onboarding: starter category trees,
-  starter attributes, starter species/breeds, possibly starter brands
-  and product types). If yes, port the funnel pattern (`tenant_read`
-  with `instance_id = 0 OR membership` on SELECT, `tenant_write_all`
-  with no template fallthrough on writes) to the catalog tables. Not
-  blocking current work. **Trigger to revisit:** when the next new
-  customer instance is provisioned and we observe how much manual
-  seeding it needs.
+- **Catalog template-fork pattern** — whether catalog adopts the funnel's `tenant_read` + template-fallthrough RLS for starter content on new-instance provisioning. Trigger to revisit: next new customer instance provisioned. (Now also relevant to `tenant-model.md`'s "create tenant + first instance" signup shape.)
+- **Domain-as-tenant-identity** — Constitution Article 3 mandates domain as the tenant primary key; `tenant`/`tenant_member` are keyed on slug, no domain column. Unmodeled constitutional requirement (flagged in Review 1).

@@ -1,5 +1,5 @@
 /**
- * Internal shapes for the WooCommerce → Scout import (v1).
+ * Internal shapes for the WooCommerce → GroLabs import (v1).
  * Spec: docs/policy/wc-import.md
  */
 

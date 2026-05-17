@@ -369,7 +369,7 @@ export async function syncProductsToWordPress(
   // ── Pre-sync the category tree ────────────────────────────────────────────
   // WC's REST API requires categories: [{ id }] on products. Sending name
   // alone is silently ignored — that's why products were landing with no
-  // categories assigned. Build (or refresh) the Scout→WC category id map
+  // categories assigned. Build (or refresh) the GroLabs→WC category id map
   // before pushing products so each product can carry the right ids.
   const distinctCategoryIds = new Set<number>();
   for (const p of products) {
@@ -447,7 +447,7 @@ export async function syncProductsToWordPress(
     const cachedId = externalIdByProduct.get(p.product_id);
     if (cachedId) parentId = Number(cachedId);
 
-    // If we have no cached id, find by SKU of the first variant. Scout's
+    // If we have no cached id, find by SKU of the first variant. GroLabs's
     // product slug isn't guaranteed unique on the WC side, so we use the
     // first variant SKU as the identification key (also unique in WC).
     if (parentId === null) {
@@ -522,7 +522,7 @@ export async function syncProductsToWordPress(
       continue;
     }
 
-    // Best-effort writeback of the WC IDs onto Scout rows. These power
+    // Best-effort writeback of the WC IDs onto GroLabs rows. These power
     // the document builder's woocommerce_id gate (parent) and the
     // variation_id field on each variant. A writeback failure is logged
     // but doesn't fail the whole product — the next push run reconciles.
@@ -538,7 +538,7 @@ export async function syncProductsToWordPress(
         );
       }
 
-      // Match WC variation responses to Scout variants by SKU. WC's
+      // Match WC variation responses to GroLabs variants by SKU. WC's
       // variations/batch returns the upserted rows on `.create` (it uses
       // create-or-update-by-SKU semantics, not the literal "create" verb),
       // each carrying { id, sku }.
@@ -600,11 +600,11 @@ export async function syncProductsToWordPress(
   };
 }
 
-// ─── Algolia delete (used when products are deleted in Scout) ──────────────
+// ─── Algolia delete (used when products are deleted in GroLabs) ──────────────
 
 /**
  * Remove products from Algolia by SKU. Used when products are deleted in
- * Scout — call from the deleteProduct path. (Not yet wired; leaving the
+ * GroLabs — call from the deleteProduct path. (Not yet wired; leaving the
  * function here so future hookup is mechanical.)
  */
 export async function removeProductsFromAlgolia(

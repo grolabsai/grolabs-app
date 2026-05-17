@@ -36,7 +36,7 @@ import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
 /**
- * Scout sidebar navigation.
+ * GroLabs sidebar navigation.
  *
  * Rebuilt on shadcn conventions (cn(), lucide-react icons, no inline SVGs).
  * Visual layout is identical to the previous version — same sections, same
@@ -143,7 +143,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       {/* Brand mark */}
       <div className="s-brand">
         <div className="s-brand-mark" />
-        <span className="s-brand-name">Scout</span>
+        <span className="s-brand-name">GroLabs</span>
       </div>
 
       {/* Nav groups */}

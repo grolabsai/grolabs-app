@@ -2,7 +2,7 @@
   "name": "scout-admin",
   "version": "0.1.0",
   "private": true,
-  "description": "Scout — multi-tenant catalog management admin (Phase 1). Dedicated Scout admin, shares design language with Bloom (D22).",
+  "description": "GroLabs — multi-tenant catalog management admin (Phase 1). Dedicated GroLabs admin, shares design language with GroLabs (D22).",
   "scripts": {
     "dev": "next dev --port 3030",
     "build": "next build",

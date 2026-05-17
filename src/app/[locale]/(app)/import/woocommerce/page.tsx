@@ -13,7 +13,7 @@ import { WooImportPanel } from "./_client";
 import { getImportStatus } from "./actions";
 
 /**
- * /import/woocommerce — admin entrypoint for the WooCommerce → Scout
+ * /import/woocommerce — admin entrypoint for the WooCommerce → GroLabs
  * pull import. Spec: docs/policy/wc-import.md §6.
  *
  * Reads credentials from instance.integrations_config.woocommerce

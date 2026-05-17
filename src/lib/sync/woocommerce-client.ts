@@ -1,5 +1,5 @@
 /**
- * Tiny WooCommerce REST client. Just the operations Scout needs:
+ * Tiny WooCommerce REST client. Just the operations GroLabs needs:
  *   - GET /products?sku=...                (lookup by SKU)
  *   - POST /products                        (create parent product)
  *   - PUT /products/{id}                    (update parent product)

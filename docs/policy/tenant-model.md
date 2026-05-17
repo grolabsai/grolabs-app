@@ -2,16 +2,16 @@
 Status: Draft (awaiting approval)
 Owner: Tuncho
 Scope: Introduce a tenant layer above `instance`. A tenant owns one or more instances and carries the "template vs. customer" distinction at the ownership level instead of as a flag on each instance row.
-Audience: Claude Code (primary), future Scout contributors
+Audience: Claude Code (primary), future GroLabs contributors
 ---
 
-# Scout Tenant Model — v1
+# GroLabs Tenant Model — v1
 
 This document is the authoritative spec for the tenant layer. Read it before writing any code that touches tenants, template ownership, or signup. Decisions here are locked — if implementation surfaces a flaw, raise it as a question instead of working around it silently.
 
 ## 1. What a tenant is
 
-A **tenant** is the legal/organizational owner of one or more Scout instances.
+A **tenant** is the legal/organizational owner of one or more GroLabs instances.
 
 - A user belongs to **instances**, not tenants. Membership is `instance_member.user_id → instance_id` — unchanged by this work.
 - An instance belongs to exactly one tenant via `instance.tenant_id`.
@@ -26,7 +26,7 @@ Tenants are an **organizational/ownership** layer, not a security layer. The sec
 
 Three problems converge on the same answer:
 
-1. **Template ownership is a property of an owner, not a flag on a row.** Today `instance.kind = 'template'` says "this instance is a Scout-owned blueprint." That collapses two concepts: (a) who owns it (GroLabs), and (b) how it should be used (as a template). When we add more template instances — e.g. a vertical-specific template — they all share owner=GroLabs. That belongs on a parent record.
+1. **Template ownership is a property of an owner, not a flag on a row.** Today `instance.kind = 'template'` says "this instance is a GroLabs-owned blueprint." That collapses two concepts: (a) who owns it (GroLabs), and (b) how it should be used (as a template). When we add more template instances — e.g. a vertical-specific template — they all share owner=GroLabs. That belongs on a parent record.
 
 2. **Signup needs an owner record before it has an instance.** The new-instance flow from `instance-management.md` creates an instance per user action. With tenants, signup becomes "create a customer tenant + first instance under it" atomically. Future invites land users into the existing tenant's instance, not into a free-floating row.
 

@@ -7,7 +7,7 @@ import {
 } from "./types";
 
 /**
- * The single place in Scout's codebase that holds the Meilisearch master key.
+ * The single place in GroLabs's codebase that holds the Meilisearch master key.
  *
  * Per docs/policy/search-foundations.md §5. Module-scoped singleton with a
  * lazily-created parent search key for tenant-token signing.
@@ -328,7 +328,7 @@ export async function getTaskStatus(taskUid: number): Promise<{
 let parentKeyCache: { uid: string; key: string } | null = null;
 
 /**
- * Find or create the search-scoped API key Scout uses as the parent for all
+ * Find or create the search-scoped API key GroLabs uses as the parent for all
  * tenant tokens. Identified by name; results cached in module scope.
  *
  * Tenant tokens inherit the parent's permissions, so this key is intentionally
@@ -347,7 +347,7 @@ async function getOrCreateParentSearchKey(): Promise<{ uid: string; key: string 
     }
     const created = await client.createKey({
       name: TENANT_TOKEN_PARENT_KEY_NAME,
-      description: "Parent key for Scout tenant tokens. Search-only.",
+      description: "Parent key for GroLabs tenant tokens. Search-only.",
       actions: ["search"],
       indexes: ["*"],
       expiresAt: null,

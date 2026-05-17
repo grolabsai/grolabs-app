@@ -1,5 +1,5 @@
 /**
- * Read-only Scout → Algolia field mapping.
+ * Read-only GroLabs → Algolia field mapping.
  *
  * Documented for the user (rendered in the Sync Manager's mapping modal),
  * read at runtime by the push action. To change the mapping, edit this
@@ -81,7 +81,7 @@ export type AlgoliaRecord = {
 };
 
 export type FieldMappingRow = {
-  /** Path into the Scout data (informational, displayed in the modal). */
+  /** Path into the GroLabs data (informational, displayed in the modal). */
   scoutField: string;
   /** Algolia attribute name. */
   algoliaField: string;
@@ -115,7 +115,7 @@ export const ALGOLIA_FIELD_MAPPINGS: FieldMappingRow[] = [
 ];
 
 /**
- * Project a Scout product (with its variants) into one or more Algolia
+ * Project a GroLabs product (with its variants) into one or more Algolia
  * records. Skips variants without a SKU — Algolia rejects them.
  */
 export function mapProductToAlgoliaRecords(p: AlgoliaSourceProduct): AlgoliaRecord[] {

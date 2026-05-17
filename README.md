@@ -1,16 +1,16 @@
-# Scout Admin
+# GroLabs Admin
 
-Multi-tenant catalog management admin for Scout (a GRO Labs product).
-Dedicated Scout admin, shares visual language with Bloom (D22).
+Multi-tenant catalog management admin for GroLabs (a GRO Labs product).
+Dedicated GroLabs admin, shares visual language with GroLabs (D22).
 
 ## What's built (Phase 1.0 slice)
 
 - **Next.js 15** App Router + TypeScript + Supabase SSR
 - **Auth**: Supabase email + password. Session cookies refreshed by middleware on every request. Google login / magic link deferred (trivial to add later).
-- **App shell**: sidebar + topbar, Scout's IA (Catálogo / Referencias / Configuración), Spanish copy throughout.
+- **App shell**: sidebar + topbar, GroLabs's IA (Catálogo / Referencias / Configuración), Spanish copy throughout.
 - **Products list** (`/catalog/products`): real Supabase data, filter chips (all / active / inactive / consignment / service) with live counts, click-through to editor, empty state.
-- **Product editor** (`/catalog/products/[id]`): read-only two-column layout mirroring Bloom's design, exercising the full Scout schema — product info, brand, primary category, attribute values, variants with SKU/barcode/weight/pricing, import-ID backlink when `wazudb1_id` is set.
-- **Design system**: the Bloom tokens + components ported verbatim, prefix renamed `bl-` → `s-` and `bloom-` → `scout-`. See `src/app/globals.css`.
+- **Product editor** (`/catalog/products/[id]`): read-only two-column layout mirroring GroLabs's design, exercising the full GroLabs schema — product info, brand, primary category, attribute values, variants with SKU/barcode/weight/pricing, import-ID backlink when `wazudb1_id` is set.
+- **Design system**: the GroLabs tokens + components ported verbatim, prefix renamed `bl-` → `s-` and `bloom-` → `scout-`. See `src/app/globals.css`.
 
 ## What's NOT built yet (deliberately)
 
@@ -22,7 +22,7 @@ Each of these is a clean follow-up slice:
 - Matching rules screen
 - Species / breeds reference screens
 - Command palette (⌘K)
-- Assistant side panel (Bloom's inline AI)
+- Assistant side panel (GroLabs's inline AI)
 - Image library / upload
 - Dashboard
 - Service editor, pack builder (specialized flows per product_type)
@@ -31,7 +31,7 @@ Each of these is a clean follow-up slice:
 ## Prerequisites
 
 - Node.js 20+
-- A Supabase project with the Scout schema applied (project `ixbbhwtpnebrhquunege`)
+- A Supabase project with the GroLabs schema applied (project `ixbbhwtpnebrhquunege`)
 - A user in `auth.users` with a `tenant_member` row — `tuncho@wazu.test` already exists
 
 ## Run it locally
@@ -82,7 +82,7 @@ For admin-only flows (signup's `copy_template_to_tenant`, imports, reconciliatio
 ```
 src/
 ├── app/
-│   ├── globals.css              ← design system (ported from Bloom)
+│   ├── globals.css              ← design system (ported from GroLabs)
 │   ├── layout.tsx               ← root layout
 │   ├── page.tsx                 ← redirects → /catalog/products
 │   ├── login/page.tsx           ← public login
@@ -95,7 +95,7 @@ src/
 │               └── [id]/page.tsx ← editor
 ├── components/
 │   └── shell/
-│       ├── Sidebar.tsx          ← nav with Scout IA
+│       ├── Sidebar.tsx          ← nav with GroLabs IA
 │       └── TopBar.tsx           ← search placeholder + user menu
 ├── lib/
 │   ├── format.ts                ← formatGTQ, formatRelative, initials
@@ -108,7 +108,7 @@ src/
 
 ## Design fidelity
 
-The `s-*` classes in `globals.css` are 1:1 ports of the Bloom `bl-*` design tokens and components. If you want to look at Bloom for reference, the token values and component shapes are identical — only the prefix changed. This is what lets Bloom and Scout share visual language without sharing code.
+The `s-*` classes in `globals.css` are 1:1 ports of the GroLabs `bl-*` design tokens and components. If you want to look at GroLabs for reference, the token values and component shapes are identical — only the prefix changed. This is what lets GroLabs share visual language without sharing code.
 
 ## Next suggested session
 

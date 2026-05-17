@@ -1,21 +1,21 @@
-# Scout WooCommerce Import — v1
+# GroLabs WooCommerce Import — v1
 
 Status: Active policy
 Owner: Tuncho
-Scope: One-way pull from WooCommerce into Scout's catalog tables. Categories and products only. Raw data preservation, no enrichment, no restructuring.
-Audience: Claude Code (primary), future Scout contributors
+Scope: One-way pull from WooCommerce into GroLabs's catalog tables. Categories and products only. Raw data preservation, no enrichment, no restructuring.
+Audience: Claude Code (primary), future GroLabs contributors
 
-This document is the authoritative spec for the WooCommerce → Scout import. Read it before writing any code. Stop at the two `APPROVAL REQUIRED` checkpoints (§8 and §9) and wait for explicit approval.
+This document is the authoritative spec for the WooCommerce → GroLabs import. Read it before writing any code. Stop at the two `APPROVAL REQUIRED` checkpoints (§8 and §9) and wait for explicit approval.
 
 ## 1. Goals and non-goals
 
 ### Goal
-Pull a merchant's existing WooCommerce catalog (categories + products) into Scout's `category` and `product` tables so Scout has the data. Re-runnable. Idempotent. **Lossless** — any source field we don't have a mapped Scout column for is preserved as JSONB for future processes to consume.
+Pull a merchant's existing WooCommerce catalog (categories + products) into GroLabs's `category` and `product` tables so GroLabs has the data. Re-runnable. Idempotent. **Lossless** — any source field we don't have a mapped GroLabs column for is preserved as JSONB for future processes to consume.
 
 ### Non-goals
 - Enrichment (lifestage, species, breed, etc.) — separate process
-- Variant restructuring (WC variations → Scout `product_variant` rows) — separate process
-- Category similarity matching against Scout's template categories — separate process
+- Variant restructuring (WC variations → GroLabs `product_variant` rows) — separate process
+- Category similarity matching against GroLabs's template categories — separate process
 - Attribute normalization (`product_attribute` ↔ WC attributes) — separate process
 - Push back to WC (already exists in `src/lib/sync/`, this work doesn't touch it)
 - Meilisearch indexing (Stage 1 of `search-foundations.md`, will consume what this produces)
@@ -24,23 +24,23 @@ Pull a merchant's existing WooCommerce catalog (categories + products) into Scou
 
 If implementation surfaces a flaw, raise it as a question — don't work around it silently.
 
-**One-way pull.** WC is the source. Scout writes; never pushes back from this code path. Push-direction sync lives in `src/lib/sync/` and is unchanged.
+**One-way pull.** WC is the source. GroLabs writes; never pushes back from this code path. Push-direction sync lives in `src/lib/sync/` and is unchanged.
 
-**Raw preservation.** Any WC field not mapped to a Scout column lands in `product.wc_raw` (JSONB). Future restructuring/enrichment processes read from this column. We never throw away source data.
+**Raw preservation.** Any WC field not mapped to a GroLabs column lands in `product.wc_raw` (JSONB). Future restructuring/enrichment processes read from this column. We never throw away source data.
 
 **Idempotent re-runs.** `category.woocommerce_id` and `product.woocommerce_id` are unique-per-instance and used as the upsert conflict key. Re-importing the same record UPDATEs instead of INSERTing. No checkpoint table needed in v1 — interrupted runs are safe to re-run because already-imported records are matched by `woocommerce_id`.
 
-**Categories preserve hierarchy as-is.** WC's `parent` (id) maps directly to Scout's `category.parent_id` via a second-pass lookup. No restructuring, no merging with Scout's template categories.
+**Categories preserve hierarchy as-is.** WC's `parent` (id) maps directly to GroLabs's `category.parent_id` via a second-pass lookup. No restructuring, no merging with GroLabs's template categories.
 
-**Variations stored, not exploded.** WC variable products become **one** Scout `product` row each. The WC `variations` array is preserved in `wc_raw` for the future restructuring process. v1 does not create `product_variant` rows from imports.
+**Variations stored, not exploded.** WC variable products become **one** GroLabs `product` row each. The WC `variations` array is preserved in `wc_raw` for the future restructuring process. v1 does not create `product_variant` rows from imports.
 
 **No enrichment during import.** `scout_attributes` (lifestage, species, breed_compatibility, etc.) stay null on imported records. A separate enrichment process populates them.
 
-**Code lives at `src/lib/import/woocommerce/`.** NOT in `src/lib/sync/` — sync is push-direction (Scout→WC), this is pull-direction (WC→Scout). Different namespaces prevent debugging confusion.
+**Code lives at `src/lib/import/woocommerce/`.** NOT in `src/lib/sync/` — sync is push-direction (GroLabs→WC), this is pull-direction (WC→GroLabs). Different namespaces prevent debugging confusion.
 
 **UI at `/import/woocommerce`.** Matches the existing `/import/text` and `/import/wizard` pattern. Reuses WC credentials already stored in `instance.integrations_config.woocommerce` via `/configuration/woocommerce`.
 
-**Multi-tenancy boundary uses `instance_id`,** consistent with all other Scout tables. Composite uniqueness `(instance_id, woocommerce_id)` lets the same WC ID exist independently in different instances.
+**Multi-tenancy boundary uses `instance_id`,** consistent with all other GroLabs tables. Composite uniqueness `(instance_id, woocommerce_id)` lets the same WC ID exist independently in different instances.
 
 ## 3. Schema additions
 
@@ -52,7 +52,7 @@ alter table category add column woocommerce_id bigint;
 alter table product add column woocommerce_id bigint;
 
 -- Lossless preservation of unmapped fields, including the variations array
--- on variable products and any meta_data Scout doesn't have a column for.
+-- on variable products and any meta_data GroLabs doesn't have a column for.
 alter table product add column wc_raw jsonb not null default '{}'::jsonb;
 
 -- Composite uniqueness — same WC ID can exist in different instances.
@@ -69,7 +69,7 @@ If `product` is missing any obvious columns (e.g. `barcode`, `cost`), add them i
 Only obvious 1:1 mappings get columns. Everything else → `wc_raw`.
 
 ### Category (WC `product_cat`)
-| WC field | Scout column |
+| WC field | GroLabs column |
 |---|---|
 | `id` | `woocommerce_id` |
 | `name` | `name` |
@@ -78,7 +78,7 @@ Only obvious 1:1 mappings get columns. Everything else → `wc_raw`.
 | everything else | dropped (categories have no `wc_raw`) |
 
 ### Product
-| WC field | Scout column |
+| WC field | GroLabs column |
 |---|---|
 | `id` | `woocommerce_id` |
 | `name` | `name` |
@@ -89,7 +89,7 @@ Only obvious 1:1 mappings get columns. Everything else → `wc_raw`.
 | `price` | `price` |
 | `sale_price` | `sale_price` |
 | `stock_quantity` | `stock_quantity` |
-| `images[0].src` | `featured_image_url` (or whatever Scout uses for primary image) |
+| `images[0].src` | `featured_image_url` (or whatever GroLabs uses for primary image) |
 | `categories[].id` | `product_category_link` rows (via `category.woocommerce_id` lookup) |
 | `meta_data` entries for barcode / cost (key names vary by WC theme — common: `_barcode`, `_cost`, `_wc_cog_cost`) | `barcode`, `cost` if present |
 | **everything else** including `variations`, `attributes`, all unmapped `meta_data` | `wc_raw` |
@@ -99,7 +99,7 @@ Only obvious 1:1 mappings get columns. Everything else → `wc_raw`.
 1. Verify WC credentials work: `GET /wp-json/wc/v3/products?per_page=1`. If 401/403/network error, abort with a clear UI message.
 2. **Categories pass:**
    - Page through `GET /wp-json/wc/v3/products/categories?per_page=100&page=N` until empty.
-   - For each: build the Scout row, `INSERT ... ON CONFLICT (instance_id, woocommerce_id) DO UPDATE`.
+   - For each: build the GroLabs row, `INSERT ... ON CONFLICT (instance_id, woocommerce_id) DO UPDATE`.
    - Second pass: re-walk all imported categories, set `parent_id` via `woocommerce_id` lookup.
 3. **Products pass:**
    - Page through `GET /wp-json/wc/v3/products?per_page=100&page=N&status=publish` until empty.
@@ -126,7 +126,7 @@ Both buttons are server actions; progress can be implemented with polling or a s
 - Categories import → all rows present, `parent_id` correctly set across the tree
 - Products import → mapped fields populated, `wc_raw` contains everything else (including `variations` array)
 - Re-run import → no duplicates, existing rows updated
-- Variable product → exactly one Scout `product` row, `wc_raw.variations` has all variations
+- Variable product → exactly one GroLabs `product` row, `wc_raw.variations` has all variations
 - Product with multiple categories → multiple `product_category_link` rows
 - Product with no SKU → imports anyway, `sku` is null
 - Network failure mid-import → no partial corruption (each upsert independent)
@@ -150,8 +150,8 @@ After code is written:
 
 - `wc-import-enrichment.md` — populates `scout_attributes` from WC data, LLM, or both
 - `wc-import-variants.md` — explodes `wc_raw.variations` into `product_variant` + `product_variant_attribute` rows
-- `wc-import-category-matching.md` — finds similarities between imported categories and Scout's template, offers a rename/apply UI
-- `search-foundations.md` Stage 1 — indexes Scout's catalog into Meilisearch (consumes the data this policy produces)
+- `wc-import-category-matching.md` — finds similarities between imported categories and GroLabs's template, offers a rename/apply UI
+- `search-foundations.md` Stage 1 — indexes GroLabs's catalog into Meilisearch (consumes the data this policy produces)
 
 ## 11. Resolved decisions
 

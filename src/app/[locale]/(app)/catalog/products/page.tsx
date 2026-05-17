@@ -6,8 +6,8 @@ import { Icon } from "@/components/ui/icon";
 import { ImageOff } from "lucide-react";
 
 /**
- * Products list screen. Mirror of Bloom's `screen-products` visually,
- * re-wired to Scout's schema and backed by real Supabase data.
+ * Products list screen. Mirror of GroLabs's `screen-products` visually,
+ * re-wired to GroLabs's schema and backed by real Supabase data.
  *
  * Data shape per row:
  *   product + its type + its brand + its variants (for min price and count)
@@ -75,7 +75,7 @@ export default async function ProductsPage({
   // Base query — everything for the tenant, with joins the list needs.
   // !inner on product_type gives us an inner join so products without a
   // type never reach the UI (a data-integrity invariant — every product
-  // has a type in Scout's schema).
+  // has a type in GroLabs's schema).
   let base = supabase
     .from("product")
     .select(

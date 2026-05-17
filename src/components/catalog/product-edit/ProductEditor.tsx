@@ -570,7 +570,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
 
 /**
  * Compact display for product/variant.woocommerce_id. Shows the numeric WC
- * post id when present; renders a "Pendiente" pill when null. The Scout→WC
+ * post id when present; renders a "Pendiente" pill when null. The GroLabs→WC
  * push captures the id and writes it back; until that happens, the row is
  * not yet round-tripped and the search index skips it.
  */

@@ -1,5 +1,5 @@
 /**
- * Pure projector from Scout catalog rows → ScoutSearchDocument.
+ * Pure projector from GroLabs catalog rows → ScoutSearchDocument.
  *
  * Per docs/policy/search-foundations.md §4 (document schema) and §9 (Stage 1
  * enrichment scope). Per the locked PR #68 contract:
@@ -51,7 +51,7 @@ export type SourceVariantRow = {
   weight_grams: number | string | null;
   is_active: boolean;
   image_url: string | null;
-  /** WC variation post id, set on Scout→WC push. Variants where this is
+  /** WC variation post id, set on GroLabs→WC push. Variants where this is
    * null haven't round-tripped yet — the document builder filters them
    * out so the storefront plugin never sees a variation it can't add to
    * cart. */
@@ -83,8 +83,8 @@ export type SourceMediaRow = {
   sort_order: number;
 };
 
-/** Pre-joined Scout-native variant axis row. Source for slug-keyed
- * attributes when wc_raw doesn't carry them (i.e. all Scout-native
+/** Pre-joined GroLabs-native variant axis row. Source for slug-keyed
+ * attributes when wc_raw doesn't carry them (i.e. all GroLabs-native
  * products on Wazú today).
  *
  * The slug becomes `pa_<attribute_code>` to match the WooCommerce taxonomy
@@ -119,7 +119,7 @@ export type WcRawShape = {
    *   (a) an array of full variation objects when fetched via
    *       `?include_variations=true` or the dedicated variations endpoint, or
    *   (b) an array of variation IDs (numbers) when fetched from the parent
-   *       product endpoint without expansion (Scout's wc-import v1 shape).
+   *       product endpoint without expansion (GroLabs's wc-import v1 shape).
    *
    * The builder accepts both — number entries are skipped during the
    * variation lookup. Stage 2+ of the WC import will inline full objects;
@@ -221,7 +221,7 @@ function variantPricing(v: SourceVariantRow): {
   };
 }
 
-/** Look up the WC variation row that matches a Scout variant by SKU. Returns
+/** Look up the WC variation row that matches a GroLabs variant by SKU. Returns
  * null when wc_raw.variations is the v1 shape (array of integer IDs). */
 type WcVariationObject = Exclude<
   NonNullable<WcRawShape["variations"]>[number],
@@ -249,9 +249,9 @@ function matchWcVariation(
 /** Build the slug-keyed attributes map for one variant.
  *
  * Source priority:
- *   1. Scout-native: product_variant_attribute joined with product_attribute.
+ *   1. GroLabs-native: product_variant_attribute joined with product_attribute.
  *      Key = `pa_<attribute_code>`. Value = display string per data_type.
- *      This is the path for almost all Wazú data — Scout's importers populate
+ *      This is the path for almost all Wazú data — GroLabs's importers populate
  *      product_variant_attribute, not wc_raw.variations[i].attributes.
  *   2. wc_raw.variations[i].attributes (slug + option) — matched by SKU.
  *      Path for products that arrived with a fully-expanded WC variation
@@ -267,7 +267,7 @@ function buildVariantAttributes(
   wcRaw: WcRawShape | null,
   scoutAttrs: SourceVariantAttribute[]
 ): Record<string, string> {
-  // 1. Scout-native rows. Always preferred when present.
+  // 1. GroLabs-native rows. Always preferred when present.
   const scoutForVariant = scoutAttrs.filter((a) => a.variant_id === v.variant_id);
   if (scoutForVariant.length > 0) {
     const out: Record<string, string> = {};
@@ -502,7 +502,7 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
 
   // Filter: per §9, exclude inactive variations. Then filter out any
   // variant that hasn't round-tripped to WC yet — the plugin needs the
-  // WC variation post id, not Scout's internal variant_id.
+  // WC variation post id, not GroLabs's internal variant_id.
   const activeVariants = variantRows.filter((v) => v.is_active);
   const indexableVariantRows = activeVariants.filter((v) => v.woocommerce_id != null);
 
@@ -551,7 +551,7 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
     .map((l) => l.category?.woocommerce_id)
     .filter((id): id is number => typeof id === "number");
 
-  // Tags — pulled from wc_raw.tags if present (Scout has no native tag table).
+  // Tags — pulled from wc_raw.tags if present (GroLabs has no native tag table).
   const tags = (product.wc_raw?.tags ?? [])
     .map((t) => t.name)
     .filter((n): n is string => !!n);

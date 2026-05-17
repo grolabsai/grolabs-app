@@ -154,11 +154,27 @@ The WP directory technical slug is `grolabs-[name]-plugin`. The directory displa
 
 ---
 
+## Article 12 — Agent capabilities are agnostic, stateless, and reusable
+
+**Rule:** Functions in the Optimization Agent module are pure, industry-agnostic, and reusable across invocation contexts. They accept inputs and produce proposals; they do not know who called them or why. Workflow context — when to invoke an agent function, how to surface its proposals, who approves them, how to apply accepted proposals — belongs in the calling module, not in the agent function itself.
+
+**Why non-negotiable:** This decoupling is what makes the agent reusable. The same `proposeAttributeValuesFromName` function runs during initial WC import, during scheduled background sweeps, during merchant-triggered review-all passes, and during the first-sync probe — same code, different trigger contexts. Without this decoupling, each invocation context would copy-paste the logic, drift would set in, and the agent module would entangle with every consumer.
+
+**Implications:**
+- Agent functions are testable in isolation: feed them inputs, receive proposals, verify outputs. No need to stand up other modules.
+- Different invocation contexts can choose different approval workflows: auto-accept high-confidence proposals during migration; queue for review during background sweeps; show inline with one-click approve in interactive workflows. The capability does not change; the workflow does.
+- The Catalog module (or Search Engine, or Sync, or any other) owns the decision of when to invoke an agent capability and how to handle the proposal. The Agent module owns the capability itself.
+
+**Trigger to revisit:** None. This is the architectural principle that keeps the Optimization Agent reusable. Permanent.
+
+---
+
 ## Amendment log
 
 | Date | Article | Change | Reason |
 |---|---|---|---|
 | 2026-05-16 | — | Initial ratification | First constitution document |
+| 2026-05-17 | Article 12 added | New article on agent capability decoupling | Emerged from search-foundations reshape Discussion |
 
 ---
 

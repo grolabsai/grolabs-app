@@ -1,5 +1,7 @@
 # Scout Dashboard — Design Brief
 
+> **Editor's note:** Reframed 2026-05-17 to conform to Constitution Article 1. Previous version positioned the dashboard as for 'pet supply ecommerce stores.' GroLabs is industry-agnostic; the pet-shop angle is one of several vertical templates, not the product's identity.
+
 Status: Brief for visual / UX design (claude.ai/design workflow)
 Owner: Tuncho
 Audience: Designer (Claude in claude.ai), then implementer (Claude Code)
@@ -10,7 +12,7 @@ This brief is meant to be copy-pasted into a fresh design conversation. The desi
 
 ## What Scout is
 
-Scout is a multi-tenant admin app for **solopreneur-run pet supply ecommerce stores** in Latin America (primarily Guatemala, Spanish-speaking). Each merchant has one "instance" — their products, categories, attributes, integrations, and now their analytics live there.
+Scout is a multi-tenant admin app for **solopreneur-run ecommerce stores** in Latin America (primarily Guatemala, Spanish-speaking). It is **industry-agnostic by design** — merchants come from any vertical (pet-shop, electronics, jewelry, clothing, …), each provisioned from the matching vertical template; no vertical is privileged in the product. Each merchant has one "instance" — their products, categories, attributes, integrations, and now their analytics live there.
 
 Today the merchant logs into a sidebar-driven web app and manages: product catalog, categories, attributes, pricing rules, WooCommerce sync, search configuration, imports. The app is at production at `scout.gro.gt` (or similar — check live URL).
 

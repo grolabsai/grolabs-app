@@ -1,3 +1,15 @@
+> **⚠️ SUPERSEDED**
+>
+> This document is preserved for historical reference only. Its framing (pricing as a WordPress plugin with its own MySQL tables) directly contradicts ratified Constitution Articles 1, 2, and 9.
+>
+> Current authoritative sources:
+> - **Architecture**: docs/module-map.md §5 (Pricing module, GroLabs-native)
+> - **Scope discussion**: docs/backlog.md → "Pricing parity with WooCommerce"
+>
+> The domain thinking captured below remains useful as input for the pricing-parity Discussion. Do not implement anything described here without first reconciling with the authoritative sources above.
+>
+> ---
+
 # Pricing Module Data Model
 
 ## Core Entities

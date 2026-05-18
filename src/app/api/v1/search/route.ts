@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "node:crypto";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { searchInstance } from "@/lib/search/meilisearch-client";
 import { pickMatchedVariation, type MatchesPosition } from "@/lib/search/variant-matcher";
@@ -222,11 +221,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return { document, matched_variation };
   });
 
+  // Surface Meilisearch's real analytics identifiers. The storefront reports
+  // click events against metadata.queryUid so Meilisearch can attribute them
+  // to this exact query — a locally-generated UUID would break that link.
+  const queryUid = raw.metadata?.queryUid ?? "";
   const response: SearchResponse = {
     hits,
     total_hits: raw.estimatedTotalHits,
     processing_time_ms: raw.processingTimeMs,
-    query_uid: crypto.randomUUID(),
+    query_uid: queryUid,
+    metadata: {
+      queryUid,
+      requestUid: raw.metadata?.requestUid ?? "",
+      indexUid: raw.metadata?.indexUid ?? "",
+    },
   };
 
   // Best-effort logging — never blocks the response.

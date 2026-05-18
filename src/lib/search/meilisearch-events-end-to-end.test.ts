@@ -120,8 +120,11 @@ test(
       });
 
       // 5. Three outcomes.
-      if (res.status === 204 || res.status === 200) {
+      if (res.status === 200 || res.status === 201 || res.status === 204) {
         // (a) SUCCESS — search-action tokens DO authorize /events.
+        // The live cluster returns 201 Created in practice (verified
+        // 2026-05-18); 200/204 are accepted defensively in case the
+        // endpoint's success status changes across MeiliSearch versions.
         assert.ok(true);
         return;
       }

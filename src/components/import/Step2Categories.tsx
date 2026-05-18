@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import type { Brand, Category } from "@/components/import/ImportWizard";
 import { ProductThumbnail } from "@/components/import/ProductThumbnail";
 import { useWizard } from "@/components/import/WizardContext";
-import { useAgentLog } from "@/components/shell/AgentLogContext";
+import { useAgentLog, useDrainServerActivity } from "@/components/shell/ActivityStreamContext";
 import { Combobox } from "@/components/ui/combobox";
 import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import { analyzeImportCategories } from "@/lib/actions/import";
@@ -24,6 +24,7 @@ export function Step2Categories({
   const t = useTranslations("import.wizard.step2");
   const { state, dispatch } = useWizard();
   const { append: logAgent } = useAgentLog();
+  const drainActivity = useDrainServerActivity();
   const [pending, startTransition] = useTransition();
 
   const file = state.parsedFile;
@@ -148,6 +149,7 @@ export function Step2Categories({
     );
     startTransition(async () => {
       const r = await analyzeImportCategories({ products, candidates });
+      drainActivity(r);
       dispatch({ type: "SET_ANALYZING_CATEGORIES", on: false });
       if ("error" in r) {
         toast.error(t("analysisError"), { description: r.error });

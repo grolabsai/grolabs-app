@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icon } from "@/components/ui/icon";
+import { useDrainServerActivity } from "@/components/shell/ActivityStreamContext";
 import {
   testMeilisearchConnection,
   saveStorefrontDomains,
@@ -44,6 +45,7 @@ export function SearchSettingsForm({
   const [isInit, startInit] = useTransition();
   const [isReindexing, startReindex] = useTransition();
   const [isRefreshingStatus, startRefreshStatus] = useTransition();
+  const drainActivity = useDrainServerActivity();
 
   function handleTest() {
     startTest(async () => {
@@ -117,6 +119,7 @@ export function SearchSettingsForm({
     if (!confirm(t("indexing.confirmReindex"))) return;
     startReindex(async () => {
       const result = await runFullBackfill(instanceId);
+      drainActivity(result);
       if (result.ok) {
         toast.success(t("toast.reindexDone"), {
           description: t("toast.reindexCounts", {

@@ -18,7 +18,7 @@ import {
   AxisCellEditor,
 } from "@/components/import/VariantCellEditor";
 import { useWizard } from "@/components/import/WizardContext";
-import { useAgentLog } from "@/components/shell/AgentLogContext";
+import { useAgentLog, useDrainServerActivity } from "@/components/shell/ActivityStreamContext";
 import { groupImportProducts } from "@/lib/actions/import";
 import { makeAgentMessage } from "@/lib/import/agent-message";
 import { colorForAttribute } from "@/lib/import/attribute-colors";
@@ -49,6 +49,7 @@ export function Step3Grouping({
   const t = useTranslations("import.wizard.step3");
   const { state, dispatch } = useWizard();
   const { append: logAgent } = useAgentLog();
+  const drainActivity = useDrainServerActivity();
   const [pending, startTransition] = useTransition();
   const [activeCategoryId, setActiveCategoryId] = useState<number | "all">("all");
   const [showUnaccounted, setShowUnaccounted] = useState(false);
@@ -209,6 +210,7 @@ export function Step3Grouping({
 
         const cat = categoryById.get(categoryId);
         const r = await groupImportProducts({ products, categoryId });
+        drainActivity(r);
         if ("error" in r) {
           toast.error(t("groupingError"), { description: r.error });
           logAgent(

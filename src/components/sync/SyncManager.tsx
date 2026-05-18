@@ -19,6 +19,7 @@ import {
   syncProductsToMeilisearch,
   syncProductsToWordPress,
 } from "@/lib/actions/sync";
+import { useDrainServerActivity } from "@/components/shell/ActivityStreamContext";
 import { ALGOLIA_FIELD_MAPPINGS } from "@/lib/sync/algolia-mapping";
 import { WOOCOMMERCE_FIELD_MAPPINGS } from "@/lib/sync/woocommerce-mapping";
 import type { Platform, SyncStatus } from "@/lib/sync/sync-status";
@@ -75,6 +76,7 @@ export function SyncManager({
 }: Props) {
   const t = useTranslations("sync");
   const [pending, startTransition] = useTransition();
+  const drainActivity = useDrainServerActivity();
   const [selected, setSelected] = useState<Record<number, boolean>>({});
   const [filter, setFilter] = useState<Filter>("all");
   const [showLog, setShowLog] = useState(false);
@@ -147,6 +149,7 @@ export function SyncManager({
             ? await syncProductsToMeilisearch(selectedIds)
             : await syncProductsToWordPress(selectedIds);
       setSyncingPlatform(null);
+      drainActivity(r);
       if ("error" in r) {
         toast.error(t("toast.syncError", { platform: prettyPlatform(platform) }), {
           description: r.error,

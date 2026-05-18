@@ -305,18 +305,20 @@
       }
     }
   },
-  "agentPanel": {
-    "title": "Assistant",
-    "noActivity": "No agent activity in this session.",
-    "hint": "Agent narrations will appear here while it works.",
-    "inputPlaceholder": "Ask the assistant something…",
-    "send": "Send",
+  "activityStream": {
+    "title": "Activity",
+    "empty": "No activity yet.",
     "clear": "Clear",
     "collapseTitle": "Collapse",
-    "copy": "Copy response",
-    "copyHint": "Copy the full response to clipboard",
-    "copied": "Response copied to clipboard.",
-    "copyFailed": "Couldn't copy to clipboard."
+    "copy": "Copy",
+    "copyHint": "Copy the full payload to clipboard",
+    "copied": "Payload copied to clipboard.",
+    "copyFailed": "Couldn't copy to clipboard.",
+    "actor": {
+      "user": "User",
+      "system": "System",
+      "agent": "Agent"
+    }
   },
   "catalog": {
     "categoryAttributes": {

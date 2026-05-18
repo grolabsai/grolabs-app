@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { ping, ensureIndex, getDocumentCount } from "@/lib/search/meilisearch-client";
 import { indexAllForInstance } from "@/lib/search/indexer";
+import { recordActivity, withActivity } from "@/lib/activity/server";
+import type { WithActivity } from "@/lib/activity/event";
 
 /**
  * Server actions for /configuration/search (Stage 0 admin panel).
@@ -193,27 +195,67 @@ export type RunBackfillResult =
   | { ok: true; indexed: number; failed: number }
   | { ok: false; error: string };
 
-export async function runFullBackfill(instanceId: number): Promise<RunBackfillResult> {
-  const sb = await createClient();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return { ok: false, error: "unauthorized" };
-  const { data: membership } = await sb
-    .from("instance_member")
-    .select("instance_id")
-    .eq("user_id", user.id)
-    .eq("instance_id", instanceId)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!membership) return { ok: false, error: "unauthorized" };
+export async function runFullBackfill(
+  instanceId: number,
+): Promise<WithActivity<RunBackfillResult>> {
+  return withActivity(async () => {
+    const sb = await createClient();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    if (!user) return { ok: false, error: "unauthorized" };
+    const { data: membership } = await sb
+      .from("instance_member")
+      .select("instance_id")
+      .eq("user_id", user.id)
+      .eq("instance_id", instanceId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!membership) return { ok: false, error: "unauthorized" };
 
-  try {
-    const result = await indexAllForInstance(instanceId, user.id);
-    revalidatePath("/configuration/search");
-    if (!result.ok) return { ok: false, error: result.error ?? "backfill failed" };
-    return { ok: true, indexed: result.indexed, failed: result.failed };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "unknown" };
-  }
+    recordActivity({
+      actor: "user",
+      type: "sync.meilisearch.started",
+      severity: "info",
+      title: "MeiliSearch full reindex started",
+      payload: { instanceId, platform: "meilisearch" },
+    });
+
+    try {
+      const result = await indexAllForInstance(instanceId, user.id);
+      revalidatePath("/configuration/search");
+      if (!result.ok) {
+        recordActivity({
+          actor: "system",
+          type: "sync.meilisearch.failed",
+          severity: "error",
+          title: `MeiliSearch reindex failed: ${result.error ?? "backfill failed"}`,
+          payload: { error: result.error ?? "backfill failed", instanceId },
+        });
+        return { ok: false, error: result.error ?? "backfill failed" };
+      }
+      recordActivity({
+        actor: "system",
+        type: "sync.meilisearch.completed",
+        severity: result.failed === 0 ? "success" : "warn",
+        title: `MeiliSearch reindex done — ${result.indexed} indexed, ${result.failed} failed`,
+        payload: { indexed: result.indexed, failed: result.failed, instanceId },
+      });
+      return { ok: true, indexed: result.indexed, failed: result.failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown";
+      recordActivity({
+        actor: "system",
+        type: "sync.meilisearch.failed",
+        severity: "error",
+        title: `MeiliSearch reindex failed: ${message}`,
+        payload: {
+          error: message,
+          stack: err instanceof Error ? err.stack : undefined,
+          instanceId,
+        },
+      });
+      return { ok: false, error: message };
+    }
+  });
 }

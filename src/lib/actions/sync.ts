@@ -24,6 +24,61 @@ import { indexProduct } from "@/lib/search/indexer";
 import type { Platform } from "@/lib/sync/sync-status";
 import { currentInstanceId } from "@/lib/instance";
 import { createClient } from "@/lib/supabase/server";
+import { recordActivity, withActivity } from "@/lib/activity/server";
+import type { WithActivity } from "@/lib/activity/event";
+
+// ─── Activity instrumentation ──────────────────────────────────────────────
+// Observability only: each public action wraps its (unchanged) body in
+// withActivity() and emits start/completed/failed. The impl functions and
+// their internal control flow are untouched.
+
+function emitSyncStarted(platform: Platform, productIds: number[]): void {
+  recordActivity({
+    actor: "user",
+    type: `sync.${platform}.started`,
+    severity: "info",
+    title: `Sync to ${prettyPlatform(platform)} started (${productIds.length} products)`,
+    payload: { productIds, platform },
+  });
+}
+
+function emitSyncResult(
+  platform: Platform,
+  productIds: number[],
+  result: SyncRunResult,
+): void {
+  if ("error" in result) {
+    recordActivity({
+      actor: "system",
+      type: `sync.${platform}.failed`,
+      severity: "error",
+      title: `Sync failed: ${result.error}`,
+      payload: { error: result.error, productIds, platform },
+    });
+    return;
+  }
+  recordActivity({
+    actor: "system",
+    type: `sync.${platform}.completed`,
+    severity: result.failedCount === 0 ? "success" : "warn",
+    title: `${result.succeededCount} products synced successfully${
+      result.failedCount > 0 ? ` (${result.failedCount} failed)` : ""
+    }`,
+    payload: {
+      successCount: result.succeededCount,
+      failureCount: result.failedCount,
+      productIds,
+      platform,
+      logId: result.logId,
+    },
+  });
+}
+
+function prettyPlatform(p: Platform): string {
+  if (p === "algolia") return "Algolia";
+  if (p === "meilisearch") return "MeiliSearch";
+  return "WooCommerce";
+}
 
 // ─── Result shape ──────────────────────────────────────────────────────────
 
@@ -122,6 +177,17 @@ async function upsertSyncStatuses(
  *   5. Update product_sync_status per product, write sync_log.
  */
 export async function syncProductsToAlgolia(
+  productIds: number[],
+): Promise<WithActivity<SyncRunResult>> {
+  return withActivity(async () => {
+    emitSyncStarted("algolia", productIds);
+    const result = await syncProductsToAlgoliaImpl(productIds);
+    emitSyncResult("algolia", productIds, result);
+    return result;
+  });
+}
+
+async function syncProductsToAlgoliaImpl(
   productIds: number[],
 ): Promise<SyncRunResult> {
   if (productIds.length === 0) return { error: "No products selected." };
@@ -297,7 +363,41 @@ async function loadWooClient(
  * Verify a WooCommerce connection and record the result. Used by the
  * "Test connection" button on /configuration/woocommerce.
  */
-export async function verifyWooCommerceConnection(): Promise<{
+export async function verifyWooCommerceConnection(): Promise<
+  WithActivity<{
+    ok: boolean;
+    status: number;
+    latencyMs: number;
+    message?: string;
+  }>
+> {
+  return withActivity(async () => {
+    recordActivity({
+      actor: "user",
+      type: "sync.woocommerce.verify.started",
+      severity: "info",
+      title: "WooCommerce connection test started",
+      payload: { platform: "woocommerce" },
+    });
+    const result = await verifyWooCommerceConnectionImpl();
+    recordActivity({
+      actor: "system",
+      type: result.ok
+        ? "sync.woocommerce.verify.completed"
+        : "sync.woocommerce.verify.failed",
+      severity: result.ok ? "success" : "error",
+      title: result.ok
+        ? `WooCommerce reachable (HTTP ${result.status}, ${result.latencyMs}ms)`
+        : `WooCommerce connection test failed${
+            result.message ? `: ${result.message}` : ""
+          }`,
+      payload: result,
+    });
+    return result;
+  });
+}
+
+async function verifyWooCommerceConnectionImpl(): Promise<{
   ok: boolean;
   status: number;
   latencyMs: number;
@@ -334,6 +434,17 @@ export async function verifyWooCommerceConnection(): Promise<{
  *   5. Update product_sync_status + sync_log per product.
  */
 export async function syncProductsToWordPress(
+  productIds: number[],
+): Promise<WithActivity<SyncRunResult>> {
+  return withActivity(async () => {
+    emitSyncStarted("woocommerce", productIds);
+    const result = await syncProductsToWordPressImpl(productIds);
+    emitSyncResult("woocommerce", productIds, result);
+    return result;
+  });
+}
+
+async function syncProductsToWordPressImpl(
   productIds: number[],
 ): Promise<SyncRunResult> {
   if (productIds.length === 0) return { error: "No products selected." };
@@ -616,6 +727,17 @@ export async function syncProductsToWordPress(
  */
 export async function syncProductsToMeilisearch(
   productIds: number[],
+): Promise<WithActivity<SyncRunResult>> {
+  return withActivity(async () => {
+    emitSyncStarted("meilisearch", productIds);
+    const result = await syncProductsToMeilisearchImpl(productIds);
+    emitSyncResult("meilisearch", productIds, result);
+    return result;
+  });
+}
+
+async function syncProductsToMeilisearchImpl(
+  productIds: number[],
 ): Promise<SyncRunResult> {
   if (productIds.length === 0) return { error: "No products selected." };
 
@@ -687,6 +809,43 @@ export async function syncProductsToMeilisearch(
  * function here so future hookup is mechanical.)
  */
 export async function removeProductsFromAlgolia(
+  variantSkus: string[],
+): Promise<WithActivity<SyncRunResult>> {
+  return withActivity(async () => {
+    recordActivity({
+      actor: "user",
+      type: "sync.algolia.delete.started",
+      severity: "info",
+      title: `Remove from Algolia started (${variantSkus.length} SKUs)`,
+      payload: { variantSkus, platform: "algolia" },
+    });
+    const result = await removeProductsFromAlgoliaImpl(variantSkus);
+    if ("error" in result) {
+      recordActivity({
+        actor: "system",
+        type: "sync.algolia.delete.failed",
+        severity: "error",
+        title: `Algolia delete failed: ${result.error}`,
+        payload: { error: result.error, variantSkus },
+      });
+    } else {
+      recordActivity({
+        actor: "system",
+        type: "sync.algolia.delete.completed",
+        severity: result.failedCount === 0 ? "success" : "warn",
+        title: `${result.succeededCount} objects removed from Algolia`,
+        payload: {
+          successCount: result.succeededCount,
+          failureCount: result.failedCount,
+          variantSkus,
+        },
+      });
+    }
+    return result;
+  });
+}
+
+async function removeProductsFromAlgoliaImpl(
   variantSkus: string[],
 ): Promise<SyncRunResult> {
   if (variantSkus.length === 0) return { error: "No SKUs supplied." };

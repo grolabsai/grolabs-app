@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { Upload, FileText } from "lucide-react";
 
 import { useWizard } from "@/components/import/WizardContext";
-import { useAgentLog } from "@/components/shell/AgentLogContext";
+import { useAgentLog } from "@/components/shell/ActivityStreamContext";
 import { makeAgentMessage } from "@/lib/import/agent-message";
 import { parseSpreadsheetFile } from "@/lib/import/xlsx";
 

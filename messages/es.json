@@ -305,18 +305,20 @@
       }
     }
   },
-  "agentPanel": {
-    "title": "Asistente",
-    "noActivity": "Sin actividad de agente en esta sesión.",
-    "hint": "Aquí aparecerán las narraciones del agente mientras trabaja.",
-    "inputPlaceholder": "Pídele al asistente algo…",
-    "send": "Enviar",
+  "activityStream": {
+    "title": "Actividad",
+    "empty": "Sin actividad todavía.",
     "clear": "Limpiar",
     "collapseTitle": "Colapsar",
-    "copy": "Copiar respuesta",
-    "copyHint": "Copiar la respuesta completa al portapapeles",
-    "copied": "Respuesta copiada al portapapeles.",
-    "copyFailed": "No se pudo copiar al portapapeles."
+    "copy": "Copiar",
+    "copyHint": "Copiar el payload completo al portapapeles",
+    "copied": "Payload copiado al portapapeles.",
+    "copyFailed": "No se pudo copiar al portapapeles.",
+    "actor": {
+      "user": "Usuario",
+      "system": "Sistema",
+      "agent": "Agente"
+    }
   },
   "catalog": {
     "categoryAttributes": {

@@ -7,6 +7,8 @@ import {
   type CreateProductFullInput,
 } from "@/lib/actions/product";
 import { currentInstanceId } from "@/lib/instance";
+import { withActivity } from "@/lib/activity/server";
+import type { WithActivity } from "@/lib/activity/event";
 import {
   analyzeCategories as glpimAnalyzeCategories,
   groupProducts as glpimGroupProducts,
@@ -37,20 +39,24 @@ export async function analyzeImportCategories(input: {
     parsing_hint?: string | null;
   }>;
   parsingHint?: string;
-}): Promise<{ ok: true; data: AnalyzeCategoriesResponse } | { error: string }> {
-  const instanceId = await currentInstanceId();
-  if (instanceId === null) return { error: "No instance" };
-  try {
-    const data = await glpimAnalyzeCategories({
-      products: input.products,
-      instanceId,
-      candidates: input.candidates,
-      parsingHint: input.parsingHint,
-    });
-    return { ok: true, data };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
+}): Promise<
+  WithActivity<{ ok: true; data: AnalyzeCategoriesResponse } | { error: string }>
+> {
+  return withActivity(async () => {
+    const instanceId = await currentInstanceId();
+    if (instanceId === null) return { error: "No instance" };
+    try {
+      const data = await glpimAnalyzeCategories({
+        products: input.products,
+        instanceId,
+        candidates: input.candidates,
+        parsingHint: input.parsingHint,
+      });
+      return { ok: true as const, data };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) };
+    }
+  });
 }
 
 /**
@@ -61,19 +67,23 @@ export async function analyzeImportCategories(input: {
 export async function groupImportProducts(input: {
   products: ProductIn[];
   categoryId: number;
-}): Promise<{ ok: true; data: GroupProductsResponse } | { error: string }> {
-  const instanceId = await currentInstanceId();
-  if (instanceId === null) return { error: "No instance" };
-  try {
-    const data = await glpimGroupProducts({
-      products: input.products,
-      instanceId,
-      categoryId: input.categoryId,
-    });
-    return { ok: true, data };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
+}): Promise<
+  WithActivity<{ ok: true; data: GroupProductsResponse } | { error: string }>
+> {
+  return withActivity(async () => {
+    const instanceId = await currentInstanceId();
+    if (instanceId === null) return { error: "No instance" };
+    try {
+      const data = await glpimGroupProducts({
+        products: input.products,
+        instanceId,
+        categoryId: input.categoryId,
+      });
+      return { ok: true as const, data };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) };
+    }
+  });
 }
 
 /**

@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
-import { AgentPanel } from "@/components/shell/AgentPanel";
-import { AgentLogProvider } from "@/components/shell/AgentLogContext";
+import { ActivityStream } from "@/components/shell/ActivityStream";
+import { ActivityStreamProvider } from "@/components/shell/ActivityStreamContext";
 
 /**
  * Protected app layout. Every route under `(app)/` inherits this:
@@ -59,7 +59,7 @@ export default async function AppLayout({
   const initials = (user.email ?? "??").slice(0, 2).toUpperCase();
 
   return (
-    <AgentLogProvider>
+    <ActivityStreamProvider>
       <div className="s-app">
         <Sidebar instanceName={instanceName} />
         <main className="s-main">
@@ -71,10 +71,10 @@ export default async function AppLayout({
           />
           <div className="s-shell-body">
             <div className="s-shell-content">{children}</div>
-            <AgentPanel />
+            <ActivityStream />
           </div>
         </main>
       </div>
-    </AgentLogProvider>
+    </ActivityStreamProvider>
   );
 }

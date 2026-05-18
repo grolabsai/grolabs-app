@@ -8,6 +8,8 @@
  * Contract is documented at: glpim/docs/integration.md
  */
 
+import { recordActivity } from "@/lib/activity/server";
+
 const GLPIM_API_URL = process.env.GLPIM_API_URL;
 
 function ensureBaseUrl(): string {
@@ -75,14 +77,40 @@ export async function analyzeCategories(input: {
   }
   if (input.parsingHint) body.parsing_hint = input.parsingHint;
 
+  recordActivity({
+    actor: "agent",
+    type: "agent.glpim.analyzeCategories.called",
+    severity: "info",
+    title: "GLPIM: analyzeCategories called",
+    payload: { endpoint: url, requestBody: body },
+  });
+  const startedAt = Date.now();
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) throw await glpimError(res, "analyze-categories");
-  return (await res.json()) as AnalyzeCategoriesResponse;
+  if (!res.ok) {
+    const err = await glpimError(res, "analyze-categories");
+    recordActivity({
+      actor: "agent",
+      type: "agent.glpim.analyzeCategories.failed",
+      severity: "error",
+      title: "GLPIM call failed",
+      payload: { error: err.message, endpoint: url, requestBody: body },
+    });
+    throw err;
+  }
+  const json = (await res.json()) as AnalyzeCategoriesResponse;
+  recordActivity({
+    actor: "agent",
+    type: "agent.glpim.analyzeCategories.responded",
+    severity: "success",
+    title: `GLPIM responded (${Date.now() - startedAt}ms)`,
+    payload: { responseBody: json, durationMs: Date.now() - startedAt },
+  });
+  return json;
 }
 
 // ─── /agents/group-products ────────────────────────────────────────────────
@@ -171,14 +199,40 @@ export async function groupProducts(input: {
   if (input.categoryId !== undefined) body.category_id = input.categoryId;
   if (input.vocabulary !== undefined) body.vocabulary = input.vocabulary;
 
+  recordActivity({
+    actor: "agent",
+    type: "agent.glpim.groupProducts.called",
+    severity: "info",
+    title: "GLPIM: groupProducts called",
+    payload: { endpoint: url, requestBody: body },
+  });
+  const startedAt = Date.now();
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) throw await glpimError(res, "group-products");
-  return (await res.json()) as GroupProductsResponse;
+  if (!res.ok) {
+    const err = await glpimError(res, "group-products");
+    recordActivity({
+      actor: "agent",
+      type: "agent.glpim.groupProducts.failed",
+      severity: "error",
+      title: "GLPIM call failed",
+      payload: { error: err.message, endpoint: url, requestBody: body },
+    });
+    throw err;
+  }
+  const json = (await res.json()) as GroupProductsResponse;
+  recordActivity({
+    actor: "agent",
+    type: "agent.glpim.groupProducts.responded",
+    severity: "success",
+    title: `GLPIM responded (${Date.now() - startedAt}ms)`,
+    payload: { responseBody: json, durationMs: Date.now() - startedAt },
+  });
+  return json;
 }
 
 // ─── Internals ─────────────────────────────────────────────────────────────

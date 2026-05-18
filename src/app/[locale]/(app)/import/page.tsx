@@ -19,13 +19,11 @@ import { FilePlus, Sheet, Globe } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 type ImportJob = {
-  import_job_id: number;
+  job_id: number;
   source_type: string;
-  source_label: string | null;
+  filename: string | null;
   status: string;
-  total_rows: number | null;
-  rows_promoted: number | null;
-  rows_rejected: number | null;
+  row_count: number | null;
   created_at: string;
   completed_at: string | null;
 };
@@ -49,7 +47,7 @@ export default async function ImportPage() {
   const { data: jobs } = await supabase
     .from("import_job")
     .select(
-      "import_job_id, source_type, source_label, status, total_rows, rows_promoted, rows_rejected, created_at, completed_at",
+      "job_id, source_type, filename, status, row_count, created_at, completed_at",
     )
     .eq("instance_id", instanceId)
     .order("created_at", { ascending: false })
@@ -164,8 +162,6 @@ export default async function ImportPage() {
                   <th style={{ paddingLeft: 20 }}>Fuente</th>
                   <th>Tipo</th>
                   <th className="text-center">Productos</th>
-                  <th className="text-center">Promovidos</th>
-                  <th className="text-center">Rechazados</th>
                   <th>Estado</th>
                   <th>Fecha</th>
                 </tr>
@@ -191,9 +187,9 @@ export default async function ImportPage() {
                   };
 
                   return (
-                    <tr key={job.import_job_id}>
+                    <tr key={job.job_id}>
                       <td style={{ paddingLeft: 20, fontSize: 13, fontWeight: 500 }}>
-                        {job.source_label ?? "—"}
+                        {job.filename ?? "—"}
                       </td>
                       <td>
                         <span className="s-tag s-tag-accent">
@@ -201,25 +197,7 @@ export default async function ImportPage() {
                         </span>
                       </td>
                       <td className="text-center tabular" style={{ fontSize: 12 }}>
-                        {job.total_rows ?? "—"}
-                      </td>
-                      <td
-                        className="text-center tabular"
-                        style={{ fontSize: 12, color: "var(--s-success)" }}
-                      >
-                        {job.rows_promoted ?? "—"}
-                      </td>
-                      <td
-                        className="text-center tabular"
-                        style={{
-                          fontSize: 12,
-                          color:
-                            (job.rows_rejected ?? 0) > 0
-                              ? "var(--s-danger)"
-                              : "var(--s-text-muted)",
-                        }}
-                      >
-                        {job.rows_rejected ?? "—"}
+                        {job.row_count ?? "—"}
                       </td>
                       <td>
                         <div className="s-dot-row">

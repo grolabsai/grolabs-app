@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { deriveSlug } from "@/lib/instanceSlug";
+import { ensureIndex } from "@/lib/search/meilisearch-client";
 
 /**
  * Server actions for multi-instance membership management.
@@ -131,9 +132,78 @@ export async function createInstance(name: string): Promise<CreateResult> {
     suffix += 1;
   }
 
+  // Resolve the tenant this instance will belong to. instance.tenant_id is
+  // NOT NULL (20260513000001) and instance_member inserts require an active
+  // tenant_member row for (tenant, user) (trigger from 20260514000001).
+  //
+  // Policy: a new instance joins the user's existing tenant. If the user has
+  // no tenant_member yet, create a customer tenant and make them its owner.
+  const { data: existingMemberships, error: tmLookupErr } = await admin
+    .from("tenant_member")
+    .select("tenant_id, role")
+    .eq("user_id", user.id)
+    .eq("is_active", true);
+  if (tmLookupErr) {
+    return { ok: false, error: "save_failed", message: tmLookupErr.message };
+  }
+
+  let tenantId: number;
+  const ownerMembership = (existingMemberships ?? []).find(
+    (m) => m.role === "owner",
+  );
+  const anyMembership = (existingMemberships ?? [])[0];
+  const reuse = ownerMembership ?? anyMembership;
+
+  if (reuse) {
+    tenantId = reuse.tenant_id as number;
+  } else {
+    // No tenant yet — create one for this user and make them its owner.
+    const tenantName = user.email ? user.email.split("@")[0] : trimmed;
+    const tenantBaseSlug = deriveSlug(tenantName) || deriveSlug(trimmed) || "tenant";
+
+    const { data: tenantSlugRows, error: tenantSlugErr } = await admin
+      .from("tenant")
+      .select("slug")
+      .like("slug", `${tenantBaseSlug}%`);
+    if (tenantSlugErr) {
+      return { ok: false, error: "save_failed", message: tenantSlugErr.message };
+    }
+    const tenantTaken = new Set((tenantSlugRows ?? []).map((r) => r.slug));
+    let tenantSlug = tenantBaseSlug;
+    let tenantSuffix = 2;
+    while (tenantTaken.has(tenantSlug)) {
+      tenantSlug = `${tenantBaseSlug}-${tenantSuffix}`;
+      tenantSuffix += 1;
+    }
+
+    const { data: newTenant, error: tenantInsertErr } = await admin
+      .from("tenant")
+      .insert({ name: tenantName, slug: tenantSlug, kind: "customer" })
+      .select("tenant_id")
+      .single();
+    if (tenantInsertErr || !newTenant) {
+      return {
+        ok: false,
+        error: "save_failed",
+        message: tenantInsertErr?.message ?? "tenant insert returned no row",
+      };
+    }
+    tenantId = newTenant.tenant_id as number;
+
+    const { error: tmInsertErr } = await admin.from("tenant_member").insert({
+      tenant_id: tenantId,
+      user_id: user.id,
+      role: "owner",
+      is_active: true,
+    });
+    if (tmInsertErr) {
+      return { ok: false, error: "save_failed", message: tmInsertErr.message };
+    }
+  }
+
   const { data: inserted, error: insertErr } = await admin
     .from("instance")
-    .insert({ name: trimmed, slug, kind: "customer" })
+    .insert({ name: trimmed, slug, kind: "customer", tenant_id: tenantId })
     .select("instance_id")
     .single();
   if (insertErr || !inserted) {
@@ -164,6 +234,18 @@ export async function createInstance(name: string): Promise<CreateResult> {
   });
   if (memberErr) {
     return { ok: false, error: "save_failed", message: memberErr.message };
+  }
+
+  // Eagerly provision the MeiliSearch index so search works immediately for
+  // test instances. Best-effort: a MeiliSearch outage must not fail instance
+  // creation — the index is lazily (re)created on first product sync anyway.
+  try {
+    await ensureIndex(newInstanceId);
+  } catch (err) {
+    console.warn(
+      `[createInstance] ensureIndex(${newInstanceId}) failed; index will be created lazily on first sync:`,
+      err,
+    );
   }
 
   revalidatePath("/", "layout");

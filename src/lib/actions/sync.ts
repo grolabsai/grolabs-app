@@ -20,6 +20,8 @@ import {
 } from "@/lib/sync/woocommerce-client";
 import { mapProductToWooCommerce } from "@/lib/sync/woocommerce-mapping";
 import { syncCategoryTreeToWoocommerce } from "@/lib/sync/woocommerce-categories";
+import { indexProduct } from "@/lib/search/indexer";
+import type { Platform } from "@/lib/sync/sync-status";
 import { currentInstanceId } from "@/lib/instance";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,7 +30,7 @@ import { createClient } from "@/lib/supabase/server";
 export type SyncRunResult =
   | {
       ok: true;
-      platform: "algolia" | "woocommerce";
+      platform: Platform;
       productsCount: number;
       succeededCount: number;
       failedCount: number;
@@ -41,7 +43,7 @@ export type SyncRunResult =
 async function startSyncLog(
   supabase: Awaited<ReturnType<typeof createClient>>,
   instanceId: number,
-  platform: "algolia" | "woocommerce",
+  platform: Platform,
   productsCount: number,
 ): Promise<number | null> {
   const { data, error } = await supabase
@@ -593,6 +595,83 @@ export async function syncProductsToWordPress(
   return {
     ok: true,
     platform: "woocommerce",
+    productsCount: productIds.length,
+    succeededCount,
+    failedCount,
+    logId: logId ?? 0,
+  };
+}
+
+// ─── Meilisearch push ──────────────────────────────────────────────────────
+
+/**
+ * Push the selected products to the instance's Meilisearch index.
+ *
+ * Mirrors syncProductsToAlgolia in shape, but delegates the actual
+ * document build + upsert to the existing indexer (`indexProduct`), which
+ * already records per-product results into product_sync_status with
+ * platform='meilisearch'. This action only opens/closes the sync_log row
+ * and aggregates the result. It does NOT replace the automatic indexing
+ * that runs on product save — this is an additional manual trigger.
+ */
+export async function syncProductsToMeilisearch(
+  productIds: number[],
+): Promise<SyncRunResult> {
+  if (productIds.length === 0) return { error: "No products selected." };
+
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { error: "No instance" };
+
+  const supabase = await createClient();
+
+  const logId = await startSyncLog(
+    supabase,
+    instanceId,
+    "meilisearch",
+    productIds.length,
+  );
+
+  const productResults: Array<{ productId: number; success: boolean; error?: string | null }> = [];
+  for (const productId of productIds) {
+    try {
+      const r = await indexProduct(instanceId, productId);
+      productResults.push({
+        productId,
+        success: r.ok,
+        error: r.ok ? null : r.error ?? "Unknown error",
+      });
+    } catch (err) {
+      productResults.push({
+        productId,
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const succeededCount = productResults.filter((r) => r.success).length;
+  const failedCount = productResults.filter((r) => !r.success).length;
+  const overallStatus =
+    failedCount === 0 ? "success" : succeededCount === 0 ? "error" : "partial";
+
+  if (logId) {
+    const firstError = productResults.find((r) => !r.success)?.error ?? null;
+    await endSyncLog(
+      supabase,
+      logId,
+      overallStatus,
+      succeededCount,
+      failedCount,
+      firstError,
+    );
+  }
+
+  revalidatePath("/sync");
+  revalidatePath("/catalog/products");
+
+  return {
+    ok: true,
+    platform: "meilisearch",
     productsCount: productIds.length,
     succeededCount,
     failedCount,

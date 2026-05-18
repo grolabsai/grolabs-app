@@ -1196,7 +1196,9 @@
       "algoliaSynced": "Algolia: {n} OK",
       "algoliaPending": "Algolia: {n} pendientes",
       "woocommerceSynced": "Tienda: {n} OK",
-      "woocommercePending": "Tienda: {n} pendientes"
+      "woocommercePending": "Tienda: {n} pendientes",
+      "meilisearchSynced": "MeiliSearch: {n} OK",
+      "meilisearchPending": "MeiliSearch: {n} pendientes"
     },
     "notConfigured": {
       "algolia": "Algolia no está configurado para esta instancia.",
@@ -1208,12 +1210,14 @@
       "all": "Todos ({n})",
       "algoliaPending": "Algolia pendiente",
       "woocommercePending": "Tienda pendiente",
+      "meilisearchPending": "MeiliSearch pendiente",
       "anyPending": "Cualquier pendiente"
     },
     "bulk": {
       "selected": "{n, plural, one {# producto seleccionado} other {# productos seleccionados}}",
       "syncAlgolia": "Sincronizar con Algolia",
       "syncWooCommerce": "Sincronizar con la tienda",
+      "syncMeilisearch": "Sincronizar con MeiliSearch",
       "clear": "Cancelar"
     },
     "col": {

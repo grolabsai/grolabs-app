@@ -81,7 +81,22 @@ export const DEFAULT_INDEX_SETTINGS = {
 };
 
 const TENANT_TOKEN_PARENT_KEY_NAME = "scout-tenant-token-parent";
+const EVENTS_TOKEN_PARENT_KEY_NAME = "scout-events-token-parent";
 const DEFAULT_TOKEN_TTL_SECONDS = 15 * 60;
+
+/**
+ * Meilisearch key action that authorises the analytics `POST /events`
+ * endpoint. Meilisearch tenant tokens only carry `searchRules` and inherit
+ * their permitted actions from the parent key they are signed with — a tenant
+ * token cannot itself be scoped to events. So the events capability has to
+ * live on a dedicated parent key.
+ *
+ * `KeyCreation.actions` is typed as `string[]` in the SDK (no enum), so this
+ * constant is the single place the action name is asserted. Confirm against
+ * the running Meilisearch cluster's key-actions reference before relying on
+ * event ingestion in production.
+ */
+const EVENTS_KEY_ACTION = "events.add";
 
 // ── Singleton client ──────────────────────────────────────────────────────────
 
@@ -264,6 +279,19 @@ export type RawSearchResult = {
   estimatedTotalHits: number;
   processingTimeMs: number;
   query: string;
+  /**
+   * Present only when Meilisearch echoes its analytics metadata back (we send
+   * the `Meili-Include-Metadata: true` request header). `queryUid` is the
+   * identifier the storefront must report click events against so Meilisearch
+   * can attribute them to this exact query. The SDK's SearchResponse type does
+   * not model this experimental field yet, so it is read defensively.
+   */
+  metadata?: {
+    queryUid?: string;
+    requestUid?: string;
+    indexUid?: string;
+    primaryKey?: string;
+  };
 };
 
 export type SearchOptions = {
@@ -287,18 +315,33 @@ export async function searchInstance(
   const client = getClient();
   const { query, limit, offset, filter, sort } = opts;
   try {
-    const res = await client.index(indexUidFor(instanceId)).search(query, {
-      limit: limit ?? 20,
-      offset: offset ?? 0,
-      filter,
-      sort,
-      showMatchesPosition: true,
+    const res = await client.index(indexUidFor(instanceId)).search(
+      query,
+      {
+        limit: limit ?? 20,
+        offset: offset ?? 0,
+        filter,
+        sort,
+        showMatchesPosition: true,
+      },
+      // Opt into Meilisearch's analytics metadata so the response carries the
+      // real queryUid (needed to attribute storefront click events). This is
+      // an experimental Meilisearch feature surfaced via a request header.
+      { headers: { "Meili-Include-Metadata": "true" } }
+    );
+    // The SDK's SearchResponse type does not model the experimental metadata
+    // block; read it defensively under both the documented and the
+    // underscore-prefixed key.
+    const meta = (res as unknown as {
+      metadata?: RawSearchResult["metadata"];
+      _metadata?: RawSearchResult["metadata"];
     });
     return {
       hits: res.hits as RawSearchResult["hits"],
       estimatedTotalHits: res.estimatedTotalHits ?? res.hits.length,
       processingTimeMs: res.processingTimeMs ?? 0,
       query: res.query ?? query,
+      metadata: meta.metadata ?? meta._metadata,
     };
   } catch (err) {
     throw new MeilisearchOpError(`searchInstance(${instanceId}) failed`, err);
@@ -325,38 +368,57 @@ export async function getTaskStatus(taskUid: number): Promise<{
 
 // ── Tenant tokens ─────────────────────────────────────────────────────────────
 
-let parentKeyCache: { uid: string; key: string } | null = null;
+const parentKeyCache = new Map<string, { uid: string; key: string }>();
 
 /**
- * Find or create the search-scoped API key GroLabs uses as the parent for all
- * tenant tokens. Identified by name; results cached in module scope.
+ * Find or create a named parent API key GroLabs uses to sign tenant tokens.
+ * Identified by name; results cached in module scope per name.
  *
- * Tenant tokens inherit the parent's permissions, so this key is intentionally
- * scoped to `actions: ['search']` only — never admin-level. Cleaner blast
- * radius than minting tokens with the master key directly.
+ * Tenant tokens inherit the parent's permitted actions, so each parent is
+ * scoped to the minimum action set it needs — never admin-level. Cleaner
+ * blast radius than minting tokens with the master key directly.
  */
-async function getOrCreateParentSearchKey(): Promise<{ uid: string; key: string }> {
-  if (parentKeyCache) return parentKeyCache;
+async function getOrCreateParentKey(
+  name: string,
+  actions: string[],
+  description: string
+): Promise<{ uid: string; key: string }> {
+  const cached = parentKeyCache.get(name);
+  if (cached) return cached;
   const client = getClient();
   try {
     const { results } = await client.getKeys({ limit: 100 });
-    const existing = results.find((k) => k.name === TENANT_TOKEN_PARENT_KEY_NAME);
+    const existing = results.find((k) => k.name === name);
     if (existing) {
-      parentKeyCache = { uid: existing.uid, key: existing.key };
-      return parentKeyCache;
+      const entry = { uid: existing.uid, key: existing.key };
+      parentKeyCache.set(name, entry);
+      return entry;
     }
     const created = await client.createKey({
-      name: TENANT_TOKEN_PARENT_KEY_NAME,
-      description: "Parent key for GroLabs tenant tokens. Search-only.",
-      actions: ["search"],
+      name,
+      description,
+      actions,
       indexes: ["*"],
       expiresAt: null,
     });
-    parentKeyCache = { uid: created.uid, key: created.key };
-    return parentKeyCache;
+    const entry = { uid: created.uid, key: created.key };
+    parentKeyCache.set(name, entry);
+    return entry;
   } catch (err) {
-    throw new MeilisearchOpError("getOrCreateParentSearchKey failed", err);
+    throw new MeilisearchOpError(`getOrCreateParentKey(${name}) failed`, err);
   }
+}
+
+/**
+ * The search-scoped parent key (`actions: ['search']`). Backwards-compatible
+ * wrapper retained so existing callers do not change.
+ */
+async function getOrCreateParentSearchKey(): Promise<{ uid: string; key: string }> {
+  return getOrCreateParentKey(
+    TENANT_TOKEN_PARENT_KEY_NAME,
+    ["search"],
+    "Parent key for GroLabs tenant tokens. Search-only."
+  );
 }
 
 /**
@@ -388,6 +450,42 @@ export async function generateInstanceTenantToken(
   }
 }
 
+/**
+ * Mint a short-lived token the storefront uses to submit analytics events
+ * (currently: search-result clicks) for one instance's index.
+ *
+ * Signed with the events-scoped parent key (`actions: [events.add]`) because
+ * Meilisearch tenant tokens inherit actions from their parent — `searchRules`
+ * alone cannot authorise the `/events` endpoint. The same per-index
+ * `instance_id = N` search rule is still applied as a defense-in-depth
+ * tenant boundary. Default TTL 15 minutes, same as search tokens.
+ */
+export async function generateInstanceEventsToken(
+  instanceId: number,
+  ttlSeconds: number = DEFAULT_TOKEN_TTL_SECONDS
+): Promise<{ token: string; expiresAt: number; indexUid: string }> {
+  const parent = await getOrCreateParentKey(
+    EVENTS_TOKEN_PARENT_KEY_NAME,
+    [EVENTS_KEY_ACTION],
+    "Parent key for GroLabs storefront event-submission tokens."
+  );
+  const indexUid = indexUidFor(instanceId);
+  const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
+  try {
+    const token = await generateTenantToken({
+      apiKey: parent.key,
+      apiKeyUid: parent.uid,
+      searchRules: {
+        [indexUid]: { filter: `instance_id = ${instanceId}` },
+      },
+      expiresAt: new Date(expiresAt * 1000),
+    });
+    return { token, expiresAt, indexUid };
+  } catch (err) {
+    throw new MeilisearchOpError(`generateInstanceEventsToken(${instanceId}) failed`, err);
+  }
+}
+
 // ── Test seam ─────────────────────────────────────────────────────────────────
 
 /**
@@ -396,5 +494,5 @@ export async function generateInstanceTenantToken(
  */
 export function _resetClientCache(): void {
   cached = null;
-  parentKeyCache = null;
+  parentKeyCache.clear();
 }

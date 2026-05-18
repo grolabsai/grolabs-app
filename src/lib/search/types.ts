@@ -146,5 +146,21 @@ export type SearchResponse = {
   hits: SearchHit[];
   total_hits: number;
   processing_time_ms: number;
+  /**
+   * Meilisearch's analytics query identifier. Empty string when Meilisearch
+   * did not return metadata (e.g. analytics disabled on the cluster). The
+   * storefront reports click events against `metadata.queryUid`; this
+   * top-level field is kept as a backwards-compatible alias.
+   */
   query_uid: string;
+  /**
+   * Meilisearch analytics metadata, surfaced so the storefront can attribute
+   * click events to the exact query. `requestUid` and `indexUid` are included
+   * for future event/relevancy work and are cheap to pass through.
+   */
+  metadata: {
+    queryUid: string;
+    requestUid: string;
+    indexUid: string;
+  };
 };

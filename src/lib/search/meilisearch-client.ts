@@ -96,7 +96,12 @@ const DEFAULT_TOKEN_TTL_SECONDS = 15 * 60;
  * the running Meilisearch cluster's key-actions reference before relying on
  * event ingestion in production.
  */
-const EVENTS_KEY_ACTION = "events.add";
+// Per validation against live MeiliSearch cluster (see
+// src/lib/search/meilisearch-events-action-validation.test.ts),
+// the "events.add" action is rejected with invalid_api_key_actions.
+// MeiliSearch docs confirm event submission works with the "search"
+// action, which is what tenant tokens for search already use.
+const EVENTS_KEY_ACTION = "search";
 
 // ── Singleton client ──────────────────────────────────────────────────────────
 
@@ -454,7 +459,7 @@ export async function generateInstanceTenantToken(
  * Mint a short-lived token the storefront uses to submit analytics events
  * (currently: search-result clicks) for one instance's index.
  *
- * Signed with the events-scoped parent key (`actions: [events.add]`) because
+ * Signed with the events-scoped parent key (`actions: [search]`) because
  * Meilisearch tenant tokens inherit actions from their parent — `searchRules`
  * alone cannot authorise the `/events` endpoint. The same per-index
  * `instance_id = N` search rule is still applied as a defense-in-depth

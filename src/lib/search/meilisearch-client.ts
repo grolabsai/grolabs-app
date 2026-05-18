@@ -96,11 +96,10 @@ const DEFAULT_TOKEN_TTL_SECONDS = 15 * 60;
  * the running Meilisearch cluster's key-actions reference before relying on
  * event ingestion in production.
  */
-// Per validation against live MeiliSearch cluster (see
-// src/lib/search/meilisearch-events-action-validation.test.ts),
-// the "events.add" action is rejected with invalid_api_key_actions.
-// MeiliSearch docs confirm event submission works with the "search"
-// action, which is what tenant tokens for search already use.
+// Per validation against the live MeiliSearch cluster, the "events.add"
+// action is rejected with invalid_api_key_actions. MeiliSearch event
+// submission works with the "search" action (the same one used for
+// tenant tokens that authorize the /events endpoint).
 const EVENTS_KEY_ACTION = "search";
 
 // ── Singleton client ──────────────────────────────────────────────────────────

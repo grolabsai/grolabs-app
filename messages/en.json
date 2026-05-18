@@ -1196,7 +1196,9 @@
       "algoliaSynced": "Algolia: {n} OK",
       "algoliaPending": "Algolia: {n} pending",
       "woocommerceSynced": "Store: {n} OK",
-      "woocommercePending": "Store: {n} pending"
+      "woocommercePending": "Store: {n} pending",
+      "meilisearchSynced": "MeiliSearch: {n} OK",
+      "meilisearchPending": "MeiliSearch: {n} pending"
     },
     "notConfigured": {
       "algolia": "Algolia is not configured for this instance.",
@@ -1208,12 +1210,14 @@
       "all": "All ({n})",
       "algoliaPending": "Algolia pending",
       "woocommercePending": "Store pending",
+      "meilisearchPending": "MeiliSearch pending",
       "anyPending": "Any pending"
     },
     "bulk": {
       "selected": "{n, plural, one {# product selected} other {# products selected}}",
       "syncAlgolia": "Sync to Algolia",
       "syncWooCommerce": "Sync to store",
+      "syncMeilisearch": "Sync to MeiliSearch",
       "clear": "Cancel"
     },
     "col": {

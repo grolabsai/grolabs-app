@@ -16,6 +16,7 @@ import {
 import { Link } from "@/i18n/routing";
 import {
   syncProductsToAlgolia,
+  syncProductsToMeilisearch,
   syncProductsToWordPress,
 } from "@/lib/actions/sync";
 import { ALGOLIA_FIELD_MAPPINGS } from "@/lib/sync/algolia-mapping";
@@ -35,6 +36,7 @@ export type ProductRow = {
   variantSkuCount: number;
   algolia: { status: SyncStatus; lastSyncedAt: string | null };
   woocommerce: { status: SyncStatus; lastSyncedAt: string | null };
+  meilisearch: { status: SyncStatus; lastSyncedAt: string | null };
 };
 
 export type SyncLogEntry = {
@@ -49,7 +51,12 @@ export type SyncLogEntry = {
   errorMessage: string | null;
 };
 
-type Filter = "all" | "algolia-pending" | "wordpress-pending" | "any-pending";
+type Filter =
+  | "all"
+  | "algolia-pending"
+  | "wordpress-pending"
+  | "meilisearch-pending"
+  | "any-pending";
 
 type Props = {
   rows: ProductRow[];
@@ -79,12 +86,15 @@ export function SyncManager({
     const c = {
       algolia: { synced: 0, pending: 0 },
       woocommerce: { synced: 0, pending: 0 },
+      meilisearch: { synced: 0, pending: 0 },
     };
     for (const r of rows) {
       if (r.algolia.status === "synced") c.algolia.synced++;
       else c.algolia.pending++;
       if (r.woocommerce.status === "synced") c.woocommerce.synced++;
       else c.woocommerce.pending++;
+      if (r.meilisearch.status === "synced") c.meilisearch.synced++;
+      else c.meilisearch.pending++;
     }
     return c;
   }, [rows]);
@@ -94,8 +104,15 @@ export function SyncManager({
     if (filter === "all") return rows;
     if (filter === "algolia-pending") return rows.filter((r) => r.algolia.status !== "synced");
     if (filter === "wordpress-pending") return rows.filter((r) => r.woocommerce.status !== "synced");
+    if (filter === "meilisearch-pending")
+      return rows.filter((r) => r.meilisearch.status !== "synced");
     if (filter === "any-pending")
-      return rows.filter((r) => r.algolia.status !== "synced" || r.woocommerce.status !== "synced");
+      return rows.filter(
+        (r) =>
+          r.algolia.status !== "synced" ||
+          r.woocommerce.status !== "synced" ||
+          r.meilisearch.status !== "synced",
+      );
     return rows;
   }, [rows, filter]);
 
@@ -126,7 +143,9 @@ export function SyncManager({
       const r =
         platform === "algolia"
           ? await syncProductsToAlgolia(selectedIds)
-          : await syncProductsToWordPress(selectedIds);
+          : platform === "meilisearch"
+            ? await syncProductsToMeilisearch(selectedIds)
+            : await syncProductsToWordPress(selectedIds);
       setSyncingPlatform(null);
       if ("error" in r) {
         toast.error(t("toast.syncError", { platform: prettyPlatform(platform) }), {
@@ -155,7 +174,9 @@ export function SyncManager({
   }
 
   function prettyPlatform(p: Platform): string {
-    return p === "algolia" ? "Algolia" : "WooCommerce";
+    if (p === "algolia") return "Algolia";
+    if (p === "meilisearch") return "MeiliSearch";
+    return "WooCommerce";
   }
 
   return (
@@ -199,6 +220,8 @@ export function SyncManager({
         <Badge label={t("badges.algoliaPending", { n: counts.algolia.pending })} kind="warning" />
         <Badge label={t("badges.woocommerceSynced", { n: counts.woocommerce.synced })} kind="success" />
         <Badge label={t("badges.woocommercePending", { n: counts.woocommerce.pending })} kind="warning" />
+        <Badge label={t("badges.meilisearchSynced", { n: counts.meilisearch.synced })} kind="success" />
+        <Badge label={t("badges.meilisearchPending", { n: counts.meilisearch.pending })} kind="warning" />
       </div>
 
       {/* Configuration warnings */}
@@ -238,6 +261,12 @@ export function SyncManager({
         </Chip>
         <Chip active={filter === "wordpress-pending"} onClick={() => setFilter("wordpress-pending")}>
           {t("filter.woocommercePending")}
+        </Chip>
+        <Chip
+          active={filter === "meilisearch-pending"}
+          onClick={() => setFilter("meilisearch-pending")}
+        >
+          {t("filter.meilisearchPending")}
         </Chip>
         <Chip active={filter === "any-pending"} onClick={() => setFilter("any-pending")}>
           {t("filter.anyPending")}
@@ -308,6 +337,20 @@ export function SyncManager({
           </button>
           <button
             type="button"
+            className="s-btn"
+            style={{ background: "var(--s-success)", color: "white", border: "0.5px solid var(--s-success)" }}
+            disabled={pending}
+            onClick={() => runSync("meilisearch")}
+          >
+            {syncingPlatform === "meilisearch" ? (
+              <SpinnerInline />
+            ) : (
+              <Icon icon={RefreshCw} size={14} />
+            )}
+            {t("bulk.syncMeilisearch")}
+          </button>
+          <button
+            type="button"
             className="s-btn s-btn-ghost"
             onClick={() => setSelected({})}
           >
@@ -333,12 +376,13 @@ export function SyncManager({
                 <th>{t("col.localUpdated")}</th>
                 <th style={{ textAlign: "center" }}>Algolia</th>
                 <th style={{ textAlign: "center" }}>{t("col.tienda")}</th>
+                <th style={{ textAlign: "center" }}>MeiliSearch</th>
               </tr>
             </thead>
             <tbody>
               {visible.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     <div className="s-empty">
                       <div className="s-empty-title">{t("empty.title")}</div>
                       <div className="s-empty-sub">{t("empty.sub")}</div>
@@ -374,6 +418,9 @@ export function SyncManager({
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <StatusIcon status={r.woocommerce.status} />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <StatusIcon status={r.meilisearch.status} />
                     </td>
                   </tr>
                 ))
@@ -630,7 +677,12 @@ function SpinnerInline() {
 
 function LogRow({ entry }: { entry: SyncLogEntry }) {
   const t = useTranslations("sync");
-  const platform = entry.platform === "algolia" ? "Algolia" : "WooCommerce";
+  const platform =
+    entry.platform === "algolia"
+      ? "Algolia"
+      : entry.platform === "meilisearch"
+        ? "MeiliSearch"
+        : "WooCommerce";
   const status =
     entry.status === "success"
       ? { color: "var(--s-success)", label: t("log.statusSuccess") }

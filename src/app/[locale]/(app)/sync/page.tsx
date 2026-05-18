@@ -56,7 +56,7 @@ export default async function SyncPage() {
   const productIds = (products ?? []).map((p) => p.product_id);
   type StatusRow = {
     product_id: number;
-    platform: "algolia" | "woocommerce";
+    platform: "algolia" | "woocommerce" | "meilisearch";
     last_synced_at: string | null;
   };
   const { data: statuses } = productIds.length
@@ -83,6 +83,7 @@ export default async function SyncPage() {
     });
     const algoliaLast = statusByPair.get(`${p.product_id}:algolia`) ?? null;
     const wooLast = statusByPair.get(`${p.product_id}:woocommerce`) ?? null;
+    const meiliLast = statusByPair.get(`${p.product_id}:meilisearch`) ?? null;
     return {
       productId: p.product_id,
       productName: p.product_name,
@@ -98,13 +99,17 @@ export default async function SyncPage() {
         status: deriveStatus({ effectiveUpdatedAt: eff, lastSyncedAt: wooLast }),
         lastSyncedAt: wooLast,
       },
+      meilisearch: {
+        status: deriveStatus({ effectiveUpdatedAt: eff, lastSyncedAt: meiliLast }),
+        lastSyncedAt: meiliLast,
+      },
     };
   });
 
   // Sync log (last 25)
   type LogRowDb = {
     id: number;
-    platform: "algolia" | "woocommerce";
+    platform: "algolia" | "woocommerce" | "meilisearch";
     started_at: string;
     ended_at: string | null;
     products_count: number;

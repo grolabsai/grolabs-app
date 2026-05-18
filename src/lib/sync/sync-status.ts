@@ -10,7 +10,7 @@
  * Pure functions only. No DB calls.
  */
 
-export type Platform = "algolia" | "woocommerce";
+export type Platform = "algolia" | "woocommerce" | "meilisearch";
 
 export type SyncStatus = "synced" | "pending" | "never";
 

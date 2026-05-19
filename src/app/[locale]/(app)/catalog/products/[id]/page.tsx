@@ -36,10 +36,18 @@ export default async function ProductEditorPage({
     .select(
       `
       product_id,
+      instance_id,
       product_name,
       slug,
       short_description,
       long_description,
+      sku,
+      barcode,
+      price,
+      sale_price,
+      cost,
+      stock_quantity,
+      image_url,
       is_active,
       is_consignment,
       track_inventory,
@@ -93,6 +101,13 @@ export default async function ProductEditorPage({
 
   // Option lists for the editor's Select dropdowns. RLS scopes them to
   // the user's instance.
+  const { data: instanceRow } = await supabase
+    .from("instance")
+    .select("default_currency")
+    .eq("instance_id", data.instance_id)
+    .maybeSingle<{ default_currency: string }>();
+  const currency = instanceRow?.default_currency ?? "GTQ";
+
   const [{ data: productTypes }, { data: brands }] = await Promise.all([
     supabase
       .from("product_type")
@@ -139,6 +154,7 @@ export default async function ProductEditorPage({
         product={data}
         productTypes={productTypes ?? []}
         brands={brands ?? []}
+        currency={currency}
       />
     </div>
   );

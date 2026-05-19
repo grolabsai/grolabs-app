@@ -16,6 +16,32 @@ export function formatGTQ(amount: number | string | null | undefined): string {
 }
 
 /**
+ * Format a price in the instance's default currency. Uses the ISO 4217
+ * code from instance.default_currency (e.g. "GTQ" → "GTQ 245.00").
+ * Returns an em-dash for null/empty/non-finite so layouts don't collapse.
+ */
+export function formatCurrency(
+  amount: number | string | null | undefined,
+  currency: string,
+): string {
+  if (amount === null || amount === undefined || amount === "") return "—";
+  const n = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(n)) return "—";
+  try {
+    return new Intl.NumberFormat("es-GT", {
+      style: "currency",
+      currency,
+      currencyDisplay: "code",
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toLocaleString("es-GT", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+}
+
+/**
  * Human-readable Spanish relative time. Like "hace 2h" / "hace 3d".
  * Keeps the vibe of the GroLabs design where updated columns are tight.
  */

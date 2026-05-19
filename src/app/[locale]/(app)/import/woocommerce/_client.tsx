@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { useActivityStream } from "@/lib/activity-stream";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, FolderTree, Package, Loader2 } from "lucide-react";
@@ -21,6 +22,7 @@ export function WooImportPanel({ configured, initialStatus }: Props) {
   const t = useTranslations("import.woocommerce");
   const [status, setStatus] = useState<ImportStatus>(initialStatus);
   const [pending, startTransition] = useTransition();
+  const { reportError } = useActivityStream();
 
   // While a run is in progress, poll status every 1.5s.
   const isRunning = !!status.progress;
@@ -59,7 +61,17 @@ export function WooImportPanel({ configured, initialStatus }: Props) {
       if (result.ok) {
         toast.success(t(`toast.success.${phase}`));
       } else {
-        toast.error(t("toast.failed"), { description: result.error });
+        reportError({
+          source: `WooCommerce import · ${phase}`,
+          title: t("toast.failed"),
+          message: result.error,
+          context: {
+            phase,
+            jobId: fresh.lastJob?.jobId ?? null,
+            jobStatus: fresh.lastJob?.status ?? null,
+            serverError: fresh.lastJob?.errorMessage ?? result.error,
+          },
+        });
       }
     });
   }

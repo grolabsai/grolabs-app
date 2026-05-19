@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { createInstance } from "@/lib/actions/instance";
+import { useActivityStream } from "@/lib/activity-stream";
 import { deriveSlug } from "@/lib/instanceSlug";
 
 export function CreateInstanceDialog({
@@ -29,6 +30,7 @@ export function CreateInstanceDialog({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { reportError } = useActivityStream();
 
   const trimmed = name.trim();
   const slugPreview = deriveSlug(trimmed);
@@ -55,6 +57,17 @@ export function CreateInstanceDialog({
           setError(t("errors.invalidName"));
         } else {
           setError(t("errors.saveFailed"));
+          reportError({
+            source: "Instance creation",
+            title: t("errors.saveFailed"),
+            message: result.message ?? result.error,
+            context: {
+              name: trimmed,
+              slug: slugPreview,
+              errorCode: result.error,
+              serverMessage: result.message ?? null,
+            },
+          });
         }
         return;
       }

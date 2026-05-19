@@ -318,6 +318,11 @@
     "copied": "Response copied to clipboard.",
     "copyFailed": "Couldn't copy to clipboard."
   },
+  "activityStream": {
+    "errorToastTitle": "An error occurred",
+    "warningToastTitle": "Heads up",
+    "seePanel": "See details in the Assistant panel."
+  },
   "catalog": {
     "categoryAttributes": {
       "sectionTitle": "Attributes",

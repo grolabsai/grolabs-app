@@ -57,10 +57,8 @@ This plugin has **no integration with grolabs-core**. Events go directly to Goog
 ### Plugin file location
 
 ```
-/Users/sasu/code/scout-wordpress-analytics/dist/scout-analytics-0.1.0.zip
+/Users/sasu/code/grolabs-wordpress-ga4/build/grolabs-wordpress-ga4-0.1.0.zip
 ```
-
-The plugin is currently named "Scout Analytics for WooCommerce" in the UI. The rename to "GroLabs GA4" is deferred until the broader scout→grolabs repo rename. Cosmetic only.
 
 ### Event flow
 
@@ -122,7 +120,7 @@ Skip if you already have a property to use.
 
 ### Step 5 — Configure the plugin
 
-1. Go to **Settings** → **Scout Analytics** in WordPress admin.
+1. Go to **Settings** → **GroLabs WordPress GA4** in WordPress admin.
 2. Paste the **Measurement ID** from Step 2.
 3. Paste the **MP API Secret** from Step 3.
 4. Toggle settings:
@@ -155,12 +153,10 @@ Skip if you already have a property to use.
 
 Google SSO on the WooCommerce checkout page. When a customer reaches checkout, they can sign in with their Google account instead of typing a password or registering a new account. Reduces checkout friction.
 
-The plugin is currently named "WP Multi Social Login" or similar in the UI. The rename to "GroLabs Login" is deferred.
-
 ### Plugin file location
 
 ```
-/Users/sasu/code/wp-multi-social-login/build/wp-multi-social-login-1.1.0.zip
+/Users/sasu/code/grolabs-wordpress-login/build/grolabs-wordpress-login-1.1.0.zip
 ```
 
 ### OAuth flow
@@ -286,12 +282,10 @@ Plugin v1.1.0 supports both. No special action needed — the plugin detects whi
 
 The search box overlay that replaces WooCommerce's native search experience. Plus click event tracking on search results, which feeds MeiliSearch's analytics so we can measure search quality and tune relevancy over time.
 
-The plugin is currently named "Scout Search" in the UI. The rename to "GroLabs Search" is deferred.
-
 ### Plugin file location
 
 ```
-/Users/sasu/code/scout-wordpress-plugin/build/scout-search-0.3.0.zip
+/Users/sasu/code/grolabs-wordpress-search/build/grolabs-wordpress-search-0.3.0.zip
 ```
 
 ### Prerequisites specific to this plugin
@@ -360,7 +354,7 @@ Run this validation **once during deployment** before the plugin ever sees produ
 
 ### Step 3 — Configure the plugin
 
-1. Go to **Settings** → **Scout Search** in WordPress admin.
+1. Go to **Settings** → **GroLabs WordPress Search** in WordPress admin.
 2. Configure:
    - **GroLabs Core API host**: the deployed grolabs-core URL (e.g., `https://app.grolabs.ai`)
    - **Instance ID**: the numeric ID of the storefront's instance in grolabs-core (visible in grolabs-core admin under the storefront's instance page)

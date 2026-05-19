@@ -47,19 +47,40 @@
       "createEntry": "New instance",
       "switching": "Switching…",
       "switchFailed": "Could not switch instance.",
+      "emptyCatalogBanner": "Catalog is empty — run imports as needed.",
+      "dismissBanner": "Dismiss",
       "modal": {
         "title": "Create new instance",
-        "description": "Your new instance starts empty. Configure WooCommerce, Meilisearch, and other integrations from Configuration after you create it.",
+        "description": "Configure WooCommerce, Meilisearch, and other integrations from Configuration, or copy configuration from an existing instance in the next step.",
         "nameLabel": "Name",
         "namePlaceholder": "My Store",
         "slugLabel": "URL slug",
         "slugPlaceholder": "auto-generated",
         "cancel": "Cancel",
+        "continue": "Continue",
         "submit": "Create instance",
         "submitting": "Creating…",
+        "toast": {
+          "created": "Instance {name} created",
+          "createdWithCopy": "Instance {name} created with configuration from {source}"
+        },
+        "copy": {
+          "title": "Copy configuration",
+          "description": "Reuse integrations and regional settings from an existing instance.",
+          "sourceLabel": "Copy from",
+          "willCopy": "Will copy:",
+          "willNotCopy": "Will not copy:",
+          "excluded": "Product catalog, import history, plan/billing",
+          "storefrontDomains": "Storefront domains",
+          "locale": "Locale ({value})",
+          "currency": "Currency ({value})",
+          "copyAndCreate": "Copy and create",
+          "startBlank": "Start blank"
+        },
         "errors": {
           "invalidName": "Enter a name with at least one letter or number.",
-          "saveFailed": "Could not create instance. Try again."
+          "saveFailed": "Could not create instance. Try again.",
+          "copyFailed": "Instance created, but configuration could not be copied."
         }
       }
     }

@@ -17,10 +17,54 @@ export type SwitchResult =
   | { ok: false; error: "unauthorized" | "not_a_member" | "save_failed"; message?: string };
 
 export type CreateResult =
-  | { ok: true; instanceId: number; slug: string }
+  | {
+      ok: true;
+      instanceId: number;
+      slug: string;
+      copiedFrom?: string;
+      copyWarning?: string;
+    }
   | { ok: false; error: "unauthorized" | "invalid_name" | "save_failed"; message?: string };
 
+export type CopyConfigResult =
+  | { ok: true; copiedFields: string[] }
+  | {
+      ok: false;
+      error: "unauthorized" | "not_a_member" | "source_not_found" | "save_failed";
+      message?: string;
+    };
+
+/**
+ * A candidate source instance for the "copy configuration" step of the
+ * create-instance flow. Only instances the user belongs to that have a
+ * non-empty integrations_config are eligible.
+ *
+ * Values (integration keys, locale, currency) are raw DB data; the dialog
+ * maps them to display labels. Per CLAUDE.md §5 (DB is the source of truth).
+ */
+export type ConfigSource = {
+  instanceId: number;
+  name: string;
+  integrationKeys: string[];
+  storefrontDomainCount: number;
+  primaryLocale: string;
+  defaultCurrency: string;
+};
+
 const NAME_MAX_LEN = 80;
+
+/**
+ * Fields copied by copyInstanceConfig. Deliberately excludes plan,
+ * billing_config, kind, is_active, slug, name, tenant_id, sku_config,
+ * pricing_config — and never touches any catalog/audit table.
+ */
+const COPYABLE_CONFIG_FIELDS = [
+  "integrations_config",
+  "storefront_domains",
+  "primary_locale",
+  "supported_locales",
+  "default_currency",
+] as const;
 
 /**
  * Atomically flip is_current to point at the target instance.
@@ -95,9 +139,16 @@ export async function switchToInstance(instanceId: number): Promise<SwitchResult
  *
  * Slug uses deriveSlug; on collision a numeric suffix is appended (`-2`, `-3`).
  *
+ * Optionally copies configuration from an existing instance the user
+ * belongs to (options.copyFromInstanceId). A failed copy does NOT roll
+ * back the created instance — it returns ok with a copyWarning instead.
+ *
  * Caller should `router.refresh()` after success.
  */
-export async function createInstance(name: string): Promise<CreateResult> {
+export async function createInstance(
+  name: string,
+  options?: { copyFromInstanceId?: number },
+): Promise<CreateResult> {
   const sb = await createClient();
   const {
     data: { user },
@@ -248,6 +299,142 @@ export async function createInstance(name: string): Promise<CreateResult> {
     );
   }
 
+  let copiedFrom: string | undefined;
+  let copyWarning: string | undefined;
+
+  if (options?.copyFromInstanceId != null) {
+    const copy = await copyInstanceConfig(
+      options.copyFromInstanceId,
+      newInstanceId,
+    );
+    if (copy.ok) {
+      const { data: src } = await admin
+        .from("instance")
+        .select("name")
+        .eq("instance_id", options.copyFromInstanceId)
+        .maybeSingle();
+      copiedFrom = src?.name ?? undefined;
+    } else {
+      // Per spec: a failed copy must NOT roll back the created instance.
+      copyWarning = copy.message ?? copy.error;
+      console.warn(
+        `[createInstance] copyInstanceConfig(${options.copyFromInstanceId} → ${newInstanceId}) failed:`,
+        copy.error,
+        copy.message,
+      );
+    }
+  }
+
   revalidatePath("/", "layout");
-  return { ok: true, instanceId: newInstanceId, slug };
+  return { ok: true, instanceId: newInstanceId, slug, copiedFrom, copyWarning };
+}
+
+/**
+ * List instances the user can copy configuration from: every active
+ * membership whose instance has a non-empty integrations_config. Used to
+ * populate the source dropdown in the create-instance dialog.
+ */
+export async function listConfigSources(): Promise<
+  { ok: true; sources: ConfigSource[] } | { ok: false; error: string }
+> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "unauthorized" };
+
+  const { data: memberships, error: memErr } = await sb
+    .from("instance_member")
+    .select("instance_id")
+    .eq("user_id", user.id)
+    .eq("is_active", true);
+  if (memErr) return { ok: false, error: memErr.message };
+
+  const ids = (memberships ?? []).map((m) => m.instance_id as number);
+  if (ids.length === 0) return { ok: true, sources: [] };
+
+  const admin = createServiceRoleClient();
+  const { data: rows, error: rowsErr } = await admin
+    .from("instance")
+    .select(
+      "instance_id, name, integrations_config, storefront_domains, primary_locale, default_currency",
+    )
+    .in("instance_id", ids)
+    .order("name");
+  if (rowsErr) return { ok: false, error: rowsErr.message };
+
+  const sources: ConfigSource[] = (rows ?? [])
+    .map((r) => {
+      const cfg = (r.integrations_config ?? {}) as Record<string, unknown>;
+      const integrationKeys = Object.keys(cfg);
+      return {
+        instanceId: r.instance_id as number,
+        name: (r.name as string) ?? "",
+        integrationKeys,
+        storefrontDomainCount: ((r.storefront_domains as string[]) ?? []).length,
+        primaryLocale: (r.primary_locale as string) ?? "",
+        defaultCurrency: (r.default_currency as string) ?? "",
+      };
+    })
+    .filter((s) => s.integrationKeys.length > 0);
+
+  return { ok: true, sources };
+}
+
+/**
+ * Copy configuration (integrations, locale, currency, storefront domains)
+ * from one instance to another. NEVER copies the product catalog, audit
+ * data, billing/plan, identity (slug/name/tenant), or sku/pricing config.
+ *
+ * Authorization: the caller must hold an active membership on BOTH the
+ * source and the target instance.
+ */
+export async function copyInstanceConfig(
+  sourceInstanceId: number,
+  targetInstanceId: number,
+): Promise<CopyConfigResult> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "unauthorized" };
+
+  if (sourceInstanceId === targetInstanceId) {
+    return { ok: false, error: "save_failed", message: "source equals target" };
+  }
+
+  const { data: memberRows, error: memErr } = await sb
+    .from("instance_member")
+    .select("instance_id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .in("instance_id", [sourceInstanceId, targetInstanceId]);
+  if (memErr) return { ok: false, error: "save_failed", message: memErr.message };
+  const memberOf = new Set((memberRows ?? []).map((r) => r.instance_id as number));
+  if (!memberOf.has(sourceInstanceId) || !memberOf.has(targetInstanceId)) {
+    return { ok: false, error: "not_a_member" };
+  }
+
+  const admin = createServiceRoleClient();
+  const { data: source, error: srcErr } = await admin
+    .from("instance")
+    .select(
+      "integrations_config, storefront_domains, primary_locale, supported_locales, default_currency",
+    )
+    .eq("instance_id", sourceInstanceId)
+    .maybeSingle();
+  if (srcErr) return { ok: false, error: "save_failed", message: srcErr.message };
+  if (!source) return { ok: false, error: "source_not_found" };
+
+  const src = source as unknown as Record<string, unknown>;
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  for (const field of COPYABLE_CONFIG_FIELDS) patch[field] = src[field];
+
+  const { error: updErr } = await admin
+    .from("instance")
+    .update(patch)
+    .eq("instance_id", targetInstanceId);
+  if (updErr) return { ok: false, error: "save_failed", message: updErr.message };
+
+  return { ok: true, copiedFields: [...COPYABLE_CONFIG_FIELDS] };
 }

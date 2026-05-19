@@ -1153,7 +1153,32 @@
         "saveFailed": "Could not save configuration",
         "missingFields": "URL and consumer key are required",
         "missingSecret": "Enter the consumer secret or click Cancel to keep the saved one",
-        "testNeedsSecret": "To test, enter the secret or click Replace"
+        "testNeedsSecret": "To test, enter the secret or click Replace",
+        "detectFailed": "Detection failed",
+        "detectSuccess": "Detection complete"
+      },
+      "detect": {
+        "title": "Field mapping",
+        "subtitle": "Detect where your WooCommerce site stores brand, barcode, and cost. Afterwards you can choose where GroLabs should write each one when publishing products. Read-only — this detection does not modify data in WC.",
+        "button": "Detect field mapping",
+        "buttonRunning": "Detecting…",
+        "needsCredentials": "Save credentials first to enable detection.",
+        "lastRun": "Last detection: {when}",
+        "sampleSize": "Sample: {n} products",
+        "brandsReachable": "Brands (WC core) available",
+        "brandsNotReachable": "Brands (WC core) not available",
+        "taxonomiesReachable": "WP taxonomies readable",
+        "taxonomiesNotReachable": "WP taxonomies not accessible",
+        "concept": {
+          "brand": "Brand",
+          "barcode": "Barcode",
+          "cost": "Cost"
+        },
+        "col": {
+          "sink": "Location",
+          "installed": "Installed",
+          "populated": "Populated"
+        }
       }
     },
     "search": {

@@ -482,6 +482,49 @@
         "comingSoon": "próximamente"
       }
     },
+    "brands": {
+      "title": "Marcas",
+      "searchPlaceholder": "Buscar marcas…",
+      "createButton": "Nueva marca",
+      "empty": {
+        "noBrands": "Sin marcas todavía.",
+        "noResults": "Sin resultados para \"{query}\".",
+        "createFirst": "Crear la primera",
+        "selectPrompt": "Selecciona una marca o crea una nueva."
+      },
+      "form": {
+        "createTitle": "Nueva marca",
+        "editTitle": "Editar marca",
+        "sections": {
+          "basic": "Información básica",
+          "meta": "Detalles"
+        },
+        "fields": {
+          "name": "Nombre",
+          "namePlaceholder": "Ej.: Royal Canin",
+          "manufacturer": "Fabricante",
+          "manufacturerPlaceholder": "Ej.: Mars Petcare",
+          "manufacturerDesc": "Opcional. Empresa que produce la marca."
+        },
+        "meta": {
+          "id": "ID",
+          "products": "Productos vinculados",
+          "created": "Creada",
+          "updated": "Actualizada"
+        }
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "saved": "✓ Guardado",
+        "delete": "Eliminar marca",
+        "deleteLinked": "Vinculada a {n} producto(s) — no se puede eliminar.",
+        "confirmDelete": "¿Eliminar esta marca? Esta acción no se puede deshacer."
+      },
+      "errors": {
+        "emptyName": "El nombre es obligatorio."
+      }
+    },
     "variantAxis": {
       "inheritedLabel": "Heredados de categorías superiores",
       "inheritedDesc": "Estos ejes se definieron en categorías padre y están disponibles automáticamente.",

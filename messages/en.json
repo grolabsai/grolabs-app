@@ -482,6 +482,49 @@
         "comingSoon": "coming soon"
       }
     },
+    "brands": {
+      "title": "Brands",
+      "searchPlaceholder": "Search brands…",
+      "createButton": "New brand",
+      "empty": {
+        "noBrands": "No brands yet.",
+        "noResults": "No results for \"{query}\".",
+        "createFirst": "Create the first",
+        "selectPrompt": "Select a brand or create a new one."
+      },
+      "form": {
+        "createTitle": "New brand",
+        "editTitle": "Edit brand",
+        "sections": {
+          "basic": "Basic information",
+          "meta": "Details"
+        },
+        "fields": {
+          "name": "Name",
+          "namePlaceholder": "e.g. Royal Canin",
+          "manufacturer": "Manufacturer",
+          "manufacturerPlaceholder": "e.g. Mars Petcare",
+          "manufacturerDesc": "Optional. Company that produces the brand."
+        },
+        "meta": {
+          "id": "ID",
+          "products": "Linked products",
+          "created": "Created",
+          "updated": "Updated"
+        }
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "✓ Saved",
+        "delete": "Delete brand",
+        "deleteLinked": "Linked to {n} product(s) — cannot be deleted.",
+        "confirmDelete": "Delete this brand? This action cannot be undone."
+      },
+      "errors": {
+        "emptyName": "Name is required."
+      }
+    },
     "variantAxis": {
       "inheritedLabel": "Inherited from parent categories",
       "inheritedDesc": "These axes were defined in parent categories and are automatically available.",

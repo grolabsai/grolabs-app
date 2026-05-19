@@ -51,36 +51,45 @@
       "dismissBanner": "Descartar",
       "modal": {
         "title": "Crear nueva instancia",
-        "description": "Configura WooCommerce, Meilisearch y demás integraciones desde Configuración, o copia la configuración de una instancia existente en el siguiente paso.",
+        "description": "En el siguiente paso podrás copiar la configuración de una instancia existente y sembrar los datos base desde una plantilla.",
         "nameLabel": "Nombre",
         "namePlaceholder": "Mi Tienda",
         "slugLabel": "URL slug",
         "slugPlaceholder": "se-genera-automaticamente",
         "cancel": "Cancelar",
+        "back": "Atrás",
         "continue": "Continuar",
         "submit": "Crear instancia",
         "submitting": "Creando…",
         "toast": {
           "created": "Instancia {name} creada",
-          "createdWithCopy": "Instancia {name} creada con la configuración de {source}"
+          "createdWith": "Instancia {name} creada con {parts}",
+          "partConfig": "configuración de {source}",
+          "partTemplate": "datos de plantilla de {source} ({count} filas)"
         },
         "copy": {
-          "title": "Copiar configuración",
-          "description": "Reutiliza las integraciones y la configuración regional de una instancia existente.",
-          "sourceLabel": "Copiar desde",
+          "title": "Copiar de existentes",
+          "description": "Reutiliza la configuración de otra instancia y siembra el catálogo base desde una plantilla.",
+          "configSourceLabel": "Copiar configuración desde",
+          "templateSourceLabel": "Copiar datos de plantilla desde",
+          "none": "Ninguna (empezar vacío)",
           "willCopy": "Se copiará:",
           "willNotCopy": "No se copiará:",
           "excluded": "Catálogo de productos, historial de importaciones, plan/facturación",
           "storefrontDomains": "Dominios de tienda",
           "locale": "Idioma ({value})",
           "currency": "Moneda ({value})",
-          "copyAndCreate": "Copiar y crear",
-          "startBlank": "Empezar vacío"
+          "templateCategories": "{count, plural, =1 {1 categoría} other {# categorías}}",
+          "templateAttributes": "{count, plural, =1 {1 atributo} other {# atributos}}",
+          "templateOptions": "{count, plural, =1 {1 valor de atributo} other {# valores de atributos}}",
+          "templateSpecies": "{count, plural, =1 {1 especie} other {# especies}}",
+          "templatePetProfile": "{count, plural, =1 {1 atributo de perfil} other {# atributos de perfil}}"
         },
         "errors": {
           "invalidName": "Ingresa un nombre con al menos una letra o número.",
           "saveFailed": "No se pudo crear la instancia. Intenta de nuevo.",
-          "copyFailed": "La instancia se creó, pero no se pudo copiar la configuración."
+          "copyFailed": "La instancia se creó, pero no se pudo copiar la configuración.",
+          "templateCopyFailed": "La instancia se creó, pero no se pudieron copiar los datos de la plantilla."
         }
       }
     }

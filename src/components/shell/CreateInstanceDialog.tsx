@@ -24,12 +24,16 @@ import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import {
   createInstance,
   listConfigSources,
+  listTemplateSources,
   type ConfigSource,
+  type TemplateSource,
 } from "@/lib/actions/instance";
 import { useActivityStream } from "@/lib/activity-stream";
 import { deriveSlug } from "@/lib/instanceSlug";
 
 const NEW_INSTANCE_BANNER_KEY = "grolabs:new-instance-banner";
+
+const NONE_VALUE = "__none__";
 
 /** Proper-noun display names for integrations_config keys (data, not chrome). */
 const INTEGRATION_LABELS: Record<string, string> = {
@@ -59,9 +63,13 @@ export function CreateInstanceDialog({
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
-  const [sources, setSources] = useState<ConfigSource[]>([]);
+  const [configSources, setConfigSources] = useState<ConfigSource[]>([]);
+  const [templateSources, setTemplateSources] = useState<TemplateSource[]>([]);
   const [sourcesLoaded, setSourcesLoaded] = useState(false);
-  const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null);
+  const [selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { reportError } = useActivityStream();
@@ -73,15 +81,23 @@ export function CreateInstanceDialog({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    listConfigSources().then((res) => {
-      if (cancelled) return;
-      const list = res.ok ? res.sources : [];
-      setSources(list);
-      const def =
-        list.find((s) => s.instanceId === currentInstanceId) ?? list[0] ?? null;
-      setSelectedSourceId(def ? def.instanceId : null);
-      setSourcesLoaded(true);
-    });
+    Promise.all([listConfigSources(), listTemplateSources()]).then(
+      ([cfgRes, tmplRes]) => {
+        if (cancelled) return;
+        const cfgs = cfgRes.ok ? cfgRes.sources : [];
+        const tmpls = tmplRes.ok ? tmplRes.sources : [];
+        setConfigSources(cfgs);
+        setTemplateSources(tmpls);
+        const cfgDef =
+          cfgs.find((s) => s.instanceId === currentInstanceId) ??
+          cfgs[0] ??
+          null;
+        setSelectedConfigId(cfgDef ? cfgDef.instanceId : null);
+        // Template default: first available (typically GroLabs/instance 0).
+        setSelectedTemplateId(tmpls[0]?.instanceId ?? null);
+        setSourcesLoaded(true);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -91,9 +107,11 @@ export function CreateInstanceDialog({
     setStep(1);
     setName("");
     setError(null);
-    setSources([]);
+    setConfigSources([]);
+    setTemplateSources([]);
     setSourcesLoaded(false);
-    setSelectedSourceId(null);
+    setSelectedConfigId(null);
+    setSelectedTemplateId(null);
   }
 
   function handleOpenChange(next: boolean) {
@@ -101,17 +119,20 @@ export function CreateInstanceDialog({
     onOpenChange(next);
   }
 
-  const hasCopyStep = sourcesLoaded && sources.length > 0;
-  const selectedSource =
-    sources.find((s) => s.instanceId === selectedSourceId) ?? null;
+  const hasCopyStep =
+    sourcesLoaded && (configSources.length > 0 || templateSources.length > 0);
+  const selectedConfig =
+    configSources.find((s) => s.instanceId === selectedConfigId) ?? null;
+  const selectedTemplate =
+    templateSources.find((s) => s.instanceId === selectedTemplateId) ?? null;
 
-  function finish(copyFromInstanceId?: number) {
+  function finish() {
     setError(null);
     startTransition(async () => {
-      const result = await createInstance(
-        trimmed,
-        copyFromInstanceId != null ? { copyFromInstanceId } : undefined,
-      );
+      const result = await createInstance(trimmed, {
+        copyFromInstanceId: selectedConfigId ?? undefined,
+        copyTemplateFromInstanceId: selectedTemplateId ?? undefined,
+      });
       if (!result.ok) {
         if (result.error === "invalid_name") {
           setError(t("errors.invalidName"));
@@ -132,16 +153,37 @@ export function CreateInstanceDialog({
         return;
       }
 
-      if (result.copiedFrom) {
-        toast.success(t("toast.createdWithCopy", { name: trimmed, source: result.copiedFrom }));
-      } else {
+      // Compose a single toast that mentions whichever copies happened.
+      const parts: string[] = [];
+      if (result.copiedFrom) parts.push(t("toast.partConfig", { source: result.copiedFrom }));
+      if (result.templateCopiedFrom)
+        parts.push(
+          t("toast.partTemplate", {
+            source: result.templateCopiedFrom,
+            count: result.templateCopyTotal ?? 0,
+          }),
+        );
+      if (parts.length === 0) {
         toast.success(t("toast.created", { name: trimmed }));
+      } else {
+        toast.success(
+          t("toast.createdWith", { name: trimmed, parts: parts.join(", ") }),
+        );
       }
+
       if (result.copyWarning) {
         reportError({
           source: "Instance creation",
           title: t("errors.copyFailed"),
           message: result.copyWarning,
+          context: { newInstanceId: result.instanceId },
+        });
+      }
+      if (result.templateCopyWarning) {
+        reportError({
+          source: "Instance creation",
+          title: t("errors.templateCopyFailed"),
+          message: result.templateCopyWarning,
           context: { newInstanceId: result.instanceId },
         });
       }
@@ -237,65 +279,161 @@ export function CreateInstanceDialog({
               <DialogDescription>{t("copy.description")}</DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-3">
-              <Select
-                value={
-                  selectedSourceId != null ? String(selectedSourceId) : undefined
-                }
-                onValueChange={(v) => setSelectedSourceId(Number(v))}
-                disabled={isPending}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("copy.sourceLabel")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sources.map((s) => (
-                    <SelectItem key={s.instanceId} value={String(s.instanceId)}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {selectedSource ? (
-                <div
-                  className="grid gap-1.5 rounded-[var(--s-radius-md)] p-3 text-xs"
-                  style={{
-                    background: "var(--s-surface-alt)",
-                    color: "var(--s-text-secondary)",
-                  }}
-                >
-                  <p>
-                    <span style={{ color: "var(--s-text)" }}>
-                      {t("copy.willCopy")}
-                    </span>{" "}
-                    {[
-                      ...selectedSource.integrationKeys.map(integrationLabel),
-                      ...(selectedSource.storefrontDomainCount > 0
-                        ? [t("copy.storefrontDomains")]
-                        : []),
-                      selectedSource.primaryLocale
-                        ? t("copy.locale", {
-                            value: selectedSource.primaryLocale,
-                          })
-                        : null,
-                      selectedSource.defaultCurrency
-                        ? t("copy.currency", {
-                            value: selectedSource.defaultCurrency,
-                          })
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </p>
-                  <p>
-                    <span style={{ color: "var(--s-text)" }}>
-                      {t("copy.willNotCopy")}
-                    </span>{" "}
-                    {t("copy.excluded")}
-                  </p>
+            <div className="grid gap-5">
+              {configSources.length > 0 ? (
+                <div className="grid gap-2">
+                  <label
+                    className="text-xs font-medium"
+                    style={{ color: "var(--s-text)" }}
+                    htmlFor="config-source-select"
+                  >
+                    {t("copy.configSourceLabel")}
+                  </label>
+                  <Select
+                    value={
+                      selectedConfigId != null
+                        ? String(selectedConfigId)
+                        : NONE_VALUE
+                    }
+                    onValueChange={(v) =>
+                      setSelectedConfigId(v === NONE_VALUE ? null : Number(v))
+                    }
+                    disabled={isPending}
+                  >
+                    <SelectTrigger id="config-source-select">
+                      <SelectValue placeholder={t("copy.configSourceLabel")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE_VALUE}>{t("copy.none")}</SelectItem>
+                      {configSources.map((s) => (
+                        <SelectItem
+                          key={s.instanceId}
+                          value={String(s.instanceId)}
+                        >
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedConfig ? (
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--s-text-secondary)" }}
+                    >
+                      <span style={{ color: "var(--s-text)" }}>
+                        {t("copy.willCopy")}
+                      </span>{" "}
+                      {[
+                        ...selectedConfig.integrationKeys.map(integrationLabel),
+                        ...(selectedConfig.storefrontDomainCount > 0
+                          ? [t("copy.storefrontDomains")]
+                          : []),
+                        selectedConfig.primaryLocale
+                          ? t("copy.locale", {
+                              value: selectedConfig.primaryLocale,
+                            })
+                          : null,
+                        selectedConfig.defaultCurrency
+                          ? t("copy.currency", {
+                              value: selectedConfig.defaultCurrency,
+                            })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
+
+              {templateSources.length > 0 ? (
+                <div className="grid gap-2">
+                  <label
+                    className="text-xs font-medium"
+                    style={{ color: "var(--s-text)" }}
+                    htmlFor="template-source-select"
+                  >
+                    {t("copy.templateSourceLabel")}
+                  </label>
+                  <Select
+                    value={
+                      selectedTemplateId != null
+                        ? String(selectedTemplateId)
+                        : NONE_VALUE
+                    }
+                    onValueChange={(v) =>
+                      setSelectedTemplateId(v === NONE_VALUE ? null : Number(v))
+                    }
+                    disabled={isPending}
+                  >
+                    <SelectTrigger id="template-source-select">
+                      <SelectValue placeholder={t("copy.templateSourceLabel")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE_VALUE}>{t("copy.none")}</SelectItem>
+                      {templateSources.map((s) => (
+                        <SelectItem
+                          key={s.instanceId}
+                          value={String(s.instanceId)}
+                        >
+                          {s.tenantName
+                            ? `${s.name} · ${s.tenantName}`
+                            : s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedTemplate ? (
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--s-text-secondary)" }}
+                    >
+                      <span style={{ color: "var(--s-text)" }}>
+                        {t("copy.willCopy")}
+                      </span>{" "}
+                      {[
+                        selectedTemplate.categoryCount > 0
+                          ? t("copy.templateCategories", {
+                              count: selectedTemplate.categoryCount,
+                            })
+                          : null,
+                        selectedTemplate.attributeCount > 0
+                          ? t("copy.templateAttributes", {
+                              count: selectedTemplate.attributeCount,
+                            })
+                          : null,
+                        selectedTemplate.attributeOptionCount > 0
+                          ? t("copy.templateOptions", {
+                              count: selectedTemplate.attributeOptionCount,
+                            })
+                          : null,
+                        selectedTemplate.speciesCount > 0
+                          ? t("copy.templateSpecies", {
+                              count: selectedTemplate.speciesCount,
+                            })
+                          : null,
+                        selectedTemplate.petProfileAttributeCount > 0
+                          ? t("copy.templatePetProfile", {
+                              count: selectedTemplate.petProfileAttributeCount,
+                            })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <p
+                className="text-xs"
+                style={{ color: "var(--s-text-secondary)" }}
+              >
+                <span style={{ color: "var(--s-text)" }}>
+                  {t("copy.willNotCopy")}
+                </span>{" "}
+                {t("copy.excluded")}
+              </p>
 
               {error ? (
                 <p
@@ -311,19 +449,13 @@ export function CreateInstanceDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => finish()}
+                onClick={() => setStep(1)}
                 disabled={isPending}
               >
-                {isPending ? t("submitting") : t("copy.startBlank")}
+                {t("back")}
               </Button>
-              <Button
-                type="button"
-                onClick={() =>
-                  finish(selectedSourceId != null ? selectedSourceId : undefined)
-                }
-                disabled={isPending || selectedSourceId == null}
-              >
-                {isPending ? t("submitting") : t("copy.copyAndCreate")}
+              <Button type="button" onClick={() => finish()} disabled={isPending}>
+                {isPending ? t("submitting") : t("submit")}
               </Button>
             </DialogFooter>
           </div>

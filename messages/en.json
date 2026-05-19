@@ -51,36 +51,45 @@
       "dismissBanner": "Dismiss",
       "modal": {
         "title": "Create new instance",
-        "description": "Configure WooCommerce, Meilisearch, and other integrations from Configuration, or copy configuration from an existing instance in the next step.",
+        "description": "In the next step you can copy configuration from an existing instance and seed the base catalog data from a template.",
         "nameLabel": "Name",
         "namePlaceholder": "My Store",
         "slugLabel": "URL slug",
         "slugPlaceholder": "auto-generated",
         "cancel": "Cancel",
+        "back": "Back",
         "continue": "Continue",
         "submit": "Create instance",
         "submitting": "Creating…",
         "toast": {
           "created": "Instance {name} created",
-          "createdWithCopy": "Instance {name} created with configuration from {source}"
+          "createdWith": "Instance {name} created with {parts}",
+          "partConfig": "configuration from {source}",
+          "partTemplate": "template data from {source} ({count} rows)"
         },
         "copy": {
-          "title": "Copy configuration",
-          "description": "Reuse integrations and regional settings from an existing instance.",
-          "sourceLabel": "Copy from",
+          "title": "Copy from existing",
+          "description": "Reuse configuration from another instance and seed the base catalog from a template.",
+          "configSourceLabel": "Copy configuration from",
+          "templateSourceLabel": "Copy template data from",
+          "none": "None (start blank)",
           "willCopy": "Will copy:",
           "willNotCopy": "Will not copy:",
           "excluded": "Product catalog, import history, plan/billing",
           "storefrontDomains": "Storefront domains",
           "locale": "Locale ({value})",
           "currency": "Currency ({value})",
-          "copyAndCreate": "Copy and create",
-          "startBlank": "Start blank"
+          "templateCategories": "{count, plural, =1 {1 category} other {# categories}}",
+          "templateAttributes": "{count, plural, =1 {1 attribute} other {# attributes}}",
+          "templateOptions": "{count, plural, =1 {1 attribute value} other {# attribute values}}",
+          "templateSpecies": "{count, plural, =1 {1 species} other {# species}}",
+          "templatePetProfile": "{count, plural, =1 {1 profile attribute} other {# profile attributes}}"
         },
         "errors": {
           "invalidName": "Enter a name with at least one letter or number.",
           "saveFailed": "Could not create instance. Try again.",
-          "copyFailed": "Instance created, but configuration could not be copied."
+          "copyFailed": "Instance created, but configuration could not be copied.",
+          "templateCopyFailed": "Instance created, but template data could not be copied."
         }
       }
     }

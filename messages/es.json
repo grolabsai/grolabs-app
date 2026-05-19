@@ -47,19 +47,40 @@
       "createEntry": "Nueva instancia",
       "switching": "Cambiando…",
       "switchFailed": "No se pudo cambiar de instancia.",
+      "emptyCatalogBanner": "El catálogo está vacío — ejecuta las importaciones cuando lo necesites.",
+      "dismissBanner": "Descartar",
       "modal": {
         "title": "Crear nueva instancia",
-        "description": "Tu nueva instancia empezará vacía. Configura WooCommerce, Meilisearch y demás integraciones desde Configuración después de crearla.",
+        "description": "Configura WooCommerce, Meilisearch y demás integraciones desde Configuración, o copia la configuración de una instancia existente en el siguiente paso.",
         "nameLabel": "Nombre",
         "namePlaceholder": "Mi Tienda",
         "slugLabel": "URL slug",
         "slugPlaceholder": "se-genera-automaticamente",
         "cancel": "Cancelar",
+        "continue": "Continuar",
         "submit": "Crear instancia",
         "submitting": "Creando…",
+        "toast": {
+          "created": "Instancia {name} creada",
+          "createdWithCopy": "Instancia {name} creada con la configuración de {source}"
+        },
+        "copy": {
+          "title": "Copiar configuración",
+          "description": "Reutiliza las integraciones y la configuración regional de una instancia existente.",
+          "sourceLabel": "Copiar desde",
+          "willCopy": "Se copiará:",
+          "willNotCopy": "No se copiará:",
+          "excluded": "Catálogo de productos, historial de importaciones, plan/facturación",
+          "storefrontDomains": "Dominios de tienda",
+          "locale": "Idioma ({value})",
+          "currency": "Moneda ({value})",
+          "copyAndCreate": "Copiar y crear",
+          "startBlank": "Empezar vacío"
+        },
         "errors": {
           "invalidName": "Ingresa un nombre con al menos una letra o número.",
-          "saveFailed": "No se pudo crear la instancia. Intenta de nuevo."
+          "saveFailed": "No se pudo crear la instancia. Intenta de nuevo.",
+          "copyFailed": "La instancia se creó, pero no se pudo copiar la configuración."
         }
       }
     }

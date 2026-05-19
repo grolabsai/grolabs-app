@@ -139,7 +139,11 @@ export function InstanceSwitcher({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <CreateInstanceDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateInstanceDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        currentInstanceId={currentInstanceId}
+      />
     </>
   );
 }

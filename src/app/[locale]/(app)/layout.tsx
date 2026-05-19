@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { AgentPanel } from "@/components/shell/AgentPanel";
 import { AgentLogProvider } from "@/components/shell/AgentLogContext";
+import { NewInstanceBanner } from "@/components/shell/NewInstanceBanner";
 
 /**
  * Protected app layout. Every route under `(app)/` inherits this:
@@ -70,7 +71,12 @@ export default async function AppLayout({
             currentInstanceId={currentInstance?.instanceId ?? null}
           />
           <div className="s-shell-body">
-            <div className="s-shell-content">{children}</div>
+            <div className="s-shell-content">
+              <NewInstanceBanner
+                currentInstanceId={currentInstance?.instanceId ?? null}
+              />
+              {children}
+            </div>
             <AgentPanel />
           </div>
         </main>

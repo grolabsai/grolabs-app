@@ -2,7 +2,7 @@
 
 **Audience:** GroLabs operators and engineering colleagues installing the GroLabs plugin suite on a WordPress + WooCommerce test or production site.
 
-**Last updated:** 2026-05-17
+**Last updated:** 2026-05-18
 
 ---
 
@@ -57,7 +57,7 @@ This plugin has **no integration with grolabs-core**. Events go directly to Goog
 ### Plugin file location
 
 ```
-/Users/sasu/code/grolabs-wordpress-ga4/build/grolabs-wordpress-ga4-0.1.0.zip
+/Users/sasu/code/grolabs-wordpress-ga4/build/grolabs-wordpress-ga4-0.2.0.zip
 ```
 
 ### Event flow
@@ -207,7 +207,7 @@ The "callback URL" in this diagram is the most error-prone setting. It must be c
 3. Application type: **Web application**.
 4. Name: "GroLabs Login WP Test".
 5. **Authorized JavaScript origins**: add your WP site URL, e.g., `https://wazu-test.example.com`.
-6. **Authorized redirect URIs**: add a placeholder for now — `https://wazu-test.example.com/wp-login.php?action=multisocial-callback&provider=google`. We'll correct this in Step 5 after the plugin tells us the exact URL.
+6. **Authorized redirect URIs**: add a placeholder for now — `https://wazu-test.example.com/?grolabs_wordpress_login_cb=google`. The plugin's callback URL follows the `?grolabs_wordpress_login_cb=<provider>` pattern, but the exact URL appears on the plugin Settings page after install — copy it from there rather than guessing. We'll correct this placeholder in Step 5.
 7. Click **Create**.
 8. A dialog shows your **Client ID** and **Client Secret**. **Copy both immediately.**
 

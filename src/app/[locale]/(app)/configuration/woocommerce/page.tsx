@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { WooCommerceForm } from "./_form";
+import { getStoredFieldSinks } from "./actions";
 
 /**
  * WooCommerce configuration page.
@@ -60,6 +61,8 @@ export default async function WooCommerceConfigPage() {
     hasConsumerSecret = !!secret;
   }
 
+  const initialFieldSinks = await getStoredFieldSinks(instanceId);
+
   return (
     <div className="s-page-content">
       <Card>
@@ -78,6 +81,7 @@ export default async function WooCommerceConfigPage() {
               lastVerifiedLatencyMs: wc.last_verified_latency_ms,
             }}
             hasConsumerSecret={hasConsumerSecret}
+            initialFieldSinks={initialFieldSinks}
           />
         </CardContent>
       </Card>

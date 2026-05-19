@@ -27,7 +27,7 @@ export type CreateResult =
   | { ok: false; error: "unauthorized" | "invalid_name" | "save_failed"; message?: string };
 
 export type CopyConfigResult =
-  | { ok: true; copiedFields: string[] }
+  | { ok: true; copiedFields: string[]; secretWarnings?: string[] }
   | {
       ok: false;
       error: "unauthorized" | "not_a_member" | "source_not_found" | "save_failed";
@@ -314,6 +314,13 @@ export async function createInstance(
         .eq("instance_id", options.copyFromInstanceId)
         .maybeSingle();
       copiedFrom = src?.name ?? undefined;
+      if (copy.secretWarnings && copy.secretWarnings.length > 0) {
+        copyWarning = `Partial secret copy: ${copy.secretWarnings.join(", ")}`;
+        console.warn(
+          `[createInstance] copyInstanceConfig(${options.copyFromInstanceId} → ${newInstanceId}) succeeded with secret warnings:`,
+          copy.secretWarnings,
+        );
+      }
     } else {
       // Per spec: a failed copy must NOT roll back the created instance.
       copyWarning = copy.message ?? copy.error;
@@ -436,5 +443,268 @@ export async function copyInstanceConfig(
     .eq("instance_id", targetInstanceId);
   if (updErr) return { ok: false, error: "save_failed", message: updErr.message };
 
-  return { ok: true, copiedFields: [...COPYABLE_CONFIG_FIELDS] };
+  // Per-integration Vault secrets are not part of integrations_config and must
+  // be copied separately. The RPCs check auth.uid() membership on the target,
+  // which exists by now (caller is an active member; createInstance inserts
+  // the membership before invoking the copy). Failures here do NOT fail the
+  // whole copy — the instance is already created and the JSONB config is
+  // already in place; we just record a warning.
+  const integrationsConfig = (src.integrations_config ?? {}) as Record<
+    string,
+    Record<string, unknown> | undefined
+  >;
+  const secretWarnings: string[] = [];
+
+  await copyWooCommerceSecret(
+    sb,
+    sourceInstanceId,
+    targetInstanceId,
+    integrationsConfig.woocommerce,
+    secretWarnings,
+  );
+  await copyAlgoliaSecret(
+    sb,
+    admin,
+    sourceInstanceId,
+    targetInstanceId,
+    integrationsConfig.algolia,
+    secretWarnings,
+  );
+  await copyGa4Secret(
+    sb,
+    sourceInstanceId,
+    targetInstanceId,
+    integrationsConfig.ga4,
+    secretWarnings,
+  );
+
+  return {
+    ok: true,
+    copiedFields: [...COPYABLE_CONFIG_FIELDS],
+    secretWarnings: secretWarnings.length > 0 ? secretWarnings : undefined,
+  };
+}
+
+type SbClient = Awaited<ReturnType<typeof createClient>>;
+type AdminClient = ReturnType<typeof createServiceRoleClient>;
+
+/**
+ * Copy the WooCommerce consumer secret from source's Vault entry to target's.
+ * site_url and consumer_key live in integrations_config and are already
+ * copied by the bulk JSONB copy; the save RPC merges (does not clobber) so
+ * re-passing them here is safe.
+ *
+ * Skipped silently when source has no woocommerce sub-key or no Vault secret.
+ * On failure, appends to warnings — never throws.
+ */
+async function copyWooCommerceSecret(
+  sb: SbClient,
+  sourceInstanceId: number,
+  targetInstanceId: number,
+  wcConfig: Record<string, unknown> | undefined,
+  warnings: string[],
+): Promise<void> {
+  if (!wcConfig) return;
+  const siteUrl = typeof wcConfig.site_url === "string" ? wcConfig.site_url : "";
+  const consumerKey =
+    typeof wcConfig.consumer_key === "string" ? wcConfig.consumer_key : "";
+  if (!siteUrl || !consumerKey) return;
+
+  try {
+    const { data: secret, error: getErr } = await sb.rpc(
+      "woocommerce_get_consumer_secret",
+      { p_instance_id: sourceInstanceId },
+    );
+    if (getErr) {
+      console.warn(
+        `[copyInstanceConfig] woocommerce_get_consumer_secret(${sourceInstanceId}) failed:`,
+        getErr.message,
+      );
+      warnings.push("woocommerce_secret_read_failed");
+      return;
+    }
+    if (!secret) {
+      // No secret on file for source — nothing to copy. Expected when WC was
+      // configured without ever saving (or partially).
+      return;
+    }
+
+    const { error: saveErr } = await sb.rpc("woocommerce_save_credentials", {
+      p_instance_id: targetInstanceId,
+      p_site_url: siteUrl,
+      p_consumer_key: consumerKey,
+      p_consumer_secret: String(secret),
+    });
+    if (saveErr) {
+      console.warn(
+        `[copyInstanceConfig] woocommerce_save_credentials(${targetInstanceId}) failed:`,
+        saveErr.message,
+      );
+      warnings.push("woocommerce_secret_write_failed");
+      return;
+    }
+    console.log(
+      `[copyInstanceConfig] WooCommerce consumer secret copied to instance ${targetInstanceId}`,
+    );
+  } catch (err) {
+    console.warn(
+      `[copyInstanceConfig] WooCommerce secret copy threw for instance ${targetInstanceId}:`,
+      err instanceof Error ? err.message : String(err),
+    );
+    warnings.push("woocommerce_secret_copy_failed");
+  }
+}
+
+/**
+ * Copy the Algolia admin key. Note that algolia_save_credentials replaces the
+ * entire integrations_config.algolia sub-key with only the 4 credential fields
+ * (no COALESCE merge in the migration), so after calling it we re-apply the
+ * source's full algolia sub-key from the JSONB we already have in memory to
+ * restore last_verified_at / last_http_status / last_verified_latency_ms.
+ */
+async function copyAlgoliaSecret(
+  sb: SbClient,
+  admin: AdminClient,
+  sourceInstanceId: number,
+  targetInstanceId: number,
+  algoliaConfig: Record<string, unknown> | undefined,
+  warnings: string[],
+): Promise<void> {
+  if (!algoliaConfig) return;
+  const appId = typeof algoliaConfig.app_id === "string" ? algoliaConfig.app_id : "";
+  const region = typeof algoliaConfig.region === "string" ? algoliaConfig.region : "";
+  const searchKey =
+    typeof algoliaConfig.search_api_key === "string"
+      ? algoliaConfig.search_api_key
+      : "";
+  const primaryIndex =
+    typeof algoliaConfig.primary_index === "string"
+      ? algoliaConfig.primary_index
+      : "";
+  if (!appId || !region) return;
+
+  try {
+    const { data: adminKey, error: getErr } = await sb.rpc(
+      "algolia_get_admin_key",
+      { p_instance_id: sourceInstanceId },
+    );
+    if (getErr) {
+      console.warn(
+        `[copyInstanceConfig] algolia_get_admin_key(${sourceInstanceId}) failed:`,
+        getErr.message,
+      );
+      warnings.push("algolia_secret_read_failed");
+      return;
+    }
+    if (!adminKey) return;
+
+    const { error: saveErr } = await sb.rpc("algolia_save_credentials", {
+      p_instance_id: targetInstanceId,
+      p_app_id: appId,
+      p_region: region,
+      p_search_key: searchKey,
+      p_admin_key: String(adminKey),
+      p_index: primaryIndex,
+    });
+    if (saveErr) {
+      console.warn(
+        `[copyInstanceConfig] algolia_save_credentials(${targetInstanceId}) failed:`,
+        saveErr.message,
+      );
+      warnings.push("algolia_secret_write_failed");
+      return;
+    }
+
+    // Restore the full algolia sub-key from source — save clobbers everything
+    // except the 4 credential fields it was passed.
+    const { data: targetRow, error: readErr } = await admin
+      .from("instance")
+      .select("integrations_config")
+      .eq("instance_id", targetInstanceId)
+      .maybeSingle();
+    if (!readErr && targetRow) {
+      const merged = {
+        ...((targetRow.integrations_config ?? {}) as Record<string, unknown>),
+        algolia: {
+          ...algoliaConfig,
+        },
+      };
+      await admin
+        .from("instance")
+        .update({ integrations_config: merged })
+        .eq("instance_id", targetInstanceId);
+    }
+    console.log(
+      `[copyInstanceConfig] Algolia admin key copied to instance ${targetInstanceId}`,
+    );
+  } catch (err) {
+    console.warn(
+      `[copyInstanceConfig] Algolia secret copy threw for instance ${targetInstanceId}:`,
+      err instanceof Error ? err.message : String(err),
+    );
+    warnings.push("algolia_secret_copy_failed");
+  }
+}
+
+/**
+ * Copy the GA4 OAuth refresh token. Note that this shares the OAuth grant
+ * across the source and target instance — revoking it from Google will affect
+ * both. Acceptable for "copy configuration" semantics; users disconnect and
+ * reconnect per instance when they want isolation.
+ */
+async function copyGa4Secret(
+  sb: SbClient,
+  sourceInstanceId: number,
+  targetInstanceId: number,
+  ga4Config: Record<string, unknown> | undefined,
+  warnings: string[],
+): Promise<void> {
+  if (!ga4Config) return;
+  const propertyId =
+    typeof ga4Config.property_id === "string" ? ga4Config.property_id : "";
+  const email =
+    typeof ga4Config.oauth_account_email === "string"
+      ? ga4Config.oauth_account_email
+      : "";
+  if (!propertyId || !email) return;
+
+  try {
+    const { data: refreshToken, error: getErr } = await sb.rpc(
+      "ga4_get_refresh_token",
+      { p_instance_id: sourceInstanceId },
+    );
+    if (getErr) {
+      console.warn(
+        `[copyInstanceConfig] ga4_get_refresh_token(${sourceInstanceId}) failed:`,
+        getErr.message,
+      );
+      warnings.push("ga4_secret_read_failed");
+      return;
+    }
+    if (!refreshToken) return;
+
+    const { error: saveErr } = await sb.rpc("ga4_save_credentials", {
+      p_instance_id: targetInstanceId,
+      p_property_id: propertyId,
+      p_oauth_account_email: email,
+      p_refresh_token: String(refreshToken),
+    });
+    if (saveErr) {
+      console.warn(
+        `[copyInstanceConfig] ga4_save_credentials(${targetInstanceId}) failed:`,
+        saveErr.message,
+      );
+      warnings.push("ga4_secret_write_failed");
+      return;
+    }
+    console.log(
+      `[copyInstanceConfig] GA4 refresh token copied to instance ${targetInstanceId}`,
+    );
+  } catch (err) {
+    console.warn(
+      `[copyInstanceConfig] GA4 secret copy threw for instance ${targetInstanceId}:`,
+      err instanceof Error ? err.message : String(err),
+    );
+    warnings.push("ga4_secret_copy_failed");
+  }
 }

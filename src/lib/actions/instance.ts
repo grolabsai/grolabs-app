@@ -23,6 +23,9 @@ export type CreateResult =
       slug: string;
       copiedFrom?: string;
       copyWarning?: string;
+      templateCopiedFrom?: string;
+      templateCopyTotal?: number;
+      templateCopyWarning?: string;
     }
   | { ok: false; error: "unauthorized" | "invalid_name" | "save_failed"; message?: string };
 
@@ -49,6 +52,23 @@ export type ConfigSource = {
   storefrontDomainCount: number;
   primaryLocale: string;
   defaultCurrency: string;
+};
+
+/**
+ * A candidate template instance for the "copy template data" step of the
+ * create-instance flow. Template instances are those owned by a tenant
+ * with kind = 'template_owner'. Counts are pre-computed so the dialog can
+ * show "58 categories, 20 attributes, 88 values" without a second round-trip.
+ */
+export type TemplateSource = {
+  instanceId: number;
+  name: string;
+  tenantName: string;
+  categoryCount: number;
+  attributeCount: number;
+  attributeOptionCount: number;
+  speciesCount: number;
+  petProfileAttributeCount: number;
 };
 
 const NAME_MAX_LEN = 80;
@@ -147,7 +167,10 @@ export async function switchToInstance(instanceId: number): Promise<SwitchResult
  */
 export async function createInstance(
   name: string,
-  options?: { copyFromInstanceId?: number },
+  options?: {
+    copyFromInstanceId?: number;
+    copyTemplateFromInstanceId?: number;
+  },
 ): Promise<CreateResult> {
   const sb = await createClient();
   const {
@@ -332,8 +355,62 @@ export async function createInstance(
     }
   }
 
+  let templateCopiedFrom: string | undefined;
+  let templateCopyTotal: number | undefined;
+  let templateCopyWarning: string | undefined;
+
+  if (options?.copyTemplateFromInstanceId != null) {
+    // copy_template_data is SECURITY DEFINER and validated against auth.uid().
+    // The user's membership on the new instance was inserted above, so the
+    // RPC's "must be member of target" check will pass.
+    const { data: rpcData, error: rpcErr } = await sb.rpc(
+      "copy_template_data",
+      {
+        p_source_instance_id: options.copyTemplateFromInstanceId,
+        p_target_instance_id: newInstanceId,
+      },
+    );
+
+    if (rpcErr) {
+      // Per spec (mirrors copyInstanceConfig): a failed copy must NOT roll
+      // back the created instance — we just record a warning.
+      templateCopyWarning = rpcErr.message;
+      console.warn(
+        `[createInstance] copy_template_data(${options.copyTemplateFromInstanceId} → ${newInstanceId}) failed:`,
+        rpcErr,
+      );
+    } else {
+      const { data: src } = await admin
+        .from("instance")
+        .select("name")
+        .eq("instance_id", options.copyTemplateFromInstanceId)
+        .maybeSingle();
+      templateCopiedFrom = src?.name ?? undefined;
+      const payload = (rpcData ?? {}) as {
+        total?: number | string;
+        counts?: Record<string, number>;
+      };
+      const rawTotal = payload.total;
+      templateCopyTotal =
+        typeof rawTotal === "string" ? Number(rawTotal) : rawTotal;
+      console.log(
+        `[createInstance] copy_template_data(${options.copyTemplateFromInstanceId} → ${newInstanceId}) copied ${templateCopyTotal} rows`,
+        payload.counts,
+      );
+    }
+  }
+
   revalidatePath("/", "layout");
-  return { ok: true, instanceId: newInstanceId, slug, copiedFrom, copyWarning };
+  return {
+    ok: true,
+    instanceId: newInstanceId,
+    slug,
+    copiedFrom,
+    copyWarning,
+    templateCopiedFrom,
+    templateCopyTotal,
+    templateCopyWarning,
+  };
 }
 
 /**
@@ -385,6 +462,117 @@ export async function listConfigSources(): Promise<
     })
     .filter((s) => s.integrationKeys.length > 0);
 
+  return { ok: true, sources };
+}
+
+/**
+ * List instances that can act as a template-data source for the create-instance
+ * flow. A template instance is one whose tenant has kind = 'template_owner'
+ * (per docs/policy/tenant-model.md). Counts are pre-computed so the dialog can
+ * show "58 categories, 20 attributes" without a follow-up round-trip.
+ *
+ * Uses service-role for the count aggregation because RLS on the catalog
+ * tables does not currently grant tenants visibility into the template
+ * instance's rows (CLAUDE.md §17 known debt — catalog tables lack template
+ * fallthrough). Reading template metadata for this dropdown is intentionally
+ * broader than what the user could see via RLS in normal app code.
+ */
+export async function listTemplateSources(): Promise<
+  { ok: true; sources: TemplateSource[] } | { ok: false; error: string }
+> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "unauthorized" };
+
+  const admin = createServiceRoleClient();
+
+  // Two simple queries instead of a PostgREST embed: the embed syntax was
+  // silently returning null for the tenant relation in some environments
+  // (FK introspection cache vs. service-role permissions). Splitting removes
+  // the ambiguity and keeps the result deterministic.
+  const { data: tenants, error: tenantsErr } = await admin
+    .from("tenant")
+    .select("tenant_id, name")
+    .eq("kind", "template_owner");
+  if (tenantsErr) {
+    console.warn("[listTemplateSources] tenant query failed:", tenantsErr.message);
+    return { ok: false, error: tenantsErr.message };
+  }
+  const tenantsList = (tenants ?? []) as { tenant_id: number; name: string | null }[];
+  if (tenantsList.length === 0) {
+    console.log("[listTemplateSources] no template_owner tenants found");
+    return { ok: true, sources: [] };
+  }
+  const tenantNameById = new Map<number, string>(
+    tenantsList.map((t) => [t.tenant_id, t.name ?? ""]),
+  );
+  const tenantIds = tenantsList.map((t) => t.tenant_id);
+
+  const { data: instances, error: instErr } = await admin
+    .from("instance")
+    .select("instance_id, name, tenant_id")
+    .in("tenant_id", tenantIds)
+    .order("name");
+  if (instErr) {
+    console.warn("[listTemplateSources] instance query failed:", instErr.message);
+    return { ok: false, error: instErr.message };
+  }
+  const templates = ((instances ?? []) as {
+    instance_id: number;
+    name: string | null;
+    tenant_id: number;
+  }[]);
+  if (templates.length === 0) {
+    console.log(
+      `[listTemplateSources] template_owner tenants exist but have no instances (tenants=${tenantIds.join(",")})`,
+    );
+    return { ok: true, sources: [] };
+  }
+
+  const ids = templates.map((r) => r.instance_id);
+
+  // Aggregate counts per (instance_id, table) in one round-trip per table.
+  // Each table has an instance_id column we can group on. Done in parallel.
+  async function countsFor(table: string): Promise<Map<number, number>> {
+    const { data, error } = await admin
+      .from(table)
+      .select("instance_id")
+      .in("instance_id", ids);
+    if (error) {
+      console.warn(`[listTemplateSources] count failed for ${table}:`, error.message);
+      return new Map();
+    }
+    const m = new Map<number, number>();
+    for (const row of (data ?? []) as { instance_id: number }[]) {
+      m.set(row.instance_id, (m.get(row.instance_id) ?? 0) + 1);
+    }
+    return m;
+  }
+
+  const [categoryC, attrC, optC, spC, ppaC] = await Promise.all([
+    countsFor("category"),
+    countsFor("product_attribute"),
+    countsFor("product_attribute_option"),
+    countsFor("species"),
+    countsFor("pet_profile_attribute"),
+  ]);
+
+  const sources: TemplateSource[] = templates.map((r) => ({
+    instanceId: r.instance_id,
+    name: r.name ?? "",
+    tenantName: tenantNameById.get(r.tenant_id) ?? "",
+    categoryCount: categoryC.get(r.instance_id) ?? 0,
+    attributeCount: attrC.get(r.instance_id) ?? 0,
+    attributeOptionCount: optC.get(r.instance_id) ?? 0,
+    speciesCount: spC.get(r.instance_id) ?? 0,
+    petProfileAttributeCount: ppaC.get(r.instance_id) ?? 0,
+  }));
+
+  console.log(
+    `[listTemplateSources] returning ${sources.length} template source(s): ${sources.map((s) => `${s.instanceId}=${s.name}`).join(", ")}`,
+  );
   return { ok: true, sources };
 }
 

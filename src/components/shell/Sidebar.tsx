@@ -163,7 +163,7 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         { href: "/catalog/products", label: tNav("products"), icon: Package },
         { href: "/catalog/categories" as Route, label: tNav("categories"), icon: LayoutList },
         { href: "/catalog/attributes" as Route, label: tNav("attributes"), icon: SlidersHorizontal },
-        { href: null, label: tNav("brands"), icon: Building2 },
+        { href: "/catalog/brands" as Route, label: tNav("brands"), icon: Building2 },
         { href: null, label: tNav("productTypes"), icon: Shapes },
         { href: null, label: tNav("tags"), icon: Tag },
         { href: null, label: tNav("matchingRules"), icon: GitMerge },

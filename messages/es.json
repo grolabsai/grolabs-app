@@ -685,8 +685,13 @@
         "basicInfo": "Información básica",
         "config": "Configuración y proveedor",
         "attributes": "Atributos del producto",
+        "pricing": "Precios e inventario",
         "gallery": "Galería",
         "summary": "Resumen"
+      },
+      "htmlPreview": "Vista previa",
+      "pricing": {
+        "variantNote": "Precios por variante más abajo."
       },
       "gallery": {
         "noPrimary": "Sin imagen principal",
@@ -720,7 +725,13 @@
       "trackInventorySub": "Se lleva seguimiento de stock",
       "consignment": "Consignación",
       "consignmentSub": "El inventario pertenece al proveedor",
-      "noBrand": "Sin marca"
+      "noBrand": "Sin marca",
+      "price": "Precio",
+      "salePrice": "Precio de oferta",
+      "cost": "Costo",
+      "stockQuantity": "Existencias",
+      "sku": "SKU",
+      "barcode": "Código de barras"
     },
     "variants": {
       "add": "Agregar variante",

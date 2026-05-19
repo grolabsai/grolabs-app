@@ -256,6 +256,8 @@ export type WooProductRaw = {
   sale_price?: string;
   price?: string;
   stock_quantity?: number | null;
+  /** WC 8.3+ native GTIN field. */
+  global_unique_id?: string;
   categories?: Array<{ id: number; name?: string; slug?: string }>;
   images?: Array<{ src: string; alt?: string }>;
   meta_data?: Array<{ key: string; value: unknown }>;

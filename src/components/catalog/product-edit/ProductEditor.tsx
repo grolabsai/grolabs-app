@@ -24,7 +24,8 @@ import {
   updateProductPhotos,
   updateVariantPhotos,
 } from "@/lib/actions/product";
-import { formatRelative } from "@/lib/format";
+import { formatRelative, formatCurrency } from "@/lib/format";
+import { sanitizeDescriptionHtml } from "@/lib/sanitizeHtml";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,10 +55,18 @@ export type AttributeValueForDisplay = {
 
 export type ProductDetail = {
   product_id: number;
+  instance_id: number;
   product_name: string;
   slug: string;
   short_description: string | null;
   long_description: string | null;
+  sku: string | null;
+  barcode: string | null;
+  price: number | null;
+  sale_price: number | null;
+  cost: number | null;
+  stock_quantity: number | null;
+  image_url: string | null;
   is_active: boolean;
   is_consignment: boolean;
   track_inventory: boolean;
@@ -104,11 +113,17 @@ type Props = {
   product: ProductDetail;
   productTypes: ProductTypeOption[];
   brands: BrandOption[];
+  currency: string;
 };
 
 // ─── Editor ─────────────────────────────────────────────────────────────────
 
-export function ProductEditor({ product, productTypes, brands }: Props) {
+export function ProductEditor({
+  product,
+  productTypes,
+  brands,
+  currency,
+}: Props) {
   const t = useTranslations("product.detail");
   const tFields = useTranslations("product.fields");
   const router = useRouter();
@@ -353,6 +368,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
                 rows={2}
                 ariaLabel={tFields("shortDescription")}
               />
+              <HtmlPreview html={product.short_description} />
             </div>
             <div className="s-field">
               <label className="s-field-label">{tFields("longDescription")}</label>
@@ -363,6 +379,7 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
                 rows={4}
                 ariaLabel={tFields("longDescription")}
               />
+              <HtmlPreview html={product.long_description} />
             </div>
             <div className="s-row-pair">
               <div className="s-field">
@@ -389,6 +406,54 @@ export function ProductEditor({ product, productTypes, brands }: Props) {
                 />
               </div>
             </div>
+          </div>
+
+          {/* ── Precios e inventario (read-only, import snapshot) ── */}
+          <div className="s-card">
+            <p className="s-card-label">{t("sections.pricing")}</p>
+            <div className="s-row-pair">
+              <ReadOnlyField
+                label={tFields("price")}
+                value={formatCurrency(product.price, currency)}
+              />
+              <ReadOnlyField
+                label={tFields("salePrice")}
+                value={formatCurrency(product.sale_price, currency)}
+              />
+            </div>
+            <div className="s-row-pair">
+              <ReadOnlyField
+                label={tFields("cost")}
+                value={formatCurrency(product.cost, currency)}
+              />
+              <ReadOnlyField
+                label={tFields("stockQuantity")}
+                value={
+                  product.stock_quantity == null
+                    ? "—"
+                    : String(product.stock_quantity)
+                }
+              />
+            </div>
+            <div className="s-row-pair">
+              <ReadOnlyField label={tFields("sku")} value={product.sku ?? "—"} mono />
+              <ReadOnlyField
+                label={tFields("barcode")}
+                value={product.barcode ?? "—"}
+                mono
+              />
+            </div>
+            {variants.length > 0 ? (
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--s-text-tertiary)",
+                  marginTop: 8,
+                }}
+              >
+                {t("pricing.variantNote")}
+              </p>
+            ) : null}
           </div>
 
           {/* ── Configuración y proveedor (editable) ── */}
@@ -745,6 +810,72 @@ function DeleteProductButton({
     >
       {t("delete")}
     </Button>
+  );
+}
+
+// ─── Sanitized HTML description preview ─────────────────────────────────────
+
+/**
+ * WC descriptions are HTML. The textarea above shows the raw source so it
+ * stays editable; this box renders the sanitized result so the merchant
+ * sees what the description actually looks like. Hidden when empty.
+ */
+function HtmlPreview({ html }: { html: string | null }) {
+  const t = useTranslations("product.detail");
+  const clean = sanitizeDescriptionHtml(html);
+  if (!clean.trim()) return null;
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div
+        style={{
+          fontSize: 10,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          color: "var(--s-text-tertiary)",
+          marginBottom: 4,
+        }}
+      >
+        {t("htmlPreview")}
+      </div>
+      <div
+        className="s-html-preview"
+        style={{
+          fontSize: 13,
+          color: "var(--s-text-secondary)",
+          background: "var(--s-surface-alt)",
+          border: "0.5px solid var(--s-border)",
+          borderRadius: 6,
+          padding: "10px 12px",
+          maxHeight: 280,
+          overflow: "auto",
+        }}
+        dangerouslySetInnerHTML={{ __html: clean }}
+      />
+    </div>
+  );
+}
+
+// ─── Read-only field ────────────────────────────────────────────────────────
+
+function ReadOnlyField({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="s-field">
+      <label className="s-field-label">{label}</label>
+      <input
+        className={`s-input ${mono ? "s-input-mono" : ""}`}
+        value={value}
+        readOnly
+        disabled
+      />
+    </div>
   );
 }
 

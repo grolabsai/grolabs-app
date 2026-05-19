@@ -24,8 +24,28 @@ const MAPPED_KEYS = new Set<string>([
 ]);
 
 /** WC meta_data keys we treat as "obvious" and pull onto columns. */
-const BARCODE_KEYS = new Set(["_barcode", "barcode", "_ean", "ean", "_upc", "upc"]);
-const COST_KEYS = new Set(["_cost", "cost", "_wc_cog_cost", "_cogs"]);
+const BARCODE_KEYS = new Set([
+  "_barcode",
+  "barcode",
+  "_ean",
+  "ean",
+  "_upc",
+  "upc",
+  // WC 8.3+ native GTIN meta + popular GTIN plugins (lowest-priority
+  // fallbacks; row.global_unique_id is preferred over all of these).
+  "_gtin",
+  "_wpm_gtin_code",
+  "hwp_product_gtin",
+]);
+const COST_KEYS = new Set([
+  "_cost",
+  "cost",
+  "_wc_cog_cost",
+  "_cogs",
+  // Cost of Goods for WooCommerce (most popular cost plugin).
+  "_alg_wc_cog_cost",
+  "_wc_cog_cost_method",
+]);
 
 export type CategoryWrite = {
   woocommerce_id: number;
@@ -69,6 +89,16 @@ export function mapProduct(row: WooProductRaw): ProductWrite {
   const barcodeMeta = meta.find((m) => m && BARCODE_KEYS.has(String(m.key)));
   const costMeta = meta.find((m) => m && COST_KEYS.has(String(m.key)));
 
+  // WC 8.3+ native GTIN. Native top-level fields are more reliable than
+  // plugin-injected meta_data, so this wins over any BARCODE_KEYS match.
+  const nativeGtin =
+    typeof row.global_unique_id === "string"
+      ? row.global_unique_id.trim() || null
+      : null;
+  const barcode =
+    nativeGtin ??
+    (barcodeMeta ? String(barcodeMeta.value).trim() || null : null);
+
   // Build wc_raw: everything except the keys we mapped onto columns.
   const wcRaw: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row)) {
@@ -104,15 +134,32 @@ export function mapProduct(row: WooProductRaw): ProductWrite {
     long_description: row.description?.trim() || null,
     image_url: image0,
     images,
-    price: parseDecimal(row.regular_price ?? row.price),
+    // Variable parents send regular_price: "" — the real price lives in
+    // `price`. firstNonEmpty falls through empty/whitespace strings, not
+    // just null/undefined (which is what `??` alone would do).
+    price: parseDecimal(firstNonEmpty(row.regular_price, row.price)),
     sale_price: parseDecimal(row.sale_price),
     stock_quantity:
       typeof row.stock_quantity === "number" ? row.stock_quantity : null,
-    barcode: barcodeMeta ? String(barcodeMeta.value).trim() || null : null,
+    barcode,
     cost: costMeta ? parseDecimal(String(costMeta.value)) : null,
     category_woocommerce_ids: categoryIds,
     wc_raw: wcRaw,
   };
+}
+
+/**
+ * First value that is not null, undefined, or an empty/whitespace-only
+ * string. WC sends regular_price: "" for variable parents, so `??`
+ * (null/undefined only) is not enough — the empty string must fall through.
+ */
+function firstNonEmpty(
+  ...values: (string | null | undefined)[]
+): string | undefined {
+  for (const v of values) {
+    if (v != null && v.trim() !== "") return v;
+  }
+  return undefined;
 }
 
 function parseDecimal(v: string | number | undefined | null): number | null {

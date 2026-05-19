@@ -37,7 +37,13 @@ export type ProductRow = {
   variantSkuCount: number;
   algolia: { status: SyncStatus; lastSyncedAt: string | null };
   woocommerce: { status: SyncStatus; lastSyncedAt: string | null };
-  meilisearch: { status: SyncStatus; lastSyncedAt: string | null };
+  meilisearch: {
+    status: SyncStatus;
+    lastSyncedAt: string | null;
+    /** Latest backend_operation diagnostic for this product (failed task
+     * error, or "skipped: no WooCommerce id yet"). Shown on hover. */
+    note?: string | null;
+  };
 };
 
 export type SyncLogEntry = {
@@ -162,7 +168,8 @@ export function SyncManager({
         });
         return;
       }
-      if (r.failedCount === 0) {
+      const skipped = r.skippedCount ?? 0;
+      if (r.failedCount === 0 && skipped === 0) {
         toast.success(
           t("toast.syncSuccess", {
             platform: prettyPlatform(platform),
@@ -170,23 +177,31 @@ export function SyncManager({
           }),
         );
       } else {
+        // Skipped products did NOT land in the index. Report honestly —
+        // never a green success toast when something didn't sync.
+        const msg =
+          skipped > 0
+            ? t("toast.syncSkipped", {
+                platform: prettyPlatform(platform),
+                ok: r.succeededCount,
+                skipped,
+                failed: r.failedCount,
+              })
+            : t("toast.syncPartial", {
+                platform: prettyPlatform(platform),
+                ok: r.succeededCount,
+                failed: r.failedCount,
+              });
         reportWarning({
           source: `Sync · ${prettyPlatform(platform)}`,
-          title: t("toast.syncPartial", {
-            platform: prettyPlatform(platform),
-            ok: r.succeededCount,
-            failed: r.failedCount,
-          }),
-          message: t("toast.syncPartial", {
-            platform: prettyPlatform(platform),
-            ok: r.succeededCount,
-            failed: r.failedCount,
-          }),
+          title: msg,
+          message: msg,
           context: {
             platform,
             productsCount: r.productsCount,
             succeededCount: r.succeededCount,
             failedCount: r.failedCount,
+            skippedCount: skipped,
             logId: r.logId,
           },
         });
@@ -442,7 +457,9 @@ export function SyncManager({
                       <StatusIcon status={r.woocommerce.status} />
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <StatusIcon status={r.meilisearch.status} />
+                      <span title={r.meilisearch.note ?? undefined}>
+                        <StatusIcon status={r.meilisearch.status} />
+                      </span>
                     </td>
                   </tr>
                 ))

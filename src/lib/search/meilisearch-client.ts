@@ -370,6 +370,78 @@ export async function getTaskStatus(taskUid: number): Promise<{
   }
 }
 
+/**
+ * Outcome of waiting for a Meilisearch task to reach a terminal state.
+ *
+ * `addDocuments` (and friends) return immediately with a task uid;
+ * indexing happens asynchronously on the cluster. Treating the 202-style
+ * enqueue as "success" is exactly the bug this resolves — callers must
+ * wait for the task to actually `succeeded`/`failed` before reporting.
+ */
+export type TaskOutcome =
+  | { outcome: "succeeded"; task: Record<string, unknown> }
+  | {
+      outcome: "failed";
+      task: Record<string, unknown>;
+      error: { message?: string; code?: string; type?: string };
+    }
+  | { outcome: "timeout"; taskUid: number };
+
+/**
+ * Poll a task until it reaches a terminal status or the timeout elapses.
+ *
+ * Uses an explicit getTask poll loop rather than the SDK's `waitForTask`
+ * so the timeout path is a normal return value (not an exception we'd have
+ * to pattern-match on across SDK versions). `taskUid < 0` is the
+ * "nothing enqueued" sentinel (empty doc set / 404 delete) — a no-op
+ * success.
+ */
+export async function waitForTaskCompletion(
+  taskUid: number,
+  timeoutMs = 10_000,
+  intervalMs = 500,
+): Promise<TaskOutcome> {
+  if (taskUid < 0) {
+    return { outcome: "succeeded", task: { taskUid, status: "noop" } };
+  }
+  const client = getClient();
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    let task;
+    try {
+      task = await client.tasks.getTask(taskUid);
+    } catch (err) {
+      throw new MeilisearchOpError(
+        `waitForTaskCompletion(${taskUid}) getTask failed`,
+        err,
+      );
+    }
+    const raw = task as unknown as Record<string, unknown>;
+    if (task.status === "succeeded") {
+      return { outcome: "succeeded", task: raw };
+    }
+    if (task.status === "failed" || task.status === "canceled") {
+      return {
+        outcome: "failed",
+        task: raw,
+        error: task.error
+          ? {
+              message: task.error.message,
+              code: task.error.code,
+              type: task.error.type,
+            }
+          : { message: `task ${task.status}` },
+      };
+    }
+    // enqueued | processing — keep waiting unless the next sleep would
+    // overrun the deadline.
+    if (Date.now() + intervalMs >= deadline) {
+      return { outcome: "timeout", taskUid };
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
 // ── Tenant tokens ─────────────────────────────────────────────────────────────
 
 const parentKeyCache = new Map<string, { uid: string; key: string }>();

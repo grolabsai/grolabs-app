@@ -34,6 +34,10 @@ export type SyncRunResult =
       productsCount: number;
       succeededCount: number;
       failedCount: number;
+      /** Products intentionally NOT pushed (e.g. Meilisearch: no parent WC
+       * id / no variants with a WC id). They did not land — distinct from
+       * succeeded and from failed. Omitted by platforms that never skip. */
+      skippedCount?: number;
       logId: number;
     }
   | { error: string };
@@ -631,38 +635,59 @@ export async function syncProductsToMeilisearch(
     productIds.length,
   );
 
-  const productResults: Array<{ productId: number; success: boolean; error?: string | null }> = [];
+  // Three outcomes, not two: a product can be indexed (success), fail
+  // (real error / unconfirmed task), or be intentionally skipped (no WC
+  // id, no variants with a WC id). A skip means the product did NOT land
+  // in the index — reporting it as "synced" is the exact false-positive
+  // this work removes.
+  const productResults: Array<{
+    productId: number;
+    outcome: "success" | "failed" | "skipped";
+    error?: string | null;
+  }> = [];
   for (const productId of productIds) {
     try {
       const r = await indexProduct(instanceId, productId);
       productResults.push({
         productId,
-        success: r.ok,
+        outcome: r.skipped ? "skipped" : r.ok ? "success" : "failed",
         error: r.ok ? null : r.error ?? "Unknown error",
       });
     } catch (err) {
       productResults.push({
         productId,
-        success: false,
+        outcome: "failed",
         error: err instanceof Error ? err.message : String(err),
       });
     }
   }
 
-  const succeededCount = productResults.filter((r) => r.success).length;
-  const failedCount = productResults.filter((r) => !r.success).length;
+  const succeededCount = productResults.filter((r) => r.outcome === "success").length;
+  const failedCount = productResults.filter((r) => r.outcome === "failed").length;
+  const skippedCount = productResults.filter((r) => r.outcome === "skipped").length;
+  // A run where products were skipped or failed is not a clean success.
   const overallStatus =
-    failedCount === 0 ? "success" : succeededCount === 0 ? "error" : "partial";
+    failedCount === 0 && skippedCount === 0
+      ? "success"
+      : succeededCount === 0
+        ? "error"
+        : "partial";
 
   if (logId) {
-    const firstError = productResults.find((r) => !r.success)?.error ?? null;
+    const firstProblem =
+      productResults.find((r) => r.outcome === "failed")?.error ??
+      (skippedCount > 0
+        ? `${skippedCount} product(s) skipped (not indexable — e.g. no variants with a WooCommerce id)`
+        : null);
     await endSyncLog(
       supabase,
       logId,
       overallStatus,
       succeededCount,
-      failedCount,
-      firstError,
+      // Surface skipped in the failed column of the run log so the
+      // Historial panel doesn't show a misleading all-green row.
+      failedCount + skippedCount,
+      firstProblem,
     );
   }
 
@@ -675,6 +700,7 @@ export async function syncProductsToMeilisearch(
     productsCount: productIds.length,
     succeededCount,
     failedCount,
+    skippedCount,
     logId: logId ?? 0,
   };
 }

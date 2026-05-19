@@ -19,6 +19,7 @@ import {
   ensureIndex,
   upsertDocuments,
   deleteDocument,
+  waitForTaskCompletion,
 } from "./meilisearch-client";
 import {
   buildScoutSearchDocument,
@@ -29,7 +30,26 @@ import {
   type SourceMediaRow,
   type SourceVariantAttribute,
 } from "./document-builder";
-import type { ScoutSearchDocument } from "./types";
+import { indexUidFor, type ScoutSearchDocument } from "./types";
+import {
+  startBackendOperation,
+  completeBackendOperation,
+  recordBackendOperation,
+  noteBackendOperationPending,
+} from "@/lib/observability/backend-operation";
+
+/**
+ * How long to wait for a Meilisearch indexing task to actually complete
+ * before giving up and leaving the operation `pending`. Tunable via env;
+ * defaults to 10s per the observability spec.
+ */
+const TASK_WAIT_TIMEOUT_MS = Number(
+  process.env.MEILISEARCH_TASK_WAIT_MS ?? 10_000,
+);
+
+const OP_INDEX = "meilisearch_index";
+const OP_INDEX_SKIPPED = "meilisearch_index_skipped";
+const OP_INDEX_BULK = "meilisearch_index_bulk";
 
 // ── Source row fetcher ───────────────────────────────────────────────────
 
@@ -194,6 +214,13 @@ export type IndexResult = {
   ok: boolean;
   taskUid?: number;
   error?: string;
+  /** The product was intentionally NOT indexed (no parent WC id, no
+   * variants with a WC id, or product missing). `ok` is still true — this
+   * is not an error — but the product did NOT land in the index, so
+   * callers that report sync outcomes must surface it as "skipped", never
+   * as "synced". */
+  skipped?: boolean;
+  skipReason?: string;
 };
 
 /**
@@ -209,15 +236,27 @@ export async function indexProduct(
   instanceId: number,
   productId: number
 ): Promise<IndexResult> {
+  const startedAtMs = Date.now();
+  let product: SourceProductRow | undefined;
   let docs: ScoutSearchDocument[];
   try {
     const sources = await fetchSources(instanceId, [productId]);
-    const product = sources.products[0];
+    product = sources.products[0];
     if (!product) {
       // Product not found — treat as a delete. (The mutation might have
-      // been a soft-delete or moved to another instance.)
+      // been a soft-delete or moved to another instance.) This is a
+      // legitimate no-op, not a failure, but it IS a reason a product
+      // never lands in the index — record it so it's queryable.
       await removeProduct(instanceId, productId);
-      return { ok: true };
+      await recordBackendOperation({
+        instanceId,
+        operationType: OP_INDEX_SKIPPED,
+        targetId: String(productId),
+        payloadSummary: { product_id: productId, reason: "product-not-found" },
+        status: "succeeded",
+        startedAtMs,
+      });
+      return { ok: true, skipped: true, skipReason: "product-not-found" };
     }
     docs = [
       buildScoutSearchDocument({
@@ -230,19 +269,114 @@ export async function indexProduct(
     ];
   } catch (err) {
     if (err instanceof NotIndexableError) {
-      // Not yet round-tripped to WC. Remove any stale doc and exit clean.
+      // Not yet round-tripped to WC (no parent woocommerce_id, or no
+      // variants with a wc id). Expected for fresh GroLabs products, but
+      // also the single most common reason "some products don't land" —
+      // record the reason so the audit table tells the real story.
       await removeProduct(instanceId, productId);
-      return { ok: true };
+      await recordBackendOperation({
+        instanceId,
+        operationType: OP_INDEX_SKIPPED,
+        targetId: String(productId),
+        payloadSummary: {
+          product_id: productId,
+          reason: `not-indexable: ${err.message}`,
+        },
+        status: "succeeded",
+        startedAtMs,
+      });
+      return {
+        ok: true,
+        skipped: true,
+        skipReason: `not-indexable: ${err.message}`,
+      };
     }
     const message = err instanceof Error ? err.message : String(err);
     await recordSyncError(instanceId, productId, `build: ${message}`);
+    await recordBackendOperation({
+      instanceId,
+      operationType: OP_INDEX,
+      targetId: String(productId),
+      payloadSummary: { product_id: productId, phase: "build" },
+      status: "failed",
+      errorMessage: `build: ${message}`,
+      startedAtMs,
+    });
     return { ok: false, error: message };
   }
 
-  await ensureIndex(instanceId);
-  const task = await upsertDocuments(instanceId, docs);
-  await recordSyncSuccess(instanceId, productId, task.taskUid);
-  return { ok: true, taskUid: task.taskUid };
+  const targetId =
+    product.woocommerce_id != null
+      ? String(product.woocommerce_id)
+      : String(productId);
+  const opId = await startBackendOperation({
+    instanceId,
+    operationType: OP_INDEX,
+    targetId,
+    payloadSummary: {
+      index_name: indexUidFor(instanceId),
+      doc_count: docs.length,
+      product_id: productId,
+    },
+  });
+
+  let taskUid: number;
+  try {
+    await ensureIndex(instanceId);
+    const task = await upsertDocuments(instanceId, docs);
+    taskUid = task.taskUid;
+  } catch (err) {
+    // Connection/config failure — nothing was enqueued.
+    const message = err instanceof Error ? err.message : String(err);
+    await recordSyncError(instanceId, productId, `upsert: ${message}`);
+    await completeBackendOperation(opId, {
+      status: "failed",
+      errorMessage: `upsert: ${message}`,
+      responsePayload: { error: message },
+      startedAtMs,
+    });
+    return { ok: false, error: message };
+  }
+
+  // The real outcome: poll the task to a terminal state. Enqueue is NOT
+  // success.
+  const outcome = await waitForTaskCompletion(taskUid, TASK_WAIT_TIMEOUT_MS);
+
+  if (outcome.outcome === "succeeded") {
+    await recordSyncSuccess(instanceId, productId, taskUid);
+    await completeBackendOperation(opId, {
+      status: "succeeded",
+      responsePayload: outcome.task,
+      startedAtMs,
+    });
+    return { ok: true, taskUid };
+  }
+
+  if (outcome.outcome === "failed") {
+    const msg = outcome.error.message ?? "meilisearch task failed";
+    const code = outcome.error.code ? `${outcome.error.code}: ` : "";
+    await recordSyncError(instanceId, productId, `task ${taskUid}: ${code}${msg}`);
+    await completeBackendOperation(opId, {
+      status: "failed",
+      responsePayload: outcome.task,
+      errorMessage: `${code}${msg}`,
+      startedAtMs,
+    });
+    return { ok: false, error: `${code}${msg}` };
+  }
+
+  // Timed out: the task is still being processed by the cluster. Do NOT
+  // mark the product synced and do NOT claim success. Leave the operation
+  // row pending (completed_at NULL) with the task uid so a later sync or a
+  // future background poller can resolve it.
+  await noteBackendOperationPending(opId, {
+    task_uid: taskUid,
+    note: `not confirmed: still processing after ${TASK_WAIT_TIMEOUT_MS}ms`,
+  });
+  return {
+    ok: false,
+    error: `meilisearch task ${taskUid} still processing after ${TASK_WAIT_TIMEOUT_MS}ms — not confirmed`,
+  };
 }
 
 /** Drop a product from the index. Used when a product is deleted in GroLabs. */
@@ -372,14 +506,68 @@ export async function indexAllForInstance(
     }
 
     if (docs.length > 0) {
+      const batchStartedMs = Date.now();
+      const opId = await startBackendOperation({
+        instanceId,
+        operationType: OP_INDEX_BULK,
+        targetId: null,
+        payloadSummary: {
+          index_name: indexUidFor(instanceId),
+          doc_count: docs.length,
+          product_ids: builtIds,
+        },
+      });
+      let taskUid: number | null = null;
       try {
         const task = await upsertDocuments(instanceId, docs);
-        for (const id of builtIds) await recordSyncSuccess(instanceId, id, task.taskUid);
-        indexed += docs.length;
+        taskUid = task.taskUid;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         for (const id of builtIds) await recordSyncError(instanceId, id, `upsert: ${msg}`);
+        await completeBackendOperation(opId, {
+          status: "failed",
+          errorMessage: `upsert: ${msg}`,
+          responsePayload: { error: msg },
+          startedAtMs: batchStartedMs,
+        });
         failed += docs.length;
+      }
+
+      if (taskUid !== null) {
+        const outcome = await waitForTaskCompletion(
+          taskUid,
+          TASK_WAIT_TIMEOUT_MS,
+        );
+        if (outcome.outcome === "succeeded") {
+          for (const id of builtIds) await recordSyncSuccess(instanceId, id, taskUid);
+          await completeBackendOperation(opId, {
+            status: "succeeded",
+            responsePayload: outcome.task,
+            startedAtMs: batchStartedMs,
+          });
+          indexed += docs.length;
+        } else if (outcome.outcome === "failed") {
+          const msg = outcome.error.message ?? "meilisearch task failed";
+          const code = outcome.error.code ? `${outcome.error.code}: ` : "";
+          for (const id of builtIds) {
+            await recordSyncError(instanceId, id, `task ${taskUid}: ${code}${msg}`);
+          }
+          await completeBackendOperation(opId, {
+            status: "failed",
+            responsePayload: outcome.task,
+            errorMessage: `${code}${msg}`,
+            startedAtMs: batchStartedMs,
+          });
+          failed += docs.length;
+        } else {
+          // Timed out — not confirmed. Don't mark these synced; leave the
+          // op pending for a later run to resolve.
+          await noteBackendOperationPending(opId, {
+            task_uid: taskUid,
+            note: `not confirmed: still processing after ${TASK_WAIT_TIMEOUT_MS}ms`,
+          });
+          failed += docs.length;
+        }
       }
     }
 

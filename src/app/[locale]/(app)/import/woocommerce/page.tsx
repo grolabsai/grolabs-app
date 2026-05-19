@@ -1,15 +1,7 @@
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
-import { WooImportPanel } from "./_client";
+import { WooImportClient } from "./_client";
 import { getImportStatus } from "./actions";
 
 /**
@@ -24,7 +16,6 @@ import { getImportStatus } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function WooCommerceImportPage() {
-  const t = await getTranslations("import.woocommerce");
   const supabase = await createClient();
 
   const {
@@ -63,19 +54,11 @@ export default async function WooCommerceImportPage() {
 
   return (
     <div className="s-page-content">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("pageTitle")}</CardTitle>
-          <CardDescription>
-            {configured
-              ? t("pageDescriptionConfigured", { siteUrl: wc.site_url ?? "" })
-              : t("pageDescriptionMissing")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <WooImportPanel configured={configured} initialStatus={initialStatus} />
-        </CardContent>
-      </Card>
+      <WooImportClient
+        configured={configured}
+        siteUrl={wc.site_url ?? ""}
+        initialStatus={initialStatus}
+      />
     </div>
   );
 }

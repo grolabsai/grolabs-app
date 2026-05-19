@@ -855,8 +855,11 @@
       "step2": {
         "label": "Marca y categoría",
         "brandTitle": "Marca",
-        "brandHint": "Aplica a todos los productos del archivo. Si la marca aún no existe, créala antes en Catálogo → Marcas.",
-        "brandPlaceholder": "Seleccionar marca…",
+        "brandHint": "Aplica a todos los productos del archivo. Si la marca no existe en la lista, escríbela y selecciona \"Crear\" para añadirla.",
+        "brandPlaceholder": "Seleccionar o crear marca…",
+        "brandCreateOption": "Crear \"{name}\"",
+        "brandCreated": "Marca \"{name}\" creada",
+        "brandCreateFailed": "No se pudo crear la marca",
         "columnsTitle": "Columnas del archivo",
         "nameColumnLabel": "Columna con el nombre del producto",
         "photoColumnLabel": "Columna con la URL de la foto (opcional)",
@@ -1060,6 +1063,11 @@
           "products": "Importación de productos finalizada."
         },
         "failed": "No se pudo completar la importación"
+      },
+      "debug": {
+        "title": "Detalle de la última importación",
+        "subtitle": "Modo depuración — registro completo de lo que se creó, actualizó y enlazó. Útil para auditar antes de que la versión final muestre un resumen amigable.",
+        "empty": "Aún no se ha ejecutado una importación. Inicia una corrida para ver el detalle aquí."
       }
     }
   },
@@ -1144,7 +1152,32 @@
         "saveFailed": "No se pudo guardar",
         "missingFields": "URL y consumer key son requeridos",
         "missingSecret": "Ingresa el consumer secret o usa Cancelar para mantener el guardado",
-        "testNeedsSecret": "Para probar, ingresa el secret o usa Reemplazar"
+        "testNeedsSecret": "Para probar, ingresa el secret o usa Reemplazar",
+        "detectSuccess": "Detección de mapeo de campos completada",
+        "detectFailed": "No se pudo detectar el mapeo de campos"
+      },
+      "detect": {
+        "title": "Mapeo de campos",
+        "subtitle": "Detecta dónde tu sitio de WooCommerce guarda marca, código de barras y costo. Después podrás elegir a dónde GroLabs debe escribir cada uno cuando publique productos. Solo lectura — esta detección no modifica datos en WC.",
+        "button": "Detectar mapeo de campos",
+        "buttonRunning": "Detectando…",
+        "needsCredentials": "Guarda las credenciales primero para poder probar.",
+        "lastRun": "Última detección: {when}",
+        "sampleSize": "Muestra: {n} productos",
+        "brandsReachable": "Brands (WC core) disponible",
+        "brandsNotReachable": "Brands (WC core) no disponible",
+        "taxonomiesReachable": "Taxonomías WP legibles",
+        "taxonomiesNotReachable": "Taxonomías WP no accesibles",
+        "concept": {
+          "brand": "Marca",
+          "barcode": "Código de barras",
+          "cost": "Costo"
+        },
+        "col": {
+          "sink": "Ubicación",
+          "installed": "Instalado",
+          "populated": "Con datos"
+        }
       }
     },
     "search": {

@@ -3,14 +3,20 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, EyeOff, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import {
   saveWooCommerceConfig,
   testWooCommerceConnection,
+  detectWooCommerceFieldSinks,
 } from "./actions";
+import type {
+  FieldDetectionReport,
+  SinkScore,
+} from "@/lib/sync/woocommerce-field-detection";
 
 function timeAgo(iso: string): string {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -34,9 +40,15 @@ type Props = {
   instanceId: number;
   initialValues: InitialValues;
   hasConsumerSecret: boolean;
+  initialFieldSinks: FieldDetectionReport | null;
 };
 
-export function WooCommerceForm({ instanceId, initialValues, hasConsumerSecret }: Props) {
+export function WooCommerceForm({
+  instanceId,
+  initialValues,
+  hasConsumerSecret,
+  initialFieldSinks,
+}: Props) {
   const t = useTranslations("configuration.woocommerce");
 
   const [siteUrl, setSiteUrl] = useState(initialValues.siteUrl);
@@ -55,6 +67,10 @@ export function WooCommerceForm({ instanceId, initialValues, hasConsumerSecret }
     latencyMs: number;
     message?: string;
   } | null>(null);
+  const [detectPending, startDetectTransition] = useTransition();
+  const [fieldSinks, setFieldSinks] = useState<FieldDetectionReport | null>(
+    initialFieldSinks,
+  );
 
   const canTest =
     siteUrl.trim() && consumerKey.trim() && (editSecret ? consumerSecret.trim() : hasConsumerSecret);
@@ -73,6 +89,18 @@ export function WooCommerceForm({ instanceId, initialValues, hasConsumerSecret }
       setVerifyState(r);
       if (r.ok) toast.success(t("toast.testSuccess"));
       else toast.error(t("toast.testFailed"), { description: r.message });
+    });
+  }
+
+  function onDetect() {
+    startDetectTransition(async () => {
+      const r = await detectWooCommerceFieldSinks(instanceId);
+      if (!r.ok) {
+        toast.error(t("toast.detectFailed"), { description: r.error });
+        return;
+      }
+      setFieldSinks(r.report);
+      toast.success(t("toast.detectSuccess"));
     });
   }
 
@@ -276,6 +304,195 @@ export function WooCommerceForm({ instanceId, initialValues, hasConsumerSecret }
           {t("actions.save")}
         </Button>
       </div>
+
+      {/* Field-mapping detection ─────────────────────────────────────────
+       *  Probes the connected WC site to figure out where brand / barcode /
+       *  cost are stored, so a follow-up "Set as write target" UI can let
+       *  the user pick where Scout pushes data back. Read-only — no WC
+       *  data is modified by this button. */}
+      <DetectFieldSinksSection
+        canRun={hasConsumerSecret && !!initialValues.siteUrl.trim()}
+        pending={detectPending}
+        report={fieldSinks}
+        onRun={onDetect}
+      />
     </div>
+  );
+}
+
+// ─── Field-sink detection section ─────────────────────────────────────────
+
+function DetectFieldSinksSection({
+  canRun,
+  pending,
+  report,
+  onRun,
+}: {
+  canRun: boolean;
+  pending: boolean;
+  report: FieldDetectionReport | null;
+  onRun: () => void;
+}) {
+  const t = useTranslations("configuration.woocommerce.detect");
+  return (
+    <div
+      style={{
+        marginTop: 24,
+        paddingTop: 24,
+        borderTop: "0.5px solid var(--s-border)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>{t("title")}</div>
+        <p
+          style={{
+            fontSize: 12,
+            color: "var(--s-text-secondary)",
+            marginTop: 4,
+            marginBottom: 0,
+          }}
+        >
+          {t("subtitle")}
+        </p>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onRun}
+          disabled={pending || !canRun}
+        >
+          <Icon icon={Search} size={14} />
+          <span style={{ marginLeft: 8 }}>
+            {pending ? t("buttonRunning") : t("button")}
+          </span>
+        </Button>
+        {!canRun && (
+          <span style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+            {t("needsCredentials")}
+          </span>
+        )}
+        {report && (
+          <span style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+            {t("lastRun", {
+              when: new Date(report.detected_at).toLocaleString(),
+            })}
+          </span>
+        )}
+      </div>
+
+      {report && <FieldSinksReport report={report} />}
+    </div>
+  );
+}
+
+function FieldSinksReport({ report }: { report: FieldDetectionReport }) {
+  const t = useTranslations("configuration.woocommerce.detect");
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        marginTop: 4,
+      }}
+    >
+      <div style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+        {t("sampleSize", { n: report.sample_size })} ·{" "}
+        {report.meta.wc_brands_endpoint_reachable
+          ? t("brandsReachable")
+          : t("brandsNotReachable")}{" "}
+        ·{" "}
+        {report.meta.wp_taxonomies_reachable
+          ? t("taxonomiesReachable")
+          : t("taxonomiesNotReachable")}
+      </div>
+
+      <ConceptBlock title={t("concept.brand")} sinks={report.brand} />
+      <ConceptBlock title={t("concept.barcode")} sinks={report.barcode} />
+      <ConceptBlock title={t("concept.cost")} sinks={report.cost} />
+    </div>
+  );
+}
+
+function ConceptBlock({
+  title,
+  sinks,
+}: {
+  title: string;
+  sinks: SinkScore[];
+}) {
+  const t = useTranslations("configuration.woocommerce.detect");
+  return (
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{title}</div>
+      <div
+        style={{
+          background: "var(--s-surface-2)",
+          borderRadius: "var(--s-radius-md)",
+          padding: 10,
+          display: "grid",
+          gridTemplateColumns: "1fr auto auto",
+          gap: "4px 16px",
+          fontSize: 12,
+        }}
+      >
+        <div style={{ color: "var(--s-text-tertiary)" }}>{t("col.sink")}</div>
+        <div style={{ color: "var(--s-text-tertiary)" }}>{t("col.installed")}</div>
+        <div style={{ color: "var(--s-text-tertiary)" }}>{t("col.populated")}</div>
+        {sinks.map((s) => (
+          <SinkRow key={s.id} score={s} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SinkRow({ score }: { score: SinkScore }) {
+  return (
+    <>
+      <div>
+        <code style={{ fontSize: 11, color: "var(--s-text)" }}>{score.id}</code>
+        <div
+          style={{
+            fontSize: 11,
+            color: "var(--s-text-secondary)",
+          }}
+        >
+          {score.label}
+        </div>
+        {score.samples && score.samples.length > 0 && (
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--s-text-tertiary)",
+              fontStyle: "italic",
+              marginTop: 2,
+            }}
+          >
+            {score.samples.join(" · ")}
+          </div>
+        )}
+      </div>
+      <div className="tabular">
+        {score.installed ? (
+          <CheckCircle2 size={14} style={{ color: "var(--s-success)" }} />
+        ) : (
+          <XCircle size={14} style={{ color: "var(--s-text-tertiary)" }} />
+        )}
+      </div>
+      <div
+        className="tabular"
+        style={{
+          color: score.populated_count > 0 ? "var(--s-text)" : "var(--s-text-tertiary)",
+        }}
+      >
+        {score.populated_count}
+      </div>
+    </>
   );
 }

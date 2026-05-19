@@ -37,7 +37,24 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<WooHttpResult<T>> {
-  const url = `${client.siteUrl.replace(/\/+$/, "")}/wp-json/wc/v3${path}`;
+  return requestAt<T>(client, "wc/v3", method, path, body);
+}
+
+/** Same as request() but lets the caller hit a different REST namespace —
+ *  e.g. "wp/v2" for the WordPress core endpoints (taxonomies, post types)
+ *  that the field-mapping detection probes use. Auth and timeout behaviour
+ *  is identical: Basic auth with the same WC consumer key+secret, which
+ *  WP accepts for /wp/v2/ endpoints when Basic Auth is enabled (or when
+ *  the user is also a WP admin; in practice every WC consumer key has
+ *  enough WP-side capability for read access to taxonomies). */
+async function requestAt<T>(
+  client: WooClient,
+  namespace: "wc/v3" | "wp/v2",
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<WooHttpResult<T>> {
+  const url = `${client.siteUrl.replace(/\/+$/, "")}/wp-json/${namespace}${path}`;
   try {
     const res = await fetch(url, {
       method,
@@ -263,8 +280,59 @@ export type WooProductRaw = {
   meta_data?: Array<{ key: string; value: unknown }>;
   variations?: number[];
   attributes?: unknown[];
+  tags?: Array<{ id: number; name?: string; slug?: string }>;
   [key: string]: unknown;
 };
+
+/**
+ * Subset of WC store settings the import cares about: the weight unit
+ * controls how variation.weight is converted to grams, and the currency
+ * defaults product_pricing.currency for imported variants.
+ *
+ * Endpoint: GET /wp-json/wc/v3/settings/products/{id} where {id} is the
+ * setting key. We probe two: woocommerce_weight_unit and woocommerce_currency.
+ * Both have a string `value` field in the WC settings shape.
+ */
+export type WooStoreSettings = {
+  weightUnit: "g" | "kg" | "oz" | "lb" | null;
+  currency: string | null;
+};
+
+export async function getStoreSettings(
+  client: WooClient,
+): Promise<WooHttpResult<WooStoreSettings>> {
+  type SettingRow = { id?: string; value?: string };
+
+  const [w, c] = await Promise.all([
+    request<SettingRow>(
+      client,
+      "GET",
+      "/settings/products/woocommerce_weight_unit",
+    ),
+    request<SettingRow>(
+      client,
+      "GET",
+      "/settings/general/woocommerce_currency",
+    ),
+  ]);
+
+  // Both settings calls can independently fail on tightly-locked WC
+  // installs; treat as soft failures and let the caller fall back to
+  // defaults. Hard-fail only when BOTH error (likely auth or wrong URL).
+  if (!w.ok && !c.ok) {
+    return { ok: false, status: w.status || c.status, error: w.ok ? c.error : w.error };
+  }
+
+  const rawWeight = w.ok ? (w.data.value ?? "").toString().toLowerCase() : "";
+  const weightUnit =
+    rawWeight === "g" || rawWeight === "kg" || rawWeight === "oz" || rawWeight === "lb"
+      ? (rawWeight as "g" | "kg" | "oz" | "lb")
+      : null;
+
+  const currency = c.ok ? (c.data.value ?? "").toString().toUpperCase().trim() || null : null;
+
+  return { ok: true, status: 200, data: { weightUnit, currency } };
+}
 
 export async function listProductCategoriesPage(
   client: WooClient,
@@ -288,5 +356,83 @@ export async function listProductsPage(
     client,
     "GET",
     `/products?per_page=${perPage}&page=${page}&status=${status}&orderby=id&order=asc`,
+  );
+}
+
+/** A WC variation as returned by GET /products/{id}/variations. Permissive
+ * like WooProductRaw — the import preserves the full object on
+ * product.wc_raw.variations and the mapper extracts only what it needs. */
+export type WooVariationRaw = {
+  id: number;
+  sku?: string;
+  status?: string;
+  description?: string;
+  regular_price?: string;
+  sale_price?: string;
+  price?: string;
+  stock_quantity?: number | null;
+  stock_status?: string;
+  weight?: string;
+  /** WC 8.3+ native GTIN field (same as on the parent). */
+  global_unique_id?: string;
+  image?: { src?: string; alt?: string } | null;
+  attributes?: Array<{ id?: number; name?: string; slug?: string; option?: string }>;
+  meta_data?: Array<{ key: string; value: unknown }>;
+  [key: string]: unknown;
+};
+
+// ─── Detection helpers (used by the WC config page's "Detect" button) ───
+
+/** WC core Brands feature (and most brand plugins) registers a
+ *  /products/brands endpoint. A 200 here means at least one brand-aware
+ *  REST endpoint is reachable on this site; 404 means none is installed. */
+export type WooBrandTerm = {
+  id: number;
+  name: string;
+  slug?: string;
+  count?: number;
+  [key: string]: unknown;
+};
+
+export async function getStoreBrands(
+  client: WooClient,
+): Promise<WooHttpResult<WooBrandTerm[]>> {
+  return request<WooBrandTerm[]>(client, "GET", "/products/brands?per_page=20");
+}
+
+/** Returns the WP-side taxonomy registry. Used to detect plugin-provided
+ *  taxonomies like `pwb-brand`, `yith_product_brand`, `product_brands` that
+ *  aren't exposed via the WC namespace. The shape is an object keyed by
+ *  taxonomy slug; we keep it permissive. */
+export type WpTaxonomyEntry = {
+  name?: string;
+  slug?: string;
+  rest_base?: string;
+  rest_namespace?: string;
+  types?: string[];
+  [key: string]: unknown;
+};
+
+export async function getWpTaxonomies(
+  client: WooClient,
+): Promise<WooHttpResult<Record<string, WpTaxonomyEntry>>> {
+  return requestAt<Record<string, WpTaxonomyEntry>>(
+    client,
+    "wp/v2",
+    "GET",
+    "/taxonomies",
+  );
+}
+
+export async function listProductVariationsPage(
+  client: WooClient,
+  productId: number,
+  page: number,
+  perPage = 100,
+): Promise<WooHttpResult<WooVariationRaw[]>> {
+  return request<WooVariationRaw[]>(
+    client,
+    "GET",
+    `/products/${productId}/variations?per_page=${perPage}&page=${page}&orderby=id&order=asc`,
   );
 }

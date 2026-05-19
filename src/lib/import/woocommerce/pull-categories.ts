@@ -20,7 +20,12 @@ import {
   computeCategoryLevels,
   type CategoryWrite,
 } from "./map";
-import type { ImportError, ImportSummary, ImportProgress } from "./types";
+import type {
+  DebugReport,
+  ImportError,
+  ImportSummary,
+  ImportProgress,
+} from "./types";
 
 type ProgressFn = (p: ImportProgress) => Promise<void> | void;
 
@@ -134,13 +139,39 @@ export async function pullCategories(
     }
   }
 
+  const completedAt = new Date().toISOString();
+  const durationMs = Date.now() - start;
+  const debug: DebugReport = {
+    phase: "categories",
+    startedAt,
+    completedAt,
+    durationMs,
+    totals: {
+      productsProcessed: 0,
+      productsUpserted: 0,
+      productsFailed: 0,
+      productsRenamed: renamedSlugs.length,
+      categoriesUpserted: upserted,
+      variantsUpserted: 0,
+      pricingRowsUpserted: 0,
+      tagsUpserted: 0,
+      tagLinksWritten: 0,
+      attributesUpserted: 0,
+      attributeOptionsUpserted: 0,
+      variantAttributeRowsUpserted: 0,
+      categoryAxisFlips: 0,
+    },
+    perProduct: [],
+  };
+
   return {
     total: allRows.length,
     upserted,
     failed: errors.filter((e) => e.woocommerceId !== undefined).length,
-    durationMs: Date.now() - start,
+    durationMs,
     errors,
     renamedSlugs,
+    debug,
   };
 }
 

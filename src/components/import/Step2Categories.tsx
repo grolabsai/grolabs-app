@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -11,6 +11,7 @@ import { useAgentLog } from "@/components/shell/AgentLogContext";
 import { Combobox } from "@/components/ui/combobox";
 import { TreeMultiSelectCombobox } from "@/components/ui/tree-multiselect";
 import { analyzeImportCategories } from "@/lib/actions/import";
+import { createOrFindBrand } from "@/lib/actions/brand";
 import { makeAgentMessage } from "@/lib/import/agent-message";
 import type { CategoryAssignment } from "@/lib/import/types";
 
@@ -25,6 +26,10 @@ export function Step2Categories({
   const { state, dispatch } = useWizard();
   const { append: logAgent } = useAgentLog();
   const [pending, startTransition] = useTransition();
+  // Brands created inline via the Combobox's "+ Crear" row. Merged with
+  // the props.brands list so newly-created entries appear in the dropdown
+  // immediately without a page reload.
+  const [extraBrands, setExtraBrands] = useState<Brand[]>([]);
 
   const file = state.parsedFile;
 
@@ -250,7 +255,31 @@ export function Step2Categories({
             placeholder={t("brandPlaceholder")}
             value={state.brand.brandId}
             onChange={(id) => dispatch({ type: "SET_BRAND", brandId: id })}
-            options={brands.map((b) => ({ id: b.brand_id, label: b.brand_name }))}
+            options={[...brands, ...extraBrands].map((b) => ({
+              id: b.brand_id,
+              label: b.brand_name,
+            }))}
+            createLabel={(q) => t("brandCreateOption", { name: q })}
+            onCreate={async (label) => {
+              const r = await createOrFindBrand(label);
+              if (!r.ok) {
+                toast.error(t("brandCreateFailed"), { description: r.error });
+                return null;
+              }
+              // Add to the local extras so future renders include it in
+              // the dropdown. If the server returned an existing brand
+              // (case-insensitive match), avoid duplicating it.
+              const alreadyKnown =
+                brands.some((b) => b.brand_id === r.brand.brand_id) ||
+                extraBrands.some((b) => b.brand_id === r.brand.brand_id);
+              if (!alreadyKnown) {
+                setExtraBrands((prev) => [...prev, r.brand]);
+              }
+              if (r.created) {
+                toast.success(t("brandCreated", { name: r.brand.brand_name }));
+              }
+              return { id: r.brand.brand_id, label: r.brand.brand_name };
+            }}
           />
         </div>
       </div>

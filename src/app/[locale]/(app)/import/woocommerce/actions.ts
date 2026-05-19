@@ -8,6 +8,7 @@ import { loadWooClient } from "@/lib/import/woocommerce/client";
 import { pullCategories } from "@/lib/import/woocommerce/pull-categories";
 import { pullProducts } from "@/lib/import/woocommerce/pull-products";
 import type {
+  DebugReport,
   ImportProgress,
   ImportSummary,
   RunResult,
@@ -128,6 +129,9 @@ export async function runWooCommerceImport(
           durationMs: summary.durationMs,
           renamedSlugs: summary.renamedSlugs.length,
         },
+        // Verbose debug log of everything the import did — surfaced on the
+        // right-side debug pane. Cleared at the start of the next run.
+        last_import_debug: summary.debug ?? null,
         // Clear progress now that the run is complete.
         import_progress: null,
       }),
@@ -158,13 +162,20 @@ export type ImportStatus = {
     errorMessage: string | null;
     completedAt: string | null;
   } | null;
+  lastDebug: DebugReport | null;
 };
 
 export async function getImportStatus(): Promise<ImportStatus> {
   const supabase = await createClient();
   const instanceId = await currentInstanceId();
   if (instanceId === null) {
-    return { progress: null, lastImportAt: null, lastSummary: null, lastJob: null };
+    return {
+      progress: null,
+      lastImportAt: null,
+      lastSummary: null,
+      lastJob: null,
+      lastDebug: null,
+    };
   }
 
   const { data: instanceRow } = await supabase
@@ -185,6 +196,7 @@ export async function getImportStatus(): Promise<ImportStatus> {
       durationMs: number;
       renamedSlugs: number;
     };
+    last_import_debug?: DebugReport;
   };
   const wc: WC =
     (instanceRow?.integrations_config as { woocommerce?: WC })?.woocommerce ?? {};
@@ -213,6 +225,7 @@ export async function getImportStatus(): Promise<ImportStatus> {
     lastImportAt: wc.last_import_at ?? null,
     lastSummary: wc.last_import_summary ?? null,
     lastJob,
+    lastDebug: wc.last_import_debug ?? null,
   };
 }
 

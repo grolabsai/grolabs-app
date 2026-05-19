@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Plus, Loader2 } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 
 /**
- * Single-select Combobox.
+ * Single-select Combobox with optional inline-create.
  *
- * Behaviour:
+ * Base behaviour:
  *   - Closed state: shows the selected option's label (or the placeholder).
  *   - Click anywhere on the trigger or the chevron → toggles the dropdown.
  *   - Open state: dropdown shows ALL options, scrollable. The trigger turns
@@ -16,8 +16,21 @@ import { Icon } from "@/components/ui/icon";
  *   - Click an option → selects it, closes.
  *   - Click outside → closes.
  *
- * Strings are prop-driven (placeholder, emptyText, searchAriaLabel) so
- * the host page passes translated text via t().
+ * Inline-create (opt-in via the `onCreate` prop):
+ *   - When the user types a value that doesn't match any option and an
+ *     `onCreate` handler is provided, a "+ Crear «query»" row appears at
+ *     the bottom of the dropdown.
+ *   - Clicking it (or pressing Enter while focused on the search) calls
+ *     `onCreate(query)`. The component shows a spinner on the create row
+ *     until the promise resolves.
+ *   - On success the new option is automatically selected via onChange
+ *     and the dropdown closes.
+ *   - The host is responsible for making the new option appear in the
+ *     `options` array on subsequent renders (typically by appending to the
+ *     parent state inside the `onCreate` callback before resolving).
+ *
+ * Strings are prop-driven (placeholder, emptyText, createLabel,
+ * searchAriaLabel) so the host page passes translated text via t().
  */
 
 export type ComboboxOption = { id: number; label: string };
@@ -27,13 +40,26 @@ type Props = {
   onChange: (next: number | null) => void;
   options: ComboboxOption[];
   placeholder: string;
-  /** Shown when the search returns nothing. Defaults to "—". */
+  /** Shown when the search returns nothing AND inline-create is not enabled
+   *  (or the query is empty). Defaults to "—". */
   emptyText?: string;
   /** Aria label for the search input when open. */
   searchAriaLabel?: string;
   /** Visual error state. */
   invalid?: boolean;
   disabled?: boolean;
+  /**
+   * When set, the dropdown shows a "+ Crear «query»" row whenever the
+   * search has no matches. The handler should persist the new entry and
+   * return its id+label. On success the option is auto-selected. On
+   * failure return null and surface the error yourself (a toast is
+   * customary). The host is also responsible for adding the new option to
+   * the `options` array so it appears on subsequent searches.
+   */
+  onCreate?: (label: string) => Promise<ComboboxOption | null>;
+  /** Label template for the create row — receives the trimmed query, must
+   *  return a UI string. Defaults to `Crear "{query}"`. */
+  createLabel?: (query: string) => string;
 };
 
 export function Combobox({
@@ -45,9 +71,12 @@ export function Combobox({
   searchAriaLabel,
   invalid = false,
   disabled = false,
+  onCreate,
+  createLabel = (q) => `Crear "${q}"`,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [creating, setCreating] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -84,6 +113,42 @@ export function Combobox({
     setQuery("");
   }
 
+  // Does the current query exactly match an existing option label?
+  // (Case-insensitive match — typing "hills" when "Hills" exists should
+  // NOT offer to create a duplicate.)
+  const trimmedQuery = query.trim();
+  const exactMatch = useMemo(() => {
+    if (!trimmedQuery) return null;
+    const lower = trimmedQuery.toLowerCase();
+    return options.find((o) => o.label.toLowerCase() === lower) ?? null;
+  }, [options, trimmedQuery]);
+
+  // Inline-create is offered when:
+  //   - the host wired `onCreate`, AND
+  //   - the user has typed something non-empty, AND
+  //   - that something doesn't exactly match an existing option.
+  // It's offered even when the filter returns partial matches — the user
+  // may want a brand-new entry whose name happens to be a substring of an
+  // existing one ("Hill" vs "Hill's").
+  const canCreate = !!onCreate && trimmedQuery.length > 0 && exactMatch === null;
+
+  async function runCreate() {
+    if (!onCreate || !trimmedQuery || creating) return;
+    setCreating(true);
+    try {
+      const newOpt = await onCreate(trimmedQuery);
+      if (newOpt) {
+        // Auto-select. The host is expected to have added the option to
+        // its own state so subsequent renders include it.
+        onChange(newOpt.id);
+        setOpen(false);
+        setQuery("");
+      }
+    } finally {
+      setCreating(false);
+    }
+  }
+
   return (
     <div ref={wrap} style={{ position: "relative" }}>
       {open ? (
@@ -96,6 +161,17 @@ export function Combobox({
             if (e.key === "Escape") {
               setOpen(false);
               setQuery("");
+              return;
+            }
+            // Enter creates a new option when:
+            //   - inline-create is wired,
+            //   - the query doesn't match an existing option,
+            //   - there are no filtered matches OR the user clearly wants
+            //     a new entry (e.g. typed "Hills New" while "Hills" is a
+            //     partial match).
+            if (e.key === "Enter" && canCreate) {
+              e.preventDefault();
+              void runCreate();
             }
           }}
           aria-label={searchAriaLabel}
@@ -165,7 +241,7 @@ export function Combobox({
             zIndex: 100,
           }}
         >
-          {filtered.length === 0 ? (
+          {filtered.length === 0 && !canCreate ? (
             <div
               style={{
                 padding: 12,
@@ -220,6 +296,59 @@ export function Combobox({
               );
             })
           )}
+
+          {canCreate ? (
+            <button
+              type="button"
+              role="option"
+              aria-busy={creating}
+              disabled={creating}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                void runCreate();
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                width: "100%",
+                padding: "8px 12px",
+                fontSize: 13,
+                textAlign: "left",
+                background: "transparent",
+                color: "var(--scout-accent-800, var(--scout-accent))",
+                border: "none",
+                borderTop:
+                  filtered.length > 0
+                    ? "0.5px solid var(--s-border)"
+                    : "none",
+                cursor: creating ? "wait" : "pointer",
+                fontWeight: 500,
+              }}
+              onMouseEnter={(e) => {
+                if (!creating)
+                  e.currentTarget.style.background = "var(--s-surface-alt)";
+              }}
+              onMouseLeave={(e) => {
+                if (!creating) e.currentTarget.style.background = "transparent";
+              }}
+            >
+              <Icon icon={creating ? Loader2 : Plus} size={14} />
+              <span>{createLabel(trimmedQuery)}</span>
+              {creating ? (
+                <span
+                  aria-hidden
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 11,
+                    color: "var(--s-text-tertiary)",
+                  }}
+                >
+                  …
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>

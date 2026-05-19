@@ -6,7 +6,11 @@
  * in product.wc_raw so future processes can consume it losslessly.
  */
 
-import type { WooCategoryRaw, WooProductRaw } from "@/lib/sync/woocommerce-client";
+import type {
+  WooCategoryRaw,
+  WooProductRaw,
+  WooVariationRaw,
+} from "@/lib/sync/woocommerce-client";
 
 /** Keys we explicitly map onto GroLabs columns and therefore strip from wc_raw. */
 const MAPPED_KEYS = new Set<string>([
@@ -72,6 +76,180 @@ export type ProductWrite = {
   category_woocommerce_ids: number[];
   wc_raw: Record<string, unknown>;
 };
+
+/** One product_variant row, minus instance_id/product_id (the caller owns
+ * those). Spec: docs/policy/wc-import.md — minimum viable variations import.
+ * Only the columns needed to make a variable product indexable are mapped;
+ * the full WC variation object is preserved on product.wc_raw.variations so
+ * the search document builder can pull price/stock/image/attributes from it. */
+export type VariantWrite = {
+  woocommerce_id: number;
+  sku: string | null;
+  variant_name: string | null;
+  barcode: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  /** Converted to grams using the WC store weight_unit when available;
+   *  null when WC sent no weight or the unit is unknown. */
+  weight_grams: number | null;
+};
+
+/** Convert a WC weight string in the store's configured unit to grams. */
+export function weightToGrams(
+  raw: string | null | undefined,
+  unit: "g" | "kg" | "oz" | "lb" | null | undefined,
+): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  if (!unit) return null; // Don't guess — better null than wrong-unit data.
+  switch (unit) {
+    case "g":
+      return n;
+    case "kg":
+      return n * 1000;
+    case "oz":
+      return n * 28.3495;
+    case "lb":
+      return n * 453.592;
+  }
+}
+
+export function mapVariation(
+  row: WooVariationRaw,
+  opts?: { weightUnit?: "g" | "kg" | "oz" | "lb" | null },
+): VariantWrite {
+  const meta = Array.isArray(row.meta_data) ? row.meta_data : [];
+  const barcodeMeta = meta.find((m) => m && BARCODE_KEYS.has(String(m.key)));
+  const nativeGtin =
+    typeof row.global_unique_id === "string"
+      ? row.global_unique_id.trim() || null
+      : null;
+  const barcode =
+    nativeGtin ??
+    (barcodeMeta ? String(barcodeMeta.value).trim() || null : null);
+
+  // Name: join the variation's axis option values (e.g. "Rojo / XL"). WC
+  // variation attributes carry the resolved option per axis. Empty when the
+  // product has no variation axes — leave null and let the UI fall back.
+  const options = Array.isArray(row.attributes)
+    ? row.attributes
+        .map((a) => (typeof a.option === "string" ? a.option.trim() : ""))
+        .filter(Boolean)
+    : [];
+  const variantName = options.length > 0 ? options.join(" / ") : null;
+
+  const imgSrc =
+    row.image && typeof row.image.src === "string"
+      ? row.image.src.trim() || null
+      : null;
+
+  return {
+    woocommerce_id: row.id,
+    sku: row.sku?.trim() || null,
+    variant_name: variantName,
+    barcode,
+    image_url: imgSrc,
+    // WC variations can be draft/private; only 'publish' is purchasable.
+    // Absent status (older WC) → assume active.
+    is_active: row.status ? row.status === "publish" : true,
+    weight_grams: weightToGrams(
+      typeof row.weight === "string" ? row.weight : null,
+      opts?.weightUnit ?? null,
+    ),
+  };
+}
+
+// ─── Tags ─────────────────────────────────────────────────────────────────
+
+export type TagWrite = {
+  /** Slug-derived natural key, unique per (instance, code). */
+  tag_code: string;
+  tag_name: string;
+};
+
+export function mapTag(t: {
+  id?: number;
+  name?: string;
+  slug?: string;
+}): TagWrite | null {
+  const name = (t.name ?? "").trim();
+  const slug = (t.slug ?? "").trim();
+  const codeBase = slug || name;
+  if (!codeBase) return null;
+  const tag_code = normalizeSlug(codeBase);
+  if (!tag_code) return null;
+  return { tag_code, tag_name: name || tag_code };
+}
+
+// ─── Attribute axes ───────────────────────────────────────────────────────
+
+export type AxisDef = {
+  /** Stable, slug-ish key used as product_attribute.attribute_code. WC
+   *  taxonomy slugs come through as "pa_size" → we strip the "pa_" so the
+   *  GroLabs code matches the natural-language form already used in the
+   *  rest of the catalog ("size", "color"). Non-taxonomy attributes (just a
+   *  name) are slugified directly. */
+  code: string;
+  /** Human display name. Falls back to the code title-cased when WC sent
+   *  no `name`. */
+  name: string;
+  /** Position from the WC product attributes array (0-based). Used to
+   *  preserve a deterministic variant_axis_order on the category mapping. */
+  position: number;
+};
+
+/** Strip the WC taxonomy prefix and slugify into snake_case for
+ *  attribute_code. WC sometimes also sends raw display names as the slug
+ *  ("Marca", "Variante" with capitals) — we still slug-clean those. */
+export function toAttributeCode(input: string): string {
+  const trimmed = input.trim();
+  // WC taxonomy attributes always come through as "pa_<code>".
+  const stripped = trimmed.startsWith("pa_") ? trimmed.slice(3) : trimmed;
+  return (
+    stripped
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 60) || "attr"
+  );
+}
+
+/** Pull the variation-marked axes off a WC parent product's wc_raw. The
+ *  return is ordered by WC `position` (falling back to array order) so
+ *  category_product_attribute.variant_axis_order is stable across reimports. */
+export function deriveAxisDefs(raw: WooProductRaw): AxisDef[] {
+  const attrs = Array.isArray(raw.attributes) ? raw.attributes : [];
+  const axes: AxisDef[] = [];
+  attrs.forEach((entryUnknown, idx) => {
+    const entry = entryUnknown as {
+      name?: string;
+      slug?: string;
+      variation?: boolean;
+      position?: number;
+    } | null;
+    if (!entry || !entry.variation) return;
+    const slugOrName = (entry.slug ?? entry.name ?? "").trim();
+    if (!slugOrName) return;
+    const code = toAttributeCode(slugOrName);
+    const name = (entry.name ?? code).trim();
+    axes.push({
+      code,
+      name,
+      position: typeof entry.position === "number" ? entry.position : idx,
+    });
+  });
+  // Deterministic order even if WC sent the same position twice.
+  axes.sort((a, b) => a.position - b.position);
+  return axes;
+}
+
+/** Slug-normalised value for product_attribute_option.value_code. */
+export function toOptionCode(input: string): string {
+  return normalizeSlug(input).slice(0, 60) || "opt";
+}
 
 export function mapCategory(row: WooCategoryRaw): CategoryWrite {
   return {

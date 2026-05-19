@@ -86,6 +86,12 @@ export async function pullProducts(
   // Pre-fetch the category WC-id → GroLabs-id map once.
   const categoryIdMap = await loadCategoryIdMap(supabase, instanceId);
 
+  // Instance currency — used by the simple-product fallback path
+  // (ensureDefaultVariant). Variable-product variant pricing uses the WC
+  // store currency from storeSettings.currency. Falls back to GTQ if neither
+  // is configured.
+  const currency = await loadInstanceCurrency(supabase, instanceId);
+
   // Debug accumulator — counts are exact, perProduct is capped.
   const totals: DebugReport["totals"] = {
     productsProcessed: 0,
@@ -226,7 +232,6 @@ export async function pullProducts(
           mapped.woocommerce_id,
           errors,
         );
-
         // ── Variant axes / options / variant_attribute / category flip ──
         if (isVariable && variantIdByWcId.size > 0) {
           const axisOutcome = await syncAxesForProduct({
@@ -259,6 +264,23 @@ export async function pullProducts(
         );
         totals.tagsUpserted += tagOutcome.tagsUpserted;
         totals.tagLinksWritten += tagOutcome.linksWritten;
+
+        // ── Default variant fallback ───────────────────────────────────
+        // Products with no WC variations (simple/grouped/external, or
+        // variable products whose variations fetch failed) still need a
+        // placeholder product_variant + product_pricing so the rest of
+        // the GroLabs catalog (search index, sync) has something to bind
+        // to. ensureDefaultVariant() is a no-op when variants already
+        // exist, so it's safe to call unconditionally — for variable
+        // products that succeeded above, this just returns.
+        await ensureDefaultVariant(
+          supabase,
+          instanceId,
+          productId,
+          mapped,
+          currency,
+          errors,
+        );
 
         totals.productsUpserted += 1;
         upserted += 1;
@@ -839,6 +861,101 @@ async function loadCategoryIdMap(
       .filter((r) => r.woocommerce_id != null)
       .map((r) => [Number(r.woocommerce_id), Number(r.category_id)]),
   );
+}
+
+async function loadInstanceCurrency(
+  supabase: SupabaseClient,
+  instanceId: number,
+): Promise<string> {
+  const { data } = await supabase
+    .from("instance")
+    .select("default_currency")
+    .eq("instance_id", instanceId)
+    .maybeSingle<{ default_currency: string | null }>();
+  return data?.default_currency ?? "GTQ";
+}
+
+/**
+ * Ensure every WC-imported product has at least one product_variant row.
+ *
+ * The GroLabs catalog model is variant-centric — sku/pricing/stock live on
+ * product_variant + product_pricing. WC import v1 originally created only
+ * the parent product row, leaving the search indexer to special-case
+ * "no variants" via parent-field fallback. To keep the model uniform,
+ * we now materialise a single 1:1 placeholder variant per imported
+ * product, plus a retail product_pricing row mirroring the parent price.
+ *
+ * Behaviour:
+ *  - 0 variants today → insert one placeholder + (optionally) a pricing row.
+ *  - >=1 variants today → no-op. The product already has variants (manual
+ *    additions in the GroLabs UI, a prior wc-import-variants restructure
+ *    of this product's wc_raw.variations[], or an earlier run of this same
+ *    helper); we never duplicate.
+ *
+ * Variable WC products: get the same placeholder. The future
+ * wc-import-variants restructure pass is expected to detect a single
+ * placeholder variant (woocommerce_id IS NULL) on a variable parent and
+ * replace it with real variants exploded from wc_raw.variations[].
+ */
+async function ensureDefaultVariant(
+  supabase: SupabaseClient,
+  instanceId: number,
+  productId: number,
+  mapped: ProductWrite,
+  currency: string,
+  errors: ImportError[],
+): Promise<void> {
+  const { count, error: countErr } = await supabase
+    .from("product_variant")
+    .select("variant_id", { count: "exact", head: true })
+    .eq("product_id", productId);
+
+  if (countErr) {
+    errors.push({
+      woocommerceId: mapped.woocommerce_id,
+      message: `count variants: ${countErr.message}`,
+    });
+    return;
+  }
+  if ((count ?? 0) > 0) return;
+
+  const { data: inserted, error: insErr } = await supabase
+    .from("product_variant")
+    .insert({
+      instance_id: instanceId,
+      product_id: productId,
+      sku: mapped.sku,
+      barcode: mapped.barcode,
+      is_active: true,
+    })
+    .select("variant_id")
+    .single();
+
+  if (insErr || !inserted) {
+    errors.push({
+      woocommerceId: mapped.woocommerce_id,
+      message: `insert default variant: ${insErr?.message ?? "unknown"}`,
+    });
+    return;
+  }
+
+  if (mapped.price === null) return;
+
+  const { error: priceErr } = await supabase.from("product_pricing").insert({
+    instance_id: instanceId,
+    variant_id: Number(inserted.variant_id),
+    channel: "retail",
+    currency,
+    list_price: mapped.price,
+    cost_price: mapped.cost,
+  });
+
+  if (priceErr) {
+    errors.push({
+      woocommerceId: mapped.woocommerce_id,
+      message: `insert default pricing: ${priceErr.message}`,
+    });
+  }
 }
 
 async function upsertProduct(

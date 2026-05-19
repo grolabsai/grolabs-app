@@ -482,6 +482,49 @@
         "comingSoon": "coming soon"
       }
     },
+    "brands": {
+      "title": "Brands",
+      "searchPlaceholder": "Search brands…",
+      "createButton": "New brand",
+      "empty": {
+        "noBrands": "No brands yet.",
+        "noResults": "No results for \"{query}\".",
+        "createFirst": "Create the first",
+        "selectPrompt": "Select a brand or create a new one."
+      },
+      "form": {
+        "createTitle": "New brand",
+        "editTitle": "Edit brand",
+        "sections": {
+          "basic": "Basic information",
+          "meta": "Details"
+        },
+        "fields": {
+          "name": "Name",
+          "namePlaceholder": "e.g. Royal Canin",
+          "manufacturer": "Manufacturer",
+          "manufacturerPlaceholder": "e.g. Mars Petcare",
+          "manufacturerDesc": "Optional. Company that produces the brand."
+        },
+        "meta": {
+          "id": "ID",
+          "products": "Linked products",
+          "created": "Created",
+          "updated": "Updated"
+        }
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "✓ Saved",
+        "delete": "Delete brand",
+        "deleteLinked": "Linked to {n} product(s) — cannot be deleted.",
+        "confirmDelete": "Delete this brand? This action cannot be undone."
+      },
+      "errors": {
+        "emptyName": "Name is required."
+      }
+    },
     "variantAxis": {
       "inheritedLabel": "Inherited from parent categories",
       "inheritedDesc": "These axes were defined in parent categories and are automatically available.",
@@ -706,8 +749,13 @@
         "basicInfo": "Basic information",
         "config": "Configuration & supplier",
         "attributes": "Product attributes",
+        "pricing": "Pricing & inventory",
         "gallery": "Gallery",
         "summary": "Summary"
+      },
+      "htmlPreview": "Preview",
+      "pricing": {
+        "variantNote": "Per-variant prices below."
       },
       "gallery": {
         "noPrimary": "No primary image",
@@ -741,7 +789,13 @@
       "trackInventorySub": "Stock is tracked",
       "consignment": "Consignment",
       "consignmentSub": "Inventory belongs to the supplier",
-      "noBrand": "No brand"
+      "noBrand": "No brand",
+      "price": "Price",
+      "salePrice": "Sale price",
+      "cost": "Cost",
+      "stockQuantity": "Stock",
+      "sku": "SKU",
+      "barcode": "Barcode"
     },
     "variants": {
       "add": "Add variant",

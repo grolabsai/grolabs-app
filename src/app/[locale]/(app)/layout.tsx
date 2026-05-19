@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { AgentPanel } from "@/components/shell/AgentPanel";
 import { AgentLogProvider } from "@/components/shell/AgentLogContext";
+import { MissingTranslationListener } from "@/components/i18n/MissingTranslationListener";
 import { NewInstanceBanner } from "@/components/shell/NewInstanceBanner";
 
 /**
@@ -61,6 +62,7 @@ export default async function AppLayout({
 
   return (
     <AgentLogProvider>
+      <MissingTranslationListener />
       <div className="s-app">
         <Sidebar instanceName={instanceName} />
         <main className="s-main">

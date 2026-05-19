@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { Link } from "@/i18n/routing";
+import { useActivityStream } from "@/lib/activity-stream";
 import {
   syncProductsToAlgolia,
   syncProductsToMeilisearch,
@@ -80,6 +81,7 @@ export function SyncManager({
   const [showLog, setShowLog] = useState(false);
   const [showMapping, setShowMapping] = useState(false);
   const [syncingPlatform, setSyncingPlatform] = useState<Platform | null>(null);
+  const { reportError, reportWarning } = useActivityStream();
 
   // ── Counts for the header badges ─────────────────────────────────────────
   const counts = useMemo(() => {
@@ -148,8 +150,15 @@ export function SyncManager({
             : await syncProductsToWordPress(selectedIds);
       setSyncingPlatform(null);
       if ("error" in r) {
-        toast.error(t("toast.syncError", { platform: prettyPlatform(platform) }), {
-          description: r.error,
+        reportError({
+          source: `Sync · ${prettyPlatform(platform)}`,
+          title: t("toast.syncError", { platform: prettyPlatform(platform) }),
+          message: r.error,
+          context: {
+            platform,
+            selectedProductIds: selectedIds,
+            serverError: r.error,
+          },
         });
         return;
       }
@@ -161,13 +170,26 @@ export function SyncManager({
           }),
         );
       } else {
-        toast.warning(
-          t("toast.syncPartial", {
+        reportWarning({
+          source: `Sync · ${prettyPlatform(platform)}`,
+          title: t("toast.syncPartial", {
             platform: prettyPlatform(platform),
             ok: r.succeededCount,
             failed: r.failedCount,
           }),
-        );
+          message: t("toast.syncPartial", {
+            platform: prettyPlatform(platform),
+            ok: r.succeededCount,
+            failed: r.failedCount,
+          }),
+          context: {
+            platform,
+            productsCount: r.productsCount,
+            succeededCount: r.succeededCount,
+            failedCount: r.failedCount,
+            logId: r.logId,
+          },
+        });
       }
       setSelected({});
     });

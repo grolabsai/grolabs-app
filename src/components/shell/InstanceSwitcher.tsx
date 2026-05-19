@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Check, Plus } from "lucide-react";
-import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
 import {
   DropdownMenu,
@@ -14,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { switchToInstance } from "@/lib/actions/instance";
+import { useActivityStream } from "@/lib/activity-stream";
 import { CreateInstanceDialog } from "./CreateInstanceDialog";
 
 export type InstanceListItem = {
@@ -43,6 +43,7 @@ export function InstanceSwitcher({
   const [createOpen, setCreateOpen] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [, startTransition] = useTransition();
+  const { reportError } = useActivityStream();
 
   const current =
     instances.find((i) => i.instanceId === currentInstanceId) ?? null;
@@ -59,7 +60,16 @@ export function InstanceSwitcher({
       const result = await switchToInstance(instanceId);
       setPendingId(null);
       if (!result.ok) {
-        toast.error(t("switchFailed"));
+        reportError({
+          source: "Instance switch",
+          title: t("switchFailed"),
+          message: result.message ?? result.error,
+          context: {
+            targetInstanceId: instanceId,
+            errorCode: result.error,
+            serverMessage: result.message ?? null,
+          },
+        });
         return;
       }
       router.refresh();

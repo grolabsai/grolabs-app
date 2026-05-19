@@ -318,6 +318,11 @@
     "copied": "Respuesta copiada al portapapeles.",
     "copyFailed": "No se pudo copiar al portapapeles."
   },
+  "activityStream": {
+    "errorToastTitle": "Ocurrió un error",
+    "warningToastTitle": "Atención",
+    "seePanel": "Ver detalles en el panel Asistente."
+  },
   "catalog": {
     "categoryAttributes": {
       "sectionTitle": "Atributos",

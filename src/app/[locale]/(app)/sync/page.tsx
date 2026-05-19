@@ -72,6 +72,42 @@ export default async function SyncPage() {
     statusByPair.set(`${s.product_id}:${s.platform}`, s.last_synced_at);
   }
 
+  // Latest Meilisearch backend_operation per product — surfaces *why* a
+  // product is — (failed task error, or skipped: no WooCommerce id yet)
+  // as a hover note on the MeiliSearch status cell. Read-only; the audit
+  // table is the source of truth for the diagnostic, the status icon still
+  // comes from product_sync_status.
+  type OpRow = {
+    operation_type: string;
+    status: string;
+    error_message: string | null;
+    payload_summary: { product_id?: number; reason?: string } | null;
+    started_at: string;
+  };
+  const { data: opRows } = productIds.length
+    ? await supabase
+        .from("backend_operation")
+        .select("operation_type, status, error_message, payload_summary, started_at")
+        .eq("instance_id", instanceId)
+        .in("operation_type", ["meilisearch_index", "meilisearch_index_skipped"])
+        .order("started_at", { ascending: false })
+        .limit(2000)
+        .returns<OpRow[]>()
+    : { data: [] as OpRow[] };
+  // Rows arrive newest-first; keep the first seen per product.
+  const meiliNoteByProduct = new Map<number, string>();
+  for (const op of opRows ?? []) {
+    const pid = op.payload_summary?.product_id;
+    if (pid == null || meiliNoteByProduct.has(pid)) continue;
+    if (op.operation_type === "meilisearch_index_skipped") {
+      meiliNoteByProduct.set(pid, op.payload_summary?.reason ?? "skipped");
+    } else if (op.status === "failed") {
+      meiliNoteByProduct.set(pid, op.error_message ?? "indexing failed");
+    } else if (op.status === "pending") {
+      meiliNoteByProduct.set(pid, "indexing not confirmed (still processing)");
+    }
+  }
+
   // Project to ProductRow shape used by the client
   const rows: ProductRow[] = (products ?? []).map((p) => {
     const eff = effectiveUpdatedAt({
@@ -102,6 +138,7 @@ export default async function SyncPage() {
       meilisearch: {
         status: deriveStatus({ effectiveUpdatedAt: eff, lastSyncedAt: meiliLast }),
         lastSyncedAt: meiliLast,
+        note: meiliNoteByProduct.get(p.product_id) ?? null,
       },
     };
   });

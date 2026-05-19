@@ -37,7 +37,13 @@ export type ProductRow = {
   variantSkuCount: number;
   algolia: { status: SyncStatus; lastSyncedAt: string | null };
   woocommerce: { status: SyncStatus; lastSyncedAt: string | null };
-  meilisearch: { status: SyncStatus; lastSyncedAt: string | null };
+  meilisearch: {
+    status: SyncStatus;
+    lastSyncedAt: string | null;
+    /** Latest backend_operation diagnostic for this product (failed task
+     * error, or "skipped: no WooCommerce id yet"). Shown on hover. */
+    note?: string | null;
+  };
 };
 
 export type SyncLogEntry = {
@@ -442,7 +448,9 @@ export function SyncManager({
                       <StatusIcon status={r.woocommerce.status} />
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <StatusIcon status={r.meilisearch.status} />
+                      <span title={r.meilisearch.note ?? undefined}>
+                        <StatusIcon status={r.meilisearch.status} />
+                      </span>
                     </td>
                   </tr>
                 ))

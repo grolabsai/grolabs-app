@@ -214,6 +214,13 @@ export type IndexResult = {
   ok: boolean;
   taskUid?: number;
   error?: string;
+  /** The product was intentionally NOT indexed (no parent WC id, no
+   * variants with a WC id, or product missing). `ok` is still true — this
+   * is not an error — but the product did NOT land in the index, so
+   * callers that report sync outcomes must surface it as "skipped", never
+   * as "synced". */
+  skipped?: boolean;
+  skipReason?: string;
 };
 
 /**
@@ -249,7 +256,7 @@ export async function indexProduct(
         status: "succeeded",
         startedAtMs,
       });
-      return { ok: true };
+      return { ok: true, skipped: true, skipReason: "product-not-found" };
     }
     docs = [
       buildScoutSearchDocument({
@@ -278,7 +285,11 @@ export async function indexProduct(
         status: "succeeded",
         startedAtMs,
       });
-      return { ok: true };
+      return {
+        ok: true,
+        skipped: true,
+        skipReason: `not-indexable: ${err.message}`,
+      };
     }
     const message = err instanceof Error ? err.message : String(err);
     await recordSyncError(instanceId, productId, `build: ${message}`);

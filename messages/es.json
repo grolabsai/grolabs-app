@@ -1253,6 +1253,7 @@
     "toast": {
       "syncSuccess": "{platform}: {n} producto(s) sincronizados.",
       "syncPartial": "{platform}: {ok} ok, {failed} fallaron.",
+      "syncSkipped": "{platform}: {ok} sincronizados, {skipped} omitidos (sin variantes con id de WooCommerce), {failed} fallaron.",
       "syncError": "Error al sincronizar con {platform}"
     }
   },

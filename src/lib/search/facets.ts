@@ -15,6 +15,8 @@
  * Scoped narrowly on purpose: a tenant should not be able to facet on
  * arbitrary string fields, both for perf (high-cardinality fields blow up
  * the response) and to keep the contract a small, audited list.
+ *
+ * Membership only — order is asserted separately by `FACET_RENDER_ORDER`.
  */
 export const FACET_ALLOWLIST: readonly string[] = [
   "brand",
@@ -23,6 +25,28 @@ export const FACET_ALLOWLIST: readonly string[] = [
   "price",
   "scout_attributes.species",
   "scout_attributes.lifestage",
+];
+
+/**
+ * Deliberate render order for the emulator facet rail (and any other UI
+ * surface that consumes the facets contract). Price and brand lead because
+ * they're the dominant deciding factors in shopper research; remaining
+ * attribute facets follow in priority order; the in-stock availability
+ * toggle is last as visual punctuation.
+ *
+ * TODO(dynamic-attribute-facets): when per-attribute facets become driven
+ * by the catalog's `product_attribute` rows (indexed via the document
+ * builder + added to `filterableAttributes` per-instance), this static
+ * ordering should give way to `category_product_attribute.form_order` for
+ * the attribute slice — price + brand stay pinned to the top, in_stock
+ * stays at the bottom, the middle becomes data-driven.
+ */
+export const FACET_RENDER_ORDER: readonly string[] = [
+  "price",
+  "brand",
+  "scout_attributes.species",
+  "scout_attributes.lifestage",
+  "in_stock",
 ];
 
 const FACET_ALLOWSET = new Set(FACET_ALLOWLIST);

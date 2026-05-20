@@ -22,7 +22,7 @@ import {
   type EmulatorSearchResult,
   type EmulatorAttributeMatch,
 } from "./actions";
-import { type FacetFilter } from "@/lib/search/facets";
+import { FACET_RENDER_ORDER, type FacetFilter } from "@/lib/search/facets";
 
 type Props = {
   instanceId: number;
@@ -278,95 +278,120 @@ function FacetRail(props: FacetRailProps) {
       {!facets ? (
         <p className="text-xs text-muted-foreground">{t("facets.loading")}</p>
       ) : (
-        <>
-          <FacetCheckboxGroup
-            title={t("facets.brand")}
-            distribution={brandDist}
-            selected={brandSelections}
-            onToggle={(value) => {
-              const next = new Set(brandSelections);
-              if (next.has(value)) next.delete(value);
-              else next.add(value);
-              setBrandSelections(next);
-            }}
-          />
+        FACET_RENDER_ORDER.map((name) => {
+          // One renderer per facet name, dispatched in the order asserted by
+          // FACET_RENDER_ORDER. Each branch owns its own widget (checkbox
+          // list / range / toggle) — kept inline because there are only a
+          // handful and the shapes diverge enough that a single abstract
+          // renderer would obscure more than it shared.
+          switch (name) {
+            case "price":
+              return (
+                <section key={name}>
+                  <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t("facets.price")}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={priceMin}
+                      onChange={(e) => setPriceMin(e.target.value)}
+                      placeholder={priceStats ? String(Math.floor(priceStats.min)) : "min"}
+                      className="h-8 text-xs"
+                    />
+                    <span className="text-xs text-muted-foreground">–</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={priceMax}
+                      onChange={(e) => setPriceMax(e.target.value)}
+                      placeholder={priceStats ? String(Math.ceil(priceStats.max)) : "max"}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  {priceStats ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                      {t("facets.priceRange", {
+                        min: Math.floor(priceStats.min),
+                        max: Math.ceil(priceStats.max),
+                      })}
+                    </p>
+                  ) : null}
+                </section>
+              );
 
-          <FacetCheckboxGroup
-            title={t("facets.species")}
-            distribution={speciesDist}
-            selected={speciesSelections}
-            onToggle={(value) => {
-              const next = new Set(speciesSelections);
-              if (next.has(value)) next.delete(value);
-              else next.add(value);
-              setSpeciesSelections(next);
-            }}
-          />
+            case "brand":
+              return (
+                <FacetCheckboxGroup
+                  key={name}
+                  title={t("facets.brand")}
+                  distribution={brandDist}
+                  selected={brandSelections}
+                  onToggle={(value) => {
+                    const next = new Set(brandSelections);
+                    if (next.has(value)) next.delete(value);
+                    else next.add(value);
+                    setBrandSelections(next);
+                  }}
+                />
+              );
 
-          <FacetCheckboxGroup
-            title={t("facets.lifestage")}
-            distribution={lifestageDist}
-            selected={lifestageSelections}
-            onToggle={(value) => {
-              const next = new Set(lifestageSelections);
-              if (next.has(value)) next.delete(value);
-              else next.add(value);
-              setLifestageSelections(next);
-            }}
-          />
+            case "scout_attributes.species":
+              return (
+                <FacetCheckboxGroup
+                  key={name}
+                  title={t("facets.species")}
+                  distribution={speciesDist}
+                  selected={speciesSelections}
+                  onToggle={(value) => {
+                    const next = new Set(speciesSelections);
+                    if (next.has(value)) next.delete(value);
+                    else next.add(value);
+                    setSpeciesSelections(next);
+                  }}
+                />
+              );
 
-          {/* in_stock — render as a single toggle. Show counts as helper text. */}
-          <section>
-            <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t("facets.inStockTitle")}
-            </h4>
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs">{t("facets.inStockOnly")}</label>
-              <Switch checked={inStockOnly} onCheckedChange={setInStockOnly} />
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
-              {t("facets.inStockCounts", {
-                inStock: inStockDist["true"] ?? 0,
-                outOfStock: inStockDist["false"] ?? 0,
-              })}
-            </p>
-          </section>
+            case "scout_attributes.lifestage":
+              return (
+                <FacetCheckboxGroup
+                  key={name}
+                  title={t("facets.lifestage")}
+                  distribution={lifestageDist}
+                  selected={lifestageSelections}
+                  onToggle={(value) => {
+                    const next = new Set(lifestageSelections);
+                    if (next.has(value)) next.delete(value);
+                    else next.add(value);
+                    setLifestageSelections(next);
+                  }}
+                />
+              );
 
-          {/* price — two number inputs. Stats from facetStats drive
-              placeholder hints so operators know the available range. */}
-          <section>
-            <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t("facets.price")}
-            </h4>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                inputMode="decimal"
-                value={priceMin}
-                onChange={(e) => setPriceMin(e.target.value)}
-                placeholder={priceStats ? String(Math.floor(priceStats.min)) : "min"}
-                className="h-8 text-xs"
-              />
-              <span className="text-xs text-muted-foreground">–</span>
-              <Input
-                type="number"
-                inputMode="decimal"
-                value={priceMax}
-                onChange={(e) => setPriceMax(e.target.value)}
-                placeholder={priceStats ? String(Math.ceil(priceStats.max)) : "max"}
-                className="h-8 text-xs"
-              />
-            </div>
-            {priceStats ? (
-              <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
-                {t("facets.priceRange", {
-                  min: Math.floor(priceStats.min),
-                  max: Math.ceil(priceStats.max),
-                })}
-              </p>
-            ) : null}
-          </section>
-        </>
+            case "in_stock":
+              return (
+                <section key={name}>
+                  <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t("facets.inStockTitle")}
+                  </h4>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs">{t("facets.inStockOnly")}</label>
+                    <Switch checked={inStockOnly} onCheckedChange={setInStockOnly} />
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                    {t("facets.inStockCounts", {
+                      inStock: inStockDist["true"] ?? 0,
+                      outOfStock: inStockDist["false"] ?? 0,
+                    })}
+                  </p>
+                </section>
+              );
+
+            default:
+              return null;
+          }
+        })
       )}
     </aside>
   );

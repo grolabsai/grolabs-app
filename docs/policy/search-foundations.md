@@ -295,11 +295,11 @@ Within the Emulador tab the full tab width is for the emulator:
 
 * **Search input** — debounced re-query. Empty query is valid (Meilisearch returns facets + first page of docs).
 * **Category dropdown** — single-select. Source: `category` table where `is_active = true` for this instance. Selecting a category adds `category_ids = <id>` to the filter; clearing it drops the constraint. Hierarchical labels (`Root › Sub › Leaf`) for disambiguation when names repeat across branches.
-* **Facet rail** — server picks which facet names to render from the allowlist intersected with what `facetDistribution` actually returned. v1 facets:
-  * `brand` — checkbox list, top N values by count
-  * `in_stock` — single toggle (boolean)
-  * `price` — two numeric inputs bound to `facet_stats.price.{min,max}`
+* **Facet rail** — server picks which facet names to render from the allowlist intersected with what `facetDistribution` actually returned. Rail order is **deliberate, not alphabetical**: price first, brand second (the two dominant deciding factors per shopper research), then attribute facets in priority order, then the in-stock toggle as visual punctuation at the bottom. The order lives as `FACET_RENDER_ORDER` in `src/lib/search/facets.ts`. When per-attribute facets become driven by `product_attribute` rows (see "out of scope" below), price + brand stay pinned to the top and in_stock stays at the bottom; the middle becomes `category_product_attribute.form_order`-driven.
+  * `price` — two numeric inputs bound to `facet_stats.price.{min,max}` (pinned first)
+  * `brand` — checkbox list, top N values by count (pinned second)
   * `scout_attributes.*` allowlisted entries — checkbox list when present in this instance's data
+  * `in_stock` — single toggle (boolean, pinned last)
 * **Result cards** — same logical card as the storefront, plus a per-attribute match strip beneath the title. Each strip entry reads `<attribute name> — <token1>, <token2>` (e.g. `name — "royal", "canin"` / `description — "puppy"`). Built by walking Meilisearch's `_formatted` block per hit; reuses the helpers already proven by `_search-preview.tsx`.
 
 ### Wiring decisions

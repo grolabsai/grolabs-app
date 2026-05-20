@@ -1,10 +1,24 @@
 import type { Metadata } from "next";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Hanken_Grotesk, Caveat } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { IntlClientProvider } from "@/components/i18n/IntlClientProvider";
 import { Toaster } from "@/components/ui/sonner";
 import "../globals.css";
+
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-hanken",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["600", "700"],
+  variable: "--font-caveat",
+});
 
 export const metadata: Metadata = {
   title: "GroLabs · Administración de catálogo",
@@ -38,7 +52,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${hanken.variable} ${caveat.variable}`}>
       <body>
         <IntlClientProvider locale={locale} messages={messages}>
           {children}

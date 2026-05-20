@@ -49,7 +49,7 @@ const FloatingLabelInput = React.forwardRef<
           // Must be white so label visually cuts through the input's border
           "bg-white",
           // Typography — matches .s-field-label
-          "text-[10px] font-medium uppercase tracking-[0.06em]",
+          "text-[10px] font-medium uppercase tracking-[0.08em]",
           "leading-none",
           // Disabled state mirrors the input
           "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",

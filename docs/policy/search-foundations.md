@@ -1,6 +1,8 @@
 GroLabs Search Foundations — Stages 0 & 1
 
 > **Editor's note:** Reshaped 2026-05-17 to conform to Constitution Articles 1 and 12. Previous version contained pet-specific assumptions baked into core search defaults.
+>
+> **2026-05-20 addendum:** Analytics scaffolding shipped ahead of the formal Stage 4. See §16 — the WP plugin now posts both click and conversion events to Meilisearch `/events` directly (CTR + conversion rate visible in the Meilisearch Cloud dashboard), and a self-contained block bench at `src/components/analytics/` surfaces what `query_log` and Meilisearch `GET /stats` can derive. Remaining Stage 4 scope is Scout-owned event persistence (for retention beyond Meilisearch's 7-day Build-tier window) and metrics Meilisearch exposes only in its dashboard UI.
 
 Status: Active policy Owner: Tuncho Scope: Stages 0 and 1 of the GroLabs search roadmap. Foundations and basic search live on Wazú. Audience: Claude Code (primary), future GroLabs contributors (secondary)
 This document is the authoritative spec for the foundational search infrastructure. Read this before writing any code, viewing the file tree, or proposing implementation details. Stop at the two checkpoints marked APPROVAL REQUIRED and wait for explicit approval before proceeding.
@@ -198,7 +200,7 @@ After the file tree is approved and Claude Code has written the code:
 4. Open a PR; do not auto-merge. Tuncho reviews before merging.
 14. Out of scope (later policy docs)
 
-* Click and conversion event tracking → `search-events.md` (Stage 4)
+* Click and conversion event tracking → `search-events.md` (Stage 4). _Partially shipped — see §16._
 * Webhooks for real-time sync → `search-webhooks.md` (Stage 3)
 * Instant results dropdown widget → `search-widget.md` (Stage 2)
 * Merchant-facing search configuration UI → `search-configuration.md` (Stage 5)
@@ -218,4 +220,27 @@ These open questions have been resolved through Tuncho's approval:
 4. Out-of-stock visibility: Out-of-stock products appear with "Agotado" badge, ranked lower via popularity.
 5. Storefront domain registration: Domain field at instance creation, editable later. Multiple domains supported per instance.
 6. Two-button card UX: Confirmed for variable products with matched variations. Primary "Agregar [variant] al carrito", secondary "Ver otros tamaños".
+16. What's shipped beyond Stages 0 & 1
+
+This section is an honest changelog, not new policy. It records work that landed after the original spec was written so future readers don't assume Stage 4 is empty.
+
+**2026-05-09 — `queryUid` capture (Scout side).** `searchInstance` sends `Meili-Include-Metadata: true` on every search; `/api/v1/search` forwards `metadata.queryUid` / `requestUid` / `indexUid` to the storefront in the response body. See `src/lib/search/meilisearch-client.ts` and `src/app/api/v1/search/route.ts`.
+
+**2026-05-09 — events token endpoint.** `POST /api/v1/events/token` mints a short-lived Meilisearch tenant token (CORS-gated to registered storefront domains, rate-limited) so the WP plugin can POST events directly to Meilisearch `/events` without involving Scout on the hot path. See `src/app/api/v1/events/token/route.ts`.
+
+**2026-05-09 (plugin) — click + conversion events.** The WP plugin uses the events token to post both `click` and `conversion` events to Meilisearch. Confirmed live by the Cloud dashboard's non-zero CTR + conversion rate on 2026-05-20. Conversion is one-per-`queryUid` (Meilisearch's hard constraint).
+
+**2026-05-20 — analytics block bench (this commit).** Self-contained portable blocks under `src/components/analytics/`, currently rendered at the bottom of `/configuration/search`. Each block takes only `instanceId` (plus optional `days`/`limit`) so blocks can be moved to `/dashboard` or an admin overview by changing only the import path. Data sources:
+
+| Block | Source |
+|---|---|
+| SearchVolume, NoResultRate, Latency, TopQueries, TopNoResultQueries, StorefrontBreakdown | `query_log` (Scout, RLS-scoped to instance members) |
+| IndexHealth, IndexSize, FieldDistribution | Meilisearch `GET /stats` |
+
+**Known gaps that need a future Stage 4 doc to formalize:**
+
+* Meilisearch exposes no read API for aggregated analytics (CTR, conversion rate, average click position, top queries from its side, geo). These stay Cloud-dashboard-only unless we own them.
+* No Scout-side event store yet. If we need history beyond Meilisearch's 7-day Build-tier retention or breakdowns by `instance_id` / WC product type / funnel stage, the WP plugin needs to double-post to a new Scout endpoint that persists to Supabase. The wiring is in place: `queryUid` already crosses the Scout↔storefront boundary, so we only need the ingest endpoint and a target table.
+* No Stage 4 policy doc exists yet (`search-events.md` is still referenced as future work in §14). Spec it out before building the event store.
+
 End of policy document. Start with Checkpoint 1 (section 12) before writing any code.

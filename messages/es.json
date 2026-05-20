@@ -90,6 +90,10 @@
           "saveFailed": "No se pudo crear la instancia. Intenta de nuevo.",
           "copyFailed": "La instancia se creó, pero no se pudo copiar la configuración.",
           "templateCopyFailed": "La instancia se creó, pero no se pudieron copiar los datos de la plantilla."
+        },
+        "agentLog": {
+          "createdTitle": "Instancia creada",
+          "createdBody": "{name} es ahora la instancia activa. A partir de aquí solo verás mensajes relacionados con esta instancia."
         }
       }
     }
@@ -1250,6 +1254,20 @@
         "reindexDone": "Reindexado completado",
         "reindexCounts": "{indexed} indexados · {failed} con error",
         "reindexFailed": "No se pudo completar el reindexado"
+      },
+      "preview": {
+        "cardTitle": "Vista previa de búsqueda",
+        "cardDescription": "Prueba consultas en vivo contra el índice de esta instancia.",
+        "title": "Buscar en el índice",
+        "help": "Escribe lo que tus clientes podrían buscar y verás los mismos resultados que entregará Meilisearch.",
+        "placeholder": "Ej. comida para cachorros, juguete de cuerda…",
+        "idle": "Escribe una consulta para ver los resultados.",
+        "searching": "Buscando…",
+        "empty": "Sin resultados para «{query}».",
+        "error": "Falló la búsqueda",
+        "meta": "{count, plural, =1 {1 resultado} other {# resultados}} · {ms} ms",
+        "inStock": "En stock",
+        "outOfStock": "Sin stock"
       }
     },
     "ga4": {

@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { ping, ensureIndex, getDocumentCount } from "@/lib/search/meilisearch-client";
+import {
+  ping,
+  ensureIndex,
+  getDocumentCount,
+  searchInstance,
+} from "@/lib/search/meilisearch-client";
 import { indexAllForInstance } from "@/lib/search/indexer";
 
 /**
@@ -187,6 +192,84 @@ export async function getIndexingStatus(instanceId: number): Promise<IndexingSta
     pendingCount: pendingCount.count ?? 0,
     inSync: meiliDocCount === scoutProductCount,
   };
+}
+
+// ── Stage 1: in-app search preview ────────────────────────────────────────
+//
+// Powers the "Search preview" panel on the config screen so operators can dry-
+// run queries against their own index without spinning up the storefront. This
+// is the dashboard equivalent of the public /api/v1/search proxy — same index,
+// same filter pinning, but authenticated via instance_member instead of an
+// authorized storefront origin (so rate-limiting and the query_log write are
+// intentionally skipped — this surface is staff-only).
+
+export type SearchPreviewHit = {
+  id: number;
+  name: string;
+  brand: string | null;
+  price: number | null;
+  salePrice: number | null;
+  currency: string;
+  inStock: boolean;
+  sku: string | null;
+  imageUrl: string | null;
+  categories: string[];
+};
+
+export type SearchPreviewResult =
+  | {
+      ok: true;
+      query: string;
+      hits: SearchPreviewHit[];
+      totalHits: number;
+      processingTimeMs: number;
+    }
+  | { ok: false; error: "unauthorized" | "search_failed"; message?: string };
+
+export async function previewSearch(
+  instanceId: number,
+  query: string,
+): Promise<SearchPreviewResult> {
+  if (!(await authorizeMembership(instanceId))) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  try {
+    const raw = await searchInstance(instanceId, {
+      query,
+      limit: 12,
+      // Defense in depth: same instance_id pin as the public proxy. A bug in
+      // index routing or a stale shared index can never spill cross-instance.
+      filter: `instance_id = ${instanceId}`,
+    });
+
+    const hits: SearchPreviewHit[] = raw.hits.map((h) => ({
+      id: h.id,
+      name: h.name,
+      brand: h.brand ?? null,
+      price: h.price ?? null,
+      salePrice: h.sale_price ?? null,
+      currency: h.currency ?? "",
+      inStock: !!h.in_stock,
+      sku: h.sku ?? null,
+      imageUrl: h.thumbnail_url ?? h.image_url ?? null,
+      categories: Array.isArray(h.categories) ? h.categories.slice(0, 2) : [],
+    }));
+
+    return {
+      ok: true,
+      query,
+      hits,
+      totalHits: raw.estimatedTotalHits,
+      processingTimeMs: raw.processingTimeMs,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: "search_failed",
+      message: err instanceof Error ? err.message : "unknown",
+    };
+  }
 }
 
 export type RunBackfillResult =

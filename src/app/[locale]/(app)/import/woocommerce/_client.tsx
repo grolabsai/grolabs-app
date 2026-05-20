@@ -45,7 +45,22 @@ type Props = {
  */
 export function WooImportClient({ configured, siteUrl, initialStatus }: Props) {
   const t = useTranslations("import.woocommerce");
-  const [status, setStatus] = useState<ImportStatus>(initialStatus);
+  // Drop historical state on mount. The DB persists last_import_summary /
+  // last_import_debug / last_job across visits, so otherwise the page reopens
+  // showing a stale "imported X of Y" card that looks like fresh status. An
+  // actively running import (progress != null) is preserved so the user can
+  // resume watching it after navigating back.
+  const [status, setStatus] = useState<ImportStatus>(() =>
+    initialStatus.progress
+      ? initialStatus
+      : {
+          progress: null,
+          lastImportAt: null,
+          lastSummary: null,
+          lastJob: null,
+          lastDebug: null,
+        },
+  );
   const [pending, startTransition] = useTransition();
   const { reportError } = useActivityStream();
 

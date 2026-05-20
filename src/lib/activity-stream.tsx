@@ -55,7 +55,7 @@ function buildMessage(
 }
 
 export function useActivityStream() {
-  const { append } = useAgentLog();
+  const { append, clear } = useAgentLog();
   const t = useTranslations("activityStream");
 
   const reportError = useCallback(
@@ -81,5 +81,5 @@ export function useActivityStream() {
     [append],
   );
 
-  return { reportError, reportWarning, reportInfo };
+  return { reportError, reportWarning, reportInfo, clear };
 }

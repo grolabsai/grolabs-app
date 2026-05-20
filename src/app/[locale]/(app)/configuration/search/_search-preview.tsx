@@ -10,6 +10,7 @@ import {
   previewSearch,
   type SearchPreviewHit,
   type SearchPreviewResult,
+  type SearchPreviewTokenMatch,
 } from "./actions";
 
 type Props = {
@@ -206,9 +207,78 @@ function HitCard({ hit }: { hit: SearchPreviewHit }) {
             {hit.categories.join(" · ")}
           </div>
         ) : null}
+        {hit.tokenMatches.length > 0 ? (
+          <TokenMatchPills matches={hit.tokenMatches} />
+        ) : null}
       </div>
     </div>
   );
+}
+
+/**
+ * One pill per query token. Green when Meilisearch highlighted the token in
+ * at least one searchable attribute of this hit (with the attribute path as
+ * a hint); red when the hit was returned without that exact token appearing
+ * — usually typo tolerance, a synonym, or another token dragging the result
+ * in. Lets operators verify that "red small sweater" actually matched all
+ * three concepts instead of just being the most-relevant guess.
+ */
+function TokenMatchPills({ matches }: { matches: SearchPreviewTokenMatch[] }) {
+  const t = useTranslations("configuration.search.preview");
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {matches.map((m) => {
+        const matched = m.attributes.length > 0;
+        const label = matched
+          ? `${m.token} · ${m.attributes.map(prettifyAttribute).join(", ")}`
+          : m.token;
+        const title = matched
+          ? t("match.matchedTitle", {
+              token: m.token,
+              attributes: m.attributes.map(prettifyAttribute).join(", "),
+            })
+          : t("match.unmatchedTitle", { token: m.token });
+        return (
+          <span
+            key={m.token}
+            title={title}
+            className={
+              matched
+                ? "inline-flex items-center rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700"
+                : "inline-flex items-center rounded-sm bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+            }
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Map a Meilisearch attribute path to something a non-engineer can read.
+ * Top-level keys get a friendly label; nested paths keep the leaf for
+ * specificity (so `variants.attributes.color` reads as "variants → color").
+ * Unknown keys fall through unchanged. */
+function prettifyAttribute(path: string): string {
+  const friendly: Record<string, string> = {
+    name: "name",
+    brand: "brand",
+    categories: "category",
+    description: "description",
+    "variants.sku": "SKU",
+    "scout_attributes.lifestage": "lifestage",
+    "scout_attributes.species": "species",
+    "scout_attributes.breed_compatibility": "breed",
+    "scout_attributes.medical_conditions": "medical",
+  };
+  if (friendly[path]) return friendly[path];
+  // variants.attributes.color → "color"
+  if (path.startsWith("variants.attributes.")) {
+    return path.slice("variants.attributes.".length);
+  }
+  if (path === "variants.attributes") return "variants";
+  return path;
 }
 
 function formatPrice(amount: number, currency: string): string {

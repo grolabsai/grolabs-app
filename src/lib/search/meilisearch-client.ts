@@ -279,7 +279,15 @@ export async function getDocumentCount(instanceId: number): Promise<number> {
  * the search proxy combines this with the variant matcher to build the
  * public response. */
 export type RawSearchResult = {
-  hits: Array<ScoutSearchDocument & { _matchesPosition?: Record<string, unknown> }>;
+  hits: Array<
+    ScoutSearchDocument & {
+      _matchesPosition?: Record<string, unknown>;
+      /** Document with `<em>…</em>` wrapping every matched query term per
+       * attribute. Only present when callers ask for highlighting (the
+       * preview panel does, to drive its matched/unmatched token pills). */
+      _formatted?: Record<string, unknown>;
+    }
+  >;
   estimatedTotalHits: number;
   processingTimeMs: number;
   query: string;
@@ -304,6 +312,10 @@ export type SearchOptions = {
   offset?: number;
   filter?: string | string[];
   sort?: string[];
+  /** When true, request `attributesToHighlight: ["*"]` so the response
+   * carries `_formatted` for every searchable attribute. Used by the
+   * /configuration/search preview pane to drive the per-token match pills. */
+  highlight?: boolean;
 };
 
 /**
@@ -317,7 +329,7 @@ export async function searchInstance(
   opts: SearchOptions
 ): Promise<RawSearchResult> {
   const client = getClient();
-  const { query, limit, offset, filter, sort } = opts;
+  const { query, limit, offset, filter, sort, highlight } = opts;
   try {
     const res = await client.index(indexUidFor(instanceId)).search(
       query,
@@ -327,6 +339,13 @@ export async function searchInstance(
         filter,
         sort,
         showMatchesPosition: true,
+        ...(highlight
+          ? {
+              attributesToHighlight: ["*"],
+              highlightPreTag: "<em>",
+              highlightPostTag: "</em>",
+            }
+          : {}),
       },
       // Opt into Meilisearch's analytics metadata so the response carries the
       // real queryUid (needed to attribute storefront click events). This is

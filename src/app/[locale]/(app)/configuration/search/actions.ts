@@ -203,6 +203,23 @@ export async function getIndexingStatus(instanceId: number): Promise<IndexingSta
 // authorized storefront origin (so rate-limiting and the query_log write are
 // intentionally skipped — this surface is staff-only).
 
+/**
+ * One query token's matching status against a single hit. Drives the
+ * green/red pills in the preview pane: `attributes` empty → red (Meilisearch
+ * returned the hit for some other reason, e.g. typo tolerance or a synonym,
+ * but this exact token never appears in any searchable field of this hit);
+ * non-empty → green, and we surface which attribute(s) carried the match so
+ * the operator can verify intent ("red matched on `name`, not on a colour
+ * attribute — that's why this product is here").
+ */
+export type SearchPreviewTokenMatch = {
+  /** The token as the user typed it, lowercased for display. */
+  token: string;
+  /** Attribute paths (e.g. "name", "brand", "variants.attributes") that
+   * contained a highlight covering this token. Empty when unmatched. */
+  attributes: string[];
+};
+
 export type SearchPreviewHit = {
   id: number;
   name: string;
@@ -214,6 +231,9 @@ export type SearchPreviewHit = {
   sku: string | null;
   imageUrl: string | null;
   categories: string[];
+  /** Per-query-token match data — one entry per token in the query, in
+   * order. Undefined when the query was empty. */
+  tokenMatches: SearchPreviewTokenMatch[];
 };
 
 export type SearchPreviewResult =
@@ -225,6 +245,92 @@ export type SearchPreviewResult =
       processingTimeMs: number;
     }
   | { ok: false; error: "unauthorized" | "search_failed"; message?: string };
+
+/** Split the raw query into tokens the same way an end-user would read them
+ * back. Whitespace boundaries, lowercased, deduped while preserving order. */
+function tokenizeQuery(query: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of query.toLowerCase().split(/\s+/g)) {
+    const trimmed = t.trim();
+    if (!trimmed) continue;
+    if (seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+/**
+ * Walk a Meilisearch `_formatted` block and yield every `<em>…</em>`
+ * highlight as `{ attributePath, highlightedText }` pairs. Top-level keys
+ * are searchable attribute names; nested values are descended recursively
+ * so `variants[].attributes.color` etc. surface under a stable dotted path.
+ *
+ * Highlights are matched with a non-greedy regex against the rendered
+ * string. We don't need to handle nested `<em>` because Meilisearch never
+ * produces them.
+ */
+function collectHighlights(
+  formatted: Record<string, unknown> | undefined,
+): Array<{ attribute: string; text: string }> {
+  if (!formatted) return [];
+  const out: Array<{ attribute: string; text: string }> = [];
+  const re = /<em>([\s\S]*?)<\/em>/g;
+
+  const visit = (value: unknown, path: string) => {
+    if (value == null) return;
+    if (typeof value === "string") {
+      for (const m of value.matchAll(re)) {
+        const text = m[1];
+        if (text) out.push({ attribute: path, text: text.toLowerCase() });
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const v of value) visit(v, path);
+      return;
+    }
+    if (typeof value === "object") {
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        visit(v, path ? `${path}.${k}` : k);
+      }
+    }
+  };
+
+  for (const [k, v] of Object.entries(formatted)) {
+    visit(v, k);
+  }
+  return out;
+}
+
+/** Build per-token match data for a single hit by cross-referencing the
+ * query tokens against highlights extracted from `_formatted`. A token is
+ * "matched" by an attribute when any highlight under that attribute starts
+ * with the token (Meilisearch highlights the full token plus any prefix-
+ * tolerance suffix it accepted, so prefix-match is the right relationship).
+ *
+ * Returned attributes are deduped and ordered by first-seen position so
+ * pills render consistently across re-renders. */
+function buildTokenMatches(
+  tokens: string[],
+  highlights: Array<{ attribute: string; text: string }>,
+): SearchPreviewTokenMatch[] {
+  return tokens.map((token) => {
+    const attrs: string[] = [];
+    const seen = new Set<string>();
+    for (const h of highlights) {
+      // Prefix match catches Meilisearch's typo + prefix tolerance — a query
+      // for "sweat" highlights "sweater", and we still want to credit
+      // `name` as the matching attribute.
+      if (!h.text.startsWith(token) && !token.startsWith(h.text)) continue;
+      if (seen.has(h.attribute)) continue;
+      seen.add(h.attribute);
+      attrs.push(h.attribute);
+    }
+    return { token, attributes: attrs };
+  });
+}
 
 export async function previewSearch(
   instanceId: number,
@@ -241,20 +347,28 @@ export async function previewSearch(
       // Defense in depth: same instance_id pin as the public proxy. A bug in
       // index routing or a stale shared index can never spill cross-instance.
       filter: `instance_id = ${instanceId}`,
+      // Drives the per-token match pills in the preview UI.
+      highlight: true,
     });
 
-    const hits: SearchPreviewHit[] = raw.hits.map((h) => ({
-      id: h.id,
-      name: h.name,
-      brand: h.brand ?? null,
-      price: h.price ?? null,
-      salePrice: h.sale_price ?? null,
-      currency: h.currency ?? "",
-      inStock: !!h.in_stock,
-      sku: h.sku ?? null,
-      imageUrl: h.thumbnail_url ?? h.image_url ?? null,
-      categories: Array.isArray(h.categories) ? h.categories.slice(0, 2) : [],
-    }));
+    const tokens = tokenizeQuery(query);
+
+    const hits: SearchPreviewHit[] = raw.hits.map((h) => {
+      const highlights = collectHighlights(h._formatted);
+      return {
+        id: h.id,
+        name: h.name,
+        brand: h.brand ?? null,
+        price: h.price ?? null,
+        salePrice: h.sale_price ?? null,
+        currency: h.currency ?? "",
+        inStock: !!h.in_stock,
+        sku: h.sku ?? null,
+        imageUrl: h.thumbnail_url ?? h.image_url ?? null,
+        categories: Array.isArray(h.categories) ? h.categories.slice(0, 2) : [],
+        tokenMatches: buildTokenMatches(tokens, highlights),
+      };
+    });
 
     return {
       ok: true,

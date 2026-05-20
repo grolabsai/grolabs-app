@@ -12,6 +12,11 @@ rather than working around it.
   connection status) and basic search live on Wazú (indexing pipeline,
   WordPress plugin v0.1, two-button variable-product cards). Owner:
   Tuncho.
+- **search-events.md** — Stage 4 (shipped in plugin v0.3.0 + v0.5.0).
+  Click and conversion event flow from the WP storefront directly to
+  Meilisearch's analytics API. **The "where do I see event data?"
+  doc.** Scout mints the tenant token but does not persist events —
+  they live in Meilisearch Cloud's analytics dashboard. Owner: Tuncho.
 - **wc-import.md** — One-way pull from WooCommerce into GroLabs's catalog
   tables. Categories and products only; raw data preservation, no
   enrichment, no variant restructuring. Future processes handle those.

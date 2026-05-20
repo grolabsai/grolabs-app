@@ -23,7 +23,7 @@ Explicit non-goals for Stage 0+1
 
 * No instant-results dropdown widget (Stage 2).
 * No webhooks (Stage 3 — polling is sufficient).
-* No click/conversion event tracking (Stage 4).
+* ~~No click/conversion event tracking (Stage 4).~~ **Superseded** — Stage 4 shipped in plugin v0.3.0 (clicks) and v0.5.0 (conversions). See `search-events.md` for the canonical flow. The token endpoint at `/api/v1/events/token` mints short-lived Meilisearch tenant tokens that the storefront uses to POST events directly to Meilisearch's analytics API. Scout itself does NOT persist events — they live exclusively in Meilisearch Cloud's analytics dashboard. A code session looking at Scout's DB and not finding an `events` table is correct; that's by design.
 * No merchant-facing search configuration UI beyond connection status (Stage 5).
 * No natural-language search (Stage 6).
 * No agent insights surfaced to merchants (Stage 7).

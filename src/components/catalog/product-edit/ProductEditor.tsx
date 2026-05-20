@@ -704,14 +704,30 @@ function formatElapsed(seconds: number): string {
 }
 
 // External-store helpers for the second-by-second tick driving the save
-// indicator. Defined at module scope so the subscriber/snapshot
-// functions retain a stable identity across renders.
+// indicator. The snapshot must be stable between subscriber notifications —
+// useSyncExternalStore calls it multiple times per render to detect tearing,
+// and a fresh Date.now() each call triggers React error #185 (infinite loop).
+let cachedNow = Date.now();
+const subscribers = new Set<() => void>();
+let intervalId: ReturnType<typeof setInterval> | null = null;
 function subscribeOneSecond(cb: () => void): () => void {
-  const id = setInterval(cb, 1000);
-  return () => clearInterval(id);
+  subscribers.add(cb);
+  if (intervalId === null) {
+    intervalId = setInterval(() => {
+      cachedNow = Date.now();
+      for (const s of subscribers) s();
+    }, 1000);
+  }
+  return () => {
+    subscribers.delete(cb);
+    if (subscribers.size === 0 && intervalId !== null) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  };
 }
 function getNowSnapshot(): number {
-  return Date.now();
+  return cachedNow;
 }
 function getServerNowSnapshot(): number {
   return 0;

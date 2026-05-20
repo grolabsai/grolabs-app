@@ -126,7 +126,7 @@ export default async function PricingChangesPage() {
                     </Td>
                     <Td>
                       <span style={{ color: "var(--s-text-secondary)" }}>
-                        {l.file_name ?? "—"}
+                        {l.file_name ?? ""}
                       </span>
                     </Td>
                     <Td>
@@ -136,7 +136,7 @@ export default async function PricingChangesPage() {
                     </Td>
                     <Td>
                       <span style={{ color: "var(--s-text-secondary)" }}>
-                        {l.effective_date ?? "—"}
+                        {l.effective_date ?? ""}
                       </span>
                     </Td>
                     <Td align="right">

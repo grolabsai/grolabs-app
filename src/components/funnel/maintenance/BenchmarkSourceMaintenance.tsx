@@ -190,7 +190,7 @@ export function BenchmarkSourceMaintenance({
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-slate-600">
-                        {bm.observed_value ?? "—"}
+                        {bm.observed_value ?? ""}
                       </TableCell>
                       <TableCell className="text-right">
                         {!readOnly && (

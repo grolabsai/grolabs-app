@@ -260,15 +260,15 @@ export function InlineTextarea({
 export function InlineSelect({
   initial,
   options,
-  emptyLabel,
+  allowNull,
   onSave,
   onSaved,
   ariaLabel,
 }: CommonProps & {
   initial: number | null;
   options: { id: number; label: string }[];
-  /** Label for the "—" / "no value" option. Omit to make the field required. */
-  emptyLabel?: string;
+  /** If true, the dropdown includes a blank option that clears the value. Omit to make the field required. */
+  allowNull?: boolean;
   onSave: (value: number | null) => Promise<SaveResult>;
   ariaLabel?: string;
 }) {
@@ -302,7 +302,7 @@ export function InlineSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {emptyLabel ? <SelectItem value={NULL_TOKEN}>{emptyLabel}</SelectItem> : null}
+        {allowNull ? <SelectItem value={NULL_TOKEN}>{" "}</SelectItem> : null}
         {options.map((o) => (
           <SelectItem key={o.id} value={String(o.id)}>
             {o.label}

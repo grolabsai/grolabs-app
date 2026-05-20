@@ -666,12 +666,9 @@
       "placeholders": {
         "brand": "Select brand…",
         "categories": "Select categories…",
-        "categoriesEmpty": "No categories",
         "name": "E.g. Royal Canin Adult",
         "slug": "royal-canin-adult",
-        "type": "Select type…",
-        "shortDescriptionEmpty": "No short description",
-        "longDescriptionEmpty": "No long description"
+        "type": "Select type…"
       },
       "errors": {
         "nameRequired": "Required",
@@ -802,7 +799,6 @@
       "trackInventorySub": "Stock is tracked",
       "consignment": "Consignment",
       "consignmentSub": "Inventory belongs to the supplier",
-      "noBrand": "No brand",
       "price": "Price",
       "salePrice": "Sale price",
       "cost": "Cost",
@@ -883,7 +879,6 @@
         "candidatesLabel": "Candidate categories",
         "candidatesPlaceholder": "Select categories…",
         "candidatesSearch": "Search…",
-        "candidatesEmpty": "No matches.",
         "candidatesRemoveTag": "Remove category",
         "multiCandidateHint": "The agent will choose from {n} categories (your picks plus their subcategories).",
         "singleCandidateHint": "Only one category resolved; the agent will be skipped and every product will be assigned to it.",
@@ -1995,7 +1990,6 @@
         "empty": "No brands registered yet. Create brands in the catalogue before linking them.",
         "placeholder": "Select brands…",
         "searchPlaceholder": "Search brand…",
-        "searchEmpty": "No brands match the search.",
         "removeTag": "Remove brand"
       },
       "buttons": {
@@ -2035,8 +2029,7 @@
       "placeholders": {
         "provider": "Select a provider",
         "newProviderName": "New provider name",
-        "column": "Select a column",
-        "optionalColumn": "Unassigned"
+        "column": "Select a column"
       },
       "providerCreateOption": "+ Create new provider",
       "keyKinds": {

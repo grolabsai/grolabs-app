@@ -56,7 +56,7 @@ export function SearchPreview({ instanceId }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-sm font-medium">{t("title")}</h3>
+        <h3 className="s-card-label !mb-1">{t("title")}</h3>
         <p className="text-xs text-muted-foreground">{t("help")}</p>
       </div>
 

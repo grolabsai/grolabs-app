@@ -67,7 +67,7 @@ export function Combobox({
   onChange,
   options,
   placeholder,
-  emptyText = "—",
+  emptyText = "",
   searchAriaLabel,
   invalid = false,
   disabled = false,

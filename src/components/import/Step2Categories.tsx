@@ -357,7 +357,7 @@ export function Step2Categories({
               parentId: c.parent_category_id,
             }))}
             searchPlaceholder={t("candidatesSearch")}
-            emptyText={t("candidatesEmpty")}
+            emptyText=""
             removeTagAriaLabel={t("candidatesRemoveTag")}
             sortByLabel={false}
           />
@@ -421,7 +421,7 @@ export function Step2Categories({
                       </div>
                     </td>
                     <td>
-                      <div style={{ fontSize: 12 }}>{a.suggestedCategoryName ?? "—"}</div>
+                      <div style={{ fontSize: 12 }}>{a.suggestedCategoryName ?? ""}</div>
                       {a.reasoning ? (
                         <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
                           {a.reasoning}
@@ -505,7 +505,7 @@ function ColumnPicker({
         {required ? <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span> : null}
       </div>
       <Combobox
-        placeholder="—"
+        placeholder=""
         value={value}
         onChange={onChange}
         options={columns.map((c, i) => ({

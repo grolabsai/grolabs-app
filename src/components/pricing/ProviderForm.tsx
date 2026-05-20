@@ -176,7 +176,7 @@ export function ProviderForm({
             }))}
             placeholder={t("brands.placeholder")}
             searchPlaceholder={t("brands.searchPlaceholder")}
-            emptyText={t("brands.searchEmpty")}
+            emptyText=""
             removeTagAriaLabel={t("brands.removeTag")}
           />
         ) : null}

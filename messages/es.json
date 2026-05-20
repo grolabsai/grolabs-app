@@ -666,12 +666,9 @@
       "placeholders": {
         "brand": "Seleccionar marca…",
         "categories": "Seleccionar categorías…",
-        "categoriesEmpty": "Sin categorías",
         "name": "Ej: Royal Canin Adult",
         "slug": "royal-canin-adult",
-        "type": "Seleccionar tipo…",
-        "shortDescriptionEmpty": "Sin descripción corta",
-        "longDescriptionEmpty": "Sin descripción larga"
+        "type": "Seleccionar tipo…"
       },
       "errors": {
         "nameRequired": "Requerido",
@@ -802,7 +799,6 @@
       "trackInventorySub": "Se lleva seguimiento de stock",
       "consignment": "Consignación",
       "consignmentSub": "El inventario pertenece al proveedor",
-      "noBrand": "Sin marca",
       "price": "Precio",
       "salePrice": "Precio de oferta",
       "cost": "Costo",
@@ -883,7 +879,6 @@
         "candidatesLabel": "Categorías candidatas",
         "candidatesPlaceholder": "Seleccionar categorías…",
         "candidatesSearch": "Buscar…",
-        "candidatesEmpty": "Sin coincidencias.",
         "candidatesRemoveTag": "Quitar categoría",
         "multiCandidateHint": "El agente elegirá entre {n} categorías (las elegidas más sus subcategorías).",
         "singleCandidateHint": "Solo una categoría en el conjunto; se omitirá el agente y todos los productos quedarán asignados a ella.",
@@ -1995,7 +1990,6 @@
         "empty": "Aún no hay marcas registradas. Crea marcas en el catálogo antes de asociarlas.",
         "placeholder": "Selecciona marcas…",
         "searchPlaceholder": "Buscar marca…",
-        "searchEmpty": "Ninguna marca coincide con la búsqueda.",
         "removeTag": "Quitar marca"
       },
       "buttons": {
@@ -2035,8 +2029,7 @@
       "placeholders": {
         "provider": "Selecciona un proveedor",
         "newProviderName": "Nombre del nuevo proveedor",
-        "column": "Selecciona una columna",
-        "optionalColumn": "Sin asignar"
+        "column": "Selecciona una columna"
       },
       "providerCreateOption": "+ Crear nuevo proveedor",
       "keyKinds": {

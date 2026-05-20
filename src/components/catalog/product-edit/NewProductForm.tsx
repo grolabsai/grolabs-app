@@ -656,7 +656,7 @@ export function NewProductForm({
                       parentId: c.parent_category_id,
                     }))}
                     searchPlaceholder={tCommon("search")}
-                    emptyText={t("placeholders.categoriesEmpty")}
+                    emptyText=""
                     removeTagAriaLabel={tCommon("removeTag")}
                   />
                 </FieldWrap>
@@ -720,7 +720,6 @@ export function NewProductForm({
               expanded={shortDescExpanded}
               onToggle={() => setShortDescExpanded((x) => !x)}
               onChange={setShortDesc}
-              emptyText={t("placeholders.shortDescriptionEmpty")}
               rows={3}
             />
             <Collapsible
@@ -729,7 +728,6 @@ export function NewProductForm({
               expanded={longDescExpanded}
               onToggle={() => setLongDescExpanded((x) => !x)}
               onChange={setLongDesc}
-              emptyText={t("placeholders.longDescriptionEmpty")}
               rows={5}
             />
           </div>
@@ -1038,7 +1036,6 @@ function Collapsible({
   expanded,
   onToggle,
   onChange,
-  emptyText,
   rows,
 }: {
   label: string;
@@ -1046,7 +1043,6 @@ function Collapsible({
   expanded: boolean;
   onToggle: () => void;
   onChange: (v: string) => void;
-  emptyText: string;
   rows: number;
 }) {
   const firstLine = value.split("\n")[0] ?? "";
@@ -1086,14 +1082,13 @@ function Collapsible({
           <div
             style={{
               fontSize: 13,
-              color: value ? "var(--s-text-secondary)" : "var(--s-text-tertiary)",
-              fontStyle: value ? "normal" : "italic",
+              color: "var(--s-text-secondary)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
             }}
           >
-            {value ? firstLine : emptyText}
+            {firstLine}
           </div>
         </div>
         <span

@@ -209,7 +209,7 @@ export function FrictionFindingMaintenance({
                     className={readOnly ? "" : "cursor-pointer"}
                   >
                     <TableCell className="text-xs text-slate-700">
-                      {fpById.get(ff.funnel_friction_point_id)?.name ?? "—"}
+                      {fpById.get(ff.funnel_friction_point_id)?.name ?? ""}
                     </TableCell>
                     <TableCell>
                       <Badge variant={SEVERITY_TONE[ff.severity]}>
@@ -220,7 +220,7 @@ export function FrictionFindingMaintenance({
                       {ff.evidence}
                     </TableCell>
                     <TableCell className="text-xs text-slate-500 tabular-nums">
-                      {ff.observed_at ?? "—"}
+                      {ff.observed_at ?? ""}
                     </TableCell>
                   </TableRow>
                 ))}

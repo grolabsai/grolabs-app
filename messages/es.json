@@ -1286,7 +1286,10 @@
           "instance_inactive": "instancia inactiva",
           "rate_limited": "límite excedido",
           "meilisearch_failed": "Meilisearch falló"
-        }
+        },
+        "expand": "Mostrar resultados",
+        "collapse": "Ocultar resultados",
+        "hitsHeader": "Productos entregados al plugin (IDs de WooCommerce)"
       }
     },
     "ga4": {

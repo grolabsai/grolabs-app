@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ChevronRight, ChevronDown } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import {
   recentSearchRequests,
   type SearchRequestLogRow,
@@ -90,6 +92,7 @@ export function SearchRequestLog({ instanceId }: Props) {
         <table className="w-full text-xs">
           <thead className="text-left text-muted-foreground">
             <tr>
+              <th className="px-2 py-1 font-medium" style={{ width: 24 }} aria-hidden />
               <th className="px-2 py-1 font-medium">{t("col.time")}</th>
               <th className="px-2 py-1 font-medium">{t("col.query")}</th>
               <th className="px-2 py-1 font-medium">{t("col.origin")}</th>
@@ -112,49 +115,93 @@ export function SearchRequestLog({ instanceId }: Props) {
 
 function Row({ row }: { row: SearchRequestLogRow }) {
   const t = useTranslations("configuration.search.requestLog");
+  const [expanded, setExpanded] = useState(false);
   const isSuccess = row.status === 200;
-  const reasonKey = row.denialReason
-    ? `reason.${row.denialReason}`
-    : null;
+  const reasonKey = row.denialReason ? `reason.${row.denialReason}` : null;
+  const canExpand = isSuccess && row.hits.length > 0;
 
   return (
-    <tr className={isSuccess ? "border-t" : "border-t bg-red-500/5"}>
-      <td className="whitespace-nowrap px-2 py-1 tabular-nums text-muted-foreground">
-        {formatTime(row.createdAt)}
-      </td>
-      <td className="px-2 py-1">
-        {row.query ? (
-          <span className="font-mono">{row.query}</span>
-        ) : (
-          <span className="text-muted-foreground">{t("emptyQuery")}</span>
-        )}
-      </td>
-      <td className="px-2 py-1 truncate max-w-[160px] text-muted-foreground" title={row.origin ?? ""}>
-        {row.origin ?? "—"}
-      </td>
-      <td className="px-2 py-1">
-        <span
-          className={
-            isSuccess
-              ? "rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700"
-              : "rounded-sm bg-red-500/10 px-1.5 py-0.5 text-red-700"
-          }
-          title={reasonKey ? t(reasonKey) : undefined}
-        >
-          {row.status}
-          {reasonKey ? ` · ${t(reasonKey)}` : ""}
-        </span>
-      </td>
-      <td className="px-2 py-1 text-right tabular-nums">
-        {isSuccess ? row.totalHits ?? 0 : "—"}
-      </td>
-      <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
-        {row.processingTimeMs != null && isSuccess ? `${row.processingTimeMs} ms` : "—"}
-      </td>
-      <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
-        {row.totalHandlerMs != null ? `${row.totalHandlerMs} ms` : "—"}
-      </td>
-    </tr>
+    <>
+      <tr className={isSuccess ? "border-t" : "border-t bg-red-500/5"}>
+        <td className="px-2 py-1">
+          {canExpand ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              aria-label={expanded ? t("collapse") : t("expand")}
+              className="flex items-center text-muted-foreground hover:text-foreground"
+            >
+              <Icon icon={expanded ? ChevronDown : ChevronRight} />
+            </button>
+          ) : null}
+        </td>
+        <td className="whitespace-nowrap px-2 py-1 tabular-nums text-muted-foreground">
+          {formatTime(row.createdAt)}
+        </td>
+        <td className="px-2 py-1">
+          {row.query ? (
+            <span className="font-mono">{row.query}</span>
+          ) : (
+            <span className="text-muted-foreground">{t("emptyQuery")}</span>
+          )}
+        </td>
+        <td className="px-2 py-1 truncate max-w-[160px] text-muted-foreground" title={row.origin ?? ""}>
+          {row.origin ?? "—"}
+        </td>
+        <td className="px-2 py-1">
+          <span
+            className={
+              isSuccess
+                ? "rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700"
+                : "rounded-sm bg-red-500/10 px-1.5 py-0.5 text-red-700"
+            }
+            title={reasonKey ? t(reasonKey) : undefined}
+          >
+            {row.status}
+            {reasonKey ? ` · ${t(reasonKey)}` : ""}
+          </span>
+        </td>
+        <td className="px-2 py-1 text-right tabular-nums">
+          {isSuccess ? row.totalHits ?? 0 : "—"}
+        </td>
+        <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
+          {row.processingTimeMs != null && isSuccess ? `${row.processingTimeMs} ms` : "—"}
+        </td>
+        <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
+          {row.totalHandlerMs != null ? `${row.totalHandlerMs} ms` : "—"}
+        </td>
+      </tr>
+      {expanded && canExpand ? (
+        <tr className="border-t bg-muted/30">
+          <td />
+          <td colSpan={7} className="px-2 py-2">
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+              {t("hitsHeader")}
+            </div>
+            <ul className="flex flex-col gap-0.5">
+              {row.hits.map((h, i) => (
+                <li key={`${row.id}-${i}`} className="flex items-baseline gap-2 font-mono">
+                  <span className="text-muted-foreground tabular-nums">{i + 1}.</span>
+                  <span className="tabular-nums text-foreground">
+                    {h.wcId != null ? `WC #${h.wcId}` : "—"}
+                  </span>
+                  {h.variationId != null ? (
+                    <span className="tabular-nums text-muted-foreground">
+                      / var {h.variationId}
+                    </span>
+                  ) : null}
+                  {h.name ? (
+                    <span className="font-sans text-muted-foreground truncate">
+                      {h.name}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
 

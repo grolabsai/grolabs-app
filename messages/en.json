@@ -1286,7 +1286,10 @@
           "instance_inactive": "instance inactive",
           "rate_limited": "rate limited",
           "meilisearch_failed": "Meilisearch failed"
-        }
+        },
+        "expand": "Show hits",
+        "collapse": "Hide hits",
+        "hitsHeader": "Products handed to the plugin (WooCommerce IDs)"
       }
     },
     "ga4": {

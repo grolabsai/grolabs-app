@@ -1,0 +1,61 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Search integration tests share one Meilisearch index (instance_id=99999).
+# Running two jobs in parallel against it would race. Cancel-in-progress to
+# at least keep the queue from piling up.
+concurrency:
+  group: search-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  integration:
+    runs-on: ubuntu-latest
+    # Gate on the secret being present so forks (which can't access secrets)
+    # don't fail the suite. Pulls from forks skip integration entirely; the
+    # unit job above still runs as a baseline.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: unit
+    env:
+      MEILISEARCH_HOST:           ${{ secrets.MEILISEARCH_HOST }}
+      MEILISEARCH_MASTER_KEY:     ${{ secrets.MEILISEARCH_MASTER_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL:   ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Verify integration secrets are wired
+        run: |
+          missing=""
+          [ -z "$MEILISEARCH_HOST" ]          && missing="$missing MEILISEARCH_HOST"
+          [ -z "$MEILISEARCH_MASTER_KEY" ]    && missing="$missing MEILISEARCH_MASTER_KEY"
+          [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]  && missing="$missing NEXT_PUBLIC_SUPABASE_URL"
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secrets:$missing"
+            echo "Add them under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+      - run: npm run test:integration

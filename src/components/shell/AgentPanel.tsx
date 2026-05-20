@@ -66,62 +66,75 @@ export function AgentPanel() {
   }
 
   // Avoid layout shift before localStorage is read
-  if (!mounted) return <div style={{ width: 32, flexShrink: 0 }} />;
+  if (!mounted) return <div style={{ width: 56, flexShrink: 0 }} />;
 
   if (collapsed) {
     return (
       <div
         style={{
-          width: 32,
+          width: 56,
           flexShrink: 0,
-          borderLeft: "0.5px solid var(--s-border)",
-          background: "var(--s-surface-alt)",
+          padding: "24px 24px 24px 0",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          userSelect: "none",
-          position: "relative",
         }}
-        onClick={toggle}
-        title={t("title")}
       >
-        <span
+        <button
+          type="button"
+          onClick={toggle}
+          title={t("title")}
           style={{
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--s-text-tertiary)",
-            writingMode: "vertical-rl",
-            transform: "rotate(180deg)",
+            flex: 1,
+            background: "#ffffff",
+            border: "1px solid var(--s-border)",
+            borderRadius: 14,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            userSelect: "none",
+            position: "relative",
+            padding: 0,
+            fontFamily: "inherit",
           }}
         >
-          {t("title")}
-        </span>
-        {messages.length > 0 ? (
           <span
             style={{
-              position: "absolute",
-              top: 8,
-              left: 6,
-              minWidth: 18,
-              height: 18,
-              padding: "0 5px",
-              borderRadius: 9,
-              background: "var(--scout-accent)",
-              color: "white",
               fontSize: 10,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
+              fontWeight: 500,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--s-text-tertiary)",
+              writingMode: "vertical-rl",
+              transform: "rotate(180deg)",
             }}
           >
-            {messages.length}
+            {t("title")}
           </span>
-        ) : null}
+          {messages.length > 0 ? (
+            <span
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 8,
+                minWidth: 18,
+                height: 18,
+                padding: "0 5px",
+                borderRadius: 9,
+                background: "var(--scout-accent)",
+                color: "#18181b",
+                fontSize: 10,
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+            >
+              {messages.length}
+            </span>
+          ) : null}
+        </button>
       </div>
     );
   }
@@ -129,13 +142,23 @@ export function AgentPanel() {
   return (
     <div
       style={{
-        width: 360,
+        width: 384,
         flexShrink: 0,
-        borderLeft: "0.5px solid var(--s-border)",
-        background: "var(--s-surface-alt)",
+        padding: "24px 24px 24px 0",
+        display: "flex",
+      }}
+    >
+    <div
+      style={{
+        flex: 1,
+        background: "#ffffff",
+        border: "1px solid var(--s-border)",
+        borderRadius: 14,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
         display: "flex",
         flexDirection: "column",
-        height: "100%",
+        minHeight: 0,
+        overflow: "hidden",
       }}
     >
       {/* Header */}
@@ -154,12 +177,20 @@ export function AgentPanel() {
             width: 7,
             height: 7,
             borderRadius: "50%",
-            background:
-              messages.length > 0 ? "var(--scout-accent)" : "var(--s-text-muted)",
+            background: "var(--s-success)",
             flexShrink: 0,
           }}
         />
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--s-text)" }}>
+        <span
+          style={{
+            flex: 1,
+            fontSize: 11,
+            fontWeight: 500,
+            color: "var(--s-text-secondary)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+          }}
+        >
           {t("title")}
         </span>
         {messages.length > 0 ? (
@@ -253,6 +284,7 @@ export function AgentPanel() {
           {t("send")}
         </button>
       </div>
+    </div>
     </div>
   );
 }

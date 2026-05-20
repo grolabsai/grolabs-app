@@ -44,8 +44,8 @@ svg {
   --card-foreground: 0 0% 10%;
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 10%;
-  --primary: 210 71% 54%;            /* ≈ #378ADD  --scout-accent          */
-  --primary-foreground: 0 0% 100%;
+  --primary: 45 65% 52%;             /* ≈ #d4af37  Kinetic Gold            */
+  --primary-foreground: 0 0% 10%;
   --secondary: 60 5% 96%;            /* ≈ #F5F5F4  --s-surface-alt         */
   --secondary-foreground: 0 0% 10%;
   --muted: 60 5% 96%;
@@ -56,25 +56,33 @@ svg {
   --destructive-foreground: 0 0% 100%;
   --border: 0 0% 92%;                /* ≈ rgba(0,0,0,0.08) on white        */
   --input: 0 0% 89%;
-  --ring: 210 71% 54%;               /* ≈ #378ADD  --scout-accent          */
+  --ring: 45 65% 52%;                /* ≈ #d4af37  Kinetic Gold            */
   --radius: 0.5rem;                  /* 8px — matches --s-radius-md        */
 
   /* -------------------------------------------------------------------------
      GroLabs design tokens — source of truth, kept intact.
      Existing CSS using --s-* and --scout-* references continues to work.
+     Kinetic Gold (#d4af37) is the brand action color: it accents primary
+     CTAs, active nav state, and brand moments. Neutral buttons stay neutral.
      ----------------------------------------------------------------------- */
-  --scout-accent: #378ADD;
-  --scout-accent-hover: #185FA5;
-  --scout-accent-50: #E6F1FB;
-  --scout-accent-100: #B5D4F4;
-  --scout-accent-600: #185FA5;
-  --scout-accent-800: #0C447C;
-  --s-bg: #FAFAF9;
-  --s-surface: #FFFFFF;
-  --s-surface-alt: #F5F5F4;
-  --s-surface-hover: #EFEFEE;
+  --scout-accent: #d4af37;
+  --scout-accent-hover: #b8941f;
+  --scout-accent-50: #faf3dc;
+  --scout-accent-100: #f0e2a4;
+  --scout-accent-600: #a08018;
+  --scout-accent-800: #6d5712;
+  --s-bg: #ffffff;
+  --s-surface: #ffffff;
+  --s-surface-alt: #f7f7f6;
+  --s-surface-hover: #efefee;
   --s-border: rgba(0, 0, 0, 0.08);
   --s-border-strong: rgba(0, 0, 0, 0.16);
+  /* Dark navigation surface */
+  --nav-surface: #18181b;
+  --nav-border: rgba(255, 255, 255, 0.06);
+  --nav-text: rgba(255, 255, 255, 0.6);
+  --nav-text-hover: rgba(255, 255, 255, 0.92);
+  --nav-text-muted: rgba(255, 255, 255, 0.4);
   --s-text: #1A1A1A;
   --s-text-secondary: #5F5E5A;
   --s-text-tertiary: #888780;
@@ -89,7 +97,8 @@ svg {
   --s-radius-md: 8px;
   --s-radius-lg: 12px;
   --s-radius-xl: 16px;
-  --s-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  --s-font: var(--font-hanken), -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  --s-font-brand: var(--font-caveat), "Permanent Marker", "Caveat", cursive;
   --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
 }
 
@@ -130,7 +139,10 @@ svg {
   padding: 0;
 }
 
-html,
+html {
+  height: 100%;
+  font-size: 16px;
+}
 body {
   height: 100%;
   font-family: var(--s-font);
@@ -156,46 +168,47 @@ button {
 
 .s-app {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 260px 1fr;
   min-height: 100vh;
 }
 
-/* Navigation */
+/* Navigation — dark surface, gold accent on active state */
 .s-nav {
-  background: var(--s-surface-alt);
-  border-right: 0.5px solid var(--s-border);
-  padding: 16px 12px;
+  background: var(--nav-surface);
+  border-right: none;
+  padding: 20px 14px;
   overflow-y: auto;
   position: sticky;
   top: 0;
   height: 100vh;
+  color: var(--nav-text);
 }
 
 .s-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px 20px;
+  padding: 4px 8px 24px;
 }
 .s-brand-mark {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--s-radius-sm);
-  background: var(--scout-accent);
+  display: none;
 }
 .s-brand-name {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-family: var(--s-font-brand);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--scout-accent);
+  line-height: 1;
 }
 
 .s-nav-section {
-  margin: 16px 0 6px;
+  margin: 18px 0 6px;
   padding: 0 10px;
   font-size: 10px;
-  color: var(--s-text-tertiary);
+  color: var(--nav-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-weight: 500;
 }
 
@@ -203,39 +216,41 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-radius: var(--s-radius-md);
   font-size: 13px;
-  color: var(--s-text-secondary);
+  color: var(--nav-text);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   user-select: none;
+  text-decoration: none;
 }
 .s-nav-item:hover {
-  background: var(--s-surface);
-  color: var(--s-text);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--nav-text-hover);
 }
 .s-nav-item.active {
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-800);
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--scout-accent);
   font-weight: 500;
 }
 .s-nav-icon {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 .s-nav-item.active .s-nav-icon {
   opacity: 1;
+  color: var(--scout-accent);
 }
 .s-nav-badge {
   margin-left: auto;
   font-size: 10px;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--s-surface);
-  color: var(--s-text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--nav-text-muted);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -252,20 +267,20 @@ button {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 4px 10px;
+  padding: 6px 10px;
   margin: 0 0 4px;
   background: none;
   border: none;
   cursor: pointer;
   font-size: 10px;
-  color: var(--s-text-tertiary);
+  color: var(--nav-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-weight: 500;
   transition: color 0.12s;
 }
 .s-nav-section-trigger:hover {
-  color: var(--s-text-secondary);
+  color: var(--nav-text-hover);
 }
 .s-nav-section-trigger .s-nav-icon {
   opacity: 0.6;
@@ -558,34 +573,53 @@ button {
 
 .s-card {
   background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
+  border: 1px solid var(--s-border);
   border-radius: var(--s-radius-lg);
-  padding: 18px 20px;
+  padding: 20px 22px;
 }
 .s-card-label {
-  font-size: 10px;
-  color: var(--s-text-tertiary);
+  font-size: 11px;
+  color: var(--s-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-weight: 500;
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
+/* Standardized block / section title — ALL CAPS, tracked, with a 2px
+   gold vertical bar marking the start of the title. */
 .s-card-h {
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 500;
   margin: 0;
-  letter-spacing: -0.005em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--s-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.4;
+}
+.s-card-h::before {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: var(--scout-accent);
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 .s-card-sub {
   font-size: 12px;
+  font-weight: 400;
   color: var(--s-text-secondary);
-  margin: 2px 0 14px;
+  line-height: 1.5;
+  margin: 6px 0 16px;
 }
 .s-card-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .s-card-link {
   font-size: 12px;
@@ -606,26 +640,34 @@ button {
 
 .s-field {
   position: relative;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 .s-field:last-child {
   margin-bottom: 0;
 }
 .s-field-label {
   position: absolute;
-  top: -6px;
+  top: -7px;
   left: 10px;
   padding: 0 6px;
   background: #ffffff;
   font-size: 10px;
-  color: var(--s-text-secondary);
+  color: var(--s-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-weight: 500;
   z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+/* Optional helper text under a field — the standardized hint style. */
+.s-field-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--s-text-tertiary);
+  line-height: 1.5;
 }
 .s-input,
 .s-select,
@@ -633,12 +675,12 @@ button {
   width: 100%;
   padding: 10px 12px;
   background: #ffffff;
-  border: 0.5px solid var(--s-border);
+  border: 1px solid var(--s-border);
   border-radius: var(--s-radius-md);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   font-family: inherit;
-  color: #000;
+  color: var(--s-text);
   outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
@@ -675,6 +717,7 @@ button {
   padding: 12px;
   min-height: 90px;
   resize: vertical;
+  font-size: 14px;
 }
 .s-input-mono {
   font-family: var(--s-font-mono);
@@ -748,9 +791,11 @@ button {
   font-weight: 500;
 }
 .s-toggle-sub {
-  font-size: 11px;
-  color: var(--s-text-tertiary);
-  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--s-text-secondary);
+  margin-top: 3px;
+  line-height: 1.5;
 }
 .s-toggle {
   position: relative;
@@ -1248,9 +1293,11 @@ button {
   margin: 0 0 6px;
 }
 .s-page-description {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 400;
   color: var(--s-text-secondary);
   margin: 0;
+  line-height: 1.5;
 }
 
 /* =============================================================================
@@ -1901,7 +1948,8 @@ button {
 
 .s-variant-desc {
   font-size: 12px;
-  color: var(--s-text-tertiary);
+  font-weight: 400;
+  color: var(--s-text-secondary);
   margin-bottom: 12px;
   line-height: 1.5;
 }

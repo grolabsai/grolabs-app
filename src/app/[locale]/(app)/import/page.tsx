@@ -189,7 +189,7 @@ export default async function ImportPage() {
                   return (
                     <tr key={job.job_id}>
                       <td style={{ paddingLeft: 20, fontSize: 13, fontWeight: 500 }}>
-                        {job.filename ?? "—"}
+                        {job.filename ?? ""}
                       </td>
                       <td>
                         <span className="s-tag s-tag-accent">
@@ -197,7 +197,7 @@ export default async function ImportPage() {
                         </span>
                       </td>
                       <td className="text-center tabular" style={{ fontSize: 12 }}>
-                        {job.row_count ?? "—"}
+                        {job.row_count ?? ""}
                       </td>
                       <td>
                         <div className="s-dot-row">

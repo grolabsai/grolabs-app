@@ -428,9 +428,8 @@ export function PriceListImportDialog({
                   columns={parsedFile.columns}
                   value={suggestedPriceColumnIndex}
                   onChange={setSuggestedPriceColumnIndex}
-                  placeholder={t("placeholders.optionalColumn")}
+                  placeholder=""
                   allowNone
-                  noneLabel={t("placeholders.optionalColumn")}
                 />
               </Field>
             </div>
@@ -473,11 +472,11 @@ export function PriceListImportDialog({
                   <tbody>
                     {previewRows.map((row, i) => (
                       <tr key={i}>
-                        <Td>{row.key || "—"}</Td>
+                        <Td>{row.key || ""}</Td>
                         <Td>
                           {row.cost === null ? (
                             <span style={{ color: "var(--s-danger)" }}>
-                              {row.costRaw || "—"}
+                              {row.costRaw || ""}
                             </span>
                           ) : (
                             row.cost.toLocaleString("es-GT", {
@@ -630,14 +629,12 @@ function ColumnPicker({
   onChange,
   placeholder,
   allowNone,
-  noneLabel,
 }: {
   columns: string[];
   value: number | null;
   onChange: (v: number | null) => void;
   placeholder: string;
   allowNone?: boolean;
-  noneLabel?: string;
 }) {
   const stringValue = value === null ? (allowNone ? NONE_VALUE : "") : String(value);
   return (
@@ -653,9 +650,7 @@ function ColumnPicker({
       </SelectTrigger>
       <SelectContent>
         {allowNone ? (
-          <SelectItem value={NONE_VALUE}>
-            {noneLabel ?? "—"}
-          </SelectItem>
+          <SelectItem value={NONE_VALUE}>{" "}</SelectItem>
         ) : null}
         {columns.map((c, i) => (
           <SelectItem key={i} value={String(i)}>

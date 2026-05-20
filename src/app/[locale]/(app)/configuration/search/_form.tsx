@@ -144,7 +144,7 @@ export function SearchSettingsForm({
       {/* ── Connection status ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">{t("connection.title")}</h3>
+          <h3 className="s-card-label !mb-0">{t("connection.title")}</h3>
           <Button
             type="button"
             variant="outline"

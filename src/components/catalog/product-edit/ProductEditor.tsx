@@ -436,10 +436,10 @@ export function ProductEditor({
               />
             </div>
             <div className="s-row-pair">
-              <ReadOnlyField label={tFields("sku")} value={product.sku ?? "—"} mono />
+              <ReadOnlyField label={tFields("sku")} value={product.sku ?? ""} mono />
               <ReadOnlyField
                 label={tFields("barcode")}
-                value={product.barcode ?? "—"}
+                value={product.barcode ?? ""}
                 mono
               />
             </div>
@@ -492,7 +492,7 @@ export function ProductEditor({
                       id: b.brand_id,
                       label: b.brand_name,
                     }))}
-                    emptyLabel={tFields("noBrand")}
+                    allowNull
                     onSave={saver("brand_id")}
                     onSaved={onSaved}
                     ariaLabel={tFields("brand")}
@@ -503,7 +503,6 @@ export function ProductEditor({
                   <input
                     className="s-input"
                     value={primaryCategory?.category_name ?? ""}
-                    placeholder="—"
                     disabled
                   />
                 </div>
@@ -536,7 +535,7 @@ export function ProductEditor({
                   >
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>
-                        {av.product_attribute?.attribute_name ?? "—"}
+                        {av.product_attribute?.attribute_name ?? ""}
                       </div>
                       <div
                         style={{

@@ -669,7 +669,7 @@ async function CategoryDetail({
             <div className="s-species-grid">
               {speciesLinks.map((sl) => {
                 const sp = normalizeOne(sl.species);
-                const speciesName = sp?.name ?? "—";
+                const speciesName = sp?.name ?? "";
                 const displayName =
                   speciesName === "Perro"
                     ? "Perros"
@@ -861,7 +861,7 @@ async function CategoryDetail({
                           fontSize: 12,
                         }}
                       >
-                        {brand?.brand_name ?? "—"}
+                        {brand?.brand_name ?? ""}
                       </td>
                       <td
                         className="tabular"

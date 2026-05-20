@@ -153,7 +153,7 @@ export function StageMaintenance({ funnelFlowId, stages }: Props) {
                   </TableCell>
                   <TableCell>{stage.label}</TableCell>
                   <TableCell className="font-mono text-xs text-slate-500">
-                    {stage.icon_key ?? "—"}
+                    {stage.icon_key ?? ""}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-slate-600">
                     {stage.position_x}

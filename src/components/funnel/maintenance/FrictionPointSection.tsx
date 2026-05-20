@@ -62,16 +62,16 @@ export function FrictionPointSection({ frictionPoints, stages }: Props) {
               {frictionPoints.map((fp) => (
                 <TableRow key={fp.funnel_friction_point_id}>
                   <TableCell className="text-xs text-slate-600">
-                    {stageById.get(fp.funnel_stage_id)?.label ?? "—"}
+                    {stageById.get(fp.funnel_stage_id)?.label ?? ""}
                   </TableCell>
                   <TableCell className="text-sm font-medium text-slate-900">
                     {fp.name}
                   </TableCell>
                   <TableCell className="text-xs text-slate-500">
-                    {fp.category ?? "—"}
+                    {fp.category ?? ""}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600">
-                    {fp.description ?? "—"}
+                    {fp.description ?? ""}
                   </TableCell>
                 </TableRow>
               ))}

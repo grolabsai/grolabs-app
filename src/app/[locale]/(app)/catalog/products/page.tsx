@@ -348,7 +348,7 @@ export default async function ProductsPage({
                         )}
                       </td>
                       <td style={{ color: "var(--s-text-secondary)", fontSize: 12 }}>
-                        {p.brand?.brand_name ?? "—"}
+                        {p.brand?.brand_name ?? ""}
                       </td>
                       <td
                         className="text-center tabular"

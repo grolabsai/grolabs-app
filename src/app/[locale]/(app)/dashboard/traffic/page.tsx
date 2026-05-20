@@ -78,10 +78,8 @@ export default async function TrafficDashboardPage() {
     <div className="s-page-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <h1 style={{ fontSize: 18, fontWeight: 600 }}>Traffic dashboard (data wiring)</h1>
       <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
-        Property: {cfg?.property_id ?? "—"} · Last pull:{" "}
-        {cfg?.last_pull_at
-          ? new Date(cfg.last_pull_at).toLocaleString()
-          : "never"}
+        Property: {cfg?.property_id ?? ""} · Last pull:{" "}
+        {cfg?.last_pull_at ? new Date(cfg.last_pull_at).toLocaleString() : ""}
       </p>
 
       <section>

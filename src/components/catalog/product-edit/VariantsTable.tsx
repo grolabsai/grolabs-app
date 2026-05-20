@@ -843,10 +843,9 @@ function CellInput({
         fontFamily: monospace ? "var(--s-font-mono)" : "inherit",
         fontSize: 12,
         color: display ? "var(--s-text)" : "var(--s-text-muted)",
-        fontStyle: display ? "normal" : "italic",
       }}
     >
-      {display || "—"}
+      {display || ""}
     </div>
   );
 }

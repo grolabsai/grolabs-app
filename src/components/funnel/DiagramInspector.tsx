@@ -101,7 +101,7 @@ export function DiagramInspector({
               {t("summaryDataset")}
             </div>
             <div className="mt-2 text-base font-semibold text-slate-900">
-              {dataset?.name ?? "—"}
+              {dataset?.name ?? ""}
             </div>
             <div className="mt-1 text-xs text-slate-500">
               {t("summarySelectStage")}

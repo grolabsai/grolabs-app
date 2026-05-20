@@ -55,10 +55,10 @@ export default async function AppLayout({
     .filter((i) => i.name.length > 0)
     .sort((a, b) => a.name.localeCompare(b.name));
   const currentInstance = instances.find((i) => i.isCurrent) ?? null;
-  const instanceName = currentInstance?.name ?? "Sin instancia";
+  const instanceName = currentInstance?.name ?? "";
 
   // User initials for the topbar avatar — from email local part if no name.
-  const initials = (user.email ?? "??").slice(0, 2).toUpperCase();
+  const initials = (user.email ?? "").slice(0, 2).toUpperCase();
 
   return (
     <AgentLogProvider>

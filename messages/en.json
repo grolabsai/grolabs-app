@@ -90,6 +90,10 @@
           "saveFailed": "Could not create instance. Try again.",
           "copyFailed": "Instance created, but configuration could not be copied.",
           "templateCopyFailed": "Instance created, but template data could not be copied."
+        },
+        "agentLog": {
+          "createdTitle": "Instance created",
+          "createdBody": "{name} is now the active instance. From here on you'll only see messages related to this instance."
         }
       }
     }
@@ -1242,6 +1246,20 @@
         "reindexDone": "Reindex complete",
         "reindexCounts": "{indexed} indexed · {failed} failed",
         "reindexFailed": "Reindex did not complete"
+      },
+      "preview": {
+        "cardTitle": "Search preview",
+        "cardDescription": "Run live queries against this instance's index.",
+        "title": "Search the index",
+        "help": "Type what your customers might search for to see exactly what Meilisearch will return.",
+        "placeholder": "e.g. puppy food, rope toy…",
+        "idle": "Enter a query to see results.",
+        "searching": "Searching…",
+        "empty": "No results for \"{query}\".",
+        "error": "Search failed",
+        "meta": "{count, plural, =1 {1 result} other {# results}} · {ms} ms",
+        "inStock": "In stock",
+        "outOfStock": "Out of stock"
       }
     },
     "ga4": {

@@ -72,7 +72,7 @@ export function CreateInstanceDialog({
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const { reportError } = useActivityStream();
+  const { reportError, reportInfo, clear: clearActivity } = useActivityStream();
 
   const trimmed = name.trim();
   const slugPreview = deriveSlug(trimmed);
@@ -152,6 +152,17 @@ export function CreateInstanceDialog({
         }
         return;
       }
+
+      // Drop any activity-stream messages from the previous instance — the
+      // panel scope follows the active instance. The "created" info bubble
+      // below becomes the first entry for the new instance.
+      clearActivity();
+      reportInfo({
+        source: "Instance creation",
+        title: t("agentLog.createdTitle"),
+        message: t("agentLog.createdBody", { name: trimmed }),
+        context: { instanceId: result.instanceId, slug: result.slug },
+      });
 
       // Compose a single toast that mentions whichever copies happened.
       const parts: string[] = [];

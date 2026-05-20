@@ -6,6 +6,7 @@ import { ping } from "@/lib/search/meilisearch-client";
 import { indexUidFor } from "@/lib/search/types";
 import { getIndexingStatus } from "./actions";
 import { SearchSettingsForm } from "./_form";
+import { SearchPreview } from "./_search-preview";
 
 /**
  * Stage 0 admin panel for Meilisearch search infrastructure.
@@ -49,21 +50,40 @@ export default async function SearchConfigPage() {
 
   return (
     <div className="s-page-content">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("pageTitle")}</CardTitle>
-          <CardDescription>{t("pageDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SearchSettingsForm
-            instanceId={instanceId}
-            indexUid={indexUidFor(instanceId)}
-            initialDomains={initialDomains}
-            initialHealth={initialHealth}
-            initialStatus={initialStatus}
-          />
-        </CardContent>
-      </Card>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(380px, 1fr) minmax(360px, 1fr)",
+          gap: 24,
+          alignItems: "start",
+        }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("pageTitle")}</CardTitle>
+            <CardDescription>{t("pageDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SearchSettingsForm
+              instanceId={instanceId}
+              indexUid={indexUidFor(instanceId)}
+              initialDomains={initialDomains}
+              initialHealth={initialHealth}
+              initialStatus={initialStatus}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("preview.cardTitle")}</CardTitle>
+            <CardDescription>{t("preview.cardDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SearchPreview instanceId={instanceId} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

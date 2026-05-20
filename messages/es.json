@@ -1294,6 +1294,23 @@
         "expand": "Mostrar resultados",
         "collapse": "Ocultar resultados",
         "hitsHeader": "Productos entregados al plugin (IDs de WooCommerce)"
+      },
+      "eventLog": {
+        "cardTitle": "Eventos recientes",
+        "cardDescription": "Clics y conversiones que la tienda ha registrado: búsquedas con clic, añadidos al carrito, avances a checkout y órdenes completadas. Actualizado automáticamente cada 5 segundos.",
+        "countsHelp": "Totales de las últimas 24 horas. Los conteos en cero significan que ese evento aún no se ha registrado.",
+        "tableDescription": "Mostrando los últimos {count, plural, =1 {1 evento} other {# eventos}}.",
+        "loading": "Cargando eventos…",
+        "empty": "Aún no se han registrado eventos para esta instancia. Realiza una búsqueda en la tienda y haz clic en un resultado para verlo aquí.",
+        "error": "No se pudieron cargar los eventos.",
+        "noProduct": "(sin producto)",
+        "col": {
+          "time": "Hora",
+          "event": "Evento",
+          "product": "Producto",
+          "position": "Posición",
+          "queryUid": "queryUid"
+        }
       }
     },
     "ga4": {

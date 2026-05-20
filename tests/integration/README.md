@@ -59,6 +59,21 @@ To enable integration tests in CI, add the four env vars above as
 **repository secrets**: Settings → Secrets and variables → Actions →
 New repository secret.
 
+### Or via gh CLI (faster)
+
+```sh
+gh secret set MEILISEARCH_HOST           --repo grolabsai/scout --body 'https://…'
+gh secret set MEILISEARCH_MASTER_KEY     --repo grolabsai/scout --body '…'
+gh secret set NEXT_PUBLIC_SUPABASE_URL   --repo grolabsai/scout --body 'https://….supabase.co'
+gh secret set SUPABASE_SERVICE_ROLE_KEY  --repo grolabsai/scout --body '…'
+```
+
+Grab the values from Vercel project env (Scout production) or the
+Meilisearch Cloud / Supabase dashboards. After all four are set,
+trigger a run manually at
+https://github.com/grolabsai/scout/actions/workflows/test.yml →
+"Run workflow" → confirm the `integration` job passes.
+
 ## Adding a new rule
 
 Pattern: when a new filter/business rule lands in

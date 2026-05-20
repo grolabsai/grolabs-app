@@ -9,28 +9,43 @@ This document is the authoritative spec for how click and conversion events flow
 
 ## 1. The flow at a glance
 
+As of plugin v0.7.0 (Scout migration 20260520000002), events are **dual-written** — the plugin posts each event to both Meilisearch Cloud (for relevance training) and Scout (for the in-app analytics panel). The two writes are independent: a failure of one doesn't block the other.
+
 ```
 Customer clicks a search result on the WP storefront
         │
-        ▼
-WP plugin's events.js  (assets/js/grolabs-wordpress-search-events.js)
-        │   reads cached tenant token from memory, refreshes if expired
-        ▼
-POST {meili_host}/events     ←— direct, with Bearer <tenant_token>
-        │   {eventType, eventName, indexUid, userId, queryUid, objectId, objectName, position}
-        ▼
-Meilisearch Cloud writes the event to its analytics store
-        │
-        ▼
-Meilisearch Cloud → Analytics tab → Events
+        ├──────────────────────────────┐
+        ▼                              ▼
+WP plugin's events.js fires TWO parallel POSTs
+        │                              │
+        ▼                              ▼
+POST {meili_host}/events    POST {GROLABS_API_HOST}/api/v1/events
+(with tenant token)          (with instance_id + origin)
+        │                              │
+        ▼                              ▼
+Meilisearch's analytics      Scout's analytics_event table
+        │                              │
+        ▼                              ▼
+Meilisearch dashboard        GroLabs admin → /configuration/search
+(relevance feedback loop)    (Eventos recientes panel)
 ```
 
-**Scout is NOT in the data path for events.** Scout's role is limited to:
+### Why both?
 
-1. **Minting the tenant token** that authorizes the event POST. Endpoint: `POST /api/v1/events/token` ([src/app/api/v1/events/token/route.ts](../../src/app/api/v1/events/token/route.ts)). Token is scoped to the caller's instance, lives 15 min, refreshed on demand.
-2. **Issuing the `queryUid`** in the `/api/v1/search` response that the storefront uses to attribute conversions back to the originating search.
+Meilisearch's `/events` is the **authoritative** store and the only one that feeds back into ranking relevance — Meilisearch consumes its own events to train. **We never give that up.**
 
-Scout has no `events` table, no event-ingestion endpoint, no aggregation API. By design — Meilisearch is the analytics store. Adding our own would double-write, double-pay, and double-debug.
+Scout's `/api/v1/events` is a **local mirror** so the GroLabs admin can show event flow without leaving the app. Meilisearch Cloud's Build tier ($30/mo) exposes events **only via the web dashboard** — there's no programmatic read API outside Enterprise. Without the mirror, the only path to "show me what's happening with my search" is "log into Meilisearch Cloud as a developer", which we don't want to ask merchants to do.
+
+### Roles
+
+- **Plugin** ([assets/js/grolabs-wordpress-search-events.js](../../grolabs-wordpress-search/assets/js/grolabs-wordpress-search-events.js)) — dual-writes per event. Both POSTs use `keepalive: true` so they complete even if the user navigates away.
+- **Scout `/api/v1/events/token`** ([src/app/api/v1/events/token/route.ts](../../src/app/api/v1/events/token/route.ts)) — mints the Meilisearch tenant token. Token is scoped to the caller's instance, lives 15 min, refreshed on demand.
+- **Scout `/api/v1/events`** ([src/app/api/v1/events/route.ts](../../src/app/api/v1/events/route.ts)) — receives the mirror POST. Validates origin against `instance.storefront_domains` (same trust model as `/api/v1/search`), inserts into `analytics_event`.
+- **Scout `analytics_event` table** ([migration 20260520000002](../../supabase/migrations/20260520000002_analytics_event.sql)) — local store. RLS scopes SELECT to `instance_member`; writes only via service-role from the receiver endpoint.
+
+### Backwards compatibility
+
+Plugin versions **before v0.7.0** post only to Meilisearch — they don't know the Scout endpoint exists. On a merchant running an older plugin, the Scout `/configuration/search` events panel will show empty (with a clear "no events recorded yet" message). Upgrade the plugin to start mirror-writing.
 
 ## 2. The five event types
 
@@ -68,14 +83,13 @@ The token's `searchRules` include the index uid filter pinning to the caller's i
 
 ## 5. Where to verify events
 
-The merchant-friendly path:
+Three places, each showing the same events from a different angle:
 
-1. **Meilisearch Cloud → project → Analytics → Events**. Filter by event name or queryUid. Events appear within seconds of the storefront emitting them.
+1. **GroLabs admin → `/configuration/search` → "Eventos recientes" card** (Scout's local mirror, v0.7.0+ plugin required). 24h counts per event name plus the last 50 individual events with product names, position, and `queryUid`. Polled every 5 s.
+2. **Meilisearch Cloud → project → Analytics → Events** — the authoritative store. Filter by event name or `queryUid`. Events appear within seconds of the storefront emitting them.
+3. **Browser DevTools → Network tab** on the storefront. Filter to `events`. You should see **two** parallel POSTs per event in v0.7.0+: one to `{meili_host}/events` (Bearer-tokened) and one to `{GROLABS_API_HOST}/api/v1/events` (no auth header — origin-validated). Either failing independently is fine.
 
-The debugger-friendly path:
-
-1. **Browser DevTools → Network tab** on the storefront. Filter to `events`. You should see `POST https://<host>/events` with status 200 and a `Bearer …` Authorization header per click/add-to-cart/checkout/order.
-2. **`console.warn` lines** in DevTools Console if anything failed: `Grolabs: token endpoint status …`, `Grolabs: <EventName> not recorded …`.
+`console.warn` lines starting with `Grolabs:` in the DevTools Console call out specific failures (`Grolabs: token endpoint status …`, `Grolabs: <EventName> not recorded …`).
 
 The "we don't see events" failure modes, in order of frequency:
 
@@ -98,5 +112,6 @@ The "we don't see events" failure modes, in order of frequency:
 | v0.3.0 | Click events shipped — `Search Result Clicked` from results-page cards. |
 | v0.4.1 | Click events extended to typeahead dropdown items. |
 | v0.5.0 | All four conversion event types shipped. Attribution store added. |
+| v0.7.0 | Dual-write to Scout's `/api/v1/events` for the in-app analytics panel. Meilisearch path unchanged. |
 
-The flow described in this doc reflects v0.5.0+ behavior.
+The flow described in this doc reflects v0.7.0+ behavior.

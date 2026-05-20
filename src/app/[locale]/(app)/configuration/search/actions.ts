@@ -469,6 +469,118 @@ export async function recentSearchRequests(
   return { ok: true, rows };
 }
 
+// ── Event analytics ───────────────────────────────────────────────────────
+//
+// Backs the "Eventos recientes" panel on /configuration/search. Reads from
+// analytics_event, populated by /api/v1/events as the WP plugin emits
+// click + conversion events from the storefront. See
+// docs/policy/search-events.md for the upstream flow.
+//
+// Both queries are scoped to the caller's instance via RLS plus an
+// explicit authorizeMembership() gate so an unauthenticated request gets
+// a clean error rather than an empty list. Mirrors recentSearchRequests.
+
+export type SearchEventRow = {
+  id: number;
+  createdAt: string;
+  eventType: string;
+  eventName: string;
+  queryUid: string | null;
+  indexUid: string | null;
+  objectId: string | null;
+  objectName: string | null;
+  position: number | null;
+  origin: string | null;
+};
+
+export type RecentSearchEventsResult =
+  | { ok: true; rows: SearchEventRow[] }
+  | { ok: false; error: "unauthorized" };
+
+export async function recentSearchEvents(
+  instanceId: number,
+  limit = 50,
+): Promise<RecentSearchEventsResult> {
+  if (!(await authorizeMembership(instanceId))) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  const sb = await createClient();
+  const { data } = await sb
+    .from("analytics_event")
+    .select("id, created_at, event_type, event_name, query_uid, index_uid, object_id, object_name, position, origin")
+    .order("created_at", { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 200));
+
+  const rows: SearchEventRow[] = (data ?? []).map((r) => ({
+    id: r.id as number,
+    createdAt: r.created_at as string,
+    eventType: (r.event_type as string) ?? "",
+    eventName: (r.event_name as string) ?? "",
+    queryUid: (r.query_uid as string | null) ?? null,
+    indexUid: (r.index_uid as string | null) ?? null,
+    objectId: (r.object_id as string | null) ?? null,
+    objectName: (r.object_name as string | null) ?? null,
+    position: r.position == null ? null : (r.position as number),
+    origin: (r.origin as string | null) ?? null,
+  }));
+
+  return { ok: true, rows };
+}
+
+/**
+ * Per-event-name counts for the trailing 24h. Drives the chip row above
+ * the events table — operators see at a glance whether each event type
+ * is firing or not. The five known event names are pre-seeded so a name
+ * that's never fired returns 0 rather than going missing entirely.
+ */
+export type SearchEventCounts = {
+  windowSeconds: number;
+  byName: Record<string, number>;
+};
+
+export type SearchEventCountsResult =
+  | { ok: true; counts: SearchEventCounts }
+  | { ok: false; error: "unauthorized" };
+
+const KNOWN_EVENT_NAMES = [
+  "Search Result Clicked",
+  "Added to cart from PLP",
+  "Added to cart from PDP",
+  "Proceeded to check out",
+  "Completed order",
+] as const;
+
+export async function searchEventCounts(
+  instanceId: number,
+  windowSeconds = 24 * 60 * 60,
+): Promise<SearchEventCountsResult> {
+  if (!(await authorizeMembership(instanceId))) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  const sb = await createClient();
+  const sinceIso = new Date(Date.now() - windowSeconds * 1000).toISOString();
+  // Fetching ALL events in the window with just the event_name column is
+  // cheap (small payload, indexed by instance_id+created_at). Aggregating
+  // client-side avoids needing a Postgres RPC.
+  const { data } = await sb
+    .from("analytics_event")
+    .select("event_name")
+    .gte("created_at", sinceIso);
+
+  const byName: Record<string, number> = {};
+  // Seed known names at 0 so the chip row always shows the full taxonomy.
+  for (const name of KNOWN_EVENT_NAMES) byName[name] = 0;
+  for (const row of data ?? []) {
+    const name = (row.event_name as string) ?? "";
+    if (!name) continue;
+    byName[name] = (byName[name] ?? 0) + 1;
+  }
+
+  return { ok: true, counts: { windowSeconds, byName } };
+}
+
 export type RunBackfillResult =
   | { ok: true; indexed: number; failed: number }
   | { ok: false; error: string };

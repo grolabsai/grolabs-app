@@ -107,10 +107,15 @@ async function logRequest(input: {
   try {
     const sb = createServiceRoleClient();
     const isSuccess = input.denialReason === null;
+    // Include wc_id + name so the request-log panel can show which products
+    // we handed to the WordPress plugin — essential when WP says "no results"
+    // but we returned non-zero hits (stale index, deleted products, etc.).
     const summary = isSuccess
       ? (input.hits ?? []).map((h) => ({
           product_id: h.document.id,
           variation_id: h.matched_variation?.variation_id ?? null,
+          wc_id: h.document.woocommerce_id ?? null,
+          name: h.document.name ?? null,
         }))
       : null;
     await sb.from("query_log").insert({

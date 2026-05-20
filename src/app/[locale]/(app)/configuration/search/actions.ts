@@ -280,6 +280,12 @@ export async function previewSearch(
 // so operators can watch WP plugin traffic land in real time without leaving
 // GroLabs.
 
+export type SearchRequestLogHit = {
+  wcId: number | null;
+  name: string | null;
+  variationId: number | null;
+};
+
 export type SearchRequestLogRow = {
   id: number;
   createdAt: string;
@@ -290,6 +296,7 @@ export type SearchRequestLogRow = {
   totalHits: number | null;
   processingTimeMs: number | null;
   totalHandlerMs: number | null;
+  hits: SearchRequestLogHit[];
 };
 
 export type RecentSearchRequestsResult =
@@ -313,23 +320,37 @@ export async function recentSearchRequests(
   const sb = await createClient();
   const { data } = await sb
     .from("query_log")
-    .select("id, created_at, query, origin, status, denial_reason, total_hits, processing_time_ms, total_handler_ms")
+    .select("id, created_at, query, origin, status, denial_reason, total_hits, processing_time_ms, total_handler_ms, variant_selection")
     .order("created_at", { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 200));
 
-  const rows: SearchRequestLogRow[] = (data ?? []).map((r) => ({
-    id: r.id as number,
-    createdAt: r.created_at as string,
-    query: (r.query as string) ?? "",
-    origin: (r.origin as string | null) ?? null,
-    status: (r.status as number) ?? 200,
-    denialReason: (r.denial_reason as string | null) ?? null,
-    // Successful rows from before the diagnostics columns existed still have
-    // default 0 here, but they're not denials — surface them as-is.
-    totalHits: r.total_hits == null ? null : (r.total_hits as number),
-    processingTimeMs: r.processing_time_ms == null ? null : (r.processing_time_ms as number),
-    totalHandlerMs: r.total_handler_ms == null ? null : (r.total_handler_ms as number),
-  }));
+  const rows: SearchRequestLogRow[] = (data ?? []).map((r) => {
+    const rawSummary = r.variant_selection;
+    const hits: SearchRequestLogHit[] = Array.isArray(rawSummary)
+      ? rawSummary.map((h) => {
+          const o = (h ?? {}) as Record<string, unknown>;
+          return {
+            wcId: typeof o.wc_id === "number" ? o.wc_id : null,
+            name: typeof o.name === "string" ? o.name : null,
+            variationId: typeof o.variation_id === "number" ? o.variation_id : null,
+          };
+        })
+      : [];
+    return {
+      id: r.id as number,
+      createdAt: r.created_at as string,
+      query: (r.query as string) ?? "",
+      origin: (r.origin as string | null) ?? null,
+      status: (r.status as number) ?? 200,
+      denialReason: (r.denial_reason as string | null) ?? null,
+      // Successful rows from before the diagnostics columns existed still have
+      // default 0 here, but they're not denials — surface them as-is.
+      totalHits: r.total_hits == null ? null : (r.total_hits as number),
+      processingTimeMs: r.processing_time_ms == null ? null : (r.processing_time_ms as number),
+      totalHandlerMs: r.total_handler_ms == null ? null : (r.total_handler_ms as number),
+      hits,
+    };
+  });
 
   return { ok: true, rows };
 }

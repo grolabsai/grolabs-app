@@ -1,5 +1,6 @@
 import { Meilisearch, MeilisearchApiError } from "meilisearch";
 import { generateTenantToken } from "meilisearch/token";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   indexUidFor,
   type MeilisearchHealth,
@@ -179,9 +180,57 @@ export async function indexExists(instanceId: number): Promise<boolean> {
 }
 
 /**
- * Idempotent: creates the index if missing, applies default settings either way.
- * Returns the index UID. Used by the admin connection panel and by Stage 1's
- * push pipeline before the first upsert for a new instance.
+ * Load this instance's filterable + searchable attribute codes from the
+ * catalog. Used by ensureIndex to widen `filterableAttributes` /
+ * `searchableAttributes` so Meilisearch will facet on `attributes.<code>`
+ * paths emitted by the document builder.
+ *
+ * Meilisearch's `filterableAttributes` only accepts exact attribute names
+ * (no wildcards), so we enumerate them per-instance and reapply on every
+ * ensureIndex call. Cheap (one query, RLS-bypassed via service role) and
+ * keeps the index settings in lockstep with the catalog without requiring
+ * a separate "apply settings" admin action.
+ *
+ * Returns the bare `attribute_code` list — callers prefix with `attributes.`
+ * for filterableAttributes and `attributes.` for searchableAttributes.
+ */
+async function loadInstanceAttributeCodes(instanceId: number): Promise<{
+  filterable: string[];
+  searchable: string[];
+}> {
+  try {
+    const sb = createServiceRoleClient();
+    const { data } = await sb
+      .from("product_attribute")
+      .select("attribute_code, is_filterable, is_searchable")
+      .eq("instance_id", instanceId)
+      .eq("is_active", true);
+    const rows = (data ?? []) as Array<{
+      attribute_code: string;
+      is_filterable: boolean | null;
+      is_searchable: boolean | null;
+    }>;
+    return {
+      filterable: rows.filter((r) => r.is_filterable).map((r) => r.attribute_code),
+      searchable: rows.filter((r) => r.is_searchable).map((r) => r.attribute_code),
+    };
+  } catch (err) {
+    // A DB hiccup must not block index creation — fall back to the
+    // hardcoded defaults. Stale filterable list will reject new-attribute
+    // facets until the next ensureIndex succeeds.
+    console.error(
+      "[meilisearch-client] loadInstanceAttributeCodes failed; using defaults:",
+      err instanceof Error ? err.message : err,
+    );
+    return { filterable: [], searchable: [] };
+  }
+}
+
+/**
+ * Idempotent: creates the index if missing, applies default + per-instance
+ * settings either way. Returns the index UID. Used by the admin connection
+ * panel and by Stage 1's push pipeline before the first upsert for a new
+ * instance.
  */
 export async function ensureIndex(instanceId: number): Promise<string> {
   const client = getClient();
@@ -190,7 +239,27 @@ export async function ensureIndex(instanceId: number): Promise<string> {
     if (!(await indexExists(instanceId))) {
       await client.createIndex(uid, { primaryKey: "id" });
     }
-    await client.index(uid).updateSettings(DEFAULT_INDEX_SETTINGS);
+    const codes = await loadInstanceAttributeCodes(instanceId);
+    // Per-instance widening: add `attributes.<code>` paths for every
+    // filterable / searchable attribute the merchant has defined. Dedupes
+    // happen via Set since some codes may already be in the hardcoded list.
+    const filterable = Array.from(
+      new Set([
+        ...DEFAULT_INDEX_SETTINGS.filterableAttributes,
+        ...codes.filterable.map((c) => `attributes.${c}`),
+      ]),
+    );
+    const searchable = Array.from(
+      new Set([
+        ...DEFAULT_INDEX_SETTINGS.searchableAttributes,
+        ...codes.searchable.map((c) => `attributes.${c}`),
+      ]),
+    );
+    await client.index(uid).updateSettings({
+      ...DEFAULT_INDEX_SETTINGS,
+      filterableAttributes: filterable,
+      searchableAttributes: searchable,
+    });
     return uid;
   } catch (err) {
     throw new MeilisearchOpError(`ensureIndex(${instanceId}) failed`, err);

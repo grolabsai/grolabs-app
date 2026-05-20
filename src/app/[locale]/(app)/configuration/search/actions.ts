@@ -867,6 +867,126 @@ export async function getEmulatorFacetAllowlist(): Promise<string[]> {
   return [...FACET_ALLOWLIST];
 }
 
+// ── Dynamic per-attribute facet list ──────────────────────────────────────
+//
+// Drives the dynamic middle section of the emulator facet rail. When a
+// category is selected, attributes are scoped + ordered by
+// `category_product_attribute.form_order` (the merchant's own priority
+// ranking per the catalog editor). When no category is selected, the full
+// instance-wide filterable list is returned ordered by attribute_name —
+// there's no global priority value yet.
+
+export type EmulatorAttributeFacet = {
+  attributeId: number;
+  attributeCode: string;
+  attributeName: string;
+  /** Meilisearch facet path corresponding to this attribute. Always
+   * `attributes.<code>` — kept on the wire so the client doesn't have to
+   * compose it (and so we have a single spot to add a different prefix
+   * later if needed). */
+  facetName: string;
+};
+
+/** Filterable, list-type attributes for an instance — optionally narrowed
+ * to those mapped to a specific category and ordered by that mapping's
+ * `form_order`. The "list-type only" filter mirrors the document builder's
+ * v1 scope (only list attributes are currently indexed in `attributes.*`). */
+export async function listEmulatorAttributeFacets(
+  instanceId: number,
+  categoryId: number | null,
+): Promise<EmulatorAttributeFacet[]> {
+  if (!(await authorizeMembership(instanceId))) return [];
+
+  const sb = await createClient();
+
+  if (categoryId != null) {
+    // Category-scoped: only attributes mapped to this category, in the
+    // merchant's own form_order. `visible_in_filter` flips a mapping to
+    // hidden in the facet rail without dropping it from the catalog.
+    const { data } = await sb
+      .from("category_product_attribute")
+      .select(
+        `form_order, visible_in_filter,
+         product_attribute:product_attribute!inner (
+           attribute_id, attribute_code, attribute_name, data_type,
+           is_filterable, is_active
+         )`,
+      )
+      .eq("instance_id", instanceId)
+      .eq("category_id", categoryId);
+
+    // Supabase types the FK-joined column as an array even for a single-row
+    // relation, so we normalize down to the first row per mapping. The
+    // mapping_id → attribute_id relation is many-to-one in our schema, so
+    // there's always at most one row.
+    type Joined = {
+      attribute_id: number;
+      attribute_code: string;
+      attribute_name: string;
+      data_type: string | null;
+      is_filterable: boolean | null;
+      is_active: boolean | null;
+    };
+    type RawRow = {
+      form_order: number | null;
+      visible_in_filter: boolean | null;
+      product_attribute: Joined | Joined[] | null;
+    };
+    const rows = (data ?? []) as unknown as RawRow[];
+    const normalized = rows.map((r) => ({
+      form_order: r.form_order,
+      visible_in_filter: r.visible_in_filter,
+      product_attribute: Array.isArray(r.product_attribute)
+        ? r.product_attribute[0] ?? null
+        : r.product_attribute,
+    }));
+
+    return normalized
+      .filter(
+        (r): r is typeof r & { product_attribute: Joined } =>
+          !!r.product_attribute &&
+          r.product_attribute.is_active !== false &&
+          !!r.product_attribute.is_filterable &&
+          r.product_attribute.data_type === "list" &&
+          r.visible_in_filter !== false,
+      )
+      .sort((a, b) => {
+        const ao = a.form_order ?? Number.POSITIVE_INFINITY;
+        const bo = b.form_order ?? Number.POSITIVE_INFINITY;
+        if (ao !== bo) return ao - bo;
+        return a.product_attribute.attribute_name.localeCompare(
+          b.product_attribute.attribute_name,
+        );
+      })
+      .map((r) => ({
+        attributeId: r.product_attribute.attribute_id,
+        attributeCode: r.product_attribute.attribute_code,
+        attributeName: r.product_attribute.attribute_name,
+        facetName: `attributes.${r.product_attribute.attribute_code}`,
+      }));
+  }
+
+  // No category — every active, filterable, list-type attribute for this
+  // instance, alphabetical. No global priority value exists today; when
+  // one lands it should slot in here ahead of attribute_name.
+  const { data } = await sb
+    .from("product_attribute")
+    .select("attribute_id, attribute_code, attribute_name, data_type, is_filterable, is_active")
+    .eq("instance_id", instanceId)
+    .eq("is_active", true)
+    .eq("is_filterable", true)
+    .order("attribute_name");
+
+  return (data ?? [])
+    .filter((r) => (r.data_type as string | null) === "list")
+    .map((r) => ({
+      attributeId: r.attribute_id as number,
+      attributeCode: r.attribute_code as string,
+      attributeName: r.attribute_name as string,
+      facetName: `attributes.${r.attribute_code as string}`,
+    }));
+}
+
 export type RunBackfillResult =
   | { ok: true; indexed: number; failed: number }
   | { ok: false; error: string };

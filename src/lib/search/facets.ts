@@ -28,22 +28,27 @@ export const FACET_ALLOWLIST: readonly string[] = [
 ];
 
 /**
+ * Sentinel value in `FACET_RENDER_ORDER` that marks the slot where dynamic
+ * per-attribute facets should be rendered. Not a real Meilisearch facet
+ * name — the UI explodes it into a sequence of `attributes.<code>` blocks
+ * driven by `category_product_attribute.form_order` (when a category is
+ * picked) or `attribute_name` (when none is). Kept as a string sentinel so
+ * the ordering constant stays the single source of truth for slot order.
+ */
+export const FACET_DYNAMIC_ATTRIBUTES_SENTINEL = "_dynamic_attributes";
+
+/**
  * Deliberate render order for the emulator facet rail (and any other UI
  * surface that consumes the facets contract). Price and brand lead because
- * they're the dominant deciding factors in shopper research; remaining
- * attribute facets follow in priority order; the in-stock availability
- * toggle is last as visual punctuation.
- *
- * TODO(dynamic-attribute-facets): when per-attribute facets become driven
- * by the catalog's `product_attribute` rows (indexed via the document
- * builder + added to `filterableAttributes` per-instance), this static
- * ordering should give way to `category_product_attribute.form_order` for
- * the attribute slice — price + brand stay pinned to the top, in_stock
- * stays at the bottom, the middle becomes data-driven.
+ * they're the dominant deciding factors in shopper research; the dynamic
+ * attribute facets follow (in the merchant's `form_order` for the active
+ * category); legacy scout_attributes.* slots come after; the in-stock
+ * toggle anchors the bottom as visual punctuation.
  */
 export const FACET_RENDER_ORDER: readonly string[] = [
   "price",
   "brand",
+  FACET_DYNAMIC_ATTRIBUTES_SENTINEL,
   "scout_attributes.species",
   "scout_attributes.lifestage",
   "in_stock",
@@ -51,14 +56,25 @@ export const FACET_RENDER_ORDER: readonly string[] = [
 
 const FACET_ALLOWSET = new Set(FACET_ALLOWLIST);
 
-/** Drop any requested facet that isn't in the allowlist. */
+/**
+ * Dynamic per-attribute facets land under `attributes.<code>` where `<code>`
+ * is a `product_attribute.attribute_code`. We let any name matching that
+ * shape through — the worst case is a 400 from Meilisearch when the code
+ * doesn't exist in `filterableAttributes`, not a security boundary breach.
+ * `code` must be lowercase ASCII identifier-ish so a typo can't pull in a
+ * weird path traversal value.
+ */
+const DYNAMIC_FACET_RE = /^attributes\.[a-z0-9_]+$/;
+
+/** Drop any requested facet that isn't in the allowlist (static or dynamic). */
 export function sanitizeFacets(requested: unknown): string[] {
   if (!Array.isArray(requested)) return [];
   const out: string[] = [];
   const seen = new Set<string>();
   for (const v of requested) {
     if (typeof v !== "string") continue;
-    if (!FACET_ALLOWSET.has(v)) continue;
+    const allowed = FACET_ALLOWSET.has(v) || DYNAMIC_FACET_RE.test(v);
+    if (!allowed) continue;
     if (seen.has(v)) continue;
     seen.add(v);
     out.push(v);

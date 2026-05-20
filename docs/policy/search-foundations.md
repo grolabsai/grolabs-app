@@ -295,11 +295,16 @@ Within the Emulador tab the full tab width is for the emulator:
 
 * **Search input** — debounced re-query. Empty query is valid (Meilisearch returns facets + first page of docs).
 * **Category dropdown** — single-select. Source: `category` table where `is_active = true` for this instance. Selecting a category adds `category_ids = <id>` to the filter; clearing it drops the constraint. Hierarchical labels (`Root › Sub › Leaf`) for disambiguation when names repeat across branches.
-* **Facet rail** — server picks which facet names to render from the allowlist intersected with what `facetDistribution` actually returned. Rail order is **deliberate, not alphabetical**: price first, brand second (the two dominant deciding factors per shopper research), then attribute facets in priority order, then the in-stock toggle as visual punctuation at the bottom. The order lives as `FACET_RENDER_ORDER` in `src/lib/search/facets.ts`. When per-attribute facets become driven by `product_attribute` rows (see "out of scope" below), price + brand stay pinned to the top and in_stock stays at the bottom; the middle becomes `category_product_attribute.form_order`-driven.
+* **Facet rail** — server picks which facet names to render from the allowlist intersected with what `facetDistribution` actually returned. Rail order is **deliberate, not alphabetical** and lives as `FACET_RENDER_ORDER` in `src/lib/search/facets.ts`:
   * `price` — two numeric inputs bound to `facet_stats.price.{min,max}` (pinned first)
   * `brand` — checkbox list, top N values by count (pinned second)
-  * `scout_attributes.*` allowlisted entries — checkbox list when present in this instance's data
+  * **Dynamic per-attribute facets** — one checkbox group per `product_attribute` row marked `is_filterable = true` AND `data_type = 'list'`. When a category is selected, the list is filtered + ordered by that category's `category_product_attribute.form_order`. Without a category, every filterable list-type attribute appears alphabetically. Indexed under `attributes.<attribute_code>`; the document builder emits this block from `product_attribute_value` joined with `product_attribute_option`. `ensureIndex` widens the index's `filterableAttributes` per-instance to include every `attributes.<code>` so Meilisearch will facet on them. **Reindex is required** after enabling a new attribute for filterability — the merchant clicks "Reindexar todo" on the Configuración tab.
+  * `scout_attributes.*` legacy slots — checkbox list when present in the indexed data
   * `in_stock` — single toggle (boolean, pinned last)
+
+Price + brand are the two dominant deciding factors per shopper research, hence the pinning. The dynamic block in the middle is where merchant-defined priority (`form_order`) takes over. `in_stock` is visual punctuation at the bottom.
+
+**v1 scope: list-type only.** Text, number, and quantity attributes are NOT yet indexed under `attributes.*` — they need different widgets (autocomplete, numeric range, unit-aware range) and land in a follow-up. The document builder skips them; the server action filters them out of the dynamic attribute list.
 * **Result cards** — same logical card as the storefront, plus a per-attribute match strip beneath the title. Each strip entry reads `<attribute name> — <token1>, <token2>` (e.g. `name — "royal", "canin"` / `description — "puppy"`). Built by walking Meilisearch's `_formatted` block per hit; reuses the helpers already proven by `_search-preview.tsx`.
 
 ### Wiring decisions

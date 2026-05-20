@@ -103,6 +103,12 @@ export type ScoutSearchDocument = {
   brand: string | null;
 
   scout_attributes: ScoutAttributes;
+  /** Dynamic per-attribute block — value array per `product_attribute.attribute_code`
+   * for list-type attributes marked `is_filterable = true`. Drives the
+   * dynamic facet rail in the emulator and (when the WP plugin opts in)
+   * the storefront. v1 indexes list-type only; quantity/text/number facets
+   * are a follow-up. See document-builder.ts for the projection rules. */
+  attributes: Record<string, string[]>;
   variation_summary: VariationSummary;
   variants: ScoutSearchVariant[];
 

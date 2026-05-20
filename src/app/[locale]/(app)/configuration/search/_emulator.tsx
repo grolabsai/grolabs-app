@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Search, Loader2, Package, X } from "lucide-react";
 
@@ -17,12 +17,18 @@ import {
 } from "@/components/ui/select";
 import {
   runEmulatorSearch,
+  listEmulatorAttributeFacets,
+  type EmulatorAttributeFacet,
   type EmulatorCategory,
   type EmulatorHit,
   type EmulatorSearchResult,
   type EmulatorAttributeMatch,
 } from "./actions";
-import { FACET_RENDER_ORDER, type FacetFilter } from "@/lib/search/facets";
+import {
+  FACET_RENDER_ORDER,
+  FACET_DYNAMIC_ATTRIBUTES_SENTINEL,
+  type FacetFilter,
+} from "@/lib/search/facets";
 
 type Props = {
   instanceId: number;
@@ -41,7 +47,11 @@ type Props = {
 export function SearchEmulator({ instanceId, categories }: Props) {
   const t = useTranslations("configuration.search.emulator");
   const [query, setQuery] = useState("");
-  const [categoryWcId, setCategoryWcId] = useState<number | null>(null);
+  // Track BOTH ids of the selected category: the WC term id is the filter
+  // value (matches indexed `category_ids[]`), the Scout PK is the lookup
+  // key for the per-category attribute list (form_order lives on
+  // category_product_attribute, which references Scout's category_id).
+  const [selectedCategory, setSelectedCategory] = useState<EmulatorCategory | null>(null);
 
   // Facet selections — keyed by facet name. Brand-style (string) facets
   // hold a Set of selected values; in_stock holds true|false|null; price
@@ -49,9 +59,30 @@ export function SearchEmulator({ instanceId, categories }: Props) {
   const [brandSelections, setBrandSelections] = useState<Set<string>>(new Set());
   const [speciesSelections, setSpeciesSelections] = useState<Set<string>>(new Set());
   const [lifestageSelections, setLifestageSelections] = useState<Set<string>>(new Set());
+  // Dynamic per-attribute facet selections — one Set per attribute_code.
+  // Cleared along with the rest of the rail via "Limpiar".
+  const [attributeSelections, setAttributeSelections] = useState<
+    Record<string, Set<string>>
+  >({});
   const [inStockOnly, setInStockOnly] = useState(false);
   const [priceMin, setPriceMin] = useState<string>("");
   const [priceMax, setPriceMax] = useState<string>("");
+
+  // Dynamic attribute facets to render — loaded from the catalog on mount
+  // and refreshed whenever the selected category changes (so form_order
+  // reflects the current category's mapping).
+  const [attributeFacets, setAttributeFacets] = useState<EmulatorAttributeFacet[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    listEmulatorAttributeFacets(instanceId, selectedCategory?.categoryId ?? null).then(
+      (rows) => {
+        if (!cancelled) setAttributeFacets(rows);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [instanceId, selectedCategory]);
 
   const [result, setResult] = useState<EmulatorSearchResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -79,6 +110,14 @@ export function SearchEmulator({ instanceId, categories }: Props) {
         values: [...lifestageSelections],
       });
     }
+    for (const [code, values] of Object.entries(attributeSelections)) {
+      if (values.size === 0) continue;
+      out.push({
+        kind: "in",
+        attribute: `attributes.${code}`,
+        values: [...values],
+      });
+    }
     if (inStockOnly) {
       out.push({ kind: "boolean", attribute: "in_stock", value: true });
     }
@@ -97,6 +136,7 @@ export function SearchEmulator({ instanceId, categories }: Props) {
     brandSelections,
     speciesSelections,
     lifestageSelections,
+    attributeSelections,
     inStockOnly,
     priceMin,
     priceMax,
@@ -104,23 +144,26 @@ export function SearchEmulator({ instanceId, categories }: Props) {
 
   // Issue a search whenever any input changes. Empty query is valid — the
   // emulator should still show facet distribution + the first page of docs
-  // so operators can browse without typing.
+  // so operators can browse without typing. Dynamic-attribute facet paths
+  // are merged in so each attribute group gets its own value distribution.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    const requestedFacets = [
+      "brand",
+      "in_stock",
+      "price",
+      "scout_attributes.species",
+      "scout_attributes.lifestage",
+      ...attributeFacets.map((a) => a.facetName),
+    ];
     debounceRef.current = setTimeout(() => {
       const seq = ++requestSeqRef.current;
       startTransition(async () => {
         const r = await runEmulatorSearch(instanceId, {
           query: query.trim(),
-          categoryWcId,
+          categoryWcId: selectedCategory?.woocommerceId ?? null,
           filters,
-          facets: [
-            "brand",
-            "in_stock",
-            "price",
-            "scout_attributes.species",
-            "scout_attributes.lifestage",
-          ],
+          facets: requestedFacets,
         });
         if (seq === requestSeqRef.current) setResult(r);
       });
@@ -128,14 +171,20 @@ export function SearchEmulator({ instanceId, categories }: Props) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, categoryWcId, filters, instanceId]);
+  }, [query, selectedCategory, filters, instanceId, attributeFacets]);
 
   const facets = result?.ok ? result.facets : null;
+
+  const dynamicSelectionCount = Object.values(attributeSelections).reduce(
+    (n, s) => n + s.size,
+    0,
+  );
 
   const activeFilterCount =
     brandSelections.size +
     speciesSelections.size +
     lifestageSelections.size +
+    dynamicSelectionCount +
     (inStockOnly ? 1 : 0) +
     (priceMin.trim() !== "" || priceMax.trim() !== "" ? 1 : 0);
 
@@ -143,9 +192,22 @@ export function SearchEmulator({ instanceId, categories }: Props) {
     setBrandSelections(new Set());
     setSpeciesSelections(new Set());
     setLifestageSelections(new Set());
+    setAttributeSelections({});
     setInStockOnly(false);
     setPriceMin("");
     setPriceMax("");
+  };
+
+  const toggleAttributeValue = (code: string, value: string) => {
+    setAttributeSelections((prev) => {
+      const current = new Set(prev[code] ?? []);
+      if (current.has(value)) current.delete(value);
+      else current.add(value);
+      const next = { ...prev, [code]: current };
+      // Drop empty entries so the active count stays accurate.
+      if (current.size === 0) delete next[code];
+      return next;
+    });
   };
 
   return (
@@ -170,8 +232,16 @@ export function SearchEmulator({ instanceId, categories }: Props) {
         </div>
         <div className="sm:w-72">
           <Select
-            value={categoryWcId == null ? "__all__" : String(categoryWcId)}
-            onValueChange={(v) => setCategoryWcId(v === "__all__" ? null : Number(v))}
+            value={
+              selectedCategory == null ? "__all__" : String(selectedCategory.categoryId)
+            }
+            onValueChange={(v) => {
+              if (v === "__all__") setSelectedCategory(null);
+              else {
+                const id = Number(v);
+                setSelectedCategory(categories.find((c) => c.categoryId === id) ?? null);
+              }
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder={t("categoryPlaceholder")} />
@@ -179,7 +249,7 @@ export function SearchEmulator({ instanceId, categories }: Props) {
             <SelectContent>
               <SelectItem value="__all__">{t("categoryAll")}</SelectItem>
               {categories.map((c) => (
-                <SelectItem key={c.categoryId} value={String(c.woocommerceId)}>
+                <SelectItem key={c.categoryId} value={String(c.categoryId)}>
                   {c.label}
                 </SelectItem>
               ))}
@@ -198,6 +268,9 @@ export function SearchEmulator({ instanceId, categories }: Props) {
           setSpeciesSelections={setSpeciesSelections}
           lifestageSelections={lifestageSelections}
           setLifestageSelections={setLifestageSelections}
+          attributeFacets={attributeFacets}
+          attributeSelections={attributeSelections}
+          toggleAttributeValue={toggleAttributeValue}
           inStockOnly={inStockOnly}
           setInStockOnly={setInStockOnly}
           priceMin={priceMin}
@@ -223,6 +296,13 @@ type FacetRailProps = {
   setSpeciesSelections: (s: Set<string>) => void;
   lifestageSelections: Set<string>;
   setLifestageSelections: (s: Set<string>) => void;
+  /** Dynamic attribute facets resolved from product_attribute, ordered by
+   * the current category's `category_product_attribute.form_order` (when a
+   * category is selected) or by attribute_name otherwise. Rendered in the
+   * middle slot of the rail — between brand and in_stock per policy §17. */
+  attributeFacets: EmulatorAttributeFacet[];
+  attributeSelections: Record<string, Set<string>>;
+  toggleAttributeValue: (code: string, value: string) => void;
   inStockOnly: boolean;
   setInStockOnly: (v: boolean) => void;
   priceMin: string;
@@ -243,6 +323,9 @@ function FacetRail(props: FacetRailProps) {
     setSpeciesSelections,
     lifestageSelections,
     setLifestageSelections,
+    attributeFacets,
+    attributeSelections,
+    toggleAttributeValue,
     inStockOnly,
     setInStockOnly,
     priceMin,
@@ -387,6 +470,34 @@ function FacetRail(props: FacetRailProps) {
                   </p>
                 </section>
               );
+
+            case FACET_DYNAMIC_ATTRIBUTES_SENTINEL: {
+              // One checkbox group per dynamic attribute facet, in the
+              // order asserted by listEmulatorAttributeFacets (form_order
+              // for the active category, attribute_name globally). Groups
+              // with no distribution data are skipped — usually means the
+              // index settings haven't been re-applied or no documents
+              // carry that attribute yet.
+              if (attributeFacets.length === 0) return null;
+              return (
+                <Fragment key={name}>
+                  {attributeFacets.map((af) => {
+                    const dist = facets?.distribution?.[af.facetName] ?? {};
+                    const selected = attributeSelections[af.attributeCode] ?? new Set<string>();
+                    if (Object.keys(dist).length === 0 && selected.size === 0) return null;
+                    return (
+                      <FacetCheckboxGroup
+                        key={af.facetName}
+                        title={af.attributeName}
+                        distribution={dist}
+                        selected={selected}
+                        onToggle={(value) => toggleAttributeValue(af.attributeCode, value)}
+                      />
+                    );
+                  })}
+                </Fragment>
+              );
+            }
 
             default:
               return null;

@@ -130,6 +130,10 @@ export type SearchRequest = {
   offset?: number;
   filters?: string;
   sort?: string[];
+  /** Facet names to request distributions for. Server gates against the
+   * allowlist in `src/lib/search/facets.ts`; unknown names are silently
+   * dropped. Omit or pass `[]` to skip facet computation. */
+  facets?: string[];
 };
 
 /** Per the PR #68 contract: matched_variation is a full variant object,
@@ -163,4 +167,11 @@ export type SearchResponse = {
     requestUid: string;
     indexUid: string;
   };
+  /** Per-facet value → count map. Only emitted when the request included a
+   * non-empty `facets[]`. Counts respect any active `filters` (restrictive,
+   * Meilisearch default). See policy §7 facets amendment + §17. */
+  facets?: Record<string, Record<string, number>>;
+  /** Per-facet min/max stats for numeric facets (currently: `price`).
+   * Absent when no numeric facet was requested or returned. */
+  facet_stats?: Record<string, { min: number; max: number }>;
 };

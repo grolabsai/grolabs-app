@@ -1257,6 +1257,42 @@
       "navLabel": "Búsqueda (Meilisearch)",
       "pageTitle": "Búsqueda",
       "pageDescription": "Conexión con Meilisearch, dominios autorizados de la tienda y estado del índice.",
+      "tabs": {
+        "configuration": "Configuración",
+        "analytics": "Analytics",
+        "emulator": "Emulador"
+      },
+      "emulator": {
+        "cardTitle": "Emulador de búsqueda",
+        "cardDescription": "Reproduce el flujo completo de búsqueda, filtros y facetas dentro de GroLabs antes de exponerlo en el storefront.",
+        "searchPlaceholder": "Escribe lo que tus clientes podrían buscar…",
+        "categoryPlaceholder": "Categoría",
+        "categoryAll": "Todas las categorías",
+        "facets": {
+          "title": "Facetas",
+          "clear": "Limpiar ({count})",
+          "loading": "Cargando facetas…",
+          "brand": "Marca",
+          "species": "Especie",
+          "lifestage": "Etapa de vida",
+          "inStockTitle": "Disponibilidad",
+          "inStockOnly": "Sólo en stock",
+          "inStockCounts": "{inStock} en stock · {outOfStock} sin stock",
+          "price": "Precio",
+          "priceRange": "Rango disponible: {min} – {max}"
+        },
+        "results": {
+          "idle": "Escribe una consulta o ajusta una faceta para ver resultados.",
+          "searching": "Buscando…",
+          "error": "Falló la búsqueda",
+          "empty": "Sin resultados para «{query}».",
+          "emptyAll": "Sin resultados con los filtros actuales.",
+          "meta": "{count, plural, =1 {1 resultado} other {# resultados}} · {ms} ms",
+          "inStock": "En stock",
+          "outOfStock": "Sin stock",
+          "matches": "Coincidencias por atributo"
+        }
+      },
       "connection": {
         "title": "Conexión con Meilisearch",
         "ok": "Conectado",

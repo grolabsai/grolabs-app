@@ -1257,6 +1257,42 @@
       "navLabel": "Search (Meilisearch)",
       "pageTitle": "Search",
       "pageDescription": "Meilisearch connection, authorized storefront domains, and index status.",
+      "tabs": {
+        "configuration": "Configuration",
+        "analytics": "Analytics",
+        "emulator": "Emulator"
+      },
+      "emulator": {
+        "cardTitle": "Search emulator",
+        "cardDescription": "Reproduce the full search, filter, and facet flow inside GroLabs before exposing it on the storefront.",
+        "searchPlaceholder": "Type what your customers might search…",
+        "categoryPlaceholder": "Category",
+        "categoryAll": "All categories",
+        "facets": {
+          "title": "Facets",
+          "clear": "Clear ({count})",
+          "loading": "Loading facets…",
+          "brand": "Brand",
+          "species": "Species",
+          "lifestage": "Lifestage",
+          "inStockTitle": "Availability",
+          "inStockOnly": "In stock only",
+          "inStockCounts": "{inStock} in stock · {outOfStock} out of stock",
+          "price": "Price",
+          "priceRange": "Available range: {min} – {max}"
+        },
+        "results": {
+          "idle": "Type a query or adjust a facet to see results.",
+          "searching": "Searching…",
+          "error": "Search failed",
+          "empty": "No results for «{query}».",
+          "emptyAll": "No results with the current filters.",
+          "meta": "{count, plural, =1 {1 result} other {# results}} · {ms} ms",
+          "inStock": "In stock",
+          "outOfStock": "Out of stock",
+          "matches": "Matches by attribute"
+        }
+      },
       "connection": {
         "title": "Meilisearch connection",
         "ok": "Connected",

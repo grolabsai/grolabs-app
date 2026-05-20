@@ -374,6 +374,14 @@ export type RawSearchResult = {
   estimatedTotalHits: number;
   processingTimeMs: number;
   query: string;
+  /** Per-facet value → count distribution. Present only when `facets` was
+   * passed in the request. Counts respect any active `filter` (Meilisearch's
+   * default restrictive behaviour — disjunctive facets are out of scope for
+   * this iteration; see policy §17). */
+  facetDistribution?: Record<string, Record<string, number>>;
+  /** Per-facet min/max stats, emitted by Meilisearch for numeric facets only
+   * (today: `price`). Absent when no numeric facet was requested. */
+  facetStats?: Record<string, { min: number; max: number }>;
   /**
    * Present only when Meilisearch echoes its analytics metadata back (we send
    * the `Meili-Include-Metadata: true` request header). `queryUid` is the
@@ -399,6 +407,12 @@ export type SearchOptions = {
    * carries `_formatted` for every searchable attribute. Used by the
    * /configuration/search preview pane to drive the per-token match pills. */
   highlight?: boolean;
+  /** Facet names to request distributions for. Must be a subset of the
+   * index's `filterableAttributes` (see DEFAULT_INDEX_SETTINGS) — the proxy
+   * and the emulator validate against the shared allowlist in
+   * `src/lib/search/facets.ts`. Empty/undefined → Meilisearch returns no
+   * `facetDistribution` / `facetStats`. */
+  facets?: string[];
 };
 
 /**
@@ -412,7 +426,7 @@ export async function searchInstance(
   opts: SearchOptions
 ): Promise<RawSearchResult> {
   const client = getClient();
-  const { query, limit, offset, filter, sort, highlight } = opts;
+  const { query, limit, offset, filter, sort, highlight, facets } = opts;
   try {
     const res = await client.index(indexUidFor(instanceId)).search(
       query,
@@ -422,6 +436,7 @@ export async function searchInstance(
         filter,
         sort,
         showMatchesPosition: true,
+        ...(facets && facets.length > 0 ? { facets } : {}),
         ...(highlight
           ? {
               attributesToHighlight: ["*"],
@@ -438,16 +453,20 @@ export async function searchInstance(
     // The SDK's SearchResponse type does not model the experimental metadata
     // block; read it defensively under both the documented and the
     // underscore-prefixed key.
-    const meta = (res as unknown as {
+    const extras = res as unknown as {
       metadata?: RawSearchResult["metadata"];
       _metadata?: RawSearchResult["metadata"];
-    });
+      facetDistribution?: RawSearchResult["facetDistribution"];
+      facetStats?: RawSearchResult["facetStats"];
+    };
     return {
       hits: res.hits as RawSearchResult["hits"],
       estimatedTotalHits: res.estimatedTotalHits ?? res.hits.length,
       processingTimeMs: res.processingTimeMs ?? 0,
       query: res.query ?? query,
-      metadata: meta.metadata ?? meta._metadata,
+      facetDistribution: extras.facetDistribution,
+      facetStats: extras.facetStats,
+      metadata: extras.metadata ?? extras._metadata,
     };
   } catch (err) {
     throw new MeilisearchOpError(`searchInstance(${instanceId}) failed`, err);

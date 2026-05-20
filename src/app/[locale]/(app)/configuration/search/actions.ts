@@ -10,6 +10,12 @@ import {
   searchInstance,
 } from "@/lib/search/meilisearch-client";
 import { indexAllForInstance } from "@/lib/search/indexer";
+import {
+  FACET_ALLOWLIST,
+  buildMeilisearchFilter,
+  sanitizeFacets,
+  type FacetFilter,
+} from "@/lib/search/facets";
 
 /**
  * Server actions for /configuration/search (Stage 0 admin panel).
@@ -579,6 +585,286 @@ export async function searchEventCounts(
   }
 
   return { ok: true, counts: { windowSeconds, byName } };
+}
+
+// ── Stage 1: in-Scout search emulator ─────────────────────────────────────
+//
+// Per docs/policy/search-foundations.md §17. Powers the "Emulador" tab on
+// /configuration/search. Goes through the same Meilisearch path the public
+// /api/v1/search proxy uses (same client, same filter pinning), but the
+// auth boundary is instance_member, not storefront-origin allowlist — this
+// is a staff-only surface, so rate-limiting + query_log writes are skipped.
+
+/** One per-attribute match in an emulator result card. The attribute path
+ * came from Meilisearch's `_formatted` block (so e.g. `name`,
+ * `variants.attributes.pa_size`, `scout_attributes.lifestage`). The tokens
+ * are everything Meilisearch highlighted under that path, deduped and
+ * lowercased — what the user actually typed-or-something-tolerant-of-it. */
+export type EmulatorAttributeMatch = {
+  attribute: string;
+  tokens: string[];
+};
+
+export type EmulatorHit = {
+  id: number;
+  name: string;
+  brand: string | null;
+  price: number | null;
+  salePrice: number | null;
+  currency: string;
+  inStock: boolean;
+  sku: string | null;
+  imageUrl: string | null;
+  categories: string[];
+  /** One entry per searchable attribute that contributed to this hit. Empty
+   * when the query was empty (no highlights to surface). Ordered by first
+   * appearance for stable rendering across re-renders. */
+  attributeMatches: EmulatorAttributeMatch[];
+};
+
+export type EmulatorFacets = {
+  /** Per-facet value → count distribution. Restrictive (respects active
+   * filters) — see policy §7 facets amendment. */
+  distribution: Record<string, Record<string, number>>;
+  /** Numeric facet stats. Today only `price` is numeric in the allowlist. */
+  stats: Record<string, { min: number; max: number }>;
+};
+
+export type EmulatorSearchInput = {
+  query: string;
+  /** Single category constraint from the dropdown above the search input.
+   * MUST be the WooCommerce term ID (matches indexed `category_ids[]` per
+   * §4), not Scout's `category.category_id`. `null` clears the constraint. */
+  categoryWcId: number | null;
+  /** Facet rail selections — converted to a Meilisearch filter expression
+   * server-side via `buildMeilisearchFilter`. */
+  filters: FacetFilter[];
+  /** Names of facets to compute distributions for. Server gates against
+   * `FACET_ALLOWLIST`. */
+  facets: string[];
+};
+
+export type EmulatorSearchResult =
+  | {
+      ok: true;
+      query: string;
+      hits: EmulatorHit[];
+      totalHits: number;
+      processingTimeMs: number;
+      facets: EmulatorFacets;
+    }
+  | { ok: false; error: "unauthorized" | "search_failed"; message?: string };
+
+/** Cap on the number of values returned per facet. Mirrors the
+ * `maxValuesPerFacet: 100` index setting so the UI's "show top N" stays
+ * meaningful without surprising the client with a 100-item dropdown. */
+const EMULATOR_FACET_VALUE_CAP = 50;
+
+/** Walk a Meilisearch `_formatted` block and collect `{ attribute, text }`
+ * pairs for every `<em>…</em>` highlight. Mirrors the helper used by
+ * `_search-preview.tsx`. */
+function collectHighlightsForEmulator(
+  formatted: Record<string, unknown> | undefined,
+): Array<{ attribute: string; text: string }> {
+  if (!formatted) return [];
+  const out: Array<{ attribute: string; text: string }> = [];
+  const re = /<em>([\s\S]*?)<\/em>/g;
+  const visit = (value: unknown, path: string) => {
+    if (value == null) return;
+    if (typeof value === "string") {
+      for (const m of value.matchAll(re)) {
+        const text = m[1];
+        if (text) out.push({ attribute: path, text: text.toLowerCase() });
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const v of value) visit(v, path);
+      return;
+    }
+    if (typeof value === "object") {
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        visit(v, path ? `${path}.${k}` : k);
+      }
+    }
+  };
+  for (const [k, v] of Object.entries(formatted)) visit(v, k);
+  return out;
+}
+
+/** Group highlights by attribute path, preserving first-seen attribute order
+ * and dedup'ing tokens within each attribute. This is what each result card
+ * renders — "name → royal, canin" / "description → puppy". */
+function groupHighlightsByAttribute(
+  highlights: Array<{ attribute: string; text: string }>,
+): EmulatorAttributeMatch[] {
+  const byAttr = new Map<string, string[]>();
+  for (const h of highlights) {
+    const existing = byAttr.get(h.attribute);
+    if (existing) {
+      if (!existing.includes(h.text)) existing.push(h.text);
+    } else {
+      byAttr.set(h.attribute, [h.text]);
+    }
+  }
+  return Array.from(byAttr, ([attribute, tokens]) => ({ attribute, tokens }));
+}
+
+/** Trim a facet distribution to the top-N values per facet (by count).
+ * Stops the UI from inheriting a 100-value dropdown for a high-cardinality
+ * facet just because Meilisearch is willing to return it. */
+function capDistribution(
+  dist: Record<string, Record<string, number>> | undefined,
+): Record<string, Record<string, number>> {
+  if (!dist) return {};
+  const out: Record<string, Record<string, number>> = {};
+  for (const [facetName, values] of Object.entries(dist)) {
+    const sorted = Object.entries(values).sort((a, b) => b[1] - a[1]);
+    const capped = sorted.slice(0, EMULATOR_FACET_VALUE_CAP);
+    out[facetName] = Object.fromEntries(capped);
+  }
+  return out;
+}
+
+export async function runEmulatorSearch(
+  instanceId: number,
+  input: EmulatorSearchInput,
+): Promise<EmulatorSearchResult> {
+  if (!(await authorizeMembership(instanceId))) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  // Build the filter: facet selections → AND clauses, plus the category
+  // dropdown's single category_id constraint (if any), plus the instance_id
+  // pin as defense-in-depth (same pattern the public proxy uses).
+  const filters: FacetFilter[] = [...input.filters];
+  if (typeof input.categoryWcId === "number" && Number.isFinite(input.categoryWcId)) {
+    filters.push({
+      kind: "in_numeric",
+      attribute: "category_ids",
+      values: [input.categoryWcId],
+    });
+  }
+  const facetFilter = buildMeilisearchFilter(filters);
+  const instancePin = `instance_id = ${instanceId}`;
+  const finalFilter = facetFilter ? `(${facetFilter}) AND ${instancePin}` : instancePin;
+
+  const wantedFacets = sanitizeFacets(input.facets);
+
+  try {
+    const raw = await searchInstance(instanceId, {
+      query: input.query,
+      limit: 24,
+      filter: finalFilter,
+      highlight: true,
+      facets: wantedFacets.length > 0 ? wantedFacets : undefined,
+    });
+
+    const hits: EmulatorHit[] = raw.hits.map((h) => {
+      const highlights = collectHighlightsForEmulator(h._formatted);
+      return {
+        id: h.id,
+        name: h.name,
+        brand: h.brand ?? null,
+        price: h.price ?? null,
+        salePrice: h.sale_price ?? null,
+        currency: h.currency ?? "",
+        inStock: !!h.in_stock,
+        sku: h.sku ?? null,
+        imageUrl: h.thumbnail_url ?? h.image_url ?? null,
+        categories: Array.isArray(h.categories) ? h.categories.slice(0, 3) : [],
+        attributeMatches: groupHighlightsByAttribute(highlights),
+      };
+    });
+
+    return {
+      ok: true,
+      query: input.query,
+      hits,
+      totalHits: raw.estimatedTotalHits,
+      processingTimeMs: raw.processingTimeMs,
+      facets: {
+        distribution: capDistribution(raw.facetDistribution),
+        stats: raw.facetStats ?? {},
+      },
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: "search_failed",
+      message: err instanceof Error ? err.message : "unknown",
+    };
+  }
+}
+
+// ── Category list for the emulator dropdown ───────────────────────────────
+
+export type EmulatorCategory = {
+  /** Scout's internal PK — stable id for the React option. */
+  categoryId: number;
+  /** WooCommerce term ID. This is what gets matched against the indexed
+   * document's `category_ids[]` (per §4: indexed value is WC IDs, not Scout
+   * PKs). Categories without a WC mapping are excluded from the dropdown —
+   * they cannot be used as a Meilisearch filter. */
+  woocommerceId: number;
+  /** Display label with ancestor breadcrumb (`Root › Sub › Leaf`) for
+   * disambiguation when names repeat across branches of the tree. */
+  label: string;
+};
+
+/** Active categories for the current instance, flattened with breadcrumb
+ * labels and intersected with the WC mapping so every entry is filterable
+ * against Meilisearch. RLS scopes by instance_member; we still gate so the
+ * unauthorized shape is consistent with the other emulator actions. */
+export async function listEmulatorCategories(
+  instanceId: number,
+): Promise<EmulatorCategory[]> {
+  if (!(await authorizeMembership(instanceId))) return [];
+
+  const sb = await createClient();
+  const { data } = await sb
+    .from("category")
+    .select("category_id, parent_category_id, category_name, woocommerce_id")
+    .eq("is_active", true);
+
+  type Row = {
+    category_id: number;
+    parent_category_id: number | null;
+    category_name: string;
+    woocommerce_id: number | null;
+  };
+  const rows: Row[] = (data ?? []) as Row[];
+  const byId = new Map(rows.map((r) => [r.category_id, r]));
+
+  const labelFor = (row: Row): string => {
+    const segments: string[] = [];
+    let cur: Row | undefined = row;
+    const seen = new Set<number>();
+    while (cur) {
+      if (seen.has(cur.category_id)) break; // cycle guard, shouldn't happen
+      seen.add(cur.category_id);
+      segments.unshift(cur.category_name);
+      cur =
+        cur.parent_category_id != null ? byId.get(cur.parent_category_id) : undefined;
+    }
+    return segments.join(" › ");
+  };
+
+  return rows
+    .filter((r): r is Row & { woocommerce_id: number } => typeof r.woocommerce_id === "number")
+    .map((r) => ({
+      categoryId: r.category_id,
+      woocommerceId: r.woocommerce_id,
+      label: labelFor(r),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** The allowlist re-exported as a server-action-friendly accessor so the
+ * client emulator doesn't have to import the lib directly (keeps the
+ * emulator client component free of server-only imports). */
+export async function getEmulatorFacetAllowlist(): Promise<string[]> {
+  return [...FACET_ALLOWLIST];
 }
 
 export type RunBackfillResult =

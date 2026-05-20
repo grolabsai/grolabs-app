@@ -1268,6 +1268,30 @@
         "meta": "{count, plural, =1 {1 result} other {# results}} · {ms} ms",
         "inStock": "In stock",
         "outOfStock": "Out of stock"
+      },
+      "requestLog": {
+        "cardTitle": "Recent requests",
+        "cardDescription": "Every call /api/v1/search receives from the WordPress plugin appears here within ~2 seconds. Denied requests show the reason.",
+        "description": "Showing the last {count, plural, =1 {1 request} other {# requests}}. Auto-refreshes every 2s.",
+        "loading": "Loading requests…",
+        "empty": "No requests for this instance yet. Run a search from the storefront to see one appear here.",
+        "error": "Could not load requests.",
+        "emptyQuery": "(empty query)",
+        "col": {
+          "time": "Time",
+          "query": "Query",
+          "origin": "Origin",
+          "status": "Status",
+          "hits": "Hits",
+          "meilisearch": "Meilisearch",
+          "total": "Total"
+        },
+        "reason": {
+          "origin_not_authorized": "origin not authorized",
+          "instance_inactive": "instance inactive",
+          "rate_limited": "rate limited",
+          "meilisearch_failed": "Meilisearch failed"
+        }
       }
     },
     "ga4": {

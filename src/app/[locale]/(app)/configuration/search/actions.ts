@@ -272,6 +272,68 @@ export async function previewSearch(
   }
 }
 
+// ── Request log diagnostics ───────────────────────────────────────────────
+//
+// Tails query_log for the request-log panel on /configuration/search. Each
+// row represents one inbound /api/v1/search call (successes AND known-instance
+// denials, per the route handler). The panel polls this on a short interval
+// so operators can watch WP plugin traffic land in real time without leaving
+// GroLabs.
+
+export type SearchRequestLogRow = {
+  id: number;
+  createdAt: string;
+  query: string;
+  origin: string | null;
+  status: number;
+  denialReason: string | null;
+  totalHits: number | null;
+  processingTimeMs: number | null;
+  totalHandlerMs: number | null;
+};
+
+export type RecentSearchRequestsResult =
+  | { ok: true; rows: SearchRequestLogRow[] }
+  | { ok: false; error: "unauthorized" };
+
+/**
+ * Most-recent N rows from query_log scoped to the caller's instance. RLS
+ * already restricts SELECTs by instance_member, but we also gate on
+ * authorizeMembership so unauthenticated requests get a clean error shape
+ * rather than an empty list.
+ */
+export async function recentSearchRequests(
+  instanceId: number,
+  limit = 50,
+): Promise<RecentSearchRequestsResult> {
+  if (!(await authorizeMembership(instanceId))) {
+    return { ok: false, error: "unauthorized" };
+  }
+
+  const sb = await createClient();
+  const { data } = await sb
+    .from("query_log")
+    .select("id, created_at, query, origin, status, denial_reason, total_hits, processing_time_ms, total_handler_ms")
+    .order("created_at", { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 200));
+
+  const rows: SearchRequestLogRow[] = (data ?? []).map((r) => ({
+    id: r.id as number,
+    createdAt: r.created_at as string,
+    query: (r.query as string) ?? "",
+    origin: (r.origin as string | null) ?? null,
+    status: (r.status as number) ?? 200,
+    denialReason: (r.denial_reason as string | null) ?? null,
+    // Successful rows from before the diagnostics columns existed still have
+    // default 0 here, but they're not denials — surface them as-is.
+    totalHits: r.total_hits == null ? null : (r.total_hits as number),
+    processingTimeMs: r.processing_time_ms == null ? null : (r.processing_time_ms as number),
+    totalHandlerMs: r.total_handler_ms == null ? null : (r.total_handler_ms as number),
+  }));
+
+  return { ok: true, rows };
+}
+
 export type RunBackfillResult =
   | { ok: true; indexed: number; failed: number }
   | { ok: false; error: string };

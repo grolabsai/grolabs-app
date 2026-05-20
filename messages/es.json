@@ -610,6 +610,71 @@
       "toastFailed": "No se pudo guardar el sinónimo"
     }
   },
+  "analytics": {
+    "loading": "Cargando…",
+    "error": {
+      "load": "No se pudieron cargar los datos."
+    },
+    "range": {
+      "lastNDays": "Últimos {n} días"
+    },
+    "empty": {
+      "noSearches": "Aún no hay búsquedas en este período.",
+      "noNoResults": "Ninguna búsqueda quedó sin resultados — todo encontró algo."
+    },
+    "searchVolume": {
+      "title": "Volumen de búsqueda",
+      "unit": "búsquedas",
+      "footer": "Promedio {avg}/día"
+    },
+    "noResultRate": {
+      "title": "Tasa sin resultados",
+      "footer": "{noResult} de {total} consultas sin resultados"
+    },
+    "latency": {
+      "title": "Latencia de búsqueda",
+      "meiliP95": "p95 Meilisearch: {ms} ms",
+      "handler": "Handler GroLabs · p50 {p50} ms · p95 {p95} ms",
+      "footer": "{samples, plural, =1 {1 muestra} other {# muestras}}"
+    },
+    "topQueries": {
+      "title": "Consultas más buscadas"
+    },
+    "topNoResultQueries": {
+      "title": "Consultas sin resultados"
+    },
+    "storefronts": {
+      "title": "Tráfico por tienda",
+      "unknown": "(sin origen)"
+    },
+    "indexHealth": {
+      "title": "Estado del índice",
+      "description": "Vivo desde Meilisearch /stats",
+      "docsUnit": "documentos",
+      "indexing": "Indexando",
+      "idle": "Inactivo",
+      "ago": {
+        "s": "actualizado hace {n} s",
+        "m": "actualizado hace {n} min",
+        "h": "actualizado hace {n} h",
+        "d": "actualizado hace {n} d"
+      },
+      "never": "Nunca actualizado",
+      "emptyIndex": "El índice está vacío."
+    },
+    "indexSize": {
+      "title": "Tamaño del índice",
+      "description": "Espacio en disco usado por Meilisearch",
+      "used": "Usado: {value} {unit}",
+      "raw": "Documentos crudos: {value} {unit}",
+      "footer": "Promedio por documento: {avg} {unit}",
+      "emptyIndex": "El índice está vacío."
+    },
+    "fieldDistribution": {
+      "title": "Distribución de atributos",
+      "description": "Documentos que contienen cada atributo"
+    }
+  },
   "product": {
     "list": {
       "newProduct": "Nuevo producto",

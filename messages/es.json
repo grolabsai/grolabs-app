@@ -1268,6 +1268,30 @@
         "meta": "{count, plural, =1 {1 resultado} other {# resultados}} · {ms} ms",
         "inStock": "En stock",
         "outOfStock": "Sin stock"
+      },
+      "requestLog": {
+        "cardTitle": "Solicitudes recientes",
+        "cardDescription": "Cada llamada que recibe /api/v1/search desde el plugin de WordPress aparece aquí en ~2 segundos. Las solicitudes denegadas muestran el motivo.",
+        "description": "Mostrando las últimas {count, plural, =1 {1 solicitud} other {# solicitudes}}. Actualizado automáticamente cada 2 s.",
+        "loading": "Cargando solicitudes…",
+        "empty": "Aún no hay solicitudes para esta instancia. Realiza una búsqueda desde la tienda para verla aquí.",
+        "error": "No se pudieron cargar las solicitudes.",
+        "emptyQuery": "(consulta vacía)",
+        "col": {
+          "time": "Hora",
+          "query": "Consulta",
+          "origin": "Origen",
+          "status": "Estado",
+          "hits": "Resultados",
+          "meilisearch": "Meilisearch",
+          "total": "Total"
+        },
+        "reason": {
+          "origin_not_authorized": "origen no autorizado",
+          "instance_inactive": "instancia inactiva",
+          "rate_limited": "límite excedido",
+          "meilisearch_failed": "Meilisearch falló"
+        }
       }
     },
     "ga4": {

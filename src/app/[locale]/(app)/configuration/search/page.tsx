@@ -7,6 +7,7 @@ import { indexUidFor } from "@/lib/search/types";
 import { getIndexingStatus } from "./actions";
 import { SearchSettingsForm } from "./_form";
 import { SearchPreview } from "./_search-preview";
+import { SearchRequestLog } from "./_request-log";
 
 /**
  * Stage 0 admin panel for Meilisearch search infrastructure.
@@ -49,7 +50,7 @@ export default async function SearchConfigPage() {
   const initialStatus = await getIndexingStatus(instanceId);
 
   return (
-    <div className="s-page-content">
+    <div className="s-page-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div
         style={{
           display: "grid",
@@ -84,6 +85,16 @@ export default async function SearchConfigPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("requestLog.cardTitle")}</CardTitle>
+          <CardDescription>{t("requestLog.cardDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SearchRequestLog instanceId={instanceId} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

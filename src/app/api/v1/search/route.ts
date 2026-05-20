@@ -79,31 +79,52 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
 
 // ── Logging ──────────────────────────────────────────────────────────────
 
-async function logQuery(input: {
+type DenialReason =
+  | "origin_not_authorized"
+  | "instance_inactive"
+  | "rate_limited"
+  | "meilisearch_failed";
+
+/**
+ * Append a row to query_log. Successes get hits + processing time; denials
+ * get a denial_reason and an HTTP status. Both paths share the same writer
+ * so the `/configuration/search` request-log panel can present them in one
+ * stream.
+ *
+ * Best-effort: a logging failure must never bubble out of the request
+ * handler. We're diagnostics, not the primary path.
+ */
+async function logRequest(input: {
   instanceId: number;
   query: string;
-  totalHits: number;
-  processingTimeMs: number;
-  hits: SearchHit[];
+  status: number;
+  denialReason: DenialReason | null;
+  totalHandlerMs: number;
   origin: string | null;
+  hits?: SearchHit[];
+  processingTimeMs?: number;
 }): Promise<void> {
   try {
     const sb = createServiceRoleClient();
-    const summary = input.hits.map((h) => ({
-      product_id: h.document.id,
-      variation_id: h.matched_variation?.variation_id ?? null,
-    }));
+    const isSuccess = input.denialReason === null;
+    const summary = isSuccess
+      ? (input.hits ?? []).map((h) => ({
+          product_id: h.document.id,
+          variation_id: h.matched_variation?.variation_id ?? null,
+        }))
+      : null;
     await sb.from("query_log").insert({
       instance_id: input.instanceId,
       query: input.query,
-      total_hits: input.totalHits,
-      processing_time_ms: input.processingTimeMs,
+      total_hits: isSuccess ? input.hits?.length ?? 0 : 0,
+      processing_time_ms: isSuccess ? input.processingTimeMs ?? 0 : 0,
       variant_selection: summary,
       origin: input.origin,
+      status: input.status,
+      denial_reason: input.denialReason,
+      total_handler_ms: input.totalHandlerMs,
     });
   } catch (err) {
-    // Logging failures must never break the search response. The Stage 1
-    // policy treats query_log as best-effort analytics, not a primary path.
     console.error("[search] query_log insert failed:", err instanceof Error ? err.message : err);
   }
 }
@@ -111,11 +132,14 @@ async function logQuery(input: {
 // ── Handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const handlerStart = Date.now();
   const origin = req.headers.get("origin");
   const host = originToHost(origin);
   const ip = extractIp(req);
 
-  // Per-IP rate limit (cheapest, do first).
+  // Per-IP rate limit (cheapest, do first). No instance_id resolved yet, so
+  // this denial is invisible to the request-log panel — by design: pre-parse
+  // throttling protects shared infrastructure, not a specific tenant.
   const ipOk = await checkRateLimit(
     searchIpBucketKey(ip),
     SEARCH_PER_IP_PER_MIN,
@@ -157,20 +181,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const filters = typeof b.filters === "string" ? b.filters : undefined;
   const sort = Array.isArray(b.sort) ? b.sort.filter((s) => typeof s === "string") as string[] : undefined;
 
-  // Per-(instance, origin) rate limit.
-  const pairOk = await checkRateLimit(
-    searchBucketKey(instanceId, host),
-    SEARCH_PER_INSTANCE_ORIGIN_PER_MIN,
-    RATE_LIMIT_WINDOW_SECONDS
-  );
-  if (!pairOk) {
-    return corsify(
-      NextResponse.json({ error: "rate_limited" }, { status: 429 }),
-      origin
-    );
-  }
-
-  // Validate instance + origin against DB.
+  // Validate instance + origin against DB. We do this BEFORE the pair rate
+  // limit so a denial row can be FK-attached to the real instance — otherwise
+  // an unknown instance_id couldn't be logged at all.
   const sb = createServiceRoleClient();
   const { data: row, error } = await sb
     .from("instance")
@@ -181,9 +194,57 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     console.error("[search] instance lookup failed:", error.message);
     return deny(origin);
   }
-  if (!row || !row.is_active) return deny(origin);
+  // instance_id unknown to us — no FK target, nothing to surface in the panel.
+  // Caller still gets the same generic 403 they'd get for origin mismatch.
+  if (!row) return deny(origin);
+
+  // From here on every exit path is loggable.
+  if (!row.is_active) {
+    void logRequest({
+      instanceId,
+      query,
+      status: 403,
+      denialReason: "instance_inactive",
+      totalHandlerMs: Date.now() - handlerStart,
+      origin: host,
+    });
+    return deny(origin);
+  }
+
   const domains: string[] = Array.isArray(row.storefront_domains) ? row.storefront_domains : [];
-  if (!domains.includes(host)) return deny(origin);
+  if (!domains.includes(host)) {
+    void logRequest({
+      instanceId,
+      query,
+      status: 403,
+      denialReason: "origin_not_authorized",
+      totalHandlerMs: Date.now() - handlerStart,
+      origin: host,
+    });
+    return deny(origin);
+  }
+
+  // Per-(instance, origin) rate limit. Now that we know the instance is real,
+  // we can surface a throttled call in the panel.
+  const pairOk = await checkRateLimit(
+    searchBucketKey(instanceId, host),
+    SEARCH_PER_INSTANCE_ORIGIN_PER_MIN,
+    RATE_LIMIT_WINDOW_SECONDS
+  );
+  if (!pairOk) {
+    void logRequest({
+      instanceId,
+      query,
+      status: 429,
+      denialReason: "rate_limited",
+      totalHandlerMs: Date.now() - handlerStart,
+      origin: host,
+    });
+    return corsify(
+      NextResponse.json({ error: "rate_limited" }, { status: 429 }),
+      origin
+    );
+  }
 
   // Defense in depth: prefix any caller-supplied filter with the instance_id
   // filter so the index can't be searched without it (even though tenant
@@ -204,6 +265,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   } catch (err) {
     console.error("[search] meilisearch failed:", err instanceof Error ? err.message : err);
+    void logRequest({
+      instanceId,
+      query,
+      status: 502,
+      denialReason: "meilisearch_failed",
+      totalHandlerMs: Date.now() - handlerStart,
+      origin: host,
+    });
     return corsify(
       NextResponse.json({ error: "search_failed" }, { status: 502 }),
       origin
@@ -238,13 +307,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   };
 
   // Best-effort logging — never blocks the response.
-  void logQuery({
+  void logRequest({
     instanceId,
     query,
-    totalHits: response.total_hits,
-    processingTimeMs: response.processing_time_ms,
-    hits,
+    status: 200,
+    denialReason: null,
+    totalHandlerMs: Date.now() - handlerStart,
     origin: host,
+    hits,
+    processingTimeMs: response.processing_time_ms,
   });
 
   return corsify(NextResponse.json(response, { status: 200 }), origin);

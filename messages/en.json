@@ -1294,6 +1294,23 @@
         "expand": "Show hits",
         "collapse": "Hide hits",
         "hitsHeader": "Products handed to the plugin (WooCommerce IDs)"
+      },
+      "eventLog": {
+        "cardTitle": "Recent events",
+        "cardDescription": "Clicks and conversions the storefront has recorded: search-result clicks, add-to-cart, checkout, completed orders. Auto-refreshes every 5 seconds.",
+        "countsHelp": "Totals for the last 24 hours. Zero counts mean that event hasn't fired yet.",
+        "tableDescription": "Showing the last {count, plural, =1 {1 event} other {# events}}.",
+        "loading": "Loading events…",
+        "empty": "No events recorded for this instance yet. Run a search on the storefront and click a result to see one appear here.",
+        "error": "Could not load events.",
+        "noProduct": "(no product)",
+        "col": {
+          "time": "Time",
+          "event": "Event",
+          "product": "Product",
+          "position": "Position",
+          "queryUid": "queryUid"
+        }
       }
     },
     "ga4": {

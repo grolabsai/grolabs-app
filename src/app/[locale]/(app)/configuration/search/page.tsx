@@ -8,6 +8,7 @@ import { getIndexingStatus } from "./actions";
 import { SearchSettingsForm } from "./_form";
 import { SearchPreview } from "./_search-preview";
 import { SearchRequestLog } from "./_request-log";
+import { SearchEventLog } from "./_event-log";
 
 /**
  * Stage 0 admin panel for Meilisearch search infrastructure.
@@ -93,6 +94,16 @@ export default async function SearchConfigPage() {
         </CardHeader>
         <CardContent>
           <SearchRequestLog instanceId={instanceId} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("eventLog.cardTitle")}</CardTitle>
+          <CardDescription>{t("eventLog.cardDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SearchEventLog instanceId={instanceId} />
         </CardContent>
       </Card>
     </div>

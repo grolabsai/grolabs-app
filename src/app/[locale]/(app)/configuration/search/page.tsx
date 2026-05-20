@@ -9,6 +9,15 @@ import { SearchSettingsForm } from "./_form";
 import { SearchPreview } from "./_search-preview";
 import { SearchRequestLog } from "./_request-log";
 import { SearchEventLog } from "./_event-log";
+import { SearchVolumeBlock } from "@/components/analytics/SearchVolumeBlock";
+import { NoResultRateBlock } from "@/components/analytics/NoResultRateBlock";
+import { LatencyBlock } from "@/components/analytics/LatencyBlock";
+import { TopQueriesBlock } from "@/components/analytics/TopQueriesBlock";
+import { TopNoResultQueriesBlock } from "@/components/analytics/TopNoResultQueriesBlock";
+import { StorefrontBreakdownBlock } from "@/components/analytics/StorefrontBreakdownBlock";
+import { IndexHealthBlock } from "@/components/analytics/IndexHealthBlock";
+import { IndexSizeBlock } from "@/components/analytics/IndexSizeBlock";
+import { FieldDistributionBlock } from "@/components/analytics/FieldDistributionBlock";
 
 /**
  * Stage 0 admin panel for Meilisearch search infrastructure.
@@ -106,6 +115,37 @@ export default async function SearchConfigPage() {
           <SearchEventLog instanceId={instanceId} />
         </CardContent>
       </Card>
+
+      {/* Analytics block bench. Each block is self-contained and can be lifted
+          onto /dashboard, an admin overview, or anywhere else by changing only
+          the import path. Layout here is intentionally generic (responsive
+          grid) so blocks read identically wherever they land. */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: 16,
+        }}
+      >
+        <SearchVolumeBlock instanceId={instanceId} />
+        <NoResultRateBlock instanceId={instanceId} />
+        <LatencyBlock instanceId={instanceId} />
+        <IndexHealthBlock instanceId={instanceId} />
+        <IndexSizeBlock instanceId={instanceId} />
+        <StorefrontBreakdownBlock instanceId={instanceId} />
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 16,
+        }}
+      >
+        <TopQueriesBlock instanceId={instanceId} />
+        <TopNoResultQueriesBlock instanceId={instanceId} />
+        <FieldDistributionBlock instanceId={instanceId} />
+      </div>
     </div>
   );
 }

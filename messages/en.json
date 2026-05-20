@@ -610,6 +610,71 @@
       "toastFailed": "Could not save synonym"
     }
   },
+  "analytics": {
+    "loading": "Loading…",
+    "error": {
+      "load": "Could not load data."
+    },
+    "range": {
+      "lastNDays": "Last {n} days"
+    },
+    "empty": {
+      "noSearches": "No searches yet in this window.",
+      "noNoResults": "Every search returned something — no zero-result queries."
+    },
+    "searchVolume": {
+      "title": "Search volume",
+      "unit": "searches",
+      "footer": "Average {avg}/day"
+    },
+    "noResultRate": {
+      "title": "No-result rate",
+      "footer": "{noResult} of {total} queries returned nothing"
+    },
+    "latency": {
+      "title": "Search latency",
+      "meiliP95": "Meilisearch p95: {ms} ms",
+      "handler": "GroLabs handler · p50 {p50} ms · p95 {p95} ms",
+      "footer": "{samples, plural, =1 {1 sample} other {# samples}}"
+    },
+    "topQueries": {
+      "title": "Top queries"
+    },
+    "topNoResultQueries": {
+      "title": "Top no-result queries"
+    },
+    "storefronts": {
+      "title": "Traffic by storefront",
+      "unknown": "(no origin)"
+    },
+    "indexHealth": {
+      "title": "Index health",
+      "description": "Live from Meilisearch /stats",
+      "docsUnit": "documents",
+      "indexing": "Indexing",
+      "idle": "Idle",
+      "ago": {
+        "s": "updated {n} s ago",
+        "m": "updated {n} min ago",
+        "h": "updated {n} h ago",
+        "d": "updated {n} d ago"
+      },
+      "never": "Never updated",
+      "emptyIndex": "The index is empty."
+    },
+    "indexSize": {
+      "title": "Index size",
+      "description": "Disk space used by Meilisearch",
+      "used": "Used: {value} {unit}",
+      "raw": "Raw documents: {value} {unit}",
+      "footer": "Average per document: {avg} {unit}",
+      "emptyIndex": "The index is empty."
+    },
+    "fieldDistribution": {
+      "title": "Attribute distribution",
+      "description": "Documents containing each attribute"
+    }
+  },
   "product": {
     "list": {
       "newProduct": "New product",

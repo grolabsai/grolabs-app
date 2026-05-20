@@ -275,6 +275,89 @@ export async function getDocumentCount(instanceId: number): Promise<number> {
   }
 }
 
+/** Full per-index stats from Meilisearch's `/indexes/{uid}/stats` — used by
+ * the analytics blocks (doc count, indexing state, field distribution).
+ * Returns `null` when the index doesn't exist yet. */
+export type IndexStatsSnapshot = {
+  numberOfDocuments: number;
+  isIndexing: boolean;
+  fieldDistribution: Record<string, number>;
+};
+
+export async function getIndexStats(
+  instanceId: number,
+): Promise<IndexStatsSnapshot | null> {
+  const client = getClient();
+  try {
+    const s = await client.index(indexUidFor(instanceId)).getStats();
+    return {
+      numberOfDocuments: s.numberOfDocuments ?? 0,
+      isIndexing: s.isIndexing ?? false,
+      fieldDistribution: (s.fieldDistribution ?? {}) as Record<string, number>,
+    };
+  } catch (err) {
+    if (err instanceof MeilisearchApiError && err.response.status === 404) return null;
+    throw new MeilisearchOpError(`getIndexStats(${instanceId}) failed`, err);
+  }
+}
+
+/** Server-wide `/stats` — totals across every index plus a per-index
+ * breakdown. Used by the index-size block, which needs `databaseSize` (the
+ * per-index stats endpoint doesn't expose disk usage). */
+export type ServerStatsSnapshot = {
+  databaseSize: number;
+  usedDatabaseSize: number;
+  lastUpdate: string | null;
+  /** Per-index slice for the caller's instance, when present. */
+  index: {
+    numberOfDocuments: number;
+    rawDocumentDbSize: number;
+    avgDocumentSize: number;
+    isIndexing: boolean;
+    fieldDistribution: Record<string, number>;
+  } | null;
+};
+
+export async function getServerStats(
+  instanceId: number,
+): Promise<ServerStatsSnapshot> {
+  const client = getClient();
+  try {
+    const s = (await client.getStats()) as unknown as {
+      databaseSize?: number;
+      usedDatabaseSize?: number;
+      lastUpdate?: string | null;
+      indexes?: Record<
+        string,
+        {
+          numberOfDocuments?: number;
+          rawDocumentDbSize?: number;
+          avgDocumentSize?: number;
+          isIndexing?: boolean;
+          fieldDistribution?: Record<string, number>;
+        }
+      >;
+    };
+    const idx = s.indexes?.[indexUidFor(instanceId)];
+    return {
+      databaseSize: s.databaseSize ?? 0,
+      usedDatabaseSize: s.usedDatabaseSize ?? 0,
+      lastUpdate: s.lastUpdate ?? null,
+      index: idx
+        ? {
+            numberOfDocuments: idx.numberOfDocuments ?? 0,
+            rawDocumentDbSize: idx.rawDocumentDbSize ?? 0,
+            avgDocumentSize: idx.avgDocumentSize ?? 0,
+            isIndexing: idx.isIndexing ?? false,
+            fieldDistribution: (idx.fieldDistribution ?? {}) as Record<string, number>,
+          }
+        : null,
+    };
+  } catch (err) {
+    throw new MeilisearchOpError(`getServerStats(${instanceId}) failed`, err);
+  }
+}
+
 /** Result returned by `searchInstance`. The shape is intentionally narrow —
  * the search proxy combines this with the variant matcher to build the
  * public response. */

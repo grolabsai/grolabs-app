@@ -38,10 +38,7 @@ export function SearchPreview({ instanceId }: Props) {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
-    if (trimmed.length === 0) {
-      setResult(null);
-      return;
-    }
+    if (trimmed.length === 0) return;
     debounceRef.current = setTimeout(() => {
       const seq = ++requestSeqRef.current;
       startTransition(async () => {
@@ -53,6 +50,8 @@ export function SearchPreview({ instanceId }: Props) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query, instanceId]);
+
+  const displayedResult = query.trim().length === 0 ? null : result;
 
   return (
     <div className="flex flex-col gap-3">
@@ -78,7 +77,7 @@ export function SearchPreview({ instanceId }: Props) {
         />
       </div>
 
-      <ResultsBody result={result} isPending={isPending} query={query} />
+      <ResultsBody result={displayedResult} isPending={isPending} query={query} />
     </div>
   );
 }

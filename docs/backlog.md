@@ -141,4 +141,29 @@ Mechanical cleanup, not a Discussion-worthy item. But it must happen before any 
 
 ---
 
-**End of backlog as of 2026-05-16.**
+## Search personalization (Meilisearch re-ranking + behavioral signals)
+
+**Status:** parked
+**Created:** 2026-05-20
+**Trigger to address:** After the demo ships and basic Meilisearch search (Stage 1 of `docs/policy/search-foundations.md`) is stable in production for Wazú. Specifically: when we have enough live search traffic to measure rerank lift, and when consent/privacy work (Constitution Article 4) is far enough along to capture click events legally.
+
+**Scope of work:**
+
+Add per-query personalization on top of the existing Meilisearch index by passing a `personalize.userContext` string on every search. The user context is built server-side in Scout from behavioral signals (search history, filter selections, clicks, add-to-cart, current cart) and declarative profile data, then sent to a reranker (Cohere Rerank 3.5 or similar).
+
+Two phases:
+
+- **Phase A (lightweight):** Templated `userContext` string built at query time from session + cart signals. No profile table, no LLM. Goal is to validate rerank quality and cost.
+- **Phase B (profile-as-a-service):** Persistent `user_search_profile` table, LLM-summarized context refreshed on order/daily, per-instance opt-in. Only if Phase A shows measurable lift.
+
+Phase A build steps, behavioral signal taxonomy, the "learn that color=black is preferred" inference pattern, and the open product questions (session-scoped vs. user-scoped memory, reranker choice, plan tier) are all documented in `docs/research/search-personalization.md`.
+
+**Why deferred:**
+
+Not a demo priority. The basic search foundation (Stage 1) has to be solid first, and there are upstream dependencies (click-event capture in the WP plugin, consent paragraphs from Article 4) that aren't ready. Capturing this now so the research isn't redone when the trigger arrives.
+
+**Reference:** `docs/research/search-personalization.md`, `docs/policy/search-foundations.md`, Constitution Article 4
+
+---
+
+**End of backlog as of 2026-05-20.**

@@ -865,7 +865,10 @@
         "label": "Brand & category",
         "brandTitle": "Brand",
         "brandHint": "Applies to every product in the file. If the brand doesn't exist yet, create it in Catalog → Brands first.",
-        "brandPlaceholder": "Select brand…",
+        "brandPlaceholder": "Select or create brand…",
+        "brandCreateOption": "Create \"{name}\"",
+        "brandCreated": "Brand \"{name}\" created",
+        "brandCreateFailed": "Could not create the brand",
         "columnsTitle": "Source file columns",
         "nameColumnLabel": "Column with the product name",
         "photoColumnLabel": "Column with the photo URL (optional)",
@@ -1069,6 +1072,11 @@
           "products": "Product import finished."
         },
         "failed": "Could not complete the import"
+      },
+      "debug": {
+        "title": "Last import details",
+        "subtitle": "Debug mode — full log of what was created, updated, and linked. Useful for auditing before the final version shows a friendlier summary.",
+        "empty": "No import has been run yet. Start one to see details here."
       }
     }
   },

@@ -1262,7 +1262,11 @@
         "error": "Search failed",
         "meta": "{count, plural, =1 {1 result} other {# results}} · {ms} ms",
         "inStock": "In stock",
-        "outOfStock": "Out of stock"
+        "outOfStock": "Out of stock",
+        "match": {
+          "matchedTitle": "\"{token}\" matches on: {attributes}",
+          "unmatchedTitle": "\"{token}\" does not match any attribute of this result"
+        }
       },
       "requestLog": {
         "cardTitle": "Recent requests",

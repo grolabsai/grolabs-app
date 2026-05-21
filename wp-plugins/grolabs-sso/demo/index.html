@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GroLabs SSO — Login Demo</title>
+  <link rel="stylesheet" href="../assets/css/login-screen.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      background: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      color: #1f1f1f;
+    }
+    .demo-wrap {
+      max-width: 440px;
+      margin: 0 auto;
+    }
+    .demo-frame {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .demo-title {
+      text-align: center;
+      margin: 0 0 24px;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .demo-controls {
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #5f6368;
+    }
+    .demo-controls h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .demo-controls .row {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 16px;
+    }
+    .demo-controls .row strong {
+      color: #1f1f1f;
+      font-weight: 500;
+      margin-right: 4px;
+    }
+    .demo-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .demo-controls button {
+      padding: 6px 12px;
+      border: 1px solid #dadce0;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .demo-controls button:hover {
+      background: #f8f9fa;
+    }
+    .demo-controls .hint {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #80868b;
+      line-height: 1.5;
+    }
+    .demo-controls input[type=text] {
+      padding: 6px 10px;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      font-size: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG sprite — inlined so the demo works via file:// without a server -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="logo-google" viewBox="0 0 24 24">
+      <path fill="#4285f4" d="M21.6 12.227c0-.709-.064-1.39-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.996 3.018v2.51h3.232c1.892-1.742 2.982-4.305 2.982-7.351z"/>
+      <path fill="#34a853" d="M12 22c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H3.064v2.59A9.996 9.996 0 0 0 12 22z"/>
+      <path fill="#fbbc05" d="M6.405 13.9a6.01 6.01 0 0 1 0-3.8V7.51H3.064a9.996 9.996 0 0 0 0 8.98l3.341-2.59z"/>
+      <path fill="#ea4335" d="M12 5.977c1.468 0 2.786.505 3.823 1.495l2.868-2.868C16.96 3.04 14.695 2 12 2A9.996 9.996 0 0 0 3.064 7.51l3.341 2.59C7.19 7.736 9.395 5.977 12 5.977z"/>
+    </symbol>
+    <symbol id="logo-facebook" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
+    </symbol>
+    <symbol id="logo-apple" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.45 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+    </symbol>
+    <symbol id="logo-microsoft" viewBox="0 0 24 24">
+      <rect x="2" y="2"     width="9.5" height="9.5" fill="#f25022"/>
+      <rect x="12.5" y="2"  width="9.5" height="9.5" fill="#7fba00"/>
+      <rect x="2" y="12.5"  width="9.5" height="9.5" fill="#00a4ef"/>
+      <rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#ffb900"/>
+    </symbol>
+    <symbol id="logo-x" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
+    </symbol>
+    <symbol id="logo-linkedin" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.063 2.063 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/>
+    </symbol>
+    <symbol id="logo-github" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+    </symbol>
+    <symbol id="logo-tiktok" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-.88-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.69a8.16 8.16 0 0 0 4.77 1.52V6.77a4.85 4.85 0 0 1-1.84-.08z"/>
+    </symbol>
+    <symbol id="logo-discord" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.51 12.51 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.319 13.58.099 18.057a.082.082 0 0 0 .031.057 19.91 19.91 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.27 10.27 0 0 0 .372-.292.074.074 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.128 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.029 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .031-.055c.5-5.177-.838-9.674-3.549-13.661a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.211 0 2.176 1.095 2.157 2.418 0 1.334-.956 2.42-2.157 2.42zm7.975 0c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.211 0 2.176 1.095 2.157 2.418 0 1.334-.946 2.42-2.157 2.42z"/>
+    </symbol>
+    <symbol id="logo-twitch" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
+    </symbol>
+    <symbol id="logo-yahoo" viewBox="0 0 24 24">
+      <text x="12" y="17" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="800" fill="#6001d2" text-anchor="middle">Y!</text>
+    </symbol>
+    <symbol id="logo-amazon" viewBox="0 0 24 24">
+      <text x="12" y="13" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="7" font-weight="700" fill="#232f3e" text-anchor="middle">amazon</text>
+      <path d="M5 16c2.5 2 5 3 7 3s4.5-1 7-3" stroke="#ff9900" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-passkey" viewBox="0 0 24 24">
+      <circle cx="8" cy="10" r="3.5" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M11.5 10h10M19 10v3M16 10v2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-email" viewBox="0 0 24 24">
+      <path d="M3 7l9 6 9-6M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7m-18 0a2 2 0 012-2h14a2 2 0 012 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+      <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </svg>
+
+  <div class="demo-wrap">
+    <div class="demo-frame">
+      <h1 class="demo-title">Sign in to your account</h1>
+      <div id="sso"></div>
+    </div>
+
+    <div class="demo-controls">
+      <h3>Demo controls</h3>
+      <div class="row">
+        <strong>Locale</strong>
+        <label><input type="radio" name="locale" value="en" checked> English</label>
+        <label><input type="radio" name="locale" value="es"> Español</label>
+      </div>
+      <div class="row">
+        <strong>Platform</strong>
+        <label><input type="radio" name="platform" value="auto" checked> Auto</label>
+        <label><input type="radio" name="platform" value="ios"> iOS</label>
+        <label><input type="radio" name="platform" value="android"> Android</label>
+        <label><input type="radio" name="platform" value="windows"> Windows</label>
+      </div>
+      <div class="row">
+        <strong>Order</strong>
+        <label><input type="radio" name="order" value="default" checked> Default</label>
+        <label><input type="radio" name="order" value="devs"> Dev-focused</label>
+        <label><input type="radio" name="order" value="b2b"> B2B</label>
+        <label><input type="radio" name="order" value="creator"> Creator</label>
+      </div>
+      <div class="row">
+        <strong>State</strong>
+        <button id="clear-lastused">Clear last-used</button>
+        <button id="set-lastused-fb">Set last-used: Facebook</button>
+        <button id="set-lastused-gh">Set last-used: GitHub</button>
+      </div>
+      <div class="row">
+        <strong>Google client ID</strong>
+        <input id="google-client-id" type="text" placeholder="optional: paste a Google OAuth client ID to test real sign-in" />
+      </div>
+      <div class="hint">
+        <strong>How to test the order overlays:</strong> click a Tier B/C button — the "demo toast" fires and that provider becomes "last used" on the next render. Reload or change platform to see the order shift.<br>
+        <strong>Referrer/UTM:</strong> add <code>?utm_source=facebook</code> (or <code>github</code>, <code>linkedin</code>, etc.) to this URL to simulate inbound traffic. Last-used wins over UTM, so clear it first.<br>
+        <strong>Google OAuth:</strong> paste a real Google OAuth Client ID above. Add this page's URL (origin + path) to the client's "Authorized JavaScript origins" and "Authorized redirect URIs" in the Google Cloud console.
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/login-screen.js"></script>
+  <script>
+    var ORDER_PRESETS = {
+      default: null, // use built-in default
+      devs:    ['github', 'google', 'apple', 'microsoft', 'gitlab', 'x', 'linkedin', 'discord', 'facebook', 'twitch', 'yahoo', 'amazon'],
+      b2b:     ['google', 'microsoft', 'apple', 'linkedin', 'github', 'facebook', 'x', 'yahoo', 'tiktok', 'discord', 'twitch', 'amazon'],
+      creator: ['google', 'tiktok', 'apple', 'facebook', 'discord', 'twitch', 'x', 'youtube', 'linkedin', 'github', 'yahoo', 'amazon']
+    };
+
+    function bootDemo() {
+      function getOpts() {
+        var lang = document.querySelector('input[name=locale]:checked').value;
+        var platformSel = document.querySelector('input[name=platform]:checked').value;
+        var orderSel = document.querySelector('input[name=order]:checked').value;
+        var clientId = document.getElementById('google-client-id').value.trim();
+        document.documentElement.lang = lang;
+
+        var orderOverride = ORDER_PRESETS[orderSel];
+        // Filter to known providers
+        if (orderOverride) {
+          orderOverride = orderOverride.filter(function (id) {
+            return GroLabsSSO._internal.PROVIDERS[id];
+          });
+        }
+
+        return {
+          root: '#sso',
+          lang: lang,
+          platform: platformSel === 'auto' ? null : platformSel,
+          config: orderOverride ? { order: orderOverride } : null,
+          googleClientId: clientId || null,
+          onPasswordSubmit: function (data) {
+            alert('Demo: password submit\nemail: ' + data.email);
+            data.done();
+          }
+        };
+      }
+
+      function rerender() {
+        GroLabsSSO.init(getOpts());
+      }
+
+      document.querySelectorAll('input[name=locale], input[name=platform], input[name=order]').forEach(function (r) {
+        r.addEventListener('change', rerender);
+      });
+      document.getElementById('google-client-id').addEventListener('change', rerender);
+
+      document.getElementById('clear-lastused').addEventListener('click', function () {
+        GroLabsSSO.clearLastUsed();
+        rerender();
+      });
+      document.getElementById('set-lastused-fb').addEventListener('click', function () {
+        document.cookie = 'grolabs_sso_last_provider=facebook; path=/; SameSite=Lax';
+        try { localStorage.setItem('grolabs_sso_last_provider', 'facebook'); } catch (e) {}
+        rerender();
+      });
+      document.getElementById('set-lastused-gh').addEventListener('click', function () {
+        document.cookie = 'grolabs_sso_last_provider=github; path=/; SameSite=Lax';
+        try { localStorage.setItem('grolabs_sso_last_provider', 'github'); } catch (e) {}
+        rerender();
+      });
+
+      rerender();
+    }
+
+    bootDemo();
+  </script>
+</body>
+</html>

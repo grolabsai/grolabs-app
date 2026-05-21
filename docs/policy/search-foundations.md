@@ -305,6 +305,8 @@ Within the Emulador tab the full tab width is for the emulator:
 Price + brand are the two dominant deciding factors per shopper research, hence the pinning. The dynamic block in the middle is where merchant-defined priority (`form_order`) takes over. `in_stock` is visual punctuation at the bottom.
 
 **v1 scope: list-type only.** Text, number, and quantity attributes are NOT yet indexed under `attributes.*` — they need different widgets (autocomplete, numeric range, unit-aware range) and land in a follow-up. The document builder skips them; the server action filters them out of the dynamic attribute list.
+
+**Attribute label translation.** Dynamic facet labels in the rail use the `product_attribute.attribute_name` column by default, but if a row exists in `product_attribute_translation` for the active locale (resolved server-side via `next-intl`'s `getLocale()`), that translation wins. NULL or empty translation rows fall through to the canonical name. The indexed Meilisearch document is locale-agnostic — the slug (`attributes.<code>`) is the stable identifier; label resolution is presentation-time, not index-time. No reindex needed when translations change.
 * **Result cards** — same logical card as the storefront, plus a per-attribute match strip beneath the title. Each strip entry reads `<attribute name> — <token1>, <token2>` (e.g. `name — "royal", "canin"` / `description — "puppy"`). Built by walking Meilisearch's `_formatted` block per hit; reuses the helpers already proven by `_search-preview.tsx`.
 
 ### Wiring decisions

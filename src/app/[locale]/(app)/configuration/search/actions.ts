@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
@@ -887,10 +888,46 @@ export type EmulatorAttributeFacet = {
   facetName: string;
 };
 
+/**
+ * Resolve the localized display name for a set of attributes. Returns a
+ * Map<attribute_id, attribute_name> populated only for attributes that have
+ * a translation row for the given locale. Callers fall through to the
+ * canonical `product_attribute.attribute_name` when an attribute is missing.
+ *
+ * Per CLAUDE.md §5: data labels come from the DB. Per-locale display names
+ * live in `product_attribute_translation`; the canonical `attribute_name`
+ * column on `product_attribute` is the fallback when no translation exists.
+ */
+async function resolveAttributeLabels(
+  attributeIds: number[],
+  locale: string,
+): Promise<Map<number, string>> {
+  if (attributeIds.length === 0) return new Map();
+  const sb = await createClient();
+  const { data } = await sb
+    .from("product_attribute_translation")
+    .select("attribute_id, attribute_name")
+    .in("attribute_id", attributeIds)
+    .eq("locale", locale);
+  const out = new Map<number, string>();
+  for (const r of data ?? []) {
+    const id = r.attribute_id as number;
+    const name = (r.attribute_name as string | null) ?? null;
+    // NULL translation rows count as "no translation" — the canonical
+    // attribute_name on product_attribute wins.
+    if (id != null && name && name.trim().length > 0) out.set(id, name);
+  }
+  return out;
+}
+
 /** Filterable, list-type attributes for an instance — optionally narrowed
  * to those mapped to a specific category and ordered by that mapping's
  * `form_order`. The "list-type only" filter mirrors the document builder's
- * v1 scope (only list attributes are currently indexed in `attributes.*`). */
+ * v1 scope (only list attributes are currently indexed in `attributes.*`).
+ *
+ * Labels are resolved against `product_attribute_translation` for the
+ * active locale (resolved from the request via next-intl), with fallback
+ * to the canonical `product_attribute.attribute_name`. */
 export async function listEmulatorAttributeFacets(
   instanceId: number,
   categoryId: number | null,
@@ -898,6 +935,7 @@ export async function listEmulatorAttributeFacets(
   if (!(await authorizeMembership(instanceId))) return [];
 
   const sb = await createClient();
+  const locale = await getLocale();
 
   if (categoryId != null) {
     // Category-scoped: only attributes mapped to this category, in the
@@ -941,50 +979,70 @@ export async function listEmulatorAttributeFacets(
         : r.product_attribute,
     }));
 
-    return normalized
-      .filter(
-        (r): r is typeof r & { product_attribute: Joined } =>
-          !!r.product_attribute &&
-          r.product_attribute.is_active !== false &&
-          !!r.product_attribute.is_filterable &&
-          r.product_attribute.data_type === "list" &&
-          r.visible_in_filter !== false,
-      )
+    const filtered = normalized.filter(
+      (r): r is typeof r & { product_attribute: Joined } =>
+        !!r.product_attribute &&
+        r.product_attribute.is_active !== false &&
+        !!r.product_attribute.is_filterable &&
+        r.product_attribute.data_type === "list" &&
+        r.visible_in_filter !== false,
+    );
+    const labels = await resolveAttributeLabels(
+      filtered.map((r) => r.product_attribute.attribute_id),
+      locale,
+    );
+    // Sort uses the *resolved* label (translated when present) so the
+    // alphabetical tie-break reads naturally in the current locale.
+    return filtered
       .sort((a, b) => {
         const ao = a.form_order ?? Number.POSITIVE_INFINITY;
         const bo = b.form_order ?? Number.POSITIVE_INFINITY;
         if (ao !== bo) return ao - bo;
-        return a.product_attribute.attribute_name.localeCompare(
-          b.product_attribute.attribute_name,
-        );
+        const aLabel =
+          labels.get(a.product_attribute.attribute_id) ?? a.product_attribute.attribute_name;
+        const bLabel =
+          labels.get(b.product_attribute.attribute_id) ?? b.product_attribute.attribute_name;
+        return aLabel.localeCompare(bLabel);
       })
       .map((r) => ({
         attributeId: r.product_attribute.attribute_id,
         attributeCode: r.product_attribute.attribute_code,
-        attributeName: r.product_attribute.attribute_name,
+        attributeName:
+          labels.get(r.product_attribute.attribute_id) ?? r.product_attribute.attribute_name,
         facetName: `attributes.${r.product_attribute.attribute_code}`,
       }));
   }
 
   // No category — every active, filterable, list-type attribute for this
-  // instance, alphabetical. No global priority value exists today; when
-  // one lands it should slot in here ahead of attribute_name.
+  // instance, alphabetical (on the resolved label). No global priority
+  // value exists today; when one lands it should slot in ahead of the name.
   const { data } = await sb
     .from("product_attribute")
     .select("attribute_id, attribute_code, attribute_name, data_type, is_filterable, is_active")
     .eq("instance_id", instanceId)
     .eq("is_active", true)
-    .eq("is_filterable", true)
-    .order("attribute_name");
+    .eq("is_filterable", true);
 
-  return (data ?? [])
-    .filter((r) => (r.data_type as string | null) === "list")
-    .map((r) => ({
-      attributeId: r.attribute_id as number,
-      attributeCode: r.attribute_code as string,
-      attributeName: r.attribute_name as string,
-      facetName: `attributes.${r.attribute_code as string}`,
-    }));
+  const listRows = (data ?? []).filter(
+    (r) => (r.data_type as string | null) === "list",
+  );
+  const labels = await resolveAttributeLabels(
+    listRows.map((r) => r.attribute_id as number),
+    locale,
+  );
+  return listRows
+    .map((r) => {
+      const attributeId = r.attribute_id as number;
+      const attributeName =
+        labels.get(attributeId) ?? (r.attribute_name as string);
+      return {
+        attributeId,
+        attributeCode: r.attribute_code as string,
+        attributeName,
+        facetName: `attributes.${r.attribute_code as string}`,
+      };
+    })
+    .sort((a, b) => a.attributeName.localeCompare(b.attributeName));
 }
 
 export type RunBackfillResult =

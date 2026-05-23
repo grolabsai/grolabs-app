@@ -50,6 +50,8 @@ import {
   Film as YoutubeIcon,
   Minus,
   Braces,
+  Palette,
+  X as XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadPostImage } from "@/lib/actions/post";
@@ -57,7 +59,15 @@ import {
   aiContinueWriting,
   aiRewriteSelection,
 } from "@/lib/actions/blog-ai";
+import { aiGenerateImage } from "@/lib/actions/blog-image";
 import type { RewriteAction } from "@/lib/ai/blog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -170,6 +180,11 @@ export function TiptapEditor({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [aiPending, setAiPending] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [imageGenerating, setImageGenerating] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imageAltText, setImageAltText] = useState("");
   const lowlight = useMemo(() => createLowlight(common), []);
 
   const editor = useEditor({
@@ -336,6 +351,40 @@ export function TiptapEditor({
     }
     editor.chain().focus().insertContentAt({ from, to }, res.data).run();
     toast.success(tAi("rewritten"));
+  }
+
+  function openImageDialog() {
+    setImagePrompt("");
+    setImagePreviewUrl(null);
+    setImageAltText("");
+    setImageDialogOpen(true);
+  }
+
+  async function onGenerateImage() {
+    if (!imagePrompt.trim()) {
+      toast.error(tAi("imagePromptRequired"));
+      return;
+    }
+    setImageGenerating(true);
+    setImagePreviewUrl(null);
+    const res = await aiGenerateImage(imagePrompt);
+    setImageGenerating(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    setImagePreviewUrl(res.data.url);
+  }
+
+  function onInsertGeneratedImage() {
+    if (!editor || !imagePreviewUrl) return;
+    editor
+      .chain()
+      .focus()
+      .setImage({ src: imagePreviewUrl, alt: imageAltText.trim() || imagePrompt })
+      .run();
+    setImageDialogOpen(false);
+    toast.success(tAi("imageInserted"));
   }
 
   if (!editor) {
@@ -536,6 +585,15 @@ export function TiptapEditor({
         >
           <Icon icon={YoutubeIcon} size={14} />
         </button>
+        <button
+          type="button"
+          className={tbBtn}
+          onClick={openImageDialog}
+          aria-label={tAi("imageGenerate")}
+          title={tAi("imageGenerate")}
+        >
+          <Icon icon={Palette} size={14} />
+        </button>
 
         <div className="mx-1 h-5 w-px bg-border" />
 
@@ -641,6 +699,86 @@ export function TiptapEditor({
       />
 
       <EditorContent editor={editor} />
+
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon icon={Palette} size={14} />
+              {tAi("imageGenerate")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <textarea
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              placeholder={tAi("imagePromptPlaceholder")}
+              rows={3}
+              className="w-full rounded-md border bg-background p-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              {tAi("imageBrandHint")}
+            </p>
+
+            {imageGenerating && (
+              <div className="flex aspect-video w-full items-center justify-center rounded-md border bg-muted/30 text-sm text-muted-foreground">
+                {tAi("imageGenerating")}
+              </div>
+            )}
+
+            {imagePreviewUrl && !imageGenerating && (
+              <div className="space-y-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreviewUrl}
+                  alt=""
+                  className="aspect-video w-full rounded-md border object-cover"
+                />
+                <input
+                  type="text"
+                  value={imageAltText}
+                  onChange={(e) => setImageAltText(e.target.value)}
+                  placeholder={tAi("imageAltPlaceholder")}
+                  className="w-full rounded-md border bg-background px-2 py-1.5 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setImageDialogOpen(false)}
+              disabled={imageGenerating}
+            >
+              <Icon icon={XIcon} size={12} />
+              {tAi("imageCancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onGenerateImage}
+              disabled={imageGenerating || !imagePrompt.trim()}
+            >
+              <Icon icon={Sparkles} size={12} />
+              {imagePreviewUrl ? tAi("imageRegenerate") : tAi("imageGenerateBtn")}
+            </Button>
+            {imagePreviewUrl && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={onInsertGeneratedImage}
+                disabled={imageGenerating}
+              >
+                {tAi("imageInsert")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

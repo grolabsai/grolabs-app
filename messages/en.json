@@ -2298,7 +2298,14 @@
       "imageInsert": "Insert",
       "imagePromptRequired": "Enter a prompt for the image",
       "imageInserted": "Image inserted",
-      "imageAltSuggested": "Alt text suggested"
+      "imageAltSuggested": "Alt text suggested",
+      "imageTransform": "Transform to brand style",
+      "imageTransformRestyle": "Restyle as illustration",
+      "imageTransformRecolor": "Recolor to brand palette",
+      "imageTransformConceptualize": "Conceptualize as diagram",
+      "imageTransforming": "Transforming image…",
+      "imageTransformed": "Image transformed",
+      "imageTransformNoSelection": "Select an image before transforming"
     },
     "public": {
       "indexTitle": "Blog",

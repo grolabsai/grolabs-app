@@ -64,7 +64,8 @@ import {
   aiRewriteSelection,
   aiSuggestAltText,
 } from "@/lib/actions/blog-ai";
-import { aiGenerateImage } from "@/lib/actions/blog-image";
+import { aiGenerateImage, aiTransformImage } from "@/lib/actions/blog-image";
+import type { TransformKind } from "@/lib/ai/image";
 import type { RewriteAction } from "@/lib/ai/blog";
 import {
   Dialog,
@@ -190,6 +191,7 @@ export function TiptapEditor({
   const [imageGenerating, setImageGenerating] = useState(false);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imageAltText, setImageAltText] = useState("");
+  const [transforming, setTransforming] = useState(false);
   const lowlight = useMemo(() => createLowlight(common), []);
   // Ref so the Tiptap editorProps handlers (created at mount time)
   // can reach the latest editor instance even after later re-renders.
@@ -486,6 +488,31 @@ export function TiptapEditor({
     toast.success(tAi("imageInserted"));
   }
 
+  async function onTransformImage(kind: TransformKind) {
+    if (!editor) return;
+    const sourceUrl = editor.getAttributes("image").src as string | undefined;
+    if (!sourceUrl) {
+      toast.error(tAi("imageTransformNoSelection"));
+      return;
+    }
+    setTransforming(true);
+    toast.message(tAi("imageTransforming"), { duration: 60000, id: "transform" });
+    const res = await aiTransformImage({ sourceUrl, kind });
+    setTransforming(false);
+    toast.dismiss("transform");
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    // Replace the image src in place — keep alt/align/caption attrs.
+    editor
+      .chain()
+      .focus()
+      .updateAttributes("image", { src: res.data.url })
+      .run();
+    toast.success(tAi("imageTransformed"));
+  }
+
   if (!editor) {
     return (
       <div className="min-h-[400px] animate-pulse rounded-md border bg-muted/20" />
@@ -777,6 +804,33 @@ export function TiptapEditor({
             >
               <Icon icon={Type} size={14} />
             </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={`${tbBtn} w-auto px-1.5`}
+                  disabled={transforming}
+                  aria-label={tAi("imageTransform")}
+                  title={tAi("imageTransform")}
+                >
+                  <Icon icon={Wand2} size={14} />
+                  <Icon icon={ChevronDown} size={10} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onSelect={() => onTransformImage("restyle")}>
+                  {tAi("imageTransformRestyle")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onTransformImage("recolor")}>
+                  {tAi("imageTransformRecolor")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => onTransformImage("conceptualize")}
+                >
+                  {tAi("imageTransformConceptualize")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         )}
 

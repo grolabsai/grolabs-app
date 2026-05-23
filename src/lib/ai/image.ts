@@ -137,6 +137,7 @@ async function normalizeOutputToUrl(output: unknown): Promise<string | null> {
 async function uploadFromUrl(
   remoteUrl: string,
   postId: number | undefined,
+  subfolder: "generated" | "transform" = "generated",
 ): Promise<string> {
   const instanceId = await currentInstanceId();
   if (instanceId === null) throw new Error("No instance");
@@ -146,7 +147,7 @@ async function uploadFromUrl(
   const buf = Buffer.from(await res.arrayBuffer());
 
   const supabase = createServiceRoleClient();
-  const path = `${instanceId}/generated/${postId ?? "draft"}/${Date.now()}.webp`;
+  const path = `${instanceId}/${subfolder}/${postId ?? "draft"}/${Date.now()}.webp`;
   const { error } = await supabase.storage
     .from("blog-images")
     .upload(path, buf, { contentType: "image/webp", upsert: false });
@@ -154,4 +155,80 @@ async function uploadFromUrl(
 
   const { data } = supabase.storage.from("blog-images").getPublicUrl(path);
   return data.publicUrl;
+}
+
+// -----------------------------------------------------------------------
+// Image-to-image transforms
+// -----------------------------------------------------------------------
+
+export type TransformKind = "restyle" | "recolor" | "conceptualize";
+
+const TRANSFORM_STRENGTH: Record<TransformKind, number> = {
+  recolor: 0.35,
+  restyle: 0.6,
+  conceptualize: 0.75,
+};
+
+export interface TransformImageInput {
+  sourceUrl: string;
+  kind: TransformKind;
+  postId?: number;
+}
+
+export interface TransformImageResult {
+  url: string;
+  enhanced_prompt: string;
+  kind: TransformKind;
+}
+
+async function buildTransformPrompt(kind: TransformKind): Promise<string> {
+  const instanceId = await currentInstanceId();
+  const brand = await getBrandSystem(instanceId);
+  const tpl =
+    (await loadPromptTemplate(`blog.image.transform.${kind}`)) ??
+    `Transform this image in {{illustration_style}} style. Palette: primary {{primary_color}}, accent {{accent_color}}, background {{background_color}}. No text, no watermarks.`;
+  return render(tpl, {
+    illustration_style: brand.illustration_style,
+    primary_color: brand.primary_color,
+    background_color: brand.background_color,
+    accent_color: brand.accent_color,
+    text_color: brand.text_color,
+  });
+}
+
+/**
+ * Restyle / recolor / conceptualize an uploaded image into the
+ * brand's palette + illustration style. Originals stay where they
+ * are; the transform is saved to {instance_id}/transform/{post|draft}/.
+ * Model + prompt template + strength all swappable via Supabase Studio
+ * (`blog.image.transform.model`, `blog.image.transform.{kind}`).
+ */
+export async function transformImage(
+  input: TransformImageInput,
+): Promise<TransformImageResult> {
+  if (!input.sourceUrl) throw new Error("Empty source URL");
+
+  const enhanced = await buildTransformPrompt(input.kind);
+  const model =
+    (await loadPromptTemplate("blog.image.transform.model")) ??
+    "stability-ai/sdxl";
+  const strength = TRANSFORM_STRENGTH[input.kind];
+
+  const replicate = getReplicate();
+  const output = await replicate.run(model as `${string}/${string}`, {
+    input: {
+      prompt: enhanced,
+      image: input.sourceUrl,
+      prompt_strength: strength,
+      refine: "no_refiner",
+      num_inference_steps: 25,
+      // SDXL-style params; alternative models ignore unknown fields.
+    },
+  });
+
+  const url = await normalizeOutputToUrl(output);
+  if (!url) throw new Error("Replicate returned no usable output");
+
+  const saved = await uploadFromUrl(url, input.postId, "transform");
+  return { url: saved, enhanced_prompt: enhanced, kind: input.kind };
 }

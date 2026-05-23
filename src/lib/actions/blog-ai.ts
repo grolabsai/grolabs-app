@@ -9,6 +9,7 @@ import {
   type PostContext,
   type RewriteAction,
 } from "@/lib/ai/blog";
+import { suggestAltText } from "@/lib/ai/vision";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -54,4 +55,10 @@ export async function aiRewriteSelection(input: {
   const g = await gate();
   if (!g.ok) return g;
   return wrap(() => rewriteSelection(input));
+}
+
+export async function aiSuggestAltText(imageUrl: string): Promise<Result<string>> {
+  const g = await gate();
+  if (!g.ok) return g;
+  return wrap(() => suggestAltText(imageUrl));
 }

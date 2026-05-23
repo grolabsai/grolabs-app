@@ -2191,7 +2191,10 @@
       "hidePreview": "Back to editor",
       "previewEmpty": "Post is empty.",
       "savedAt": "Saved at {time}",
-      "markdownLegacy": "This post was written in Markdown (v1). You can keep editing as Markdown; new posts use the rich editor."
+      "markdownLegacy": "This post was written in Markdown (v1). You can keep editing as Markdown; new posts use the rich editor.",
+      "copyPreviewLink": "Copy preview link",
+      "previewLinkCopied": "Preview link copied",
+      "previewLinkCopyFailed": "Could not copy"
     },
     "sidebar": {
       "cover": "Cover image",
@@ -2254,7 +2257,16 @@
       "codeBlock": "Code block",
       "table": "Table",
       "youtube": "YouTube video",
-      "youtubePrompt": "YouTube video URL"
+      "youtubePrompt": "YouTube video URL",
+      "imageAlign": {
+        "left": "Align left",
+        "center": "Center",
+        "right": "Align right",
+        "full": "Full width"
+      },
+      "imageCaption": "Edit caption",
+      "imageCaptionPrompt": "Caption text (empty to remove)",
+      "imageAlt": "Edit alt text"
     },
     "ai": {
       "suggestTitles": "Suggest title",
@@ -2285,7 +2297,8 @@
       "imageRegenerate": "Regenerate",
       "imageInsert": "Insert",
       "imagePromptRequired": "Enter a prompt for the image",
-      "imageInserted": "Image inserted"
+      "imageInserted": "Image inserted",
+      "imageAltSuggested": "Alt text suggested"
     },
     "public": {
       "indexTitle": "Blog",
@@ -2296,6 +2309,15 @@
       "filterByTag": "Filtered by:",
       "clearFilter": "Clear",
       "related": "Keep reading"
+    },
+    "preview": {
+      "badge": "Preview",
+      "notIndexed": "Not indexed by search engines",
+      "status": {
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "published": "Published"
+      }
     }
   }
 }

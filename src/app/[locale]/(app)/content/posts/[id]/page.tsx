@@ -18,7 +18,7 @@ export default async function EditPostPage({
   const { data: post } = await supabase
     .from("post")
     .select(
-      "post_id, title, slug, summary, content, content_format, cover_image_url, status, tags, published_at",
+      "post_id, title, slug, summary, content, content_format, cover_image_url, status, tags, published_at, preview_token",
     )
     .eq("post_id", postId)
     .maybeSingle();
@@ -45,6 +45,7 @@ export default async function EditPostPage({
         tags: (post.tags as string[] | null) ?? [],
         published_at: post.published_at as string | null,
         short_link_code: (shortLink?.code as string | undefined) ?? null,
+        preview_token: post.preview_token as string,
       }}
     />
   );

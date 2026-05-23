@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Icon } from "@/components/ui/icon";
-import { Upload, Trash2, Save, X, Clock, Sparkles, LinkIcon, Copy } from "lucide-react";
+import { Upload, Trash2, Save, X, Clock, Sparkles, LinkIcon, Copy, Eye } from "lucide-react";
 import {
   createPost,
   updatePost,
@@ -54,6 +54,7 @@ export interface PostEditorInitial {
   tags?: string[];
   published_at?: string | null;
   short_link_code?: string | null;
+  preview_token?: string;
 }
 
 const AUTOSAVE_DEBOUNCE_MS = 5000;
@@ -318,6 +319,24 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {isEdit && initial?.preview_token && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const url = `${window.location.origin}/blog/preview/${initial.preview_token}`;
+                navigator.clipboard.writeText(url).then(
+                  () => toast.success(t("editor.previewLinkCopied")),
+                  () => toast.error(t("editor.previewLinkCopyFailed")),
+                );
+              }}
+              title={t("editor.copyPreviewLink")}
+            >
+              <Icon icon={Eye} size={14} />
+              {t("editor.copyPreviewLink")}
+            </Button>
+          )}
           {isEdit && (
             <Button
               type="button"

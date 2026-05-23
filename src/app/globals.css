@@ -2428,3 +2428,84 @@ button {
   border: 0;
   border-radius: 6px;
 }
+
+/* =============================================================================
+   Blog editor — image alignment + captions
+   =============================================================================
+   Custom <figure> wrapping for the FigureImage Tiptap extension.
+   Shared between editor (.tiptap-blog) and reading article (.prose).
+*/
+
+.tiptap-blog figure,
+.prose figure {
+  margin: 1.5rem 0;
+}
+.tiptap-blog figure figcaption,
+.prose figure figcaption {
+  font-size: 0.875em;
+  color: var(--blog-muted, hsl(var(--muted-foreground)));
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Alignment variants. Float wraps surrounding paragraphs; full breaks out. */
+.tiptap-blog figure.img-align-center,
+.prose figure.img-align-center {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+}
+.tiptap-blog figure.img-align-center img,
+.prose figure.img-align-center img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tiptap-blog figure.img-align-left,
+.prose figure.img-align-left {
+  float: left;
+  max-width: 45%;
+  margin-right: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.tiptap-blog figure.img-align-right,
+.prose figure.img-align-right {
+  float: right;
+  max-width: 45%;
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+/* Full width — breaks out of the prose max-width to fill the column.
+   Useful for hero shots, screenshots that need legibility, diagrams. */
+.tiptap-blog figure.img-align-full,
+.prose figure.img-align-full {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+.tiptap-blog figure.img-align-full img,
+.prose figure.img-align-full img {
+  width: 100%;
+  display: block;
+}
+
+/* Image selected in editor — subtle ring. */
+.tiptap-blog figure.ProseMirror-selectednode {
+  outline: 2px solid var(--blog-primary, hsl(var(--ring)));
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* Clear floats after a section break or paragraph that contains a left/right
+   figure. Don't apply to the floated figure itself. */
+.prose p::after,
+.tiptap-blog p::after {
+  content: "";
+  display: table;
+  clear: both;
+}

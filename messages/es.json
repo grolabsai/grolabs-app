@@ -2191,7 +2191,10 @@
       "hidePreview": "Volver al editor",
       "previewEmpty": "El artículo está vacío.",
       "savedAt": "Guardado a las {time}",
-      "markdownLegacy": "Este artículo se escribió en Markdown (v1). Lo seguís editando como Markdown; los nuevos artículos usan el editor enriquecido."
+      "markdownLegacy": "Este artículo se escribió en Markdown (v1). Lo seguís editando como Markdown; los nuevos artículos usan el editor enriquecido.",
+      "copyPreviewLink": "Copiar enlace de previsualización",
+      "previewLinkCopied": "Enlace de previsualización copiado",
+      "previewLinkCopyFailed": "No se pudo copiar"
     },
     "sidebar": {
       "cover": "Imagen de portada",
@@ -2254,7 +2257,16 @@
       "codeBlock": "Bloque de código",
       "table": "Tabla",
       "youtube": "Video de YouTube",
-      "youtubePrompt": "URL del video de YouTube"
+      "youtubePrompt": "URL del video de YouTube",
+      "imageAlign": {
+        "left": "Alinear a la izquierda",
+        "center": "Centrar",
+        "right": "Alinear a la derecha",
+        "full": "Ancho completo"
+      },
+      "imageCaption": "Editar leyenda",
+      "imageCaptionPrompt": "Texto de la leyenda (vacío para quitar)",
+      "imageAlt": "Editar texto alternativo"
     },
     "ai": {
       "suggestTitles": "Sugerir título",
@@ -2285,7 +2297,8 @@
       "imageRegenerate": "Regenerar",
       "imageInsert": "Insertar",
       "imagePromptRequired": "Escribí un prompt para la imagen",
-      "imageInserted": "Imagen insertada"
+      "imageInserted": "Imagen insertada",
+      "imageAltSuggested": "Texto alternativo sugerido"
     },
     "public": {
       "indexTitle": "Blog",
@@ -2296,6 +2309,15 @@
       "filterByTag": "Filtrado por:",
       "clearFilter": "Limpiar",
       "related": "Seguí leyendo"
+    },
+    "preview": {
+      "badge": "Vista previa",
+      "notIndexed": "No indexado por buscadores",
+      "status": {
+        "draft": "Borrador",
+        "scheduled": "Programado",
+        "published": "Publicado"
+      }
     }
   }
 }

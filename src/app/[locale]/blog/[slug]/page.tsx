@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
@@ -110,10 +111,13 @@ export default async function PublicPostPage({
 
       <article className="prose prose-lg max-w-none">
         {post.cover_image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={post.cover_image_url}
-            alt=""
+            alt={post.title}
+            width={1200}
+            height={600}
+            priority
+            sizes="(max-width: 768px) 100vw, 672px"
             className="mb-8 aspect-[2/1] w-full rounded-lg border object-cover"
           />
         ) : null}

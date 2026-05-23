@@ -1,9 +1,21 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
 
 /**
- * Single Anthropic client per process. Server-only — never import from a
- * client component. ANTHROPIC_API_KEY is read from the environment.
+ * Blog AI module — prompts come from the `prompt_template` table, not
+ * code. The `key` argument to `loadPrompt()` matches the row's `key`
+ * column. Resolution order: the writer's instance wins, instance 0
+ * (GroLabs template) is the fallback. Edit prompts via Supabase Studio
+ * — no deploy needed.
+ *
+ * See docs/policy/blog.md §AI and supabase/migrations/20260523000004_prompt_template.sql.
  */
+
+// -----------------------------------------------------------------------
+// Anthropic client (lazy, server-only)
+// -----------------------------------------------------------------------
+
 let _client: Anthropic | null = null;
 
 function getClient(): Anthropic {
@@ -18,20 +30,43 @@ function getClient(): Anthropic {
   return _client;
 }
 
+// -----------------------------------------------------------------------
+// Prompt loading + rendering
+// -----------------------------------------------------------------------
+
 /**
- * House voice for the blog. v1 is a single static string; v2 (per the
- * blog policy doc §6.2) will read this from `instance.brand_system.voice_guide`
- * so each tenant gets their own voice.
+ * Load a prompt row by key. Falls back from the writer's instance to
+ * instance 0 (template) via `.in(...)` + ORDER BY DESC + LIMIT 1.
+ * Throws if neither resolves — that means the seed is missing.
  */
-const DEFAULT_VOICE = `Tone: clear, direct, no fluff. Sentence-level concrete.
-Avoid: marketing-speak, hedging ("perhaps", "might be worth"), filler intros ("In today's fast-paced…").
-Prefer: concrete examples over abstractions; short paragraphs; second-person ("you") over first-person plural ("we").`;
-
-function systemPrompt(voice: string = DEFAULT_VOICE): string {
-  return `You are an editor helping a writer publish posts on their blog. ${voice}
-
-Output exactly what the user asked for and nothing else. No preamble like "Here's…" or "Here are some options:". No closing meta-commentary. Match the language of the post (Spanish/English) automatically from context.`;
+async function loadPrompt(key: string): Promise<string> {
+  const instanceId = await currentInstanceId();
+  const supabase = await createClient();
+  const ids = instanceId === null || instanceId === 0 ? [0] : [instanceId, 0];
+  const { data, error } = await supabase
+    .from("prompt_template")
+    .select("template, instance_id")
+    .in("instance_id", ids)
+    .eq("key", key)
+    .order("instance_id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`prompt_template lookup failed for "${key}": ${error.message}`);
+  if (!data) throw new Error(`prompt_template missing for "${key}". Re-run the seed migration.`);
+  return data.template as string;
 }
+
+/**
+ * Substitute `{{name}}` placeholders. Unknown placeholders render empty
+ * (intentional — lets the caller pass a partial set without errors).
+ */
+function render(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, name) => vars[name] ?? "");
+}
+
+// -----------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------
 
 /**
  * Strip HTML tags for context delivery to the model. Tiptap content is
@@ -46,39 +81,6 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-interface CompleteOpts {
-  prompt: string;
-  maxTokens: number;
-  voice?: string;
-}
-
-/**
- * Server-side streaming wrapper. Uses `stream.finalMessage()` to avoid SDK
- * HTTP timeouts on longer outputs while still returning the full text to
- * the caller. The streaming benefit here is timeout resilience, not
- * incremental UI updates — client-side streaming is a v2 concern.
- */
-async function complete({ prompt, maxTokens, voice }: CompleteOpts): Promise<string> {
-  const client = getClient();
-  const stream = client.messages.stream({
-    model: "claude-opus-4-7",
-    max_tokens: maxTokens,
-    system: systemPrompt(voice),
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const finalMessage = await stream.finalMessage();
-  const out: string[] = [];
-  for (const block of finalMessage.content) {
-    if (block.type === "text") out.push(block.text);
-  }
-  return out.join("").trim();
-}
-
-// -----------------------------------------------------------------------
-// Public operations
-// -----------------------------------------------------------------------
-
 export interface PostContext {
   title?: string | null;
   summary?: string | null;
@@ -86,6 +88,11 @@ export interface PostContext {
   contentFormat?: "markdown" | "html";
 }
 
+/**
+ * Assemble the post context block injected into every prompt. Kept in
+ * code (not in DB) because it has conditional logic — fields are
+ * omitted when empty rather than rendered as "(none)".
+ */
 function contextBlock(ctx: PostContext): string {
   const lines: string[] = [];
   if (ctx.title) lines.push(`Title: ${ctx.title}`);
@@ -98,54 +105,93 @@ function contextBlock(ctx: PostContext): string {
   return lines.join("\n\n");
 }
 
+interface CompleteOpts {
+  systemKey?: string;
+  userPrompt: string;
+  maxTokens: number;
+  voiceKey?: string;
+}
+
+async function buildSystem(systemKey: string, voiceKey: string): Promise<string> {
+  const [systemTemplate, voice] = await Promise.all([
+    loadPrompt(systemKey),
+    loadPrompt(voiceKey),
+  ]);
+  return render(systemTemplate, { voice_guide: voice });
+}
+
 /**
- * Suggest 3 title options for the current post. Returns one per line.
+ * Server-side streaming wrapper. Uses `stream.finalMessage()` to avoid
+ * SDK HTTP timeouts on longer outputs while still returning the full
+ * text. Streaming benefit here is timeout resilience; client-side
+ * streaming is a v2 concern.
  */
+async function complete({
+  systemKey = "blog.system_prompt",
+  voiceKey = "blog.voice_default",
+  userPrompt,
+  maxTokens,
+}: CompleteOpts): Promise<string> {
+  const system = await buildSystem(systemKey, voiceKey);
+  const client = getClient();
+  const stream = client.messages.stream({
+    model: "claude-opus-4-7",
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+  const finalMessage = await stream.finalMessage();
+  const out: string[] = [];
+  for (const block of finalMessage.content) {
+    if (block.type === "text") out.push(block.text);
+  }
+  return out.join("").trim();
+}
+
+// -----------------------------------------------------------------------
+// Public operations — each loads its prompt template from the DB
+// -----------------------------------------------------------------------
+
 export async function suggestTitles(ctx: PostContext): Promise<string[]> {
   if (!ctx.content?.trim()) {
     throw new Error("Cannot suggest a title for empty content");
   }
+  const template = await loadPrompt("blog.suggest_titles");
   const text = await complete({
     maxTokens: 400,
-    prompt: `Suggest 3 candidate titles for the post below. Output exactly 3 lines, one title per line. No numbering, no quotes, no commentary.
-
-${contextBlock(ctx)}`,
+    userPrompt: render(template, { post_context: contextBlock(ctx) }),
   });
   return text
     .split("\n")
-    .map((l) => l.replace(/^\s*[-•*\d.)]+\s*/, "").replace(/^["'"]|["'"]$/g, "").trim())
+    .map((l) =>
+      l
+        .replace(/^\s*[-•*\d.)]+\s*/, "")
+        .replace(/^["'"]|["'"]$/g, "")
+        .trim(),
+    )
     .filter(Boolean)
     .slice(0, 3);
 }
 
-/**
- * Generate a single SEO summary (1–2 sentences, ~155 chars) for the post.
- */
 export async function generateSummary(ctx: PostContext): Promise<string> {
   if (!ctx.content?.trim()) {
     throw new Error("Cannot generate a summary for empty content");
   }
+  const template = await loadPrompt("blog.generate_summary");
   return complete({
     maxTokens: 250,
-    prompt: `Write a single SEO meta description for the post below. 1–2 sentences, aim for ~155 characters, never exceed 200. State what the reader learns and why it matters. Output only the description.
-
-${contextBlock(ctx)}`,
+    userPrompt: render(template, { post_context: contextBlock(ctx) }),
   });
 }
 
-/**
- * Continue writing from the end of the current content. Returns ~1–2
- * paragraphs that pick up where the post leaves off.
- */
 export async function continueWriting(ctx: PostContext): Promise<string> {
   if (!ctx.content?.trim()) {
     throw new Error("Cannot continue empty content");
   }
+  const template = await loadPrompt("blog.continue_writing");
   return complete({
     maxTokens: 800,
-    prompt: `Continue the post below from where it ends. Write 1–2 paragraphs (~120 words) that extend the line of thought naturally. Do not summarize what was already said. Do not start with a transitional phrase like "Furthermore" or "Additionally". Just keep writing.
-
-${contextBlock(ctx)}`,
+    userPrompt: render(template, { post_context: contextBlock(ctx) }),
   });
 }
 
@@ -157,31 +203,21 @@ export type RewriteAction =
   | "casual"
   | "grammar";
 
-const REWRITE_INSTRUCTIONS: Record<RewriteAction, string> = {
-  shorter: "Make it shorter and tighter without losing meaning. Cut filler.",
-  longer: "Expand it with one concrete example or specific detail. Don't pad.",
-  clearer:
-    "Rewrite for maximum clarity. Replace abstractions with concrete language. Keep the same meaning.",
-  formal: "Rewrite in a more formal, professional register.",
-  casual: "Rewrite in a more conversational, casual register.",
-  grammar:
-    "Fix grammar, spelling, and punctuation. Keep the voice and structure intact. Don't rewrite for style.",
-};
-
 export interface RewriteInput {
   selection: string;
   action: RewriteAction;
   context?: PostContext;
 }
 
-/**
- * Rewrite a selection. Returns only the rewritten text (no quotes, no
- * preamble), so the editor can drop it back where the selection was.
- */
 export async function rewriteSelection(input: RewriteInput): Promise<string> {
   if (!input.selection.trim()) {
     throw new Error("Cannot rewrite an empty selection");
   }
+  const [template, instruction] = await Promise.all([
+    loadPrompt("blog.rewrite.template"),
+    loadPrompt(`blog.rewrite.instruction.${input.action}`),
+  ]);
+
   const surrounding = input.context?.content
     ? `\n\nFor context, the surrounding post is:\n${
         input.context.contentFormat === "html"
@@ -192,11 +228,10 @@ export async function rewriteSelection(input: RewriteInput): Promise<string> {
 
   return complete({
     maxTokens: Math.min(2000, Math.max(400, input.selection.length * 4)),
-    prompt: `Rewrite the SELECTION below. ${REWRITE_INSTRUCTIONS[input.action]}
-
-Output only the rewritten text — no quotes, no preamble, no commentary. Match the original language.
-
-SELECTION:
-${input.selection}${surrounding}`,
+    userPrompt: render(template, {
+      instruction,
+      selection: input.selection,
+      surrounding_context: surrounding,
+    }),
   });
 }

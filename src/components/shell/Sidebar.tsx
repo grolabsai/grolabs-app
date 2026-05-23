@@ -37,6 +37,7 @@ import {
   Database,
   Library,
   Wrench,
+  FileText,
   ChevronRight,
   ChevronDown,
   type LucideIcon,
@@ -189,6 +190,14 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       items: [
         { href: "/import" as Route, label: tNav("import"), icon: Download },
         { href: "/sync" as Route, label: tNav("sync"), icon: RefreshCw },
+      ],
+    },
+    {
+      key: "content",
+      title: tNav("content"),
+      icon: FileText,
+      items: [
+        { href: "/content/posts" as Route, label: tNav("blog"), icon: FileText },
       ],
     },
     {

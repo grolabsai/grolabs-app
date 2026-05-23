@@ -32,7 +32,9 @@
     "pricingProviders": "Providers",
     "pricingChanges": "Change batches",
     "pricingViolations": "Authorizations",
-    "pricingSync": "Sync"
+    "pricingSync": "Sync",
+    "content": "Content",
+    "blog": "Blog"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -2149,6 +2151,65 @@
       "toastProviderError": "Could not create the provider",
       "toastImportError": "Error importing the list",
       "toastImportSuccess": "Imported {matched} of {total} products"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "newPost": "New post",
+    "editTitle": "Edit post",
+    "empty": "You haven't written any posts yet.",
+    "noInstance": "Session expired — please sign in again.",
+    "colTitle": "Title",
+    "colStatus": "Status",
+    "colUpdated": "Updated",
+    "colSlug": "Slug",
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "fields": {
+      "title": "Title",
+      "titlePlaceholder": "Post title",
+      "slug": "Slug (URL)",
+      "slugPlaceholder": "auto-from-title",
+      "summary": "Summary (SEO meta description)",
+      "content": "Content (Markdown)",
+      "contentPlaceholder": "Start writing in Markdown. Use ## for headings, **bold**, *italics*, [links](url), and images via the button above."
+    },
+    "editor": {
+      "save": "Save",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "insertImage": "Insert image",
+      "uploading": "Uploading…",
+      "showPreview": "Preview",
+      "hidePreview": "Back to editor",
+      "previewEmpty": "Post is empty."
+    },
+    "sidebar": {
+      "cover": "Cover image",
+      "uploadCover": "Upload cover",
+      "removeCover": "Remove cover",
+      "dangerZone": "Danger zone",
+      "delete": "Delete post"
+    },
+    "confirm": {
+      "delete": "Delete this post? This cannot be undone."
+    },
+    "toast": {
+      "saved": "Changes saved",
+      "created": "Post created",
+      "published": "Post published",
+      "unpublished": "Post moved to draft",
+      "coverUploaded": "Cover uploaded",
+      "imageInserted": "Image inserted into content",
+      "titleRequired": "Title is required",
+      "saveFirst": "Save the post before publishing"
+    },
+    "public": {
+      "indexTitle": "Blog",
+      "indexDescription": "Notes, ideas, and lessons.",
+      "empty": "No posts published yet."
     }
   }
 }

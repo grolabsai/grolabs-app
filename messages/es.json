@@ -32,7 +32,9 @@
     "pricingProviders": "Proveedores",
     "pricingChanges": "Lotes de cambios",
     "pricingViolations": "Autorizaciones",
-    "pricingSync": "Sincronización"
+    "pricingSync": "Sincronización",
+    "content": "Contenido",
+    "blog": "Blog"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -2149,6 +2151,65 @@
       "toastProviderError": "No se pudo crear el proveedor",
       "toastImportError": "Error al importar la lista",
       "toastImportSuccess": "Importados {matched} de {total} productos"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "newPost": "Nuevo artículo",
+    "editTitle": "Editar artículo",
+    "empty": "Todavía no escribiste ningún artículo.",
+    "noInstance": "Sesión expirada — volvé a iniciar sesión.",
+    "colTitle": "Título",
+    "colStatus": "Estado",
+    "colUpdated": "Actualizado",
+    "colSlug": "Slug",
+    "status": {
+      "draft": "Borrador",
+      "published": "Publicado"
+    },
+    "fields": {
+      "title": "Título",
+      "titlePlaceholder": "Título del artículo",
+      "slug": "Slug (URL)",
+      "slugPlaceholder": "se-genera-desde-el-titulo",
+      "summary": "Resumen (descripción meta para SEO)",
+      "content": "Contenido (Markdown)",
+      "contentPlaceholder": "Empezá a escribir en Markdown. Usá ## para encabezados, **negrita**, *cursiva*, [enlaces](url) e imágenes con el botón de arriba."
+    },
+    "editor": {
+      "save": "Guardar",
+      "publish": "Publicar",
+      "unpublish": "Despublicar",
+      "insertImage": "Insertar imagen",
+      "uploading": "Subiendo…",
+      "showPreview": "Vista previa",
+      "hidePreview": "Volver al editor",
+      "previewEmpty": "El artículo está vacío."
+    },
+    "sidebar": {
+      "cover": "Imagen de portada",
+      "uploadCover": "Subir portada",
+      "removeCover": "Quitar portada",
+      "dangerZone": "Zona de riesgo",
+      "delete": "Eliminar artículo"
+    },
+    "confirm": {
+      "delete": "¿Eliminar este artículo? Esta acción no se puede deshacer."
+    },
+    "toast": {
+      "saved": "Cambios guardados",
+      "created": "Artículo creado",
+      "published": "Artículo publicado",
+      "unpublished": "Artículo movido a borrador",
+      "coverUploaded": "Portada subida",
+      "imageInserted": "Imagen insertada en el contenido",
+      "titleRequired": "El título es obligatorio",
+      "saveFirst": "Guardá el artículo antes de publicarlo"
+    },
+    "public": {
+      "indexTitle": "Blog",
+      "indexDescription": "Apuntes, notas y aprendizajes.",
+      "empty": "Todavía no hay artículos publicados."
     }
   }
 }

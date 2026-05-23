@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
+import { getBrandSystem } from "@/lib/blog/brand";
 
 /**
  * Blog AI module — prompts come from the `prompt_template` table, not
@@ -109,13 +110,27 @@ interface CompleteOpts {
   systemKey?: string;
   userPrompt: string;
   maxTokens: number;
-  voiceKey?: string;
 }
 
-async function buildSystem(systemKey: string, voiceKey: string): Promise<string> {
+/**
+ * Resolve the voice guide for the current writer's instance.
+ *   1. brand_system.voice_guide for that instance (if non-empty)
+ *   2. brand_system.voice_guide for instance 0 (if non-empty)
+ *   3. prompt_template `blog.voice_default` row (legacy fallback)
+ * This is the place per-post writing_strategy.voice_guide will hook in
+ * later (consulting agent PR).
+ */
+async function resolveVoice(): Promise<string> {
+  const instanceId = await currentInstanceId();
+  const brand = await getBrandSystem(instanceId);
+  if (brand.voice_guide?.trim()) return brand.voice_guide;
+  return loadPrompt("blog.voice_default");
+}
+
+async function buildSystem(systemKey: string): Promise<string> {
   const [systemTemplate, voice] = await Promise.all([
     loadPrompt(systemKey),
-    loadPrompt(voiceKey),
+    resolveVoice(),
   ]);
   return render(systemTemplate, { voice_guide: voice });
 }
@@ -128,11 +143,10 @@ async function buildSystem(systemKey: string, voiceKey: string): Promise<string>
  */
 async function complete({
   systemKey = "blog.system_prompt",
-  voiceKey = "blog.voice_default",
   userPrompt,
   maxTokens,
 }: CompleteOpts): Promise<string> {
-  const system = await buildSystem(systemKey, voiceKey);
+  const system = await buildSystem(systemKey);
   const client = getClient();
   const stream = client.messages.stream({
     model: "claude-opus-4-7",

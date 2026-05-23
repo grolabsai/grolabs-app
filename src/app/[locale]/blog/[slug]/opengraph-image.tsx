@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { instanceIdForHost } from "@/lib/blog/host";
+import { getBrandSystem } from "@/lib/blog/brand";
 
 export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
@@ -9,11 +10,8 @@ export const alt = "Blog post";
 
 /**
  * Generated OpenGraph image — used when a post has no cover_image_url.
- * When a cover IS set, `generateMetadata` in page.tsx overrides
- * `openGraph.images` with the cover URL, so this route is the fallback.
- *
- * Branded text-only card: title on cream background with serif type.
- * Read post by slug + host-scoped instance, matching the public page.
+ * Reads `brand_system` for the post's instance so each tenant's
+ * social cards match their own colors + heading font.
  */
 export default async function OgImage({
   params,
@@ -34,18 +32,13 @@ export default async function OgImage({
 
   const title = (data?.title as string | undefined) ?? "Blog";
   const summary = (data?.summary as string | undefined) ?? "";
+  const postInstanceId = data?.instance_id as number | undefined;
 
-  // Tenant name pulled lazily for the footer line.
-  let tenantName = "";
-  const dataInstanceId = data?.instance_id as number | undefined;
-  if (dataInstanceId !== undefined) {
-    const { data: instanceRow } = await supabase
-      .from("instance")
-      .select("name")
-      .eq("instance_id", dataInstanceId)
-      .maybeSingle();
-    tenantName = (instanceRow?.name as string | undefined) ?? "";
-  }
+  const brand = await getBrandSystem(postInstanceId ?? instanceId);
+
+  // next/og supports font-family CSS strings but not custom font loading
+  // without explicit Font registration. We pass the brand's heading_font
+  // string through; the serif/sans fallback chain ensures something renders.
 
   return new ImageResponse(
     (
@@ -53,31 +46,31 @@ export default async function OgImage({
         style={{
           width: "100%",
           height: "100%",
-          background: "#F4F1EA",
+          background: brand.background_color,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 72,
-          fontFamily: "Georgia, serif",
+          fontFamily: brand.heading_font,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div
             style={{
               fontSize: 28,
-              color: "#9C5530",
+              color: brand.primary_color,
               letterSpacing: 2,
               textTransform: "uppercase",
-              fontFamily: "sans-serif",
+              fontFamily: brand.body_font,
             }}
           >
-            {tenantName || "Blog"}
+            {brand.display_name || "Blog"}
           </div>
           <div
             style={{
               fontSize: title.length > 60 ? 64 : 80,
               fontWeight: 700,
-              color: "#1A1612",
+              color: brand.text_color,
               lineHeight: 1.1,
             }}
           >
@@ -87,7 +80,7 @@ export default async function OgImage({
             <div
               style={{
                 fontSize: 32,
-                color: "#5C5247",
+                color: brand.muted_color,
                 lineHeight: 1.3,
                 fontStyle: "italic",
               }}
@@ -100,8 +93,8 @@ export default async function OgImage({
         <div
           style={{
             fontSize: 22,
-            color: "#9C5530",
-            fontFamily: "sans-serif",
+            color: brand.primary_color,
+            fontFamily: brand.body_font,
             letterSpacing: 1,
           }}
         >

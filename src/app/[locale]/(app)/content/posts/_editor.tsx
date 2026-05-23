@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Icon } from "@/components/ui/icon";
-import { Upload, Trash2, Save, X, Clock, Sparkles } from "lucide-react";
+import { Upload, Trash2, Save, X, Clock, Sparkles, LinkIcon, Copy } from "lucide-react";
 import {
   createPost,
   updatePost,
@@ -24,6 +24,7 @@ import {
   aiSuggestTitles,
   aiGenerateSummary,
 } from "@/lib/actions/blog-ai";
+import { ensureShortLinkForPost } from "@/lib/actions/short-link";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ export interface PostEditorInitial {
   status?: PostStatus;
   tags?: string[];
   published_at?: string | null;
+  short_link_code?: string | null;
 }
 
 const AUTOSAVE_DEBOUNCE_MS = 5000;
@@ -78,6 +80,9 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [aiPending, setAiPending] = useState(false);
   const [titleSuggestions, setTitleSuggestions] = useState<string[] | null>(null);
+  const [shortCode, setShortCode] = useState<string | null>(
+    initial?.short_link_code ?? null,
+  );
   const dirtyRef = useRef(false);
 
   const isEdit = Boolean(initial?.post_id);
@@ -205,6 +210,14 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
       toast.success(
         next === "published" ? t("toast.published") : t("toast.unpublished"),
       );
+      // Mint a short link on first publish (idempotent — re-publishing
+      // returns the existing code).
+      if (next === "published" && !shortCode) {
+        const publicSlug = slug || title;
+        const targetUrl = `${window.location.origin}/blog/${publicSlug}`;
+        const slRes = await ensureShortLinkForPost(initial.post_id!, targetUrl);
+        if (slRes.ok) setShortCode(slRes.data.code);
+      }
     });
   }
 
@@ -501,6 +514,16 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
             />
           </div>
 
+          {isEdit && status === "published" && shortCode && (
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Icon icon={LinkIcon} size={12} />
+                {t("sidebar.shortLink")}
+              </h3>
+              <ShortLinkRow code={shortCode} />
+            </div>
+          )}
+
           {isEdit && (
             <div className="rounded-lg border bg-card p-4">
               <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -576,6 +599,36 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function ShortLinkRow({ code }: { code: string }) {
+  const t = useTranslations("blog");
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/s/${code}`
+      : `/s/${code}`;
+  return (
+    <div className="space-y-2">
+      <div className="break-all rounded border bg-background px-2 py-1 font-mono text-xs">
+        {url}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          navigator.clipboard.writeText(url).then(
+            () => toast.success(t("sidebar.shortLinkCopied")),
+            () => toast.error(t("sidebar.shortLinkCopyFailed")),
+          );
+        }}
+        className="w-full"
+      >
+        <Icon icon={Copy} size={12} />
+        {t("sidebar.shortLinkCopy")}
+      </Button>
     </div>
   );
 }

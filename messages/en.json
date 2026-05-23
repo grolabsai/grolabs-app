@@ -2204,6 +2204,10 @@
       "schedule": "Schedule publish",
       "schedulePublish": "Schedule",
       "aiAssist": "AI assist",
+      "shortLink": "Short link",
+      "shortLinkCopy": "Copy link",
+      "shortLinkCopied": "Link copied",
+      "shortLinkCopyFailed": "Could not copy",
       "dangerZone": "Danger zone",
       "delete": "Delete post"
     },

@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
+import { FigureImage, type FigureImageAlign } from "./_figure-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import Typography from "@tiptap/extension-typography";
@@ -18,6 +18,7 @@ import Highlight from "@tiptap/extension-highlight";
 import Youtube from "@tiptap/extension-youtube";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
+import { BubbleMenuPlugin } from "@tiptap/extension-bubble-menu";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SlashCommand, buildSlashRender, type SlashCommandItem } from "./_slash-command";
 import { useTranslations } from "next-intl";
@@ -52,12 +53,16 @@ import {
   Braces,
   Palette,
   X as XIcon,
+  Maximize2,
+  Captions,
+  Type,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadPostImage } from "@/lib/actions/post";
 import {
   aiContinueWriting,
   aiRewriteSelection,
+  aiSuggestAltText,
 } from "@/lib/actions/blog-ai";
 import { aiGenerateImage } from "@/lib/actions/blog-image";
 import type { RewriteAction } from "@/lib/ai/blog";
@@ -186,6 +191,10 @@ export function TiptapEditor({
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imageAltText, setImageAltText] = useState("");
   const lowlight = useMemo(() => createLowlight(common), []);
+  // Ref so the Tiptap editorProps handlers (created at mount time)
+  // can reach the latest editor instance even after later re-renders.
+  const uploadHandlerRef = useRef<(file: File) => void>(() => {});
+  const bubbleMenuRef = useRef<HTMLDivElement | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -198,7 +207,7 @@ export function TiptapEditor({
         autolink: true,
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       }),
-      Image.configure({ inline: false, allowBase64: false }),
+      FigureImage.configure({ inline: false, allowBase64: false }),
       Placeholder.configure({
         placeholder: ({ node }) =>
           node.type.name === "paragraph"
@@ -244,10 +253,36 @@ export function TiptapEditor({
     ],
     content: initialHTML || "<p></p>",
     immediatelyRender: false,
+    // Re-render React on every transaction so toolbar buttons that read
+    // `editor.isActive(...)` reflect the current selection (notably the
+    // image-align/caption buttons that only show when an image is
+    // selected). Cheap for our editor size; replace with `useEditorState`
+    // if it becomes a perf bottleneck.
+    shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: {
         class:
           "prose prose-sm max-w-none min-h-[400px] focus:outline-none p-4 border rounded-md bg-background tiptap-blog",
+      },
+      handleDrop(view, event) {
+        const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+          f.type.startsWith("image/"),
+        );
+        if (files.length === 0) return false;
+        event.preventDefault();
+        for (const file of files) uploadHandlerRef.current(file);
+        return true;
+      },
+      handlePaste(view, event) {
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const imageItems = items.filter((it) => it.type.startsWith("image/"));
+        if (imageItems.length === 0) return false;
+        event.preventDefault();
+        for (const item of imageItems) {
+          const file = item.getAsFile();
+          if (file) uploadHandlerRef.current(file);
+        }
+        return true;
       },
     },
     onUpdate({ editor }) {
@@ -261,6 +296,32 @@ export function TiptapEditor({
     };
   }, [editor]);
 
+  // Bubble menu — register the ProseMirror plugin after both the
+  // editor and the menu DOM element are mounted. Tiptap v3 moved
+  // BubbleMenu to a non-React extension that needs an HTMLElement.
+  useEffect(() => {
+    if (!editor || !bubbleMenuRef.current) return;
+    const el = bubbleMenuRef.current;
+    el.style.visibility = "hidden"; // hidden until first show
+    const plugin = BubbleMenuPlugin({
+      pluginKey: "bubbleMenu",
+      editor,
+      element: el,
+      updateDelay: 100,
+      shouldShow: ({ editor: ed, from, to }) => {
+        if (from === to) return false;
+        if (ed.isActive("codeBlock")) return false;
+        // The image toolbar above already handles images.
+        if (ed.isActive("image")) return false;
+        return true;
+      },
+    });
+    editor.registerPlugin(plugin);
+    return () => {
+      editor.unregisterPlugin("bubbleMenu");
+    };
+  }, [editor]);
+
   async function insertImage() {
     fileInputRef.current?.click();
   }
@@ -269,11 +330,16 @@ export function TiptapEditor({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !editor) return;
-    // Prompt for alt text before uploading. Empty alt is allowed (decorative),
-    // but the prompt nudges the writer to think about accessibility.
-    const altRaw = window.prompt(t("imageAltPrompt"), "");
-    if (altRaw === null) return;
-    const alt = altRaw.trim();
+    await uploadAndInsertFile(file);
+  }
+
+  /**
+   * Upload a File/Blob to the inline-images bucket, suggest alt text
+   * via Claude vision in parallel, and insert into the editor. Used
+   * by the toolbar button, drag-and-drop, and paste-from-clipboard.
+   */
+  async function uploadAndInsertFile(file: File) {
+    if (!editor) return;
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
@@ -284,8 +350,41 @@ export function TiptapEditor({
       toast.error(res.error);
       return;
     }
-    editor.chain().focus().setImage({ src: res.url, alt }).run();
+    // Insert immediately with empty alt; suggest in the background so
+    // the writer can keep typing. They can edit it later via the alt
+    // input on the image (alignment toolbar — separate feature).
+    editor.chain().focus().setImage({ src: res.url, alt: "" }).run();
+
+    aiSuggestAltText(res.url).then((altRes) => {
+      if (!altRes.ok || !editor) return;
+      // Find the image node we just inserted and update its alt attr.
+      const { state } = editor;
+      let imagePos: number | null = null;
+      state.doc.descendants((node, pos) => {
+        if (node.type.name === "image" && node.attrs.src === res.url) {
+          imagePos = pos;
+          return false;
+        }
+      });
+      if (imagePos !== null) {
+        editor
+          .chain()
+          .focus(imagePos)
+          .updateAttributes("image", { alt: altRes.data })
+          .setNodeSelection(imagePos)
+          .blur()
+          .run();
+        toast.success(tAi("imageAltSuggested"));
+      }
+    });
   }
+
+  // Keep the upload handler ref pointed at the latest closure so
+  // editorProps.handleDrop / handlePaste (created at mount) reach
+  // the current editor instance.
+  useEffect(() => {
+    uploadHandlerRef.current = uploadAndInsertFile;
+  });
 
   function promptLink() {
     if (!editor) return;
@@ -615,6 +714,72 @@ export function TiptapEditor({
           <Icon icon={ImageIcon} size={14} />
         </button>
 
+        {editor.isActive("image") && (
+          <>
+            <div className="mx-1 h-5 w-px bg-border" />
+            {(["left", "center", "right", "full"] as FigureImageAlign[]).map(
+              (a) => {
+                const Icn =
+                  a === "left"
+                    ? AlignLeft
+                    : a === "right"
+                    ? AlignRight
+                    : a === "full"
+                    ? Maximize2
+                    : AlignCenter;
+                return (
+                  <button
+                    key={a}
+                    type="button"
+                    className={`${tbBtn} ${
+                      editor.isActive("image", { align: a }) ? tbBtnActive : ""
+                    }`}
+                    onClick={() => editor.chain().focus().setImageAlign(a).run()}
+                    aria-label={t(`imageAlign.${a}`)}
+                    title={t(`imageAlign.${a}`)}
+                  >
+                    <Icn className="h-3.5 w-3.5" />
+                  </button>
+                );
+              },
+            )}
+            <button
+              type="button"
+              className={tbBtn}
+              onClick={() => {
+                const current =
+                  (editor.getAttributes("image").caption as string) ?? "";
+                const next = window.prompt(t("imageCaptionPrompt"), current);
+                if (next === null) return;
+                editor.chain().focus().setImageCaption(next.trim()).run();
+              }}
+              aria-label={t("imageCaption")}
+              title={t("imageCaption")}
+            >
+              <Icon icon={Captions} size={14} />
+            </button>
+            <button
+              type="button"
+              className={tbBtn}
+              onClick={() => {
+                const current =
+                  (editor.getAttributes("image").alt as string) ?? "";
+                const next = window.prompt(t("imageAltPrompt"), current);
+                if (next === null) return;
+                editor
+                  .chain()
+                  .focus()
+                  .updateAttributes("image", { alt: next.trim() })
+                  .run();
+              }}
+              aria-label={t("imageAlt")}
+              title={t("imageAlt")}
+            >
+              <Icon icon={Type} size={14} />
+            </button>
+          </>
+        )}
+
         <div className="mx-1 h-5 w-px bg-border" />
 
         <button
@@ -697,6 +862,88 @@ export function TiptapEditor({
         className="hidden"
         onChange={onImageFile}
       />
+
+      <div
+        ref={bubbleMenuRef}
+        className="flex items-center gap-0.5 rounded-md border bg-popover p-1 shadow-md"
+        style={{ position: "absolute", zIndex: 30 }}
+      >
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("bold") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          aria-label={t("bold")}
+        >
+          <Icon icon={Bold} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("italic") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          aria-label={t("italic")}
+        >
+          <Icon icon={Italic} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("strike") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          aria-label={t("strike")}
+        >
+          <Icon icon={Strikethrough} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("highlight") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          aria-label={t("highlight")}
+        >
+          <Icon icon={Highlighter} size={14} />
+        </button>
+        <div className="mx-0.5 h-4 w-px bg-border" />
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("link") ? tbBtnActive : ""}`}
+          onClick={promptLink}
+          aria-label={t("link")}
+        >
+          <Icon icon={LinkIcon} size={14} />
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={`${tbBtn} w-auto px-1.5`}
+              disabled={aiPending}
+              aria-label={tAi("rewrite")}
+              title={tAi("rewrite")}
+            >
+              <Icon icon={Wand2} size={14} />
+              <Icon icon={ChevronDown} size={10} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuItem onSelect={() => onRewrite("shorter")}>
+              {tAi("rewriteShorter")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("longer")}>
+              {tAi("rewriteLonger")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("clearer")}>
+              {tAi("rewriteClearer")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("formal")}>
+              {tAi("rewriteFormal")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("casual")}>
+              {tAi("rewriteCasual")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("grammar")}>
+              {tAi("rewriteGrammar")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <EditorContent editor={editor} />
 

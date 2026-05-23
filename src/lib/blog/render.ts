@@ -66,6 +66,8 @@ export function sanitizeHtml(html: string): string {
       "div",
       "iframe",
       "span",
+      "figure",
+      "figcaption",
     ],
     ALLOWED_ATTR: [
       "href",

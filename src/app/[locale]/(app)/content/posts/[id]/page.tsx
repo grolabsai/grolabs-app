@@ -25,6 +25,12 @@ export default async function EditPostPage({
 
   if (!post) notFound();
 
+  const { data: shortLink } = await supabase
+    .from("short_link")
+    .select("code")
+    .eq("post_id", postId)
+    .maybeSingle();
+
   return (
     <PostEditor
       initial={{
@@ -38,6 +44,7 @@ export default async function EditPostPage({
         status: post.status as PostStatus,
         tags: (post.tags as string[] | null) ?? [],
         published_at: post.published_at as string | null,
+        short_link_code: (shortLink?.code as string | undefined) ?? null,
       }}
     />
   );

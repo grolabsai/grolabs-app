@@ -2204,6 +2204,10 @@
       "schedule": "Programar publicación",
       "schedulePublish": "Programar",
       "aiAssist": "Asistente IA",
+      "shortLink": "Enlace corto",
+      "shortLinkCopy": "Copiar enlace",
+      "shortLinkCopied": "Enlace copiado",
+      "shortLinkCopyFailed": "No se pudo copiar",
       "dangerZone": "Zona de riesgo",
       "delete": "Eliminar artículo"
     },

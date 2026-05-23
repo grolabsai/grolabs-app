@@ -2274,7 +2274,18 @@
       "rewritten": "Selection rewritten",
       "summaryGenerated": "Summary generated",
       "titleSuggestionsTitle": "Title suggestions",
-      "titleApplied": "Title applied"
+      "titleApplied": "Title applied",
+      "imageGenerate": "Generate AI image",
+      "imagePromptPlaceholder": "Describe the image (e.g. a desk with notes and coffee, isometric)",
+      "imageBrandHint": "Your brand style and palette are applied automatically.",
+      "imageGenerating": "Generating image…",
+      "imageAltPlaceholder": "Alt text (accessibility)",
+      "imageCancel": "Cancel",
+      "imageGenerateBtn": "Generate",
+      "imageRegenerate": "Regenerate",
+      "imageInsert": "Insert",
+      "imagePromptRequired": "Enter a prompt for the image",
+      "imageInserted": "Image inserted"
     },
     "public": {
       "indexTitle": "Blog",

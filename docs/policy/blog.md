@@ -359,9 +359,55 @@ Two consumers:
 2. **AI image pipeline** (§6.3) — the brand system is appended to every
    image-generation prompt as the visual style spec.
 
-### 6.3 Image pipeline with brand-aware AI transforms
+### 6.3 AI image generation — shipped (Replicate + Flux Schnell)
 
-The flow the user described, written down so it doesn't drift:
+Text-to-image generation built on Replicate. **Cost: ~$0.003/image,
+1–2s latency.** No subscription; pay only when the writer hits Generate.
+
+**How it works:**
+
+- Toolbar **"Generate AI image"** button (palette icon) → modal with
+  a prompt textarea
+- `src/lib/ai/image.ts → generateImage()` reads the brand from
+  `brand_system`, interpolates the writer's prompt into
+  `prompt_template` row `blog.image.prompt_template`, calls
+  `replicate.run(blog.image.model, …)` — both the model identifier
+  AND the prompt template live in DB, swap them via Supabase Studio
+  with no deploy
+- Result image is downloaded server-side and uploaded to the
+  `blog-images` bucket at `{instance_id}/generated/{post_id|draft}/`
+  so it lives next to cover/inline uploads (same RLS, same cleanup)
+- Preview shown in the modal; writer enters alt text and clicks
+  Insert; image lands in the editor as a regular Tiptap image node
+
+**Default config (instance 0 seed):**
+
+- Model: `black-forest-labs/flux-schnell` (cheap + fast). Alternatives
+  tested: `flux-dev` (~$0.025, higher fidelity),
+  `stability-ai/stable-diffusion-3.5-large`.
+- Prompt template: `{{user_prompt}}. Style: {{illustration_style}}.
+  Color palette: primary {{primary_color}}, background
+  {{background_color}}, accent {{accent_color}}. Clean composition,
+  no text, no watermarks.`
+- Env var: `REPLICATE_API_TOKEN` on Vercel.
+
+**Deferred from §6.3 (the full transform pipeline):**
+
+- **Image-to-image restyle** (upload photo → recolor / conceptualize /
+  flat-illustrate). Needs Flux Dev img2img or SDXL refiner — model
+  swap + a different `replicate.run()` input schema. Land when the
+  writer's actually using the text-to-image path enough to feel the gap.
+- **SVG-ify** (raster → vector). Different tooling — `potrace` for
+  raw tracing, or a model like `recraft-ai/recraft-v3-svg`. Separate
+  PR; not a "swap the model id" change.
+- **"What to do with this upload?" modal** — the choice tree from
+  the original §6.3 spec. The current flow asks the writer to
+  describe the image instead of asking them what to do with an
+  uploaded one. Re-add when the restyle path lands.
+
+### 6.3-LEGACY Image pipeline spec (kept for context)
+
+The original flow the user described, written down so it doesn't drift:
 
 1. Writer uploads a photo or screenshot (existing v1 upload flow).
 2. Before inserting into the post, Scout asks: **what do you want to do

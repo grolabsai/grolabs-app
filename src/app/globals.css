@@ -2286,3 +2286,145 @@ button {
 .pricing-provider-card[data-inactive="true"] {
   opacity: 0.55;
 }
+
+/* =============================================================================
+   Blog editor + reading surface
+   =============================================================================
+   Styles for Tiptap-generated content. Shared between the admin editor
+   (`.tiptap-blog`) and the public reading page (`.prose` inside the article
+   wrapper). Tiptap-specific data attributes are styled here because they
+   don't come from @tailwindcss/typography.
+*/
+
+/* Placeholder ghost text — shown only on the first empty paragraph */
+.tiptap-blog .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--s-text-tertiary, hsl(var(--muted-foreground)));
+  pointer-events: none;
+  height: 0;
+}
+
+/* Task list — checkboxes inline with the list item label */
+.tiptap-blog ul[data-type="taskList"],
+.prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.tiptap-blog ul[data-type="taskList"] li,
+.prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.tiptap-blog ul[data-type="taskList"] li > label,
+.prose ul[data-type="taskList"] li > label {
+  margin-top: 0.25rem;
+  user-select: none;
+}
+.tiptap-blog ul[data-type="taskList"] li > div,
+.prose ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.tiptap-blog ul[data-type="taskList"] li[data-checked="true"] > div,
+.prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+/* Tables — visible borders inside editor + reading surface */
+.tiptap-blog table,
+.prose table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+}
+.tiptap-blog th,
+.tiptap-blog td,
+.prose th,
+.prose td {
+  border: 1px solid var(--s-border, hsl(var(--border)));
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+.tiptap-blog th,
+.prose th {
+  background: var(--s-surface-muted, hsl(var(--muted) / 0.4));
+  font-weight: 600;
+  text-align: left;
+}
+/* Tiptap selected cell highlight */
+.tiptap-blog .selectedCell {
+  background: hsl(var(--accent) / 0.35);
+}
+
+/* Highlight mark — yellow marker */
+.tiptap-blog mark,
+.prose mark {
+  background: #fff3a3;
+  padding: 0 0.15em;
+  border-radius: 2px;
+}
+
+/* Horizontal rule — subtle */
+.tiptap-blog hr,
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--s-border, hsl(var(--border)));
+  margin: 2rem 0;
+}
+
+/* Code block — dark background + syntax theme (subset of hljs default) */
+.tiptap-blog pre,
+.prose pre {
+  background: #1a1a1a;
+  color: #f4f4f4;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+}
+.tiptap-blog pre code,
+.prose pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+.hljs-keyword,
+.hljs-tag,
+.hljs-built_in { color: #ff7ab2; }
+.hljs-string,
+.hljs-title.class_ { color: #b8e986; }
+.hljs-number,
+.hljs-literal { color: #ffb86c; }
+.hljs-comment { color: #888; font-style: italic; }
+.hljs-attr,
+.hljs-name { color: #82c4ff; }
+.hljs-variable,
+.hljs-title.function_ { color: #f6c177; }
+
+/* Text alignment classes from @tiptap/extension-text-align */
+.tiptap-blog [style*="text-align: center"],
+.prose [style*="text-align: center"] { text-align: center; }
+.tiptap-blog [style*="text-align: right"],
+.prose [style*="text-align: right"] { text-align: right; }
+.tiptap-blog [style*="text-align: justify"],
+.prose [style*="text-align: justify"] { text-align: justify; }
+
+/* YouTube embed — responsive 16:9 */
+.tiptap-blog [data-youtube-video],
+.prose [data-youtube-video] {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 1.5rem 0;
+}
+.tiptap-blog [data-youtube-video] iframe,
+.prose [data-youtube-video] iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 6px;
+}

@@ -190,14 +190,43 @@ should nudge the writer to fill it.
   post across instances — the working preview behavior. To bind a
   domain: `UPDATE instance SET domain = 'grolabs.com' WHERE …`.
 
-### Deferred from v3 (worth doing if writing reveals the need)
+### v4 — shipped (editor polish, Notion-style)
 
-- **Tiptap slash-command menu** (`/image`, `/quote`, `/divider`, `/embed`).
-  The toolbar already covers the same surface; the slash menu is a
-  power-user convenience, not a feature gap.
+- **Slash command menu** — type `/` anywhere in the editor for a
+  Notion-style insertion popup. Custom extension built on `@tiptap/suggestion`
+  with a React-rendered list; arrow keys + Enter + Escape work. Commands:
+  H1/H2/H3, bullet list, numbered list, task list, quote, code block,
+  divider, table (3×3 with header), YouTube embed. Items defined in
+  `_tiptap.tsx → buildSlashItems()` (kept in code, not DB, because the
+  `command` callback is JS — DB-side would mean string interpretation).
+- **More block types**: task lists with checkboxes (`@tiptap/extension-task-list`),
+  tables with resizing (`@tiptap/extension-table`), syntax-highlighted code
+  blocks (`@tiptap/extension-code-block-lowlight` + `lowlight` with `common`
+  language grammars), text alignment (`@tiptap/extension-text-align`),
+  highlight mark (`@tiptap/extension-highlight`), YouTube embed
+  (`@tiptap/extension-youtube`).
+- **Toolbar additions**: task list, highlight, align left/center/right,
+  divider, code block, table, YouTube. All previous toolbar buttons
+  preserved.
+- **Public reading page** — sanitizer (`src/lib/blog/render.ts → sanitizeHtml`)
+  now allows the additional tags Tiptap emits (`table`, `mark`,
+  `iframe[data-youtube-video]`, `input[type=checkbox]` for task items),
+  with a tight `ALLOWED_ATTR` list. CSS in `globals.css` styles task
+  lists, tables, highlight marks, YouTube embeds, and a minimal hljs
+  syntax theme — shared between the editor (`.tiptap-blog`) and the
+  reading article (`.prose`).
+- **Placeholder hint**: first empty paragraph shows "Type / for
+  commands…" so the slash menu is discoverable without a tooltip.
+
+### Deferred from v3+ (worth doing if writing reveals the need)
+
+- **Bubble menu on selection** — Tiptap v3 moved BubbleMenu to a
+  separate package with a non-React API (you pass a DOM element ref).
+  The fixed toolbar covers the same formatting actions, so this is
+  cosmetic — re-add when there's real demand.
 - **Drag-handle to reorder blocks** — Tiptap's official extension is
-  Pro. A DIY drag handle (~50 lines using HTML5 drag events on `<p>`
-  / `<h2>` blocks) is the cheap version when this is worth doing.
+  Pro. A DIY drag handle (~50 lines using HTML5 drag events on `<p>` /
+  `<h2>` blocks) is the cheap version when this is worth doing.
 
 ---
 

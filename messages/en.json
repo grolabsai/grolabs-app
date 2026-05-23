@@ -2240,7 +2240,17 @@
       "words": "{count, plural, one {# word} other {# words}}",
       "readingTime": "{minutes} min read",
       "linkPrompt": "Link URL (empty to remove)",
-      "imageAltPrompt": "Alt text for the image (briefly describe what it shows; leave empty if decorative)"
+      "imageAltPrompt": "Alt text for the image (briefly describe what it shows; leave empty if decorative)",
+      "taskList": "Task list",
+      "highlight": "Highlight",
+      "alignLeft": "Align left",
+      "alignCenter": "Align center",
+      "alignRight": "Align right",
+      "divider": "Divider",
+      "codeBlock": "Code block",
+      "table": "Table",
+      "youtube": "YouTube video",
+      "youtubePrompt": "YouTube video URL"
     },
     "ai": {
       "suggestTitles": "Suggest title",

@@ -2240,7 +2240,17 @@
       "words": "{count, plural, one {# palabra} other {# palabras}}",
       "readingTime": "{minutes} min de lectura",
       "linkPrompt": "URL del enlace (vacío para quitar)",
-      "imageAltPrompt": "Texto alternativo para la imagen (describe brevemente lo que se ve; dejá vacío si es decorativa)"
+      "imageAltPrompt": "Texto alternativo para la imagen (describe brevemente lo que se ve; dejá vacío si es decorativa)",
+      "taskList": "Lista de tareas",
+      "highlight": "Resaltar",
+      "alignLeft": "Alinear a la izquierda",
+      "alignCenter": "Centrar",
+      "alignRight": "Alinear a la derecha",
+      "divider": "Separador",
+      "codeBlock": "Bloque de código",
+      "table": "Tabla",
+      "youtube": "Video de YouTube",
+      "youtubePrompt": "URL del video de YouTube"
     },
     "ai": {
       "suggestTitles": "Sugerir título",

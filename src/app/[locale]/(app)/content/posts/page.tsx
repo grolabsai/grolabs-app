@@ -5,6 +5,7 @@ import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Plus, FileText } from "lucide-react";
+import type { PostStatus } from "@/lib/actions/post";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +13,27 @@ type PostRow = {
   post_id: number;
   title: string;
   slug: string;
-  status: "draft" | "published";
+  status: PostStatus;
   published_at: string | null;
   updated_at: string;
+  tags: string[] | null;
 };
 
-export default async function BlogAdminPage() {
+type SearchParams = { status?: string };
+
+const VALID_STATUSES: PostStatus[] = ["draft", "scheduled", "published"];
+
+export default async function BlogAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const { status: rawStatus } = await searchParams;
+  const filter: PostStatus | "all" =
+    rawStatus && (VALID_STATUSES as string[]).includes(rawStatus)
+      ? (rawStatus as PostStatus)
+      : "all";
+
   const instanceId = await currentInstanceId();
   const t = await getTranslations("blog");
 
@@ -32,12 +48,21 @@ export default async function BlogAdminPage() {
   }
 
   const supabase = await createClient();
-  const { data: posts } = await supabase
+  let query = supabase
     .from("post")
-    .select("post_id, title, slug, status, published_at, updated_at")
+    .select("post_id, title, slug, status, published_at, updated_at, tags")
     .order("updated_at", { ascending: false });
+  if (filter !== "all") query = query.eq("status", filter);
 
+  const { data: posts } = await query;
   const rows: PostRow[] = (posts ?? []) as PostRow[];
+
+  const tabs: Array<PostStatus | "all"> = [
+    "all",
+    "draft",
+    "scheduled",
+    "published",
+  ];
 
   return (
     <div className="s-content">
@@ -51,6 +76,27 @@ export default async function BlogAdminPage() {
             {t("newPost")}
           </Link>
         </Button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-1 border-b">
+        {tabs.map((tab) => {
+          const active = filter === tab;
+          const href =
+            tab === "all" ? "/content/posts" : `/content/posts?status=${tab}`;
+          return (
+            <Link
+              key={tab}
+              href={href as never}
+              className={
+                active
+                  ? "border-b-2 border-foreground px-3 py-2 text-sm font-medium"
+                  : "border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              }
+            >
+              {tab === "all" ? t("filter.all") : t(`status.${tab}`)}
+            </Link>
+          );
+        })}
       </div>
 
       {rows.length === 0 ? (
@@ -73,6 +119,9 @@ export default async function BlogAdminPage() {
                   {t("colStatus")}
                 </th>
                 <th className="px-4 py-2.5 text-left font-medium">
+                  {t("colTags")}
+                </th>
+                <th className="px-4 py-2.5 text-left font-medium">
                   {t("colUpdated")}
                 </th>
                 <th className="px-4 py-2.5 text-left font-medium">
@@ -81,35 +130,63 @@ export default async function BlogAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((p) => (
-                <tr key={p.post_id} className="border-b last:border-0 hover:bg-muted/30">
-                  <td className="px-4 py-2.5">
-                    <Link
-                      href={`/content/posts/${p.post_id}` as never}
-                      className="font-medium hover:underline"
-                    >
-                      {p.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={
-                        p.status === "published"
-                          ? "rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700"
-                          : "rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
-                      }
-                    >
-                      {t(`status.${p.status}`)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
-                    {new Date(p.updated_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                    /blog/{p.slug}
-                  </td>
-                </tr>
-              ))}
+              {rows.map((p) => {
+                const badge =
+                  p.status === "published"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : p.status === "scheduled"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-muted text-muted-foreground";
+                return (
+                  <tr
+                    key={p.post_id}
+                    className="border-b last:border-0 hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-2.5">
+                      <Link
+                        href={`/content/posts/${p.post_id}` as never}
+                        className="font-medium hover:underline"
+                      >
+                        {p.title}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs ${badge}`}
+                      >
+                        {t(`status.${p.status}`)}
+                      </span>
+                      {p.status === "scheduled" && p.published_at && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {new Date(p.published_at).toLocaleString()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {p.tags && p.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {p.tags.slice(0, 4).map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded bg-muted px-1.5 py-0.5 text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {new Date(p.updated_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                      /blog/{p.slug}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

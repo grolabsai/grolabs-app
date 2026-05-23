@@ -1,23 +1,35 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Icon } from "@/components/ui/icon";
-import { Upload, Trash2, Eye, EyeOff, Save } from "lucide-react";
+import { Upload, Trash2, Save, X, Clock } from "lucide-react";
 import {
   createPost,
   updatePost,
   setPostStatus,
+  schedulePost,
   deletePost,
   uploadPostImage,
+  autosavePost,
   type PostStatus,
+  type PostContentFormat,
 } from "@/lib/actions/post";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+
+const TiptapEditor = dynamic(
+  () => import("./_tiptap").then((m) => m.TiptapEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[440px] animate-pulse rounded-md border bg-muted/20" />
+    ),
+  },
+);
 
 export interface PostEditorInitial {
   post_id?: number;
@@ -25,9 +37,14 @@ export interface PostEditorInitial {
   slug?: string;
   summary?: string | null;
   content?: string;
+  content_format?: PostContentFormat;
   cover_image_url?: string | null;
   status?: PostStatus;
+  tags?: string[];
+  published_at?: string | null;
 }
+
+const AUTOSAVE_DEBOUNCE_MS = 5000;
 
 export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
   const t = useTranslations("blog");
@@ -40,10 +57,46 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
   const [content, setContent] = useState(initial?.content ?? "");
   const [coverUrl, setCoverUrl] = useState(initial?.cover_image_url ?? "");
   const [status, setStatus] = useState<PostStatus>(initial?.status ?? "draft");
-  const [showPreview, setShowPreview] = useState(false);
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
+  const [scheduleAt, setScheduleAt] = useState<string>(
+    initial?.status === "scheduled" && initial?.published_at
+      ? new Date(initial.published_at).toISOString().slice(0, 16)
+      : "",
+  );
   const [uploading, setUploading] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const dirtyRef = useRef(false);
 
   const isEdit = Boolean(initial?.post_id);
+  const isMarkdown = (initial?.content_format ?? "html") === "markdown";
+
+  // Autosave loop — debounced, edit mode only.
+  useEffect(() => {
+    if (!isEdit || !initial?.post_id) return;
+    if (!dirtyRef.current) return;
+    const handle = setTimeout(() => {
+      autosavePost(initial.post_id!, {
+        title,
+        slug: slug || title,
+        summary: summary || null,
+        content,
+        content_format: "html",
+        cover_image_url: coverUrl || null,
+        tags,
+      }).then((res) => {
+        if (!("error" in res) && res.saved_at) {
+          setLastSavedAt(res.saved_at);
+          dirtyRef.current = false;
+        }
+      });
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [title, slug, summary, content, coverUrl, tags, isEdit, initial?.post_id]);
+
+  function markDirty() {
+    dirtyRef.current = true;
+  }
 
   async function uploadImage(file: File, kind: "cover" | "inline") {
     const fd = new FormData();
@@ -65,21 +118,27 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
     const url = await uploadImage(file, "cover");
     if (url) {
       setCoverUrl(url);
+      markDirty();
       toast.success(t("toast.coverUploaded"));
     }
     e.target.value = "";
   }
 
-  async function onInlineImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadImage(file, "inline");
-    if (url) {
-      const md = `\n\n![](${url})\n\n`;
-      setContent((c) => c + md);
-      toast.success(t("toast.imageInserted"));
+  function addTagFromInput() {
+    const next = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!next) return;
+    if (tags.includes(next)) {
+      setTagInput("");
+      return;
     }
-    e.target.value = "";
+    setTags((prev) => [...prev, next]);
+    setTagInput("");
+    markDirty();
+  }
+
+  function removeTag(tag: string) {
+    setTags((prev) => prev.filter((x) => x !== tag));
+    markDirty();
   }
 
   function onSave() {
@@ -93,7 +152,9 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
         slug: slug || title,
         summary: summary || null,
         content,
+        content_format: "html" as const,
         cover_image_url: coverUrl || null,
+        tags,
       };
       if (isEdit) {
         const res = await updatePost(initial!.post_id!, payload);
@@ -101,6 +162,8 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
           toast.error(res.error);
           return;
         }
+        dirtyRef.current = false;
+        setLastSavedAt(new Date().toISOString());
         toast.success(t("toast.saved"));
       } else {
         const res = await createPost(payload);
@@ -127,7 +190,30 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
         return;
       }
       setStatus(next);
-      toast.success(next === "published" ? t("toast.published") : t("toast.unpublished"));
+      toast.success(
+        next === "published" ? t("toast.published") : t("toast.unpublished"),
+      );
+    });
+  }
+
+  function onSchedule() {
+    if (!initial?.post_id) {
+      toast.error(t("toast.saveFirst"));
+      return;
+    }
+    if (!scheduleAt) {
+      toast.error(t("toast.scheduleRequired"));
+      return;
+    }
+    const iso = new Date(scheduleAt).toISOString();
+    startTransition(async () => {
+      const res = await schedulePost(initial.post_id!, iso);
+      if ("error" in res) {
+        toast.error(res.error);
+        return;
+      }
+      setStatus("scheduled");
+      toast.success(t("toast.scheduled"));
     });
   }
 
@@ -139,29 +225,34 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
     });
   }
 
+  const statusBadgeClass =
+    status === "published"
+      ? "bg-emerald-100 text-emerald-700"
+      : status === "scheduled"
+      ? "bg-amber-100 text-amber-700"
+      : "bg-muted text-muted-foreground";
+
   return (
     <div className="s-content">
       <div className="s-title-row" style={{ marginBottom: 16 }}>
         <div className="s-title-inner">
-          <h1 className="s-title">
-            {isEdit ? t("editTitle") : t("newPost")}
-          </h1>
+          <h1 className="s-title">{isEdit ? t("editTitle") : t("newPost")}</h1>
           {isEdit && (
-            <span className="ml-3 text-xs text-muted-foreground">
-              {status === "published" ? t("status.published") : t("status.draft")}
+            <span
+              className={`ml-3 rounded px-1.5 py-0.5 text-xs ${statusBadgeClass}`}
+            >
+              {t(`status.${status}`)}
+            </span>
+          )}
+          {lastSavedAt && (
+            <span className="ml-2 text-xs text-muted-foreground">
+              {t("editor.savedAt", {
+                time: new Date(lastSavedAt).toLocaleTimeString(),
+              })}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPreview((v) => !v)}
-          >
-            <Icon icon={showPreview ? EyeOff : Eye} size={14} />
-            {showPreview ? t("editor.hidePreview") : t("editor.showPreview")}
-          </Button>
           {isEdit && (
             <Button
               type="button"
@@ -170,7 +261,9 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
               onClick={onTogglePublish}
               disabled={pending}
             >
-              {status === "published" ? t("editor.unpublish") : t("editor.publish")}
+              {status === "published"
+                ? t("editor.unpublish")
+                : t("editor.publish")}
             </Button>
           )}
           <Button type="button" onClick={onSave} disabled={pending} size="sm">
@@ -186,13 +279,19 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
             id="post-title"
             label={t("fields.title")}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              markDirty();
+            }}
           />
           <FloatingLabelInput
             id="post-slug"
             label={t("fields.slug")}
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => {
+              setSlug(e.target.value);
+              markDirty();
+            }}
             placeholder={t("fields.slugPlaceholder")}
             className="font-mono text-xs"
           />
@@ -200,48 +299,37 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
             id="post-summary"
             label={t("fields.summary")}
             value={summary ?? ""}
-            onChange={(e) => setSummary(e.target.value)}
+            onChange={(e) => {
+              setSummary(e.target.value);
+              markDirty();
+            }}
           />
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="post-content" className="text-xs text-muted-foreground">
-                {t("fields.content")}
-              </label>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                <Icon icon={Upload} size={12} />
-                {uploading ? t("editor.uploading") : t("editor.insertImage")}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={onInlineImage}
-                />
-              </label>
-            </div>
-            {showPreview ? (
-              <article className="prose prose-sm min-h-[400px] max-w-none rounded-md border bg-background p-4">
-                {coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={coverUrl} alt="" className="mb-6 rounded" />
-                ) : null}
-                <h1>{title || t("fields.titlePlaceholder")}</h1>
-                {summary ? <p className="lead">{summary}</p> : null}
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {content || `*${t("editor.previewEmpty")}*`}
-                </ReactMarkdown>
-              </article>
-            ) : (
+          {isMarkdown ? (
+            <div className="space-y-2">
+              <p className="text-xs text-amber-700">
+                {t("editor.markdownLegacy")}
+              </p>
               <textarea
-                id="post-content"
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder={t("fields.contentPlaceholder")}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  markDirty();
+                }}
                 rows={20}
                 className="w-full rounded-md border bg-background p-3 font-mono text-sm leading-relaxed outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
-            )}
-          </div>
+            </div>
+          ) : (
+            <TiptapEditor
+              initialHTML={content}
+              placeholder={t("fields.contentPlaceholder")}
+              onChange={(html) => {
+                setContent(html);
+                markDirty();
+              }}
+            />
+          )}
         </div>
 
         <aside className="space-y-4">
@@ -257,7 +345,10 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCoverUrl("")}
+                  onClick={() => {
+                    setCoverUrl("");
+                    markDirty();
+                  }}
                   className="w-full text-destructive hover:text-destructive"
                 >
                   <Icon icon={Trash2} size={12} />
@@ -277,6 +368,75 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
               </label>
             )}
           </div>
+
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t("sidebar.tags")}
+            </h3>
+            <div className="mb-2 flex flex-wrap gap-1">
+              {tags.length === 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  {t("sidebar.tagsEmpty")}
+                </span>
+              ) : (
+                tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label={t("sidebar.removeTag")}
+                    >
+                      <Icon icon={X} size={10} />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  addTagFromInput();
+                }
+              }}
+              onBlur={addTagFromInput}
+              placeholder={t("sidebar.tagsPlaceholder")}
+              className="w-full rounded border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+
+          {isEdit && (
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("sidebar.schedule")}
+              </h3>
+              <input
+                type="datetime-local"
+                value={scheduleAt}
+                onChange={(e) => setScheduleAt(e.target.value)}
+                className="mb-2 w-full rounded border bg-background px-2 py-1 text-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSchedule}
+                disabled={pending || !scheduleAt}
+                className="w-full"
+              >
+                <Icon icon={Clock} size={12} />
+                {t("sidebar.schedulePublish")}
+              </Button>
+            </div>
+          )}
 
           {isEdit && (
             <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">

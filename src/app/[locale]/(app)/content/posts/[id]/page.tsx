@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PostEditor } from "../_editor";
+import type { PostStatus, PostContentFormat } from "@/lib/actions/post";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function EditPostPage({
   const { data: post } = await supabase
     .from("post")
     .select(
-      "post_id, title, slug, summary, content, cover_image_url, status",
+      "post_id, title, slug, summary, content, content_format, cover_image_url, status, tags, published_at",
     )
     .eq("post_id", postId)
     .maybeSingle();
@@ -32,8 +33,11 @@ export default async function EditPostPage({
         slug: post.slug as string,
         summary: post.summary as string | null,
         content: post.content as string,
+        content_format: post.content_format as PostContentFormat,
         cover_image_url: post.cover_image_url as string | null,
-        status: post.status as "draft" | "published",
+        status: post.status as PostStatus,
+        tags: (post.tags as string[] | null) ?? [],
+        published_at: post.published_at as string | null,
       }}
     />
   );

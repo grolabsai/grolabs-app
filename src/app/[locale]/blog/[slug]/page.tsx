@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getTranslations } from "next-intl/server";
 import { instanceIdForHost } from "@/lib/blog/host";
+import { getBrandSystem, brandCssBlock } from "@/lib/blog/brand";
 import {
   sanitizeHtml,
   extractTocAndAnchor,
@@ -25,6 +26,7 @@ type PublicPost = {
   cover_image_url: string | null;
   published_at: string | null;
   tags: string[] | null;
+  instance_id: number;
 };
 
 async function loadPost(slug: string): Promise<PublicPost | null> {
@@ -33,7 +35,7 @@ async function loadPost(slug: string): Promise<PublicPost | null> {
   let query = supabase
     .from("post")
     .select(
-      "post_id, title, slug, summary, content, content_format, cover_image_url, published_at, tags",
+      "post_id, title, slug, summary, content, content_format, cover_image_url, published_at, tags, instance_id",
     )
     .eq("slug", slug)
     .eq("status", "published");
@@ -90,6 +92,8 @@ export default async function PublicPostPage({
     toc = anchored.toc;
   }
 
+  const brand = await getBrandSystem(post.instance_id);
+
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -103,11 +107,15 @@ export default async function PublicPostPage({
   const showToc = toc.filter((e) => e.level === 2).length >= 3;
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className="blog-themed min-h-screen">
+      <style
+        dangerouslySetInnerHTML={{ __html: brandCssBlock(brand, "blog-themed") }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
+      <div className="mx-auto max-w-2xl px-6 py-16">
 
       <article className="prose prose-lg max-w-none">
         {post.cover_image_url ? (
@@ -193,6 +201,7 @@ export default async function PublicPostPage({
       </article>
 
       <CopyHeadingAnchors />
+      </div>
     </main>
   );
 }

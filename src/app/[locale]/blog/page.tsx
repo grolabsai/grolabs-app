@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import type { Metadata } from "next";
 import { instanceIdForHost } from "@/lib/blog/host";
+import { getBrandSystem, brandCssBlock } from "@/lib/blog/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +49,14 @@ export default async function PublicBlogIndex({
 
   const { data } = await query;
   const posts: PublicPostRow[] = (data ?? []) as PublicPostRow[];
+  const brand = await getBrandSystem(instanceId);
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main className="blog-themed min-h-screen">
+      <style
+        dangerouslySetInnerHTML={{ __html: brandCssBlock(brand, "blog-themed") }}
+      />
+      <div className="mx-auto max-w-3xl px-6 py-16">
       <header className="mb-12">
         <h1 className="text-4xl font-semibold tracking-tight">
           {t("indexTitle")}
@@ -125,6 +131,7 @@ export default async function PublicBlogIndex({
           ))}
         </ul>
       )}
+      </div>
     </main>
   );
 }

@@ -308,10 +308,37 @@ canonical prompts):
   storyline + polarization stance) — lands with the consulting agent
   (planned).
 
-### 6.2 Brand system per instance
+### 6.2 Brand system per instance — shipped
 
-New table — or a new `brand_system` sub-key under
-`instance.integrations_config`:
+`brand_system` table, one row per instance, columns: `display_name`,
+`tagline`, `logo_url`, `logo_dark_url`, `primary_color`,
+`background_color`, `text_color`, `muted_color`, `accent_color`,
+`heading_font`, `body_font`, `illustration_style`
+(`realistic|conceptual|isometric|flat|line`), `voice_guide`.
+
+Powers three surfaces:
+
+- **Public reading page CSS** — `getBrandSystem(instanceId)` +
+  `brandCssBlock(brand, "blog-themed")` inject a scoped `<style>` block.
+  `/blog` and `/blog/[slug]` carry `.blog-themed`; the prose inherits
+  the brand colors + heading font via CSS custom properties.
+- **OG image fallback** (`opengraph-image.tsx`) — reads the post's
+  instance brand, so each tenant's social card uses their palette.
+- **AI voice guide** — `src/lib/ai/blog.ts → resolveVoice()` reads
+  `brand_system.voice_guide` first, falls back to the `prompt_template`
+  `blog.voice_default` row. Edit via Supabase Studio, no deploy.
+
+Seeded on instance 0 (GroLabs) with cream + terracotta + serif. RLS:
+world-readable (it's literally the public brand — no secrets); writes
+gated to `instance_member`.
+
+**Deferred:** admin UI to edit the brand. Supabase Studio is enough
+until a second tenant onboards.
+
+### 6.2-LEGACY Brand system spec (kept for context)
+
+The original v6.2 spec, before the implementation collapsed it to the
+single `brand_system` table above:
 
 ```
 brand_system (per instance)

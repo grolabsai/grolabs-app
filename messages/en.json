@@ -2203,6 +2203,7 @@
       "removeTag": "Remove tag",
       "schedule": "Schedule publish",
       "schedulePublish": "Schedule",
+      "aiAssist": "AI assist",
       "dangerZone": "Danger zone",
       "delete": "Delete post"
     },
@@ -2238,7 +2239,28 @@
       "redo": "Redo",
       "words": "{count, plural, one {# word} other {# words}}",
       "readingTime": "{minutes} min read",
-      "linkPrompt": "Link URL (empty to remove)"
+      "linkPrompt": "Link URL (empty to remove)",
+      "imageAltPrompt": "Alt text for the image (briefly describe what it shows; leave empty if decorative)"
+    },
+    "ai": {
+      "suggestTitles": "Suggest title",
+      "generateSummary": "Generate summary",
+      "continue": "Continue writing",
+      "rewrite": "Rewrite selection",
+      "rewriteShorter": "Shorter",
+      "rewriteLonger": "Longer",
+      "rewriteClearer": "Clearer",
+      "rewriteFormal": "More formal",
+      "rewriteCasual": "More casual",
+      "rewriteGrammar": "Fix grammar",
+      "thinking": "Thinking…",
+      "emptyContent": "Write something before asking for help",
+      "noSelection": "Select text to rewrite",
+      "continued": "Text added to the end",
+      "rewritten": "Selection rewritten",
+      "summaryGenerated": "Summary generated",
+      "titleSuggestionsTitle": "Title suggestions",
+      "titleApplied": "Title applied"
     },
     "public": {
       "indexTitle": "Blog",

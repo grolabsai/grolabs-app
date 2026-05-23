@@ -15,6 +15,18 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
     NEXT_PUBLIC_BUILD_DATE: new Date().toISOString().slice(0, 10),
   },
+  // Allow next/image to optimize Supabase Storage URLs (blog cover images).
+  // The hostname is derived from NEXT_PUBLIC_SUPABASE_URL; this is the public
+  // CDN domain for the project's storage bucket.
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
 };
 
 export default withNextIntl(nextConfig);

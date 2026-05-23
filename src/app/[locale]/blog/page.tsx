@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
@@ -78,10 +79,12 @@ export default async function PublicBlogIndex({
             <li key={p.post_id} className="group">
               <Link href={`/blog/${p.slug}` as never} className="block">
                 {p.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={p.cover_image_url}
-                    alt=""
+                    alt={p.title}
+                    width={800}
+                    height={400}
+                    sizes="(max-width: 768px) 100vw, 768px"
                     className="mb-4 aspect-[2/1] w-full rounded-lg border object-cover"
                   />
                 ) : null}

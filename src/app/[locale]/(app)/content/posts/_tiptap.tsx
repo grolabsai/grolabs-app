@@ -26,9 +26,23 @@ import {
   Image as ImageIcon,
   Undo,
   Redo,
+  Sparkles,
+  Wand2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadPostImage } from "@/lib/actions/post";
+import {
+  aiContinueWriting,
+  aiRewriteSelection,
+} from "@/lib/actions/blog-ai";
+import type { RewriteAction } from "@/lib/ai/blog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface TiptapEditorProps {
   initialHTML?: string;
@@ -44,8 +58,10 @@ export function TiptapEditor({
   onChange,
 }: TiptapEditorProps) {
   const t = useTranslations("blog.tiptap");
+  const tAi = useTranslations("blog.ai");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [aiPending, setAiPending] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -89,6 +105,11 @@ export function TiptapEditor({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !editor) return;
+    // Prompt for alt text before uploading. Empty alt is allowed (decorative),
+    // but the prompt nudges the writer to think about accessibility.
+    const altRaw = window.prompt(t("imageAltPrompt"), "");
+    if (altRaw === null) return;
+    const alt = altRaw.trim();
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
@@ -99,7 +120,7 @@ export function TiptapEditor({
       toast.error(res.error);
       return;
     }
-    editor.chain().focus().setImage({ src: res.url }).run();
+    editor.chain().focus().setImage({ src: res.url, alt }).run();
   }
 
   function promptLink() {
@@ -112,6 +133,60 @@ export function TiptapEditor({
       return;
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }
+
+  async function onContinueWriting() {
+    if (!editor) return;
+    const html = editor.getHTML();
+    if (!editor.getText().trim()) {
+      toast.error(tAi("emptyContent"));
+      return;
+    }
+    setAiPending(true);
+    const res = await aiContinueWriting({
+      content: html,
+      contentFormat: "html",
+    });
+    setAiPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    // Insert as new paragraphs at the end. Preserve paragraph breaks.
+    const paragraphs = res.data.split(/\n\s*\n/).filter(Boolean);
+    const chain = editor.chain().focus("end");
+    for (const p of paragraphs) {
+      chain.insertContent({ type: "paragraph", content: [{ type: "text", text: p.trim() }] });
+    }
+    chain.run();
+    toast.success(tAi("continued"));
+  }
+
+  async function onRewrite(action: RewriteAction) {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      toast.error(tAi("noSelection"));
+      return;
+    }
+    const selection = editor.state.doc.textBetween(from, to, "\n");
+    if (!selection.trim()) {
+      toast.error(tAi("noSelection"));
+      return;
+    }
+    setAiPending(true);
+    const res = await aiRewriteSelection({
+      selection,
+      action,
+      context: { content: editor.getHTML(), contentFormat: "html" },
+    });
+    setAiPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    editor.chain().focus().insertContentAt({ from, to }, res.data).run();
+    toast.success(tAi("rewritten"));
   }
 
   if (!editor) {
@@ -257,6 +332,54 @@ export function TiptapEditor({
         >
           <Icon icon={Redo} size={14} />
         </button>
+
+        <div className="mx-1 h-5 w-px bg-border" />
+
+        <button
+          type="button"
+          className={tbBtn}
+          onClick={onContinueWriting}
+          disabled={aiPending}
+          aria-label={tAi("continue")}
+          title={tAi("continue")}
+        >
+          <Icon icon={Sparkles} size={14} />
+        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={`${tbBtn} w-auto px-1.5`}
+              disabled={aiPending}
+              aria-label={tAi("rewrite")}
+              title={tAi("rewrite")}
+            >
+              <Icon icon={Wand2} size={14} />
+              <Icon icon={ChevronDown} size={10} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuItem onSelect={() => onRewrite("shorter")}>
+              {tAi("rewriteShorter")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("longer")}>
+              {tAi("rewriteLonger")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("clearer")}>
+              {tAi("rewriteClearer")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("formal")}>
+              {tAi("rewriteFormal")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("casual")}>
+              {tAi("rewriteCasual")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onRewrite("grammar")}>
+              {tAi("rewriteGrammar")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="ml-auto flex items-center gap-3 pr-2 text-xs text-muted-foreground">
           <span>{t("words", { count: words })}</span>

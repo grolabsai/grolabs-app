@@ -2203,6 +2203,7 @@
       "removeTag": "Quitar etiqueta",
       "schedule": "Programar publicación",
       "schedulePublish": "Programar",
+      "aiAssist": "Asistente IA",
       "dangerZone": "Zona de riesgo",
       "delete": "Eliminar artículo"
     },
@@ -2238,7 +2239,28 @@
       "redo": "Rehacer",
       "words": "{count, plural, one {# palabra} other {# palabras}}",
       "readingTime": "{minutes} min de lectura",
-      "linkPrompt": "URL del enlace (vacío para quitar)"
+      "linkPrompt": "URL del enlace (vacío para quitar)",
+      "imageAltPrompt": "Texto alternativo para la imagen (describe brevemente lo que se ve; dejá vacío si es decorativa)"
+    },
+    "ai": {
+      "suggestTitles": "Sugerir título",
+      "generateSummary": "Generar resumen",
+      "continue": "Continuar escribiendo",
+      "rewrite": "Reescribir selección",
+      "rewriteShorter": "Más corto",
+      "rewriteLonger": "Más largo",
+      "rewriteClearer": "Más claro",
+      "rewriteFormal": "Más formal",
+      "rewriteCasual": "Más casual",
+      "rewriteGrammar": "Corregir gramática",
+      "thinking": "Pensando…",
+      "emptyContent": "Escribí algo antes de pedir asistencia",
+      "noSelection": "Seleccioná texto para reescribir",
+      "continued": "Texto añadido al final",
+      "rewritten": "Selección reescrita",
+      "summaryGenerated": "Resumen generado",
+      "titleSuggestionsTitle": "Sugerencias de título",
+      "titleApplied": "Título aplicado"
     },
     "public": {
       "indexTitle": "Blog",

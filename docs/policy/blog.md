@@ -208,23 +208,44 @@ They are recorded here so the next person planning the feature doesn't
 have to rediscover the direction. **Scope and ordering will be revisited
 before any of these are picked up.**
 
-### 6.1 Tiptap AI Toolkit integration
+### 6.1 AI writing assist — shipped (DIY, no Tiptap Pro)
 
-Reference: <https://tiptap.dev/product/ai-toolkit>
+Built on the free Tiptap editor + the Anthropic SDK. No Tiptap Pro
+dependency, no monthly fee — only the per-token Anthropic API cost when
+the writer invokes an action.
 
-Slot-in extension on top of the v2 Tiptap editor:
+**Shipped operations** (server actions in `src/lib/actions/blog-ai.ts`,
+prompt construction in `src/lib/ai/blog.ts`):
 
-- Continue writing from cursor
-- Rewrite selection (shorter, longer, more formal, more casual, fix
-  grammar, translate)
-- Summarize selection → auto-fills `summary` field
-- Generate title from content
-- Inline `/ai` slash command for one-shot prompts
+- **Suggest titles** — sidebar button + dialog with 3 options
+- **Generate summary** — sidebar button, fills the SEO meta description
+  field directly
+- **Continue writing** — Tiptap toolbar button, appends 1–2 paragraphs
+  at the end
+- **Rewrite selection** — Tiptap toolbar dropdown: shorter / longer /
+  clearer / more formal / more casual / fix grammar
 
-Wiring is a Tiptap extension + a single server action that proxies to
-the model. Keys live in `instance.integrations_config.ai` (Vault-backed,
-following the §7 integrations pattern in CLAUDE.md). User-facing
-terminology: never "API key" — show "AI provider".
+**Implementation notes:**
+
+- Model: `claude-opus-4-7`. Streaming server-side via `stream.finalMessage()`
+  to avoid SDK HTTP timeouts; no client-side streaming UI (v2 concern).
+- Voice guide lives as a static string in `src/lib/ai/blog.ts` for now —
+  v2 reads it from `instance.brand_system.voice_guide` (§6.2 below) so
+  each tenant gets their own house voice.
+- Key in `ANTHROPIC_API_KEY` env var. v2 moves it to
+  `instance.integrations_config.ai` (Vault-backed per CLAUDE.md §7).
+  User-facing terminology: "AI provider", never "API key".
+- The Tiptap AI Toolkit was considered and rejected — DIY closed the
+  feature gap in ~1 day with no recurring fee.
+
+**Deferred:**
+
+- Inline `/ai` slash command — the toolbar + sidebar buttons cover the
+  common path; slash command is a power-user shortcut.
+- Translation — explicitly out of policy scope (per §6.4 "per-post
+  translation" — separate `post` rows per language, not one row with
+  two language fields).
+- Client-side streaming (incremental token display) — v2 concern.
 
 ### 6.2 Brand system per instance
 

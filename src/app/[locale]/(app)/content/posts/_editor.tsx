@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Icon } from "@/components/ui/icon";
-import { Upload, Trash2, Save, X, Clock } from "lucide-react";
+import { Upload, Trash2, Save, X, Clock, Sparkles } from "lucide-react";
 import {
   createPost,
   updatePost,
@@ -20,6 +20,16 @@ import {
   type PostStatus,
   type PostContentFormat,
 } from "@/lib/actions/post";
+import {
+  aiSuggestTitles,
+  aiGenerateSummary,
+} from "@/lib/actions/blog-ai";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const TiptapEditor = dynamic(
   () => import("./_tiptap").then((m) => m.TiptapEditor),
@@ -66,6 +76,8 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
   );
   const [uploading, setUploading] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [aiPending, setAiPending] = useState(false);
+  const [titleSuggestions, setTitleSuggestions] = useState<string[] | null>(null);
   const dirtyRef = useRef(false);
 
   const isEdit = Boolean(initial?.post_id);
@@ -225,6 +237,46 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
     });
   }
 
+  async function onSuggestTitles() {
+    if (!content.trim()) {
+      toast.error(t("ai.emptyContent"));
+      return;
+    }
+    setAiPending(true);
+    const res = await aiSuggestTitles({
+      content,
+      contentFormat: "html",
+      summary,
+    });
+    setAiPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    setTitleSuggestions(res.data);
+  }
+
+  async function onGenerateSummary() {
+    if (!content.trim()) {
+      toast.error(t("ai.emptyContent"));
+      return;
+    }
+    setAiPending(true);
+    const res = await aiGenerateSummary({
+      title,
+      content,
+      contentFormat: "html",
+    });
+    setAiPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    setSummary(res.data);
+    markDirty();
+    toast.success(t("ai.summaryGenerated"));
+  }
+
   const statusBadgeClass =
     status === "published"
       ? "bg-emerald-100 text-emerald-700"
@@ -333,6 +385,42 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
         </div>
 
         <aside className="space-y-4">
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <Icon icon={Sparkles} size={12} />
+              {t("sidebar.aiAssist")}
+            </h3>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSuggestTitles}
+                disabled={aiPending}
+                className="w-full justify-start"
+              >
+                <Icon icon={Sparkles} size={12} />
+                {t("ai.suggestTitles")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onGenerateSummary}
+                disabled={aiPending}
+                className="w-full justify-start"
+              >
+                <Icon icon={Sparkles} size={12} />
+                {t("ai.generateSummary")}
+              </Button>
+              {aiPending && (
+                <p className="text-xs text-muted-foreground">
+                  {t("ai.thinking")}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="rounded-lg border bg-card p-4">
             <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {t("sidebar.cover")}
@@ -458,6 +546,36 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
           )}
         </aside>
       </div>
+
+      <Dialog
+        open={titleSuggestions !== null}
+        onOpenChange={(open) => {
+          if (!open) setTitleSuggestions(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("ai.titleSuggestionsTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {titleSuggestions?.map((suggestion, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  setTitle(suggestion);
+                  markDirty();
+                  setTitleSuggestions(null);
+                  toast.success(t("ai.titleApplied"));
+                }}
+                className="w-full rounded-md border bg-background p-3 text-left text-sm hover:bg-muted"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

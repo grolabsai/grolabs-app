@@ -7,7 +7,19 @@ import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import Typography from "@tiptap/extension-typography";
-import { useEffect, useRef, useState } from "react";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
+import TextAlign from "@tiptap/extension-text-align";
+import Highlight from "@tiptap/extension-highlight";
+import Youtube from "@tiptap/extension-youtube";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { SlashCommand, buildSlashRender, type SlashCommandItem } from "./_slash-command";
 import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
@@ -21,6 +33,7 @@ import {
   Heading3,
   List,
   ListOrdered,
+  ListChecks,
   Quote,
   Link as LinkIcon,
   Image as ImageIcon,
@@ -29,6 +42,14 @@ import {
   Sparkles,
   Wand2,
   ChevronDown,
+  Table as TableIcon,
+  Highlighter,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Film as YoutubeIcon,
+  Minus,
+  Braces,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadPostImage } from "@/lib/actions/post";
@@ -52,6 +73,93 @@ export interface TiptapEditorProps {
 
 const WORDS_PER_MINUTE = 220;
 
+/**
+ * The fixed catalog of slash-menu commands. Search is a space-joined
+ * alias string used for fuzzy-ish substring matching — add common
+ * keywords (`bulletlist`, `ul`, `dash`, …) so the menu finds the item
+ * however the writer phrases it.
+ */
+function buildSlashItems(): SlashCommandItem[] {
+  return [
+    {
+      title: "Heading 1",
+      description: "Top-level heading",
+      search: "h1 heading 1 title",
+      command: (e) => e.chain().focus().setNode("heading", { level: 1 }).run(),
+    },
+    {
+      title: "Heading 2",
+      description: "Section heading",
+      search: "h2 heading 2 section",
+      command: (e) => e.chain().focus().setNode("heading", { level: 2 }).run(),
+    },
+    {
+      title: "Heading 3",
+      description: "Subsection heading",
+      search: "h3 heading 3 subsection",
+      command: (e) => e.chain().focus().setNode("heading", { level: 3 }).run(),
+    },
+    {
+      title: "Bullet list",
+      description: "Unordered list",
+      search: "bullet list ul unordered dash",
+      command: (e) => e.chain().focus().toggleBulletList().run(),
+    },
+    {
+      title: "Numbered list",
+      description: "Ordered list",
+      search: "numbered list ol ordered",
+      command: (e) => e.chain().focus().toggleOrderedList().run(),
+    },
+    {
+      title: "Task list",
+      description: "Checkboxes",
+      search: "task todo checkbox checklist",
+      command: (e) => e.chain().focus().toggleTaskList().run(),
+    },
+    {
+      title: "Quote",
+      description: "Blockquote",
+      search: "quote blockquote citation",
+      command: (e) => e.chain().focus().toggleBlockquote().run(),
+    },
+    {
+      title: "Code block",
+      description: "Syntax-highlighted code",
+      search: "code block snippet program",
+      command: (e) => e.chain().focus().toggleCodeBlock().run(),
+    },
+    {
+      title: "Divider",
+      description: "Horizontal rule",
+      search: "divider hr horizontal rule separator",
+      command: (e) => e.chain().focus().setHorizontalRule().run(),
+    },
+    {
+      title: "Table",
+      description: "3×3 table",
+      search: "table grid",
+      command: (e) =>
+        e
+          .chain()
+          .focus()
+          .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+          .run(),
+    },
+    {
+      title: "YouTube",
+      description: "Embed a YouTube video",
+      search: "youtube video embed yt",
+      command: (e) => {
+        const url = window.prompt("YouTube URL");
+        if (url) {
+          e.commands.setYoutubeVideo({ src: url, width: 640, height: 360 });
+        }
+      },
+    },
+  ];
+}
+
 export function TiptapEditor({
   initialHTML = "",
   placeholder,
@@ -62,11 +170,13 @@ export function TiptapEditor({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [aiPending, setAiPending] = useState(false);
+  const lowlight = useMemo(() => createLowlight(common), []);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        codeBlock: false, // disabled in favor of CodeBlockLowlight
       }),
       Link.configure({
         openOnClick: false,
@@ -74,16 +184,55 @@ export function TiptapEditor({
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       }),
       Image.configure({ inline: false, allowBase64: false }),
-      Placeholder.configure({ placeholder: placeholder ?? "" }),
+      Placeholder.configure({
+        placeholder: ({ node }) =>
+          node.type.name === "paragraph"
+            ? (placeholder ?? "Type / for commands…")
+            : "",
+      }),
       CharacterCount,
       Typography,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Highlight.configure({ multicolor: false }),
+      Youtube.configure({ controls: true, nocookie: true }),
+      CodeBlockLowlight.configure({ lowlight }),
+      SlashCommand.configure({
+        suggestion: {
+          char: "/",
+          startOfLine: false,
+          allowSpaces: false,
+          items: ({ query }: { query: string }) =>
+            buildSlashItems().filter((item) =>
+              item.search.toLowerCase().includes(query.toLowerCase()),
+            ),
+          render: buildSlashRender(),
+          command: ({
+            editor,
+            range,
+            props,
+          }: {
+            editor: import("@tiptap/core").Editor;
+            range: import("@tiptap/core").Range;
+            props: SlashCommandItem;
+          }) => {
+            editor.chain().focus().deleteRange(range).run();
+            props.command(editor, range);
+          },
+        },
+      }),
     ],
     content: initialHTML || "<p></p>",
     immediatelyRender: false,
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none min-h-[400px] focus:outline-none p-4 border rounded-md bg-background",
+          "prose prose-sm max-w-none min-h-[400px] focus:outline-none p-4 border rounded-md bg-background tiptap-blog",
       },
     },
     onUpdate({ editor }) {
@@ -290,6 +439,102 @@ export function TiptapEditor({
           aria-label={t("quote")}
         >
           <Icon icon={Quote} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("taskList") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+          aria-label={t("taskList")}
+          title={t("taskList")}
+        >
+          <Icon icon={ListChecks} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("highlight") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          aria-label={t("highlight")}
+          title={t("highlight")}
+        >
+          <Icon icon={Highlighter} size={14} />
+        </button>
+
+        <div className="mx-1 h-5 w-px bg-border" />
+
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive({ textAlign: "left" }) ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          aria-label={t("alignLeft")}
+          title={t("alignLeft")}
+        >
+          <Icon icon={AlignLeft} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive({ textAlign: "center" }) ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          aria-label={t("alignCenter")}
+          title={t("alignCenter")}
+        >
+          <Icon icon={AlignCenter} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive({ textAlign: "right" }) ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          aria-label={t("alignRight")}
+          title={t("alignRight")}
+        >
+          <Icon icon={AlignRight} size={14} />
+        </button>
+
+        <div className="mx-1 h-5 w-px bg-border" />
+
+        <button
+          type="button"
+          className={tbBtn}
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          aria-label={t("divider")}
+          title={t("divider")}
+        >
+          <Icon icon={Minus} size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${tbBtn} ${editor.isActive("codeBlock") ? tbBtnActive : ""}`}
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          aria-label={t("codeBlock")}
+          title={t("codeBlock")}
+        >
+          <Icon icon={Braces} size={14} />
+        </button>
+        <button
+          type="button"
+          className={tbBtn}
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+          aria-label={t("table")}
+          title={t("table")}
+        >
+          <Icon icon={TableIcon} size={14} />
+        </button>
+        <button
+          type="button"
+          className={tbBtn}
+          onClick={() => {
+            const url = window.prompt(t("youtubePrompt"));
+            if (url) editor.commands.setYoutubeVideo({ src: url, width: 640, height: 360 });
+          }}
+          aria-label={t("youtube")}
+          title={t("youtube")}
+        >
+          <Icon icon={YoutubeIcon} size={14} />
         </button>
 
         <div className="mx-1 h-5 w-px bg-border" />

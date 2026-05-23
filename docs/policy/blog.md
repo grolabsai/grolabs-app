@@ -238,14 +238,46 @@ prompt construction in `src/lib/ai/blog.ts`):
 - The Tiptap AI Toolkit was considered and rejected — DIY closed the
   feature gap in ~1 day with no recurring fee.
 
+**Prompts live in the DB, not in code.** Locked-in architectural rule:
+anything loaded into an agent (system prompt, user prompt templates,
+voice guide, rewrite instructions, archetype catalogs, interview
+scripts) is a row in `prompt_template` (or a related catalog table), not
+a string constant. Editable via Supabase Studio without a deploy.
+
+Resolution order: the writer's `instance_id` wins; instance 0 (GroLabs
+template) is the canonical fallback. Tenants who haven't overridden a
+prompt read from the template seed. Code lookup is
+`src/lib/ai/blog.ts → loadPrompt(key)`; substitution uses `{{name}}`
+syntax.
+
+Current `prompt_template` rows on instance 0 (read these to see the
+canonical prompts):
+
+| Key | Used by |
+|---|---|
+| `blog.voice_default` | System prompt — voice paragraph |
+| `blog.system_prompt` | All operations — wraps `{{voice_guide}}` |
+| `blog.suggest_titles` | Sidebar "Suggest titles" |
+| `blog.generate_summary` | Sidebar "Generate summary" |
+| `blog.continue_writing` | Toolbar "Continue" |
+| `blog.rewrite.template` | Toolbar "Rewrite" wrapper |
+| `blog.rewrite.instruction.{shorter,longer,clearer,formal,casual,grammar}` | Per-variant instruction interpolated into the wrapper |
+
+**Secrets stay in env**, not in `prompt_template` — `ANTHROPIC_API_KEY`,
+`CRON_SECRET`. When multi-tenant AI billing lands, the key moves to
+`instance.integrations_config.ai` (Vault-backed per CLAUDE.md §7).
+
 **Deferred:**
 
 - Inline `/ai` slash command — the toolbar + sidebar buttons cover the
   common path; slash command is a power-user shortcut.
-- Translation — explicitly out of policy scope (per §6.4 "per-post
+- Translation — explicitly out of policy scope (per §6.5 "per-post
   translation" — separate `post` rows per language, not one row with
   two language fields).
 - Client-side streaming (incremental token display) — v2 concern.
+- Per-post `writing_strategy` JSONB column (voice + Brunson archetype +
+  storyline + polarization stance) — lands with the consulting agent
+  (planned).
 
 ### 6.2 Brand system per instance
 
@@ -306,7 +338,41 @@ Implementation notes for whoever picks this up:
   it requires a model that outputs structured SVG, not pixel art. Keep
   the two transform pipelines separate behind the same UI.
 
-### 6.4 What's *not* in the backlog
+### 6.4 Research task (directional — for the consulting agent)
+
+Once the consulting agent (§6.5, planned) is producing strategic briefs
+and outlines, the writer will hit a recurring need: "back this claim up
+with data" or "check whether this fact is actually true". A **research
+task** is the unit of work for that.
+
+Shape:
+
+```
+research_task (
+  research_task_id   bigserial PK
+  instance_id        FK → instance
+  post_id            FK → post (nullable — can predate the post draft)
+  prompt             text          -- "find me 3 studies on X"
+  status             'pending' | 'running' | 'done' | 'failed'
+  findings           jsonb         -- structured: [{claim, source_url, confidence, excerpt}]
+  agent_session_id   text          -- if dispatched to a managed agent, store the ID
+  created_at, updated_at
+)
+```
+
+The post editor surfaces unresolved research tasks alongside the draft
+(sidebar list); when a finding lands, the writer can drop it into the
+post as a citation or footnote. The agent doing the actual research is
+likely Anthropic's Managed Agent with web-search + web-fetch tools —
+see `shared/managed-agents-*.md` in the `claude-api` skill — but the
+local Scout-side surface is the `research_task` table + a worker that
+dispatches and polls.
+
+**Not in this PR's scope.** Listed here so it's not re-invented later.
+This lands after the consulting agent (§6.5) is in place — the brief
+is what tells the agent what to research.
+
+### 6.5 What's *not* in the backlog
 
 Listed so a future session doesn't add them by accident:
 

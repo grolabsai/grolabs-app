@@ -41,6 +41,13 @@ rather than working around it.
   on `instance_member` enforces a matching active `tenant_member`
   row. Backfills 3 (tenant, user) pairs from existing instance
   memberships. Owner: Tuncho.
+- **blog.md** — Multi-tenant blog surface (admin at `/content/posts`,
+  public at `/blog/[slug]`). Single `post` table; markdown in v1,
+  Tiptap JSONB in v2. Public reading anonymous via RLS on
+  `status='published'`. Documents v1 (shipped, PR #121), v2/v3
+  roadmap, and the AI + brand-system backlog (Tiptap AI Toolkit,
+  per-instance brand_system, image upload pipeline with
+  brand-aware transforms). Owner: Tuncho.
 
 ## Conventions
 

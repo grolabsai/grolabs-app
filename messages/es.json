@@ -2283,7 +2283,8 @@
       "readingTime": "{minutes} min de lectura",
       "toc": "Contenido",
       "filterByTag": "Filtrado por:",
-      "clearFilter": "Limpiar"
+      "clearFilter": "Limpiar",
+      "related": "Seguí leyendo"
     }
   }
 }

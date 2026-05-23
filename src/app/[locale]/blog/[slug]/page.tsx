@@ -13,6 +13,9 @@ import {
   readingMinutes,
 } from "@/lib/blog/render";
 import { CopyHeadingAnchors } from "../_copy-anchors";
+import { ReadingProgress } from "../_reading-progress";
+import { getRelatedPosts } from "@/lib/blog/related";
+import { Link } from "@/i18n/routing";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +96,14 @@ export default async function PublicPostPage({
   }
 
   const brand = await getBrandSystem(post.instance_id);
+  const related = await getRelatedPosts(
+    {
+      post_id: post.post_id,
+      instance_id: post.instance_id,
+      tags: post.tags,
+    },
+    3,
+  );
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -115,6 +126,7 @@ export default async function PublicPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
+      <ReadingProgress />
       <div className="mx-auto max-w-2xl px-6 py-16">
 
       <article className="prose prose-lg max-w-none">
@@ -201,6 +213,42 @@ export default async function PublicPostPage({
       </article>
 
       <CopyHeadingAnchors />
+
+      {related.length > 0 ? (
+        <aside
+          className="mt-16 border-t pt-10"
+          style={{ borderColor: "var(--blog-muted, currentColor)", opacity: 0.95 }}
+          aria-label={t("related")}
+        >
+          <h2 className="mb-6 text-sm font-medium uppercase tracking-wider">
+            {t("related")}
+          </h2>
+          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((r) => (
+              <li key={r.post_id} className="group">
+                <Link href={`/blog/${r.slug}` as never} className="block">
+                  {r.cover_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={r.cover_image_url}
+                      alt={r.title}
+                      className="mb-3 aspect-[2/1] w-full rounded-md border object-cover"
+                    />
+                  ) : null}
+                  <h3 className="text-base font-semibold leading-tight group-hover:underline">
+                    {r.title}
+                  </h3>
+                  {r.summary ? (
+                    <p className="mt-1 line-clamp-2 text-sm opacity-75">
+                      {r.summary}
+                    </p>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      ) : null}
       </div>
     </main>
   );

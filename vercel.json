@@ -5,6 +5,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "crons": [
-    { "path": "/api/v1/integrations/ga4/poll", "schedule": "0 6 * * *" }
+    { "path": "/api/v1/integrations/ga4/poll", "schedule": "0 6 * * *" },
+    { "path": "/api/v1/blog/publish-due", "schedule": "*/5 * * * *" }
   ]
 }

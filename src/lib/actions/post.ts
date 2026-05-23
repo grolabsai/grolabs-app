@@ -5,14 +5,17 @@ import { currentInstanceId } from "@/lib/instance";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-export type PostStatus = "draft" | "published";
+export type PostStatus = "draft" | "scheduled" | "published";
+export type PostContentFormat = "markdown" | "html";
 
 export interface PostInput {
   title: string;
   slug: string;
   summary?: string | null;
   content: string;
+  content_format?: PostContentFormat;
   cover_image_url?: string | null;
+  tags?: string[];
 }
 
 function slugify(input: string): string {
@@ -26,6 +29,20 @@ function slugify(input: string): string {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+function normalizeTags(tags: string[] | undefined): string[] {
+  if (!tags) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of tags) {
+    const t = raw.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+    if (out.length >= 12) break;
+  }
+  return out;
 }
 
 export async function createPost(input: PostInput) {
@@ -50,7 +67,9 @@ export async function createPost(input: PostInput) {
       slug,
       summary: input.summary?.trim() || null,
       content: input.content,
+      content_format: input.content_format ?? "html",
       cover_image_url: input.cover_image_url || null,
+      tags: normalizeTags(input.tags),
       status: "draft",
     })
     .select("post_id")
@@ -78,7 +97,9 @@ export async function updatePost(postId: number, input: PostInput) {
       slug,
       summary: input.summary?.trim() || null,
       content: input.content,
+      content_format: input.content_format ?? "html",
       cover_image_url: input.cover_image_url || null,
+      tags: normalizeTags(input.tags),
     })
     .eq("post_id", postId);
 
@@ -92,17 +113,35 @@ export async function updatePost(postId: number, input: PostInput) {
 
 export async function setPostStatus(postId: number, status: PostStatus) {
   const supabase = await createClient();
+  const patch: Record<string, unknown> = { status };
+  if (status === "published") {
+    patch.published_at = new Date().toISOString();
+  } else if (status === "draft") {
+    patch.published_at = null;
+  }
+  // 'scheduled' keeps the published_at that schedulePost set.
+  const { error } = await supabase.from("post").update(patch).eq("post_id", postId);
+  if (error) return { error: error.message };
+  revalidatePath("/blog");
+  revalidatePath("/content/posts");
+  return { ok: true };
+}
+
+/**
+ * Mark a post as scheduled with a future publish time. The Vercel cron at
+ * /api/v1/blog/publish-due flips it to 'published' once the time arrives.
+ */
+export async function schedulePost(postId: number, isoDateTime: string) {
+  const when = new Date(isoDateTime);
+  if (Number.isNaN(when.getTime())) return { error: "Invalid date" };
+  if (when.getTime() <= Date.now()) return { error: "Schedule must be in the future" };
+
+  const supabase = await createClient();
   const { error } = await supabase
     .from("post")
-    .update({
-      status,
-      published_at: status === "published" ? new Date().toISOString() : null,
-    })
+    .update({ status: "scheduled", published_at: when.toISOString() })
     .eq("post_id", postId);
-
   if (error) return { error: error.message };
-
-  revalidatePath("/blog");
   revalidatePath("/content/posts");
   return { ok: true };
 }
@@ -117,10 +156,34 @@ export async function deletePost(postId: number) {
 }
 
 /**
+ * Autosave-friendly update — same as updatePost but doesn't revalidate the
+ * public surface (the post isn't published yet, or content hasn't changed
+ * what readers see). Used by the editor's 5s debounced save loop.
+ */
+export async function autosavePost(postId: number, input: PostInput) {
+  const supabase = await createClient();
+  const slug = slugify(input.slug || input.title);
+  if (!slug) return { error: "Invalid slug" };
+
+  const { error } = await supabase
+    .from("post")
+    .update({
+      title: input.title.trim(),
+      slug,
+      summary: input.summary?.trim() || null,
+      content: input.content,
+      content_format: input.content_format ?? "html",
+      cover_image_url: input.cover_image_url || null,
+      tags: normalizeTags(input.tags),
+    })
+    .eq("post_id", postId);
+  if (error) return { error: error.message };
+  return { ok: true, saved_at: new Date().toISOString() };
+}
+
+/**
  * Upload an image to the `blog-images` bucket. Path convention:
  *   {instance_id}/{kind}/{timestamp}-{name}
- * `kind` is "cover" or "inline"; both end up in the same bucket but the
- * subfolder makes manual cleanup possible later.
  */
 export async function uploadPostImage(
   formData: FormData,

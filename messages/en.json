@@ -2161,10 +2161,15 @@
     "noInstance": "Session expired — please sign in again.",
     "colTitle": "Title",
     "colStatus": "Status",
+    "colTags": "Tags",
     "colUpdated": "Updated",
     "colSlug": "Slug",
+    "filter": {
+      "all": "All"
+    },
     "status": {
       "draft": "Draft",
+      "scheduled": "Scheduled",
       "published": "Published"
     },
     "fields": {
@@ -2173,8 +2178,8 @@
       "slug": "Slug (URL)",
       "slugPlaceholder": "auto-from-title",
       "summary": "Summary (SEO meta description)",
-      "content": "Content (Markdown)",
-      "contentPlaceholder": "Start writing in Markdown. Use ## for headings, **bold**, *italics*, [links](url), and images via the button above."
+      "content": "Content",
+      "contentPlaceholder": "Start writing. Use the toolbar for headings, bold, lists, links, and images."
     },
     "editor": {
       "save": "Save",
@@ -2184,12 +2189,20 @@
       "uploading": "Uploading…",
       "showPreview": "Preview",
       "hidePreview": "Back to editor",
-      "previewEmpty": "Post is empty."
+      "previewEmpty": "Post is empty.",
+      "savedAt": "Saved at {time}",
+      "markdownLegacy": "This post was written in Markdown (v1). You can keep editing as Markdown; new posts use the rich editor."
     },
     "sidebar": {
       "cover": "Cover image",
       "uploadCover": "Upload cover",
       "removeCover": "Remove cover",
+      "tags": "Tags",
+      "tagsEmpty": "No tags",
+      "tagsPlaceholder": "Add tag (Enter)",
+      "removeTag": "Remove tag",
+      "schedule": "Schedule publish",
+      "schedulePublish": "Schedule",
       "dangerZone": "Danger zone",
       "delete": "Delete post"
     },
@@ -2201,15 +2214,40 @@
       "created": "Post created",
       "published": "Post published",
       "unpublished": "Post moved to draft",
+      "scheduled": "Publish scheduled",
+      "scheduleRequired": "Pick a date and time",
       "coverUploaded": "Cover uploaded",
       "imageInserted": "Image inserted into content",
       "titleRequired": "Title is required",
       "saveFirst": "Save the post before publishing"
     },
+    "tiptap": {
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "quote": "Quote",
+      "link": "Link",
+      "image": "Image",
+      "undo": "Undo",
+      "redo": "Redo",
+      "words": "{count, plural, one {# word} other {# words}}",
+      "readingTime": "{minutes} min read",
+      "linkPrompt": "Link URL (empty to remove)"
+    },
     "public": {
       "indexTitle": "Blog",
       "indexDescription": "Notes, ideas, and lessons.",
-      "empty": "No posts published yet."
+      "empty": "No posts published yet.",
+      "readingTime": "{minutes} min read",
+      "toc": "Contents",
+      "filterByTag": "Filtered by:",
+      "clearFilter": "Clear"
     }
   }
 }

@@ -135,30 +135,64 @@ should nudge the writer to fill it.
   metadata + JSON-LD `Article`
 - i18n: full `blog.*` namespace (es source of truth, en mirrored)
 
-### v2 — "real writing experience"
+### v2 — shipped
 
-- **Editor: Tiptap** with headings, bold/italic, lists, links, blockquote,
-  code, inline image upload (paste, drag, button), bubble menu for
-  inline formatting. Content type on `post` migrates `text` → `jsonb`
-  (Tiptap doc), with a one-way conversion of existing markdown rows.
-- **Drafts filter** on `/content/posts` list (default: published; toggle:
-  drafts)
-- **Autosave** every 5s while editing (debounced)
-- **Scheduled publish**: `published_at` in the future + a cron that flips
-  `status` when the time arrives
+- **Editor: Tiptap** with headings (H1/H2/H3), bold/italic/strike/code,
+  bullet + ordered lists, blockquote, links, inline image upload via
+  toolbar. Lazy-loaded via `next/dynamic` on `/content/posts/*` so the
+  catalog/pricing bundle is unaffected.
+- **Content stored as sanitized HTML.** Schema kept `content` as `text`
+  and added `content_format` (`'markdown' | 'html'`) so v1 markdown posts
+  keep rendering through `react-markdown` while new posts go through
+  `DOMPurify.sanitize()` on the public surface. Edit screen detects the
+  format and shows the matching editor.
+- **Drafts filter + status pills + tag pills** on `/content/posts` list,
+  with tabs for all / draft / scheduled / published.
+- **Autosave** every 5s while editing (debounced; only when state is
+  dirty). Server returns `saved_at` which the editor surfaces inline.
+- **Scheduled publish**: third status `'scheduled'`. `schedulePost(id, iso)`
+  server action sets `status='scheduled'` + future `published_at`. Vercel
+  cron `/api/v1/blog/publish-due` runs every 5 minutes and calls
+  `publish_due_posts()` (SECURITY DEFINER) which flips matured rows to
+  `'published'`. Cron route gated by `CRON_SECRET` env var.
+- **Tags**: `tags text[]` column + GIN index. Editor UI in the sidebar;
+  `/blog?tag=X` filters the public index; rendered as `#tag` chips on
+  post + index pages.
 
-### v3 — "Ghost-quality polish + AEO complete"
+### v3 — shipped
 
-- Tiptap slash-command menu (`/image`, `/quote`, `/divider`, `/embed`,
-  `/code`)
-- Drag-handle to reorder blocks
-- Word count + reading time on the edit screen and public page
-- Tags — single `text[]` column on `post`, no join table; filter on
-  `/blog` and `/content/posts`
-- `/sitemap.xml`, `/rss.xml`, `/llms.txt`
-- Multi-tenant routing at custom domains — `ux-economics.com/blog/*`,
-  `grolabs.com/blog/*` resolve at the edge
-- Copy-link-to-heading on hover, table of contents for posts with ≥3 H2s
+- **Word count + reading time** — live in the editor toolbar (Tiptap
+  `CharacterCount` extension), and on the public reading page next to
+  the date (220 words/min). Server-side count strips HTML before
+  counting.
+- **Table of contents** — server-side `extractTocAndAnchor()` walks
+  the sanitized HTML for `<h2>`/`<h3>`, assigns `id` attributes, and
+  builds a TOC. Rendered when a post has ≥3 H2s. Each heading is
+  clickable client-side to copy a deep link.
+- **`/sitemap.xml`** — Next.js `MetadataRoute.Sitemap`; host-aware
+  (filters by `instance.domain` when the request maps to one). Includes
+  the index, every published post, and one entry per distinct tag.
+- **`/rss.xml`** — host-aware RSS 2.0 feed, last 50 published posts.
+  HTML content sanitized before inlining.
+- **`/llms.txt`** — host-aware llms.txt format (per llmstxt.org): site
+  title, short description, then bulleted `[title](url): summary` for
+  each published post.
+- **Multi-tenant domain routing**: `instance.domain` column +
+  `instanceIdForHost()` server helper. Every public surface (index,
+  post, sitemap, RSS, llms.txt) reads the host header, looks up the
+  matching instance, and filters posts accordingly. When no domain
+  maps (Scout admin URL, preview), the surface shows every published
+  post across instances — the working preview behavior. To bind a
+  domain: `UPDATE instance SET domain = 'grolabs.com' WHERE …`.
+
+### Deferred from v3 (worth doing if writing reveals the need)
+
+- **Tiptap slash-command menu** (`/image`, `/quote`, `/divider`, `/embed`).
+  The toolbar already covers the same surface; the slash menu is a
+  power-user convenience, not a feature gap.
+- **Drag-handle to reorder blocks** — Tiptap's official extension is
+  Pro. A DIY drag handle (~50 lines using HTML5 drag events on `<p>`
+  / `<h2>` blocks) is the cheap version when this is worth doing.
 
 ---
 

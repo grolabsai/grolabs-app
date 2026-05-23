@@ -2161,10 +2161,15 @@
     "noInstance": "Sesión expirada — volvé a iniciar sesión.",
     "colTitle": "Título",
     "colStatus": "Estado",
+    "colTags": "Etiquetas",
     "colUpdated": "Actualizado",
     "colSlug": "Slug",
+    "filter": {
+      "all": "Todos"
+    },
     "status": {
       "draft": "Borrador",
+      "scheduled": "Programado",
       "published": "Publicado"
     },
     "fields": {
@@ -2173,8 +2178,8 @@
       "slug": "Slug (URL)",
       "slugPlaceholder": "se-genera-desde-el-titulo",
       "summary": "Resumen (descripción meta para SEO)",
-      "content": "Contenido (Markdown)",
-      "contentPlaceholder": "Empezá a escribir en Markdown. Usá ## para encabezados, **negrita**, *cursiva*, [enlaces](url) e imágenes con el botón de arriba."
+      "content": "Contenido",
+      "contentPlaceholder": "Empezá a escribir. Usá la barra para encabezados, negrita, listas, enlaces e imágenes."
     },
     "editor": {
       "save": "Guardar",
@@ -2184,12 +2189,20 @@
       "uploading": "Subiendo…",
       "showPreview": "Vista previa",
       "hidePreview": "Volver al editor",
-      "previewEmpty": "El artículo está vacío."
+      "previewEmpty": "El artículo está vacío.",
+      "savedAt": "Guardado a las {time}",
+      "markdownLegacy": "Este artículo se escribió en Markdown (v1). Lo seguís editando como Markdown; los nuevos artículos usan el editor enriquecido."
     },
     "sidebar": {
       "cover": "Imagen de portada",
       "uploadCover": "Subir portada",
       "removeCover": "Quitar portada",
+      "tags": "Etiquetas",
+      "tagsEmpty": "Sin etiquetas",
+      "tagsPlaceholder": "Agregar etiqueta (Enter)",
+      "removeTag": "Quitar etiqueta",
+      "schedule": "Programar publicación",
+      "schedulePublish": "Programar",
       "dangerZone": "Zona de riesgo",
       "delete": "Eliminar artículo"
     },
@@ -2201,15 +2214,40 @@
       "created": "Artículo creado",
       "published": "Artículo publicado",
       "unpublished": "Artículo movido a borrador",
+      "scheduled": "Publicación programada",
+      "scheduleRequired": "Elegí una fecha y hora",
       "coverUploaded": "Portada subida",
       "imageInserted": "Imagen insertada en el contenido",
       "titleRequired": "El título es obligatorio",
       "saveFirst": "Guardá el artículo antes de publicarlo"
     },
+    "tiptap": {
+      "h1": "Encabezado 1",
+      "h2": "Encabezado 2",
+      "h3": "Encabezado 3",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "strike": "Tachado",
+      "code": "Código",
+      "bulletList": "Lista con viñetas",
+      "orderedList": "Lista numerada",
+      "quote": "Cita",
+      "link": "Enlace",
+      "image": "Imagen",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "words": "{count, plural, one {# palabra} other {# palabras}}",
+      "readingTime": "{minutes} min de lectura",
+      "linkPrompt": "URL del enlace (vacío para quitar)"
+    },
     "public": {
       "indexTitle": "Blog",
       "indexDescription": "Apuntes, notas y aprendizajes.",
-      "empty": "Todavía no hay artículos publicados."
+      "empty": "Todavía no hay artículos publicados.",
+      "readingTime": "{minutes} min de lectura",
+      "toc": "Contenido",
+      "filterByTag": "Filtrado por:",
+      "clearFilter": "Limpiar"
     }
   }
 }

@@ -151,10 +151,15 @@ should nudge the writer to fill it.
 - **Autosave** every 5s while editing (debounced; only when state is
   dirty). Server returns `saved_at` which the editor surfaces inline.
 - **Scheduled publish**: third status `'scheduled'`. `schedulePost(id, iso)`
-  server action sets `status='scheduled'` + future `published_at`. Vercel
-  cron `/api/v1/blog/publish-due` runs every 5 minutes and calls
+  server action sets `status='scheduled'` + future `published_at`. A
+  **Supabase `pg_cron` job** runs every 5 minutes and calls
   `publish_due_posts()` (SECURITY DEFINER) which flips matured rows to
-  `'published'`. Cron route gated by `CRON_SECRET` env var.
+  `'published'`. Why pg_cron and not Vercel cron: the Vercel Hobby tier
+  only allows daily crons; 5-minute granularity needs Pro or pg_cron.
+  pg_cron runs inside Postgres at no extra cost. The
+  `/api/v1/blog/publish-due` route stays in the codebase as a manual
+  trigger / debug surface (gated by `CRON_SECRET`) but is not wired to
+  `vercel.json`.
 - **Tags**: `tags text[]` column + GIN index. Editor UI in the sidebar;
   `/blog?tag=X` filters the public index; rendered as `#tag` chips on
   post + index pages.

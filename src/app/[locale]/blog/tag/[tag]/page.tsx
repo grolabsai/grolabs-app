@@ -6,6 +6,13 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { instanceIdForHost } from "@/lib/blog/host";
 import { getBrandSystem, brandCssBlock } from "@/lib/blog/brand";
+import {
+  breadcrumbSchema,
+  canonicalUrl,
+  jsonLdScriptContent,
+  publisherSchema,
+  requestOrigin,
+} from "@/lib/blog/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -52,13 +59,17 @@ export async function generateMetadata({
   const instanceId = await instanceIdForHost();
   const brand = await getBrandSystem(instanceId);
   const tenant = brand.display_name || "Blog";
+  const origin = await requestOrigin();
+  const canonical = canonicalUrl(origin, `/blog/tag/${encodeURIComponent(tag)}`);
   return {
     title: `#${tag} · ${tenant}`,
     description: `Artículos etiquetados como “${tag}” en ${tenant}. Posts tagged "${tag}" from ${tenant}.`,
+    alternates: { canonical },
     openGraph: {
       title: `#${tag} · ${tenant}`,
       description: `All posts tagged "${tag}" from ${tenant}.`,
       type: "website",
+      url: canonical,
     },
   };
 }
@@ -76,6 +87,8 @@ export default async function TagPage({
   const instanceId = await instanceIdForHost();
   const posts = await loadPosts(tag, instanceId);
   const brand = await getBrandSystem(instanceId);
+  const origin = await requestOrigin();
+  const canonical = canonicalUrl(origin, `/blog/tag/${encodeURIComponent(tag)}`);
 
   // Empty tag pages are still 200 (vs notFound) so the URL is shareable
   // and indexable; no posts just means none yet.
@@ -85,14 +98,27 @@ export default async function TagPage({
     "@type": "CollectionPage",
     name: `#${tag}`,
     description: `Posts tagged "${tag}"`,
-    isPartOf: { "@type": "Blog", name: brand.display_name || "Blog" },
+    url: canonical,
+    isPartOf: {
+      "@type": "Blog",
+      name: brand.display_name || "Blog",
+      url: `${origin}/blog`,
+    },
+    publisher: publisherSchema(brand, origin),
     hasPart: posts.map((p) => ({
       "@type": "BlogPosting",
       headline: p.title,
-      url: `/blog/${p.slug}`,
+      url: `${origin}/blog/${p.slug}`,
       datePublished: p.published_at ?? undefined,
     })),
   };
+
+  const breadcrumbItems = [
+    { name: "Home", url: origin },
+    { name: brand.display_name ? `${brand.display_name} — Blog` : "Blog", url: `${origin}/blog` },
+    { name: `#${tag}`, url: canonical },
+  ];
+  const schemas = [collectionSchema, breadcrumbSchema(breadcrumbItems)];
 
   return (
     <main className="blog-themed min-h-screen">
@@ -101,7 +127,7 @@ export default async function TagPage({
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(schemas) }}
       />
       <div className="mx-auto max-w-3xl px-6 py-16">
         <header className="mb-12">

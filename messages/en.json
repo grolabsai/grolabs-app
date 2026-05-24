@@ -2229,7 +2229,8 @@
       "coverUploaded": "Cover uploaded",
       "imageInserted": "Image inserted into content",
       "titleRequired": "Title is required",
-      "saveFirst": "Save the post before publishing"
+      "saveFirst": "Save the post before publishing",
+      "missingAlt": "{count, plural, one {Published, but # image has no alt text} other {Published, but # images have no alt text}}"
     },
     "tiptap": {
       "h1": "Heading 1",

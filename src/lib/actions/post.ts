@@ -119,12 +119,46 @@ export async function setPostStatus(postId: number, status: PostStatus) {
   } else if (status === "draft") {
     patch.published_at = null;
   }
+
+  // Count images missing alt text. Non-blocking — we return the count
+  // so the editor can warn, but the publish still goes through. Hard-
+  // blocking would be annoying for decorative images.
+  let missingAltCount = 0;
+  if (status === "published") {
+    const { data: row } = await supabase
+      .from("post")
+      .select("content, content_format")
+      .eq("post_id", postId)
+      .maybeSingle();
+    if (row?.content_format === "html") {
+      missingAltCount = countMissingAltImages(row.content as string);
+    }
+  }
+
   // 'scheduled' keeps the published_at that schedulePost set.
   const { error } = await supabase.from("post").update(patch).eq("post_id", postId);
   if (error) return { error: error.message };
   revalidatePath("/blog");
   revalidatePath("/content/posts");
-  return { ok: true };
+  return { ok: true, missing_alt_count: missingAltCount };
+}
+
+/**
+ * Count `<img>` tags in the HTML that have no `alt` attribute, an
+ * empty `alt`, or only whitespace. Returns 0 on non-HTML content
+ * (markdown legacy posts are handled by react-markdown's own
+ * alt handling).
+ */
+function countMissingAltImages(html: string): number {
+  if (!html) return 0;
+  let count = 0;
+  const matches = html.match(/<img[^>]*>/gi) ?? [];
+  for (const tag of matches) {
+    const altMatch = tag.match(/\salt\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+    const alt = altMatch ? (altMatch[1] ?? altMatch[2] ?? "") : "";
+    if (!alt.trim()) count++;
+  }
+  return count;
 }
 
 /**

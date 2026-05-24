@@ -16,6 +16,16 @@ import { CopyHeadingAnchors } from "../_copy-anchors";
 import { ReadingProgress } from "../_reading-progress";
 import { getRelatedPosts } from "@/lib/blog/related";
 import { Link } from "@/i18n/routing";
+import {
+  authorSchema,
+  breadcrumbSchema,
+  canonicalUrl,
+  jsonLdScriptContent,
+  publisherSchema,
+  requestOrigin,
+} from "@/lib/blog/seo";
+import { getAuthorInfo } from "@/lib/blog/author";
+import { countWords } from "@/lib/blog/render";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +38,10 @@ type PublicPost = {
   content_format: "markdown" | "html";
   cover_image_url: string | null;
   published_at: string | null;
+  updated_at: string;
   tags: string[] | null;
   instance_id: number;
+  author_id: string;
 };
 
 async function loadPost(slug: string): Promise<PublicPost | null> {
@@ -38,7 +50,7 @@ async function loadPost(slug: string): Promise<PublicPost | null> {
   let query = supabase
     .from("post")
     .select(
-      "post_id, title, slug, summary, content, content_format, cover_image_url, published_at, tags, instance_id",
+      "post_id, title, slug, summary, content, content_format, cover_image_url, published_at, updated_at, tags, instance_id, author_id",
     )
     .eq("slug", slug)
     .eq("status", "published");
@@ -55,14 +67,20 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await loadPost(slug);
   if (!post) return {};
+  const origin = await requestOrigin();
+  const canonical = canonicalUrl(origin, `/blog/${post.slug}`);
   return {
     title: post.title,
     description: post.summary ?? undefined,
+    alternates: { canonical },
     openGraph: {
       title: post.title,
       description: post.summary ?? undefined,
       type: "article",
       publishedTime: post.published_at ?? undefined,
+      modifiedTime: post.updated_at ?? undefined,
+      url: canonical,
+      tags: post.tags ?? undefined,
       images: post.cover_image_url ? [post.cover_image_url] : undefined,
     },
     twitter: {
@@ -104,6 +122,10 @@ export default async function PublicPostPage({
     },
     3,
   );
+  const origin = await requestOrigin();
+  const author = await getAuthorInfo(post.author_id);
+  const canonical = canonicalUrl(origin, `/blog/${post.slug}`);
+  const wordCount = countWords(post.content);
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -112,8 +134,31 @@ export default async function PublicPostPage({
     description: post.summary ?? undefined,
     image: post.cover_image_url ?? undefined,
     datePublished: post.published_at ?? undefined,
-    keywords: post.tags && post.tags.length > 0 ? post.tags.join(", ") : undefined,
+    dateModified: post.updated_at ?? undefined,
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+    url: canonical,
+    wordCount: wordCount > 0 ? wordCount : undefined,
+    inLanguage: undefined as string | undefined,
+    keywords:
+      post.tags && post.tags.length > 0 ? post.tags.join(", ") : undefined,
+    author: authorSchema(author, brand, origin),
+    publisher: publisherSchema(brand, origin),
   };
+
+  const breadcrumbItems = [
+    { name: "Home", url: origin },
+    { name: brand.display_name ? `${brand.display_name} — Blog` : "Blog", url: `${origin}/blog` },
+  ];
+  if (post.tags && post.tags.length > 0) {
+    const firstTag = post.tags[0];
+    breadcrumbItems.push({
+      name: `#${firstTag}`,
+      url: `${origin}/blog/tag/${encodeURIComponent(firstTag)}`,
+    });
+  }
+  breadcrumbItems.push({ name: post.title, url: canonical });
+
+  const schemas = [articleSchema, breadcrumbSchema(breadcrumbItems)];
 
   const showToc = toc.filter((e) => e.level === 2).length >= 3;
 
@@ -124,7 +169,7 @@ export default async function PublicPostPage({
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(schemas) }}
       />
       <ReadingProgress />
       <div className="mx-auto max-w-2xl px-6 py-16">

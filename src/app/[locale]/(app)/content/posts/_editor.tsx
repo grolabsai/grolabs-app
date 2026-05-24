@@ -211,6 +211,16 @@ export function PostEditor({ initial }: { initial?: PostEditorInitial }) {
       toast.success(
         next === "published" ? t("toast.published") : t("toast.unpublished"),
       );
+      // Warn (don't block) if any image is missing alt text. The
+      // editor's AI suggestion fills these in by default; this
+      // catches the case where the writer dismissed the suggestion or
+      // pasted images from an older draft.
+      if (next === "published" && res.missing_alt_count && res.missing_alt_count > 0) {
+        toast.warning(
+          t("toast.missingAlt", { count: res.missing_alt_count }),
+          { duration: 8000 },
+        );
+      }
       // Mint a short link on first publish (idempotent — re-publishing
       // returns the existing code).
       if (next === "published" && !shortCode) {

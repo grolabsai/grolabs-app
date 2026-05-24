@@ -5,14 +5,23 @@ import { Link } from "@/i18n/routing";
 import type { Metadata } from "next";
 import { instanceIdForHost } from "@/lib/blog/host";
 import { getBrandSystem, brandCssBlock } from "@/lib/blog/brand";
+import {
+  blogRootSchema,
+  breadcrumbSchema,
+  canonicalUrl,
+  jsonLdScriptContent,
+  requestOrigin,
+} from "@/lib/blog/seo";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("blog.public");
+  const origin = await requestOrigin();
   return {
     title: t("indexTitle"),
     description: t("indexDescription"),
+    alternates: { canonical: canonicalUrl(origin, "/blog") },
   };
 }
 
@@ -66,11 +75,24 @@ export default async function PublicBlogIndex({
   const { data } = await query;
   const posts: PublicPostRow[] = (data ?? []) as PublicPostRow[];
   const brand = await getBrandSystem(instanceId);
+  const origin = await requestOrigin();
+
+  const schemas: unknown[] = [
+    ...blogRootSchema(brand, origin),
+    breadcrumbSchema([
+      { name: "Home", url: origin },
+      { name: brand.display_name ? `${brand.display_name} — Blog` : "Blog", url: `${origin}/blog` },
+    ]),
+  ];
 
   return (
     <main className="blog-themed min-h-screen">
       <style
         dangerouslySetInnerHTML={{ __html: brandCssBlock(brand, "blog-themed") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(schemas) }}
       />
       <div className="mx-auto max-w-3xl px-6 py-16">
         <header className="mb-10">

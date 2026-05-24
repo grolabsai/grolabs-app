@@ -2229,7 +2229,8 @@
       "coverUploaded": "Portada subida",
       "imageInserted": "Imagen insertada en el contenido",
       "titleRequired": "El título es obligatorio",
-      "saveFirst": "Guardá el artículo antes de publicarlo"
+      "saveFirst": "Guardá el artículo antes de publicarlo",
+      "missingAlt": "{count, plural, one {Publicado, pero # imagen no tiene texto alternativo} other {Publicado, pero # imágenes no tienen texto alternativo}}"
     },
     "tiptap": {
       "h1": "Encabezado 1",

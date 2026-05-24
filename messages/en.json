@@ -2162,6 +2162,8 @@
     "colTitle": "Title",
     "colStatus": "Status",
     "colTags": "Tags",
+    "colViews": "Views",
+    "colViewsTooltip": "Page views in the last 30 days from Google Analytics",
     "colUpdated": "Updated",
     "colSlug": "Slug",
     "filter": {
@@ -2315,7 +2317,11 @@
       "toc": "Contents",
       "filterByTag": "Filtered by:",
       "clearFilter": "Clear",
-      "related": "Keep reading"
+      "related": "Keep reading",
+      "searchPlaceholder": "Search the blog…",
+      "searchButton": "Search",
+      "searchResultsFor": "Results for",
+      "searchNoResults": "No matches. Try different keywords."
     },
     "preview": {
       "badge": "Preview",

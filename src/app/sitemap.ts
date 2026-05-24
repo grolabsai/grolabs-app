@@ -59,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const tag of tagSet) {
     entries.push({
-      url: `${origin}/blog?tag=${encodeURIComponent(tag)}`,
+      url: `${origin}/blog/tag/${encodeURIComponent(tag)}`,
       changeFrequency: "weekly",
       priority: 0.3,
     });

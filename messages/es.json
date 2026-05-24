@@ -2162,6 +2162,8 @@
     "colTitle": "Título",
     "colStatus": "Estado",
     "colTags": "Etiquetas",
+    "colViews": "Vistas",
+    "colViewsTooltip": "Vistas de los últimos 30 días según Google Analytics",
     "colUpdated": "Actualizado",
     "colSlug": "Slug",
     "filter": {
@@ -2315,7 +2317,11 @@
       "toc": "Contenido",
       "filterByTag": "Filtrado por:",
       "clearFilter": "Limpiar",
-      "related": "Seguí leyendo"
+      "related": "Seguí leyendo",
+      "searchPlaceholder": "Buscar en el blog…",
+      "searchButton": "Buscar",
+      "searchResultsFor": "Resultados para",
+      "searchNoResults": "No encontramos resultados. Probá con otras palabras."
     },
     "preview": {
       "badge": "Vista previa",

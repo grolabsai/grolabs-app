@@ -160,12 +160,13 @@ export default async function PublicPostPage({
               <span>·</span>
               <div className="flex flex-wrap gap-1">
                 {post.tags.map((tag) => (
-                  <span
+                  <Link
                     key={tag}
-                    className="rounded bg-muted px-1.5 py-0.5 text-xs"
+                    href={`/blog/tag/${encodeURIComponent(tag)}` as never}
+                    className="rounded bg-muted px-1.5 py-0.5 text-xs hover:underline"
                   >
                     #{tag}
-                  </span>
+                  </Link>
                 ))}
               </div>
             </>

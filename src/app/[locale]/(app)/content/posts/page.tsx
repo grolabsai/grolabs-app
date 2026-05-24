@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Plus, FileText } from "lucide-react";
 import type { PostStatus } from "@/lib/actions/post";
+import { getPostViewCounts } from "@/lib/blog/views";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,17 @@ export default async function BlogAdminPage({
 
   const { data: posts } = await query;
   const rows: PostRow[] = (posts ?? []) as PostRow[];
+
+  // Per-post 30-day view counts from GA4 daily snapshots.
+  // Only worth pulling for the published rows the writer would
+  // actually compare against each other; everything else renders "—".
+  const publishedSlugs = rows
+    .filter((r) => r.status === "published")
+    .map((r) => r.slug);
+  const viewCounts =
+    publishedSlugs.length > 0
+      ? await getPostViewCounts(instanceId, publishedSlugs)
+      : new Map<string, number>();
 
   const tabs: Array<PostStatus | "all"> = [
     "all",
@@ -121,6 +133,9 @@ export default async function BlogAdminPage({
                 <th className="px-4 py-2.5 text-left font-medium">
                   {t("colTags")}
                 </th>
+                <th className="px-4 py-2.5 text-right font-medium" title={t("colViewsTooltip")}>
+                  {t("colViews")}
+                </th>
                 <th className="px-4 py-2.5 text-left font-medium">
                   {t("colUpdated")}
                 </th>
@@ -176,6 +191,13 @@ export default async function BlogAdminPage({
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono text-xs text-muted-foreground">
+                      {p.status === "published" ? (
+                        viewCounts.get(p.slug) ?? 0
+                      ) : (
+                        <span>—</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">

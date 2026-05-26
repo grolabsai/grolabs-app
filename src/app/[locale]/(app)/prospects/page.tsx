@@ -140,6 +140,7 @@ export default async function ProspectsPage() {
                 <Th>{t("runTable.status")}</Th>
                 <Th>{t("runTable.score")}</Th>
                 <Th>{t("runTable.tier")}</Th>
+                <Th>{t("runTable.uplift")}</Th>
                 <Th>{t("runTable.started")}</Th>
                 <Th>{t("runTable.completed")}</Th>
               </tr>
@@ -175,6 +176,11 @@ export default async function ProspectsPage() {
                     </Td>
                     <Td mono>{r.overall_score ?? ""}</Td>
                     <Td>{r.maturity_tier ?? ""}</Td>
+                    <Td mono>
+                      {r.est_annual_uplift_usd != null
+                        ? `$${Math.round(r.est_annual_uplift_usd).toLocaleString()}`
+                        : ""}
+                    </Td>
                     <Td>{r.started_at ? formatDateTime(r.started_at) : ""}</Td>
                     <Td>{r.completed_at ? formatDateTime(r.completed_at) : ""}</Td>
                   </tr>

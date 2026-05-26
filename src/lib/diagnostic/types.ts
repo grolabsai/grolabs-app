@@ -9,6 +9,7 @@
  */
 
 import type { PdpSignals, SiteSignals } from "@/lib/glpim";
+import type { BrowserProbeResult } from "./browser-probe";
 
 export type FindingStatus = "pass" | "fail" | "partial" | "na" | "error";
 
@@ -39,10 +40,16 @@ export type SiteSignalsContext = {
   fetchError: string | null;
 };
 
+export type BrowserContext = {
+  probe: BrowserProbeResult | null;
+  enabled: boolean;
+};
+
 export type RunContext = {
   site: SiteWideContext;
   pdp: PdpContext;
   siteSignals: SiteSignalsContext;
+  browser: BrowserContext;
 };
 
 export type CheckScorer = (ctx: RunContext) => ScoringResult;

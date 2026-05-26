@@ -2363,6 +2363,7 @@
         "status": "Status",
         "score": "Score",
         "tier": "Maturity",
+        "uplift": "Est. uplift",
         "started": "Started",
         "completed": "Completed"
       },
@@ -2373,6 +2374,8 @@
         "pdpUrlPlaceholder": "Falls back to the root if not set",
         "categoryUrl": "Category URL",
         "categoryUrlPlaceholder": "Required to score faceting",
+        "annualTraffic": "Annual traffic",
+        "aov": "AOV (USD)",
         "displayName": "Display name",
         "vertical": "Vertical",
         "optional": "optional",
@@ -2386,10 +2389,39 @@
       "backToList": "Back to list",
       "overallScore": "Overall score",
       "maturityTier": "Maturity tier",
+      "uplift": "Annual uplift (USD)",
       "status": "Status",
       "completedAt": "Completed",
       "failedTitle": "Diagnostic failed",
       "samplesTitle": "Pages probed"
+    },
+    "vocabulary": {
+      "title": "Test vocabulary",
+      "subtitle": "Synonym pairs and canonical queries the browser probe uses to test the prospect's internal search.",
+      "sessionExpired": "Session expired",
+      "backToRubric": "Back to rubric",
+      "synonymsTab": "Synonym pairs",
+      "queriesTab": "Test queries",
+      "synonymsTitle": "Synonym pairs",
+      "queriesTitle": "Test queries",
+      "addSynonym": "Add pair",
+      "addQuery": "Add query",
+      "addButton": "Add",
+      "empty": "No entries yet.",
+      "templateHint": "Template-instance rows are read-only.",
+      "template": "template",
+      "delete": "Delete",
+      "confirmDelete": "Delete this entry?",
+      "fields": {
+        "vertical": "Vertical",
+        "termA": "Term A",
+        "termB": "Term B",
+        "locale": "Locale",
+        "queryText": "Query",
+        "intent": "Intent",
+        "notes": "Notes",
+        "actions": "Actions"
+      }
     },
     "rubric": {
       "title": "Diagnostic rubric",
@@ -2401,6 +2433,7 @@
       "templateBadge": "Shipped by GroLabs (template instance)",
       "templateBadgeShort": "template",
       "readOnlyTemplate": "Read-only (template check)",
+      "vocabularyButton": "Test vocabulary",
       "empty": {
         "selectPrompt": "Select a check or create a new one.",
         "stageNoChecks": "No checks in this stage yet."

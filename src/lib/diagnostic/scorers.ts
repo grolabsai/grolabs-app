@@ -10,7 +10,7 @@
  * intentionally absent; they'll arrive with the Playwright service.
  */
 
-import type { CheckScorer, RunContext } from "./types";
+import type { CheckScorer, Evidence, RunContext, ScoringResult } from "./types";
 
 const PRODUCT_REQUIRED_FIELDS = [
   "name",
@@ -374,6 +374,151 @@ const scoreFaceting: CheckScorer = ({ siteSignals }) => {
   };
 };
 
+// ── On-site nav — browser-driven (typo / synonym / empty-state / brand) ────
+
+function browserDisabledOrUnavailable({ browser }: RunContext): ScoringResult | null {
+  if (!browser.enabled) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "browser_probe_disabled" },
+      notes:
+        "Enable PROSPECTOS_BROWSER_PROBE_ENABLED=1 and install Playwright Chromium to score this check.",
+    };
+  }
+  if (!browser.probe) {
+    return {
+      result_status: "error",
+      score: null,
+      evidence: { reason: "browser_probe_failed_to_run" },
+    };
+  }
+  return null;
+}
+
+const scoreTypoTolerance: CheckScorer = (ctx) => {
+  const guard = browserDisabledOrUnavailable(ctx);
+  if (guard) return guard;
+  const probe = ctx.browser.probe!;
+  if (!probe.search_box_found) {
+    return {
+      result_status: "error",
+      score: null,
+      evidence: { reason: "search_box_not_found" },
+    };
+  }
+  if (probe.typo_tests.length === 0) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: {
+        reason: "no_product_names_to_mutate",
+        product_names_discovered: probe.product_names_discovered,
+      },
+    };
+  }
+  const passed = probe.typo_tests.filter((t) => t.results_returned).length;
+  const ratio = passed / probe.typo_tests.length;
+  const score = Math.round(ratio * 100);
+  const status =
+    ratio >= 0.99 ? "pass" : ratio >= 0.5 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      typo_tests: probe.typo_tests,
+      passed,
+      total: probe.typo_tests.length,
+    },
+  };
+};
+
+const scoreSynonyms: CheckScorer = (ctx) => {
+  const guard = browserDisabledOrUnavailable(ctx);
+  if (guard) return guard;
+  const probe = ctx.browser.probe!;
+  if (!probe.search_box_found || probe.synonym_tests.length === 0) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "no_synonym_pairs_tested" },
+    };
+  }
+  // Synonyms are "covered" when both terms return results (and ideally
+  // overlap, but we don't currently capture result identities — that's
+  // a future enhancement).
+  const covered = probe.synonym_tests.filter((s) => s.both_returned).length;
+  const ratio = covered / probe.synonym_tests.length;
+  const score = Math.round(ratio * 100);
+  const status =
+    ratio >= 0.8 ? "pass" : ratio >= 0.4 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      synonym_tests: probe.synonym_tests,
+      covered,
+      total: probe.synonym_tests.length,
+    },
+  };
+};
+
+const scoreEmptyState: CheckScorer = (ctx) => {
+  const guard = browserDisabledOrUnavailable(ctx);
+  if (guard) return guard;
+  const probe = ctx.browser.probe!;
+  if (!probe.empty_state_test) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "no_empty_state_query_run" },
+    };
+  }
+  const t = probe.empty_state_test;
+  // Graceful = didn't error AND returned no results.
+  // Better = also offered fallback content (popular products, browse prompts).
+  let score = 0;
+  if (t.graceful) score += 50;
+  if (t.has_fallback_content) score += 50;
+  const status = score >= 100 ? "pass" : score >= 50 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: t as unknown as Evidence,
+  };
+};
+
+const scoreBrandRelevance: CheckScorer = (ctx) => {
+  const guard = browserDisabledOrUnavailable(ctx);
+  if (guard) return guard;
+  const probe = ctx.browser.probe!;
+  if (probe.brand_tests.length === 0) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: {
+        reason: "no_brand_discovered",
+        brands_discovered: probe.brands_discovered,
+      },
+      notes:
+        "No brand could be extracted from the homepage to test brand-query relevance.",
+    };
+  }
+  // v1: we only check whether *any* results came back for the brand
+  // query. Confirming that brand's products rank first requires inspecting
+  // result content, which the probe doesn't capture yet.
+  const ok = probe.brand_tests.filter((b) => b.results_returned).length;
+  const score = Math.round((ok / probe.brand_tests.length) * 100);
+  const status = score >= 99 ? "pass" : score >= 50 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: { brand_tests: probe.brand_tests },
+    notes:
+      "v1 only confirms the brand query returns results — confirming top-position relevance needs result-content inspection (next iteration).",
+  };
+};
+
 // ── Registry ────────────────────────────────────────────────────────────────
 
 export const SCORERS: Record<string, CheckScorer> = {
@@ -389,6 +534,10 @@ export const SCORERS: Record<string, CheckScorer> = {
   "pdp.stock_delivery": scorePdpStockDelivery,
   "on_site_nav.search_engine_id": scoreSearchEngineId,
   "on_site_nav.faceting": scoreFaceting,
+  "on_site_nav.typo_tolerance": scoreTypoTolerance,
+  "on_site_nav.synonyms": scoreSynonyms,
+  "on_site_nav.empty_state": scoreEmptyState,
+  "on_site_nav.relevance_brand": scoreBrandRelevance,
 };
 
 export function scoreCheck(

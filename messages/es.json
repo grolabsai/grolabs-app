@@ -2363,6 +2363,7 @@
         "status": "Estado",
         "score": "Score",
         "tier": "Madurez",
+        "uplift": "Uplift estimado",
         "started": "Iniciado",
         "completed": "Completado"
       },
@@ -2373,6 +2374,8 @@
         "pdpUrlPlaceholder": "Si no se especifica, se prueba la raíz",
         "categoryUrl": "URL de categoría",
         "categoryUrlPlaceholder": "Para medir facetas (opcional)",
+        "annualTraffic": "Tráfico anual",
+        "aov": "AOV (USD)",
         "displayName": "Nombre",
         "vertical": "Vertical",
         "optional": "opcional",
@@ -2386,10 +2389,39 @@
       "backToList": "Volver a la lista",
       "overallScore": "Score general",
       "maturityTier": "Madurez",
+      "uplift": "Uplift anual (USD)",
       "status": "Estado",
       "completedAt": "Completado",
       "failedTitle": "El diagnóstico falló",
       "samplesTitle": "Páginas analizadas"
+    },
+    "vocabulary": {
+      "title": "Vocabulario de prueba",
+      "subtitle": "Sinónimos y consultas que la sonda de navegador usa para probar la búsqueda interna del prospecto.",
+      "sessionExpired": "Sesión expirada",
+      "backToRubric": "Volver a la rúbrica",
+      "synonymsTab": "Pares de sinónimos",
+      "queriesTab": "Consultas",
+      "synonymsTitle": "Pares de sinónimos",
+      "queriesTitle": "Consultas",
+      "addSynonym": "Agregar par",
+      "addQuery": "Agregar consulta",
+      "addButton": "Agregar",
+      "empty": "Sin entradas todavía.",
+      "templateHint": "Los pares de instancia plantilla son solo lectura.",
+      "template": "plantilla",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar esta entrada?",
+      "fields": {
+        "vertical": "Vertical",
+        "termA": "Término A",
+        "termB": "Término B",
+        "locale": "Idioma",
+        "queryText": "Consulta",
+        "intent": "Intento",
+        "notes": "Notas",
+        "actions": "Acciones"
+      }
     },
     "rubric": {
       "title": "Rúbrica diagnóstica",
@@ -2401,6 +2433,7 @@
       "templateBadge": "Provisto por GroLabs (instancia plantilla)",
       "templateBadgeShort": "plantilla",
       "readOnlyTemplate": "Solo lectura (check de plantilla)",
+      "vocabularyButton": "Vocabulario de prueba",
       "empty": {
         "selectPrompt": "Seleccioná un check o creá uno nuevo.",
         "stageNoChecks": "Sin checks en esta etapa todavía."

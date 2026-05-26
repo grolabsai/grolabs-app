@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
@@ -77,6 +78,15 @@ export default async function RubricPage({
         <div className="s-title-inner">
           <h1 className="s-title">{t("title")}</h1>
           <p className="s-subtitle">{t("subtitle")}</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link
+            href="/prospects/rubric/vocabulary"
+            className="s-btn"
+            style={{ fontSize: 12, padding: "6px 12px" }}
+          >
+            {t("vocabularyButton")}
+          </Link>
         </div>
       </div>
 

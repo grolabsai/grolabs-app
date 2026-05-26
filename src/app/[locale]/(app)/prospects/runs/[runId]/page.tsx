@@ -191,13 +191,22 @@ export default async function RunDetailPage({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(5, 1fr)",
           gap: 12,
           marginBottom: 20,
         }}
       >
         <Stat label={t("overallScore")} value={run.overall_score ?? "—"} mono />
         <Stat label={t("maturityTier")} value={run.maturity_tier ?? "—"} />
+        <Stat
+          label={t("uplift")}
+          value={
+            run.est_annual_uplift_usd != null
+              ? `$${Math.round(run.est_annual_uplift_usd).toLocaleString()}`
+              : "—"
+          }
+          mono
+        />
         <Stat label={t("status")} value={run.run_status} />
         <Stat
           label={t("completedAt")}

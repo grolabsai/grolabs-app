@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { startDiagnostic } from "./_actions";
+import { startDiagnostic, setProspectEconomics } from "./_actions";
 
 export function NewRunForm({
   verticals,
@@ -19,11 +19,25 @@ export function NewRunForm({
   const [categoryUrl, setCategoryUrl] = useState("");
   const [name, setName] = useState("");
   const [verticalId, setVerticalId] = useState<number | null>(null);
+  const [annualTraffic, setAnnualTraffic] = useState("");
+  const [aov, setAov] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
+      // Persist economics on the prospect *before* the run starts so the
+      // revenue formula can consume them. Best-effort; failure here
+      // shouldn't block the diagnostic.
+      const trafficNum = annualTraffic.trim() ? Number(annualTraffic) : null;
+      const aovNum = aov.trim() ? Number(aov) : null;
+      if (trafficNum != null || aovNum != null) {
+        await setProspectEconomics({
+          url,
+          est_annual_traffic: trafficNum,
+          est_aov_usd: aovNum,
+        });
+      }
       const result = await startDiagnostic({
         url,
         pdpUrl: pdpUrl || null,
@@ -61,7 +75,7 @@ export function NewRunForm({
         {t("form.title")}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr) auto", gap: 10, alignItems: "end" }}>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
             {t("form.rootUrl")}
@@ -126,6 +140,31 @@ export function NewRunForm({
               </option>
             ))}
           </select>
+        </div>
+        <div className="s-field" style={{ marginBottom: 0 }}>
+          <label className="s-field-label" style={{ fontSize: 11 }}>
+            {t("form.annualTraffic")}
+          </label>
+          <input
+            type="number"
+            className="s-input"
+            value={annualTraffic}
+            onChange={(e) => setAnnualTraffic(e.target.value)}
+            placeholder="500000"
+          />
+        </div>
+        <div className="s-field" style={{ marginBottom: 0 }}>
+          <label className="s-field-label" style={{ fontSize: 11 }}>
+            {t("form.aov")}
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            className="s-input"
+            value={aov}
+            onChange={(e) => setAov(e.target.value)}
+            placeholder="45"
+          />
         </div>
         <button
           type="submit"

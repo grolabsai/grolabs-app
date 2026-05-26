@@ -20,6 +20,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { currentInstanceId } from "@/lib/instance";
 import {
   scanPdpSignals,
@@ -28,7 +29,13 @@ import {
   type SiteSignals,
 } from "@/lib/glpim";
 import { probeSiteWide } from "./site-checks";
-import { SCORERS, scoreCheck } from "./scorers";
+import { runBrowserProbe, type BrowserProbeResult } from "./browser-probe";
+import { scoreCheck } from "./scorers";
+import {
+  computeFindingUplift,
+  resolveFactors,
+  type BenchmarkRow,
+} from "./revenue";
 import type {
   Evidence,
   FindingStatus,
@@ -41,6 +48,7 @@ export type StartDiagnosticInput = {
   categoryUrl?: string | null;
   prospectName?: string | null;
   verticalId?: number | null;
+  contactEmail?: string | null;
 };
 
 export type StartDiagnosticResult =
@@ -52,6 +60,7 @@ type CheckRow = {
   check_code: string;
   diagnostic_stage_id: number;
   weight: number;
+  default_delta_rate: number | null;
 };
 
 type FixRow = {
@@ -69,19 +78,20 @@ function normalizeUrl(input: string): string {
 
 async function upsertProspect(
   supabase: SupabaseClient,
-  instanceId: number,
+  instanceId: number | null,
   url: string,
   name: string | null,
   verticalId: number | null,
+  contactEmail: string | null,
 ): Promise<{ prospect_id: number } | { error: string }> {
-  // Try existing first to keep the row stable across runs.
-  const { data: existing } = await supabase
-    .from("prospect")
-    .select("prospect_id")
-    .eq("instance_id", instanceId)
-    .eq("url", url)
-    .maybeSingle();
-
+  // Look up existing — anonymous flow has its own unique-url-when-null index.
+  let lookup = supabase.from("prospect").select("prospect_id").eq("url", url);
+  if (instanceId === null) {
+    lookup = lookup.is("instance_id", null);
+  } else {
+    lookup = lookup.eq("instance_id", instanceId);
+  }
+  const { data: existing } = await lookup.maybeSingle();
   if (existing) return { prospect_id: existing.prospect_id as number };
 
   const { data, error } = await supabase
@@ -91,6 +101,7 @@ async function upsertProspect(
       url,
       display_name: name,
       vertical_id: verticalId,
+      contact_email: contactEmail,
     })
     .select("prospect_id")
     .single();
@@ -165,12 +176,43 @@ export async function startDiagnostic(
 ): Promise<StartDiagnosticResult> {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "NO_INSTANCE" };
+  return runDiagnostic({
+    input,
+    instanceId,
+    supabase: await createClient(),
+    runSource: "scout_admin",
+  });
+}
+
+/**
+ * Public-API entry: anonymous run with instance_id NULL, using a
+ * service-role client so RLS doesn't block the writes. Read access for
+ * anon is granted by the diagnostic_run_anon_read policy + the unguessable
+ * run_id UUID.
+ */
+export async function startAnonymousDiagnostic(
+  input: StartDiagnosticInput,
+): Promise<StartDiagnosticResult> {
+  const supabase = createServiceRoleClient();
+  return runDiagnostic({
+    input,
+    instanceId: null,
+    supabase,
+    runSource: "landing_page",
+  });
+}
+
+async function runDiagnostic(opts: {
+  input: StartDiagnosticInput;
+  instanceId: number | null;
+  supabase: SupabaseClient;
+  runSource: "scout_admin" | "landing_page";
+}): Promise<StartDiagnosticResult> {
+  const { input, instanceId, supabase, runSource } = opts;
 
   const rootUrl = normalizeUrl(input.url);
   const pdpUrl = input.pdpUrl ? normalizeUrl(input.pdpUrl) : rootUrl;
   const categoryUrl = input.categoryUrl ? normalizeUrl(input.categoryUrl) : null;
-
-  const supabase = await createClient();
 
   // 1. Upsert prospect
   const prospectResult = await upsertProspect(
@@ -179,6 +221,7 @@ export async function startDiagnostic(
     rootUrl,
     input.prospectName?.trim() || null,
     input.verticalId ?? null,
+    input.contactEmail?.trim() || null,
   );
   if ("error" in prospectResult) return { error: prospectResult.error };
   const prospectId = prospectResult.prospect_id;
@@ -190,7 +233,7 @@ export async function startDiagnostic(
     .insert({
       prospect_id: prospectId,
       instance_id: instanceId,
-      run_source: "scout_admin",
+      run_source: runSource,
       run_status: "running",
       started_at: startedAt,
     })
@@ -231,11 +274,29 @@ export async function startDiagnostic(
   }
   await supabase.from("run_sample").insert(samples);
 
-  // 3 + 4. Probe in parallel: site-wide HTTP, GLPIM PDP, GLPIM site-signals
-  const [siteCtx, pdpResult, siteSignalsResult] = await Promise.all([
+  // Resolve test vocabulary for the prospect's vertical (or generic
+  // fallback when no vertical is set). Always read template-instance rows
+  // — anon callers see them too via the diagnostic_check_anon_template_read
+  // policy; authenticated runs see their own + template via RLS.
+  const vocab = await loadTestVocabulary(supabase, input.verticalId ?? null);
+
+  const probeEnabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
+
+  // 3 + 4 + 5. Probe in parallel: site-wide HTTP, GLPIM PDP, GLPIM site-
+  // signals, and (when enabled) the browser probe. Browser probe is the
+  // slowest leg — running it in parallel hides its latency behind the
+  // others.
+  const [siteCtx, pdpResult, siteSignalsResult, browserResult] = await Promise.all([
     probeSiteWide(rootUrl),
     fetchPdpSignals(pdpUrl),
     fetchSiteSignals({ url: rootUrl, categoryUrl }),
+    probeEnabled
+      ? runBrowserProbe({
+          rootUrl,
+          synonymPairs: vocab.synonymPairs,
+          emptyStateQueries: vocab.emptyStateQueries,
+        })
+      : Promise.resolve(null as BrowserProbeResult | null),
   ]);
 
   const ctx: import("./types").RunContext = {
@@ -245,24 +306,45 @@ export async function startDiagnostic(
       signals: siteSignalsResult.signals,
       fetchError: siteSignalsResult.error,
     },
+    browser: {
+      enabled: probeEnabled,
+      probe: browserResult,
+    },
   };
 
   // Persist the detected platform/engine on the prospect for future runs.
-  if (siteSignalsResult.signals) {
+  // Network fingerprint (from browser probe) beats static-HTML guess when
+  // both are present — XHR endpoints are ground truth.
+  const networkEngine = browserResult?.engine_network_fingerprint ?? null;
+  const finalEngine =
+    networkEngine ?? siteSignalsResult.signals?.engine_detected ?? null;
+  if (siteSignalsResult.signals || networkEngine) {
     await supabase
       .from("prospect")
       .update({
-        platform_detected: siteSignalsResult.signals.platform_detected,
-        engine_detected: siteSignalsResult.signals.engine_detected,
+        platform_detected: siteSignalsResult.signals?.platform_detected ?? null,
+        engine_detected: finalEngine,
       })
       .eq("prospect_id", prospectId);
   }
 
-  // 5. Load active checks (this instance + template fallthrough via RLS).
-  const { data: checksRaw, error: checksErr } = await supabase
+  // 5. Load active checks. For authenticated runs, RLS gives us
+  // {own instance ∪ template instance 0} automatically. For service-role
+  // (anonymous) runs we'd see every instance's checks, so we explicitly
+  // scope to instance 0 — the canonical GroLabs rubric that powers the
+  // landing-page diagnostic.
+  let checksQuery = supabase
     .from("diagnostic_check")
-    .select("diagnostic_check_id, check_code, diagnostic_stage_id, weight")
+    .select(
+      "diagnostic_check_id, check_code, diagnostic_stage_id, weight, default_delta_rate",
+    )
     .eq("is_active", true);
+  if (instanceId === null) {
+    checksQuery = checksQuery.eq("instance_id", 0);
+  } else {
+    checksQuery = checksQuery.in("instance_id", [0, instanceId]);
+  }
+  const { data: checksRaw, error: checksErr } = await checksQuery;
 
   if (checksErr || !checksRaw) {
     await markRunFailed(supabase, runId, checksErr?.message ?? "No checks loaded");
@@ -270,16 +352,56 @@ export async function startDiagnostic(
   }
   const checks: CheckRow[] = checksRaw as CheckRow[];
 
-  // 6. Score each + insert findings
+  // Load per-vertical benchmarks + prospect economics for the revenue
+  // formula. Benchmarks come from instance 0 (canonical) plus the user's
+  // own instance when authenticated; resolveFactors picks the most
+  // specific match per finding.
+  const { data: benchmarksRaw } = input.verticalId != null
+    ? await loadBenchmarks(supabase, instanceId, input.verticalId)
+    : { data: [] as BenchmarkRow[] };
+  const benchmarks: BenchmarkRow[] = (benchmarksRaw ?? []) as BenchmarkRow[];
+
+  const { data: prospectEconRaw } = await supabase
+    .from("prospect")
+    .select("est_annual_traffic, est_aov_usd")
+    .eq("prospect_id", prospectId)
+    .maybeSingle();
+  const prospectTraffic =
+    typeof prospectEconRaw?.est_annual_traffic === "number"
+      ? prospectEconRaw.est_annual_traffic
+      : prospectEconRaw?.est_annual_traffic
+        ? Number(prospectEconRaw.est_annual_traffic)
+        : null;
+  const prospectAov =
+    typeof prospectEconRaw?.est_aov_usd === "number"
+      ? prospectEconRaw.est_aov_usd
+      : prospectEconRaw?.est_aov_usd
+        ? Number(prospectEconRaw.est_aov_usd)
+        : null;
+
+  // 6. Score each + compute per-finding uplift + insert findings
   const findingsToInsert = checks.map((check) => {
     const result = scoreCheck(check.check_code, ctx);
-    return {
-      check,
-      result,
-    };
+    const factors = resolveFactors({
+      benchmarks,
+      checkId: check.diagnostic_check_id,
+      stageId: check.diagnostic_stage_id,
+      prospectAov,
+      checkDefaultDeltaRate: check.default_delta_rate ?? null,
+    });
+    const uplift = computeFindingUplift({
+      traffic: prospectTraffic,
+      aov: factors.aov,
+      baselineCr: factors.baselineCr,
+      stageShare: factors.stageShare,
+      deltaRate: factors.deltaRate,
+      score: result.score,
+      resultStatus: result.result_status,
+    });
+    return { check, result, uplift };
   });
 
-  const findingRows = findingsToInsert.map(({ check, result }) => ({
+  const findingRows = findingsToInsert.map(({ check, result, uplift }) => ({
     run_id: runId,
     instance_id: instanceId,
     diagnostic_check_id: check.diagnostic_check_id,
@@ -287,6 +409,8 @@ export async function startDiagnostic(
     result_status: result.result_status,
     evidence: result.evidence,
     notes: result.notes ?? null,
+    est_annual_uplift_usd: uplift.uplift_usd,
+    est_confidence: uplift.confidence,
   }));
 
   const { data: insertedFindings, error: findingErr } = await supabase
@@ -322,13 +446,20 @@ export async function startDiagnostic(
 
   const checkIds = Array.from(checkIdToFindingId.keys());
   if (checkIds.length > 0) {
-    const { data: fixesRaw } = await supabase
+    // Scope fixes the same way we scoped checks (anon → instance 0 only).
+    let fixesQuery = supabase
       .from("fix_recommendation")
       .select(
         "fix_recommendation_id, diagnostic_check_id, trigger_condition, sort_order",
       )
       .eq("is_active", true)
       .in("diagnostic_check_id", checkIds);
+    if (instanceId === null) {
+      fixesQuery = fixesQuery.eq("instance_id", 0);
+    } else {
+      fixesQuery = fixesQuery.in("instance_id", [0, instanceId]);
+    }
+    const { data: fixesRaw } = await fixesQuery;
 
     const fixes: FixRow[] = (fixesRaw ?? []) as FixRow[];
     const finRows: {
@@ -368,6 +499,27 @@ export async function startDiagnostic(
   }));
   const { stageScores, overall } = rollupStageScores(findingsForRollup);
 
+  // Sum per-finding uplifts → run total. Confidence is the lowest tier
+  // observed across the contributing findings (any 'low' demotes the run).
+  let totalUplift: number | null = null;
+  let hadAnyUplift = false;
+  let confTier: "low" | "medium" | "high" = "high";
+  for (const { uplift } of findingsToInsert) {
+    if (uplift.uplift_usd == null) continue;
+    hadAnyUplift = true;
+    totalUplift = (totalUplift ?? 0) + uplift.uplift_usd;
+    if (uplift.confidence === "low") confTier = "low";
+    else if (uplift.confidence === "medium" && confTier === "high") confTier = "medium";
+  }
+  if (!hadAnyUplift) totalUplift = null;
+
+  const revenueAssumptions = {
+    traffic: prospectTraffic,
+    aov: prospectAov,
+    vertical_id: input.verticalId ?? null,
+    benchmarks_used: benchmarks.length,
+  };
+
   await supabase
     .from("diagnostic_run")
     .update({
@@ -376,7 +528,10 @@ export async function startDiagnostic(
       overall_score: overall,
       stage_scores: stageScores,
       maturity_tier: maturityTier(overall),
-      // est_annual_uplift_usd intentionally left NULL — formula PR follows.
+      est_annual_uplift_usd:
+        totalUplift != null ? Math.round(totalUplift * 100) / 100 : null,
+      est_confidence: totalUplift != null ? confTier : null,
+      revenue_assumptions: revenueAssumptions,
     })
     .eq("run_id", runId);
 
@@ -407,6 +562,75 @@ async function fetchSiteSignals(input: {
   } catch (e) {
     return { signals: null, error: String(e instanceof Error ? e.message : e) };
   }
+}
+
+async function loadBenchmarks(
+  supabase: SupabaseClient,
+  instanceId: number | null,
+  verticalId: number,
+): Promise<{ data: BenchmarkRow[] | null }> {
+  let q = supabase
+    .from("vertical_benchmark")
+    .select(
+      "vertical_id, diagnostic_stage_id, diagnostic_check_id, baseline_cr, stage_share, delta_rate, default_aov_usd",
+    )
+    .eq("vertical_id", verticalId);
+  if (instanceId === null) {
+    q = q.eq("instance_id", 0);
+  } else {
+    q = q.in("instance_id", [0, instanceId]);
+  }
+  const { data } = await q;
+  return { data: (data ?? []) as BenchmarkRow[] };
+}
+
+async function loadTestVocabulary(
+  supabase: SupabaseClient,
+  verticalId: number | null,
+): Promise<{
+  synonymPairs: { term_a: string; term_b: string; locale: string }[];
+  emptyStateQueries: string[];
+}> {
+  // No vertical? Fall back to the 'generic' vertical's queries — at least
+  // we get an empty-state probe.
+  let resolvedVerticalId = verticalId;
+  if (resolvedVerticalId == null) {
+    const { data: gen } = await supabase
+      .from("vertical")
+      .select("vertical_id")
+      .eq("vertical_code", "generic")
+      .maybeSingle();
+    resolvedVerticalId = (gen?.vertical_id as number | undefined) ?? null;
+  }
+  if (resolvedVerticalId == null) {
+    return { synonymPairs: [], emptyStateQueries: [] };
+  }
+
+  const [{ data: pairs }, { data: queries }] = await Promise.all([
+    supabase
+      .from("vertical_synonym_pair")
+      .select("term_a, term_b, locale")
+      .eq("is_active", true)
+      .eq("vertical_id", resolvedVerticalId)
+      .limit(20),
+    supabase
+      .from("vertical_test_query")
+      .select("query_text, intent")
+      .eq("is_active", true)
+      .eq("vertical_id", resolvedVerticalId)
+      .eq("intent", "empty_state")
+      .limit(5),
+  ]);
+
+  return {
+    synonymPairs:
+      (pairs ?? []).map((p) => ({
+        term_a: p.term_a as string,
+        term_b: p.term_b as string,
+        locale: p.locale as string,
+      })),
+    emptyStateQueries: (queries ?? []).map((q) => q.query_text as string),
+  };
 }
 
 async function markRunFailed(

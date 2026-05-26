@@ -87,28 +87,34 @@ export default function StyleguidePage() {
   return (
     <div className="s-content" style={{ paddingBottom: 80 }}>
       <Header />
+      <PrefixLegend />
 
-      {/* Type — single panel; type ramp is mode-independent */}
-      <Section title="Typography">
+      {/* ── GL — shared GroLabs foundations ─────────────────────────── */}
+      <TierHeading
+        tag="GL"
+        title="Brand foundations"
+        body="Shared across every GroLabs product. The same palette, fonts, and radii apply on both the marketing site (LP) and the admin (RRE)."
+      />
+
+      <Section title="GL · Typography">
         <TypeRamp />
       </Section>
 
-      {/* Colors — paired dark / light */}
-      <Section title="Accent — Kinetic Yellow">
+      <Section title="GL · Accent — Kinetic Yellow">
         <PaletteGrid items={ACCENT} />
       </Section>
 
-      <Pair title="Surfaces">
+      <Pair title="GL · Surfaces">
         <PaletteGrid items={SURFACES_DARK} />
         <PaletteGrid items={SURFACES_LIGHT} />
       </Pair>
 
-      <Pair title="Text">
+      <Pair title="GL · Text">
         <PaletteGrid items={TEXT_DARK} />
         <PaletteGrid items={TEXT_LIGHT} />
       </Pair>
 
-      <Section title="Semantic + Radii">
+      <Section title="GL · Semantic + Radii">
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
           <PaletteGrid items={SEMANTIC.map((s) => ({ ...s, hex: "" }))} />
           <div style={radiiCardStyle}>
@@ -134,56 +140,270 @@ export default function StyleguidePage() {
         </div>
       </Section>
 
-      {/* Components — paired dark / light side-by-side */}
-      <Pair title="Buttons">
+      {/* ── LP — landing-page-only patterns ─────────────────────────── */}
+      <TierHeading
+        tag="LP"
+        title="Landing Page"
+        body="Patterns that appear on grolabs.com but never inside the admin. Canonical source: docs/STYLEGUIDE.md in the grolabs-landing repo. The samples below are visual references."
+      />
+
+      <Pair title="LP · Section heading + eyebrow">
+        <HeadingDemo />
+        <HeadingDemo />
+      </Pair>
+
+      <Pair title="LP · Hero-style CTA">
+        <LpCtaDemo />
+        <LpCtaDemo />
+      </Pair>
+
+      {/* ── RRE — Revenue Recovery Engine (admin) ───────────────────── */}
+      <TierHeading
+        tag="RRE"
+        title="Revenue Recovery Engine"
+        body="The admin app (previously called Scout). Patterns below are the ones shown on every internal screen — forms, tables, nav, sidebar."
+      />
+
+      <Pair title="RRE · Buttons">
         <ButtonsDemo />
         <ButtonsDemo />
       </Pair>
 
-      <Pair title="Inputs">
+      <Pair title="RRE · Inputs (with hint-icon pattern)">
         <InputsDemo />
         <InputsDemo />
       </Pair>
 
-      <Pair title="Selects & dropdowns">
+      <Pair title="RRE · Selects & dropdowns">
         <SelectsDemo />
         <SelectsDemo />
       </Pair>
 
-      <Pair title="Checkboxes, radios & toggles">
+      <Pair title="RRE · Checkboxes, radios & toggles">
         <ChecksDemo />
         <ChecksDemo />
       </Pair>
 
-      <Pair title="Cards">
+      <Pair title="RRE · Tabs">
+        <TabsDemo />
+        <TabsDemo />
+      </Pair>
+
+      <Pair title="RRE · Cards">
         <CardsDemo />
         <CardsDemo />
       </Pair>
 
-      <Pair title="Tables">
+      <Pair title="RRE · Tables">
         <TableDemo />
         <TableDemo />
       </Pair>
 
-      <Pair title="Badges & chips">
+      <Pair title="RRE · Badges & chips">
         <BadgesDemo />
         <BadgesDemo />
       </Pair>
 
-      <Pair title="Status banners">
+      <Pair title="RRE · Status banners">
         <BannersDemo />
         <BannersDemo />
       </Pair>
 
-      <Pair title="Nav (active state)">
+      <Pair title="RRE · Sidebar nav (active state)">
         <NavDemo />
         <NavDemo />
       </Pair>
+    </div>
+  );
+}
 
-      <Pair title="Section heading + eyebrow">
-        <HeadingDemo />
-        <HeadingDemo />
-      </Pair>
+function PrefixLegend() {
+  return (
+    <div
+      style={{
+        background: "var(--s-surface)",
+        border: "1px solid var(--s-border)",
+        borderRadius: "var(--s-radius-lg)",
+        padding: 18,
+        marginBottom: 32,
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 18,
+      }}
+    >
+      <PrefixCell
+        tag="GL"
+        label="General GroLabs"
+        body="Shared brand: colors, fonts, radii, iconography. Same across every product."
+      />
+      <PrefixCell
+        tag="LP"
+        label="Landing Page"
+        body="Marketing site only — hero headlines, equation card, kinetic-yellow CTAs, big-type sections."
+      />
+      <PrefixCell
+        tag="RRE"
+        label="Revenue Recovery Engine"
+        body="Admin app (was Scout). Forms, tables, nav, sidebar."
+      />
+    </div>
+  );
+}
+
+function PrefixCell({ tag, label, body }: { tag: string; label: string; body: string }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2px 7px",
+            background: "var(--scout-accent)",
+            color: "var(--scout-accent-on)",
+            borderRadius: 4,
+            fontFamily: "var(--s-font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {tag}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--s-text)" }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 12, color: "var(--s-text-secondary)", lineHeight: 1.5 }}>
+        {body}
+      </div>
+    </div>
+  );
+}
+
+function TierHeading({
+  tag,
+  title,
+  body,
+}: {
+  tag: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div style={{ margin: "40px 0 24px", paddingBottom: 14, borderBottom: "1px solid var(--s-border)" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "3px 9px",
+            background: "var(--scout-accent)",
+            color: "var(--scout-accent-on)",
+            borderRadius: 4,
+            fontFamily: "var(--s-font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+          }}
+        >
+          {tag}
+        </span>
+        <h2
+          style={{
+            fontFamily: "var(--s-font-brand)",
+            fontSize: 26,
+            color: "var(--s-text-strong)",
+            textTransform: "uppercase",
+            letterSpacing: "0.02em",
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+      <p style={{ color: "var(--s-text-secondary)", fontSize: 13, margin: 0, lineHeight: 1.6, maxWidth: 720 }}>
+        {body}
+      </p>
+    </div>
+  );
+}
+
+function LpCtaDemo() {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 10,
+          color: "var(--s-text-tertiary)",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          marginBottom: 10,
+        }}
+      >
+        Hero / page-top CTA — yellow gradient
+      </div>
+      <button
+        style={{
+          background: "var(--scout-accent)",
+          color: "var(--scout-accent-on)",
+          border: "none",
+          borderRadius: 999,
+          padding: "12px 28px",
+          fontSize: 15,
+          fontWeight: 600,
+          fontFamily: "var(--s-font)",
+          cursor: "pointer",
+          boxShadow: "0 6px 24px rgba(250,225,148,0.25)",
+        }}
+      >
+        Book a free 15-minute call →
+      </button>
+      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 14 }}>
+        Lives in <code style={codeStyle}>grolabs-landing</code> — Astro page,
+        not used in the admin.
+      </div>
+    </div>
+  );
+}
+
+function TabsDemo() {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 10,
+          color: "var(--s-text-tertiary)",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          marginBottom: 10,
+        }}
+      >
+        Tab strip — active underline in kinetic yellow
+      </div>
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--s-border)" }}>
+        {["All", "Draft", "Scheduled", "Published"].map((label, i) => (
+          <div
+            key={label}
+            style={{
+              padding: "8px 14px",
+              fontSize: 13,
+              fontWeight: i === 0 ? 500 : 400,
+              color: i === 0 ? "var(--s-text-strong)" : "var(--s-text-secondary)",
+              borderBottom:
+                i === 0
+                  ? "2px solid var(--scout-accent)"
+                  : "2px solid transparent",
+              cursor: "pointer",
+              marginBottom: -1,
+            }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

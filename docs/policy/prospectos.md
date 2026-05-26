@@ -39,7 +39,7 @@ and an overall score (average of stages).
 ## 2. Two-service architecture
 
 ```
-Scout (Next.js, this repo)              ASE (Python, grolabsai/ase — formerly GLPIM)
+Scout (Next.js, this repo)              ASE (Python, grolabsai/grolabs-ASE — formerly GLPIM)
 ─────────────────────────────           ───────────────────────────────────
 • Orchestrator + rubric                 • POST /tools/pdp-signals
 • Public API + report viewer            • POST /tools/site-signals

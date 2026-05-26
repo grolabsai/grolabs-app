@@ -49,7 +49,16 @@ export function TopBar({
   }
 
   return (
-    <div style={{ position: "relative", padding: "14px 28px 0" }}>
+    <div
+      style={{
+        position: "relative",
+        padding: "12px 28px",
+        // App-shell band — fixed dark tone in both themes, like the
+        // sidebar. Reads as part of the chrome, not the content.
+        background: "var(--gl-header-bg-fixed)",
+        borderBottom: "1px solid var(--gl-header-border-fixed)",
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -59,20 +68,30 @@ export function TopBar({
         }}
       >
         {/* Search — left-aligned, takes the slot the instance switcher
-            used to occupy. Visual-only in Phase 1 (⌘K palette deferred). */}
+            used to occupy. White pill in both themes (--gl-search-bg-fixed).
+            Visual-only in Phase 1 (⌘K palette deferred). */}
         <div className="s-search" style={{ maxWidth: 420, flex: "1 1 280px" }}>
-          <Search className="s-search-icon" size={13} strokeWidth={1.5} />
+          <Search
+            className="s-search-icon"
+            size={13}
+            strokeWidth={1.5}
+            style={{ color: "var(--gl-search-placeholder-fixed)" }}
+          />
           <Input
             type="text"
             placeholder={t("searchPlaceholder")}
             disabled
+            style={{
+              background: "var(--gl-search-bg-fixed)",
+              color: "var(--gl-search-text-fixed)",
+              borderColor: "transparent",
+            }}
             className={cn(
-              "h-8 pl-8 pr-8 text-xs",
-              "bg-[var(--s-surface-alt)] border-transparent",
-              "focus-visible:bg-[var(--s-surface)] focus-visible:border-[var(--s-border-strong)]",
+              "h-8 pl-8 pr-8 text-xs font-semibold",
               "focus-visible:ring-0 focus-visible:ring-offset-0",
               "disabled:opacity-100 disabled:cursor-default",
               "rounded-[var(--s-radius-md)]",
+              "placeholder:text-[color:var(--gl-search-placeholder-fixed)] placeholder:font-normal",
             )}
           />
           <kbd
@@ -83,10 +102,10 @@ export function TopBar({
               transform: "translateY(-50%)",
               fontSize: 10,
               padding: "2px 5px",
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
+              background: "rgba(0,0,0,0.06)",
+              border: "0.5px solid rgba(0,0,0,0.08)",
               borderRadius: 4,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-search-placeholder-fixed)",
               fontFamily: "inherit",
               pointerEvents: "none",
             }}

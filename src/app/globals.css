@@ -58,11 +58,22 @@ svg {
      `.scout-light` override deliberately does NOT redefine these. Use
      these tokens (not --s-bg / --s-text) when a surface needs to stay
      visually constant regardless of theme — e.g. the yellow field-hint
-     card in the AgentPanel, kinetic-yellow CTAs on the landing page. */
+     card in the AgentPanel, kinetic-yellow CTAs on the landing page,
+     the app shell (sidebar + topbar). */
   --gl-accent-fixed: #fae194;            /* same kinetic yellow, "always" */
   --gl-accent-fixed-on: #131316;         /* dark text/icon on the above */
   --gl-bg-fixed-dark: #131316;           /* canvas tone that never lightens */
   --gl-text-fixed-light: #EDEAE0;        /* bone-white that never darkens */
+
+  /* Header bar — slightly lighter than the sidebar so the two read as a
+     distinct frame, but firmly on the dark side ("darker than lighter").
+     The search input inside the header has a white pill that contrasts
+     with this dark band in both themes. */
+  --gl-header-bg-fixed: #1a1a1f;         /* topbar surface, both themes */
+  --gl-header-border-fixed: rgba(255, 255, 255, 0.06);
+  --gl-search-bg-fixed: #ffffff;         /* search-input pill, both themes */
+  --gl-search-text-fixed: #131316;       /* dark text on the white pill */
+  --gl-search-placeholder-fixed: #888780;
 
   /* -------------------------------------------------------------------------
      Dark mode (default) — Engineered Luxury canvas palette
@@ -875,12 +886,31 @@ button {
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
-/* Content text inside form controls is semi-bold (600). The placeholder
-   stays at the normal weight so the empty + filled states are visually
-   distinct. */
+/* Content text inside ALL form controls is semi-bold (600) — whether
+   you type into an input, pick from a dropdown, type in a textarea, or
+   enter a number. The placeholder stays at the normal weight so the
+   empty + filled states stay visually distinct.
+   The selector list covers every input type explicitly so we never
+   miss one (number, email, url, etc. — some browsers reset font-weight
+   on specific types). */
 .s-input,
 .s-select,
-.s-textarea {
+.s-textarea,
+input.s-input,
+textarea.s-textarea,
+select.s-select,
+input[type="text"].s-input,
+input[type="search"].s-input,
+input[type="email"].s-input,
+input[type="number"].s-input,
+input[type="url"].s-input,
+input[type="tel"].s-input,
+input[type="password"].s-input,
+input[type="date"].s-input {
+  font-weight: 600;
+}
+/* Selected options inside a native <select> dropdown also render at 600. */
+.s-select option {
   font-weight: 600;
 }
 .s-input::placeholder,

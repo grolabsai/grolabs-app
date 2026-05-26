@@ -253,7 +253,11 @@ export default async function PageDetailPage({
           </div>
 
           {previous && comparisonRows.length > 0 && (
-            <ComparisonTable rows={comparisonRows} />
+            <ComparisonTable
+              rows={comparisonRows}
+              latestAt={latest.completed_at ?? latest.started_at}
+              previousAt={previous.completed_at ?? previous.started_at}
+            />
           )}
         </div>
       )}

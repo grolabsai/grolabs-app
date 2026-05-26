@@ -26,7 +26,15 @@ export type ComparisonRow = {
   previous: ComparisonCell | null;
 };
 
-export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
+export function ComparisonTable({
+  rows,
+  latestAt,
+  previousAt,
+}: {
+  rows: ComparisonRow[];
+  latestAt: string | null;
+  previousAt: string | null;
+}) {
   const t = useTranslations("prospects.page");
 
   return (
@@ -41,8 +49,8 @@ export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
         <thead>
           <tr style={{ background: "var(--s-surface-alt)" }}>
             <Th>{t("compareTable.check")}</Th>
-            <Th>{t("compareTable.previous")}</Th>
-            <Th>{t("compareTable.latest")}</Th>
+            <Th>{previousAt ? formatHeaderTime(previousAt) : t("compareTable.previous")}</Th>
+            <Th>{latestAt ? formatHeaderTime(latestAt) : t("compareTable.latest")}</Th>
             <Th>{t("compareTable.delta")}</Th>
           </tr>
         </thead>
@@ -54,6 +62,17 @@ export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
       </table>
     </div>
   );
+}
+
+function formatHeaderTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function Row({ row }: { row: ComparisonRow }) {

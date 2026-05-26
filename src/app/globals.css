@@ -53,6 +53,17 @@ svg {
   --scout-accent-800: #8a6f24;
   --scout-accent-on: #131316;            /* text/icon on yellow surfaces */
 
+  /* ── GL fixed tokens — never theme-flipped ─────────────────────────────
+     Properties that must look identical in light AND dark mode. The
+     `.scout-light` override deliberately does NOT redefine these. Use
+     these tokens (not --s-bg / --s-text) when a surface needs to stay
+     visually constant regardless of theme — e.g. the yellow field-hint
+     card in the AgentPanel, kinetic-yellow CTAs on the landing page. */
+  --gl-accent-fixed: #fae194;            /* same kinetic yellow, "always" */
+  --gl-accent-fixed-on: #131316;         /* dark text/icon on the above */
+  --gl-bg-fixed-dark: #131316;           /* canvas tone that never lightens */
+  --gl-text-fixed-light: #EDEAE0;        /* bone-white that never darkens */
+
   /* -------------------------------------------------------------------------
      Dark mode (default) — Engineered Luxury canvas palette
      Canvas (page bg)   #131316
@@ -878,103 +889,42 @@ button {
 }
 
 /* =============================================================================
-   HINT ICON + tooltip — paired with the new <HintIcon> component
+   EMPTY-STATE BORDERLESS rule (RRE)
    =============================================================================
-   Replaces the "hint as placeholder text" pattern. The hint copy lives in
-   a tooltip that appears on hover of a circular `?` icon sitting at the
-   trailing edge of an input. Visibility:
+   When an input is empty AND not focused, render no border and a
+   transparent background — the field reads as "nothing" until the user
+   commits to interacting with it. The floating label above remains the
+   only visible affordance. Focus or content brings the border back.
 
-     • Icon shows only while the input is empty (:placeholder-shown).
-       Required: the input must declare placeholder=" " to make the
-       pseudo-class engage.
-     • Icon hides as soon as the user starts typing.
-     • Tooltip opens on hover of the icon itself; it never opens on
-       hover of the input area.
+   Required for every input using this pattern:
+     • declare placeholder=" " (single space) so :placeholder-shown
+       engages — otherwise the input never reads as "empty"
+     • wrap in .s-field (the floating-label wrapper) so the label
+       stays visible while the input shell is invisible
 
-   Required-field variant has a kinetic-yellow background so a scan
-   of the form picks out mandatory fields without reading any copy.
+   Native <select> doesn't have :placeholder-shown. Pair the select with
+   a data-empty="true" attribute (set by the consuming component when
+   the value matches its placeholder option) to get the same treatment.
 */
-.s-input-wrap {
-  position: relative;
-  width: 100%;
-  display: inline-block;
+.s-input:placeholder-shown:not(:focus),
+.s-textarea:placeholder-shown:not(:focus),
+.s-select[data-empty="true"]:not(:focus) {
+  border-color: transparent;
+  background: transparent;
 }
-/* Reserve trailing space inside an input for the hint icon. */
-.s-input-wrap .s-input,
-.s-input-wrap input.s-input,
-.s-input-wrap textarea.s-textarea {
-  padding-right: 36px;
-}
-.s-hint-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--s-surface-alt);
-  color: var(--s-text-tertiary);
-  border: 0.5px solid var(--s-border);
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--s-font);
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: help;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-  z-index: 2;
-}
-.s-hint-icon:hover {
-  background: var(--s-surface-hover);
-  color: var(--s-text);
-}
-.s-hint-icon--required {
-  background: var(--scout-accent);
-  color: var(--scout-accent-on);
-  border-color: var(--scout-accent);
-}
-.s-hint-icon--required:hover {
-  background: var(--scout-accent-hover);
-}
-
-/* Hide the icon when the input has content. The icon must live as a
-   following sibling of the input/textarea inside .s-input-wrap. */
-.s-input-wrap input:not(:placeholder-shown) ~ .s-hint-icon,
-.s-input-wrap textarea:not(:placeholder-shown) ~ .s-hint-icon,
-.s-input-wrap select:not([data-empty="true"]) ~ .s-hint-icon {
-  display: none;
-}
-
-/* Tooltip — opens to the left of the icon on hover. Built into the same
-   element so callers don't need to wire anything up. */
-.s-hint-icon-tip {
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 6px 10px;
+.s-input:placeholder-shown:not(:focus):hover,
+.s-textarea:placeholder-shown:not(:focus):hover,
+.s-select[data-empty="true"]:not(:focus):hover {
+  /* subtle hint that the surface is interactive without bringing the
+     full border back */
+  border-color: var(--s-border);
   background: var(--s-surface);
-  color: var(--s-text);
-  border: 0.5px solid var(--s-border-strong);
-  border-radius: var(--s-radius-md);
-  font-size: 11px;
-  font-weight: 400;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.12s, visibility 0.12s;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  z-index: 3;
 }
-.s-hint-icon:hover .s-hint-icon-tip,
-.s-hint-icon:focus-visible .s-hint-icon-tip {
-  opacity: 1;
-  visibility: visible;
-}
+
+/* The old in-input `?` hint-icon pattern was replaced by the focus-driven
+   yellow card in the AgentPanel — see <FieldHintProvider> +
+   <FieldHintCard>. The .s-hint-icon CSS that lived here was removed
+   along with the <HintIcon> component usages. */
 .s-textarea {
   padding: 12px;
   min-height: 90px;

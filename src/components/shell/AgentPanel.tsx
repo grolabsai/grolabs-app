@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { useAgentLog } from "@/components/shell/AgentLogContext";
+import { useFieldHintState } from "@/components/shell/FieldHintContext";
 import { Icon } from "@/components/ui/icon";
 import type { AgentMessage } from "@/lib/import/types";
 
@@ -31,6 +32,7 @@ import type { AgentMessage } from "@/lib/import/types";
 export function AgentPanel() {
   const t = useTranslations("agentPanel");
   const { messages, clear } = useAgentLog();
+  const { active: fieldHint } = useFieldHintState();
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return true;
     try {
@@ -234,13 +236,18 @@ export function AgentPanel() {
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: messages.length === 0 ? "14px" : "10px 10px 14px",
+          padding: "10px 10px 14px",
           display: "flex",
           flexDirection: "column",
           gap: 8,
         }}
       >
-        {messages.length === 0 ? (
+        {/* Field-hint card: shown when an input has focus elsewhere on
+            the page. Yellow background always — same look in dark and
+            light themes. Replaces the in-input "?" icon pattern. */}
+        {fieldHint && <FieldHintCard hint={fieldHint} />}
+
+        {!fieldHint && messages.length === 0 ? (
           <div
             style={{
               background: "var(--s-surface)",
@@ -285,6 +292,46 @@ export function AgentPanel() {
         </button>
       </div>
     </div>
+    </div>
+  );
+}
+
+// ─── Field hint card ──────────────────────────────────────────────────────
+// Yellow background in both themes. Appears at the top of the agent panel
+// when an input on the page has focus; vanishes on blur. Replaces the
+// in-input "?" affordance with a roomier surface that can carry multi-
+// line copy.
+
+function FieldHintCard({ hint }: { hint: { label: string; body: string } }) {
+  return (
+    <div
+      style={{
+        background: "#fae194", // GL always-yellow — not theme-aware
+        color: "#131316", // dark text on yellow for contrast in both themes
+        borderRadius: "var(--s-radius-md)",
+        padding: "14px 16px",
+        boxShadow: "0 6px 24px rgba(250, 225, 148, 0.18)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          lineHeight: 1.3,
+          marginBottom: 8,
+        }}
+      >
+        {hint.label}
+      </div>
+      <div
+        style={{
+          fontSize: 12.5,
+          lineHeight: 1.5,
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {hint.body}
+      </div>
     </div>
   );
 }

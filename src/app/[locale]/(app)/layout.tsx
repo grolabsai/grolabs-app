@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { AgentPanel } from "@/components/shell/AgentPanel";
 import { AgentLogProvider } from "@/components/shell/AgentLogContext";
+import { FieldHintProvider } from "@/components/shell/FieldHintContext";
 import { MissingTranslationListener } from "@/components/i18n/MissingTranslationListener";
 import { NewInstanceBanner } from "@/components/shell/NewInstanceBanner";
 
@@ -62,6 +63,7 @@ export default async function AppLayout({
 
   return (
     <AgentLogProvider>
+      <FieldHintProvider>
       <MissingTranslationListener />
       <div className="s-app">
         <Sidebar
@@ -82,6 +84,7 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
+      </FieldHintProvider>
     </AgentLogProvider>
   );
 }

@@ -1,5 +1,4 @@
 import { Icon } from "@/components/ui/icon";
-import { HintIcon } from "@/components/ui/hint-icon";
 import {
   ChevronDown,
   Check,
@@ -169,7 +168,7 @@ export default function StyleguidePage() {
         <ButtonsDemo />
       </Pair>
 
-      <Pair title="RRE · Inputs (with hint-icon pattern)">
+      <Pair title="RRE · Inputs (focus-driven hints + empty=no-border)">
         <InputsDemo />
         <InputsDemo />
       </Pair>
@@ -743,36 +742,37 @@ function InputsDemo() {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div className="s-field">
-        <label className="s-field-label">Required field</label>
-        <div className="s-input-wrap">
-          <input className="s-input" type="text" placeholder=" " />
-          <HintIcon hint="example.com" required />
-        </div>
+        <label className="s-field-label">Empty (no border, no bg)</label>
+        <input className="s-input" type="text" placeholder=" " />
         <div className="s-field-hint">
-          Yellow circle = mandatory. Tooltip on hover shows the hint;
-          the icon disappears once the field has content.
+          When the field is empty AND not focused, the border + bg are
+          transparent. The label is the only thing that stays visible —
+          everything else disappears until you commit to interacting.
         </div>
       </div>
       <div className="s-field">
-        <label className="s-field-label">Optional field</label>
-        <div className="s-input-wrap">
-          <input className="s-input" type="text" placeholder=" " />
-          <HintIcon hint="A few sentences about your store" />
+        <label className="s-field-label">Pre-filled (border visible)</label>
+        <input
+          className="s-input"
+          type="text"
+          defaultValue="wazu.com"
+          placeholder=" "
+        />
+        <div className="s-field-hint">
+          As soon as content lands, the border + surface come back.
         </div>
       </div>
       <div className="s-field">
-        <label className="s-field-label">Pre-filled (icon hidden)</label>
-        <div className="s-input-wrap">
-          <input
-            className="s-input"
-            type="text"
-            placeholder=" "
-            defaultValue="wazu.com"
-          />
-          <HintIcon hint="example.com" required />
-        </div>
+        <label className="s-field-label">Focused (border in yellow)</label>
+        <input
+          className="s-input"
+          type="text"
+          placeholder=" "
+          autoFocus
+        />
         <div className="s-field-hint">
-          The hint icon hides automatically once the input has a value.
+          Focus also brings the border back, even when empty. The hint
+          for this field will surface in the AgentPanel.
         </div>
       </div>
       <div className="s-field">

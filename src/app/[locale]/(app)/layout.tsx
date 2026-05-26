@@ -64,14 +64,13 @@ export default async function AppLayout({
     <AgentLogProvider>
       <MissingTranslationListener />
       <div className="s-app">
-        <Sidebar instanceName={instanceName} />
+        <Sidebar
+          instanceName={instanceName}
+          instances={instances}
+          currentInstanceId={currentInstance?.instanceId ?? null}
+        />
         <main className="s-main">
-          <TopBar
-            initials={initials}
-            userEmail={user.email ?? ""}
-            instances={instances}
-            currentInstanceId={currentInstance?.instanceId ?? null}
-          />
+          <TopBar initials={initials} userEmail={user.email ?? ""} />
           <div className="s-shell-body">
             <div className="s-shell-content">
               <NewInstanceBanner

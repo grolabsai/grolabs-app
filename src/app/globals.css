@@ -248,6 +248,19 @@ button {
   top: 0;
   height: 100vh;
   color: var(--nav-text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Instance switcher block under the brand mark. Spans the full sidebar
+   width; the InstanceSwitcher button inside truncates its label. */
+.s-sidebar-instance {
+  margin: 0 0 18px;
+  padding: 0 2px;
+}
+.s-sidebar-instance > button {
+  width: 100%;
+  justify-content: space-between;
 }
 
 .s-brand {
@@ -363,6 +376,16 @@ button {
 }
 .s-nav-section-trigger:hover .s-nav-chevron {
   opacity: 0.8;
+}
+
+/* Children of a collapsible section read on a subtly lighter background
+   than the sidebar itself, so the parent/child hierarchy is visible at
+   a glance without indentation alone carrying the weight. */
+.s-nav-collapsible-inner {
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: var(--s-radius-md);
+  padding: 4px 4px 4px 16px;
+  margin: 2px 0 6px;
 }
 
 .s-nav-collapsible {

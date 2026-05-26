@@ -51,6 +51,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Icon } from "@/components/ui/icon";
+import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
 import { cn } from "@/lib/utils";
 
 const SECTION_STATE_KEY = "grolabs.sidebar.sections";
@@ -135,7 +136,15 @@ function isItemActive(href: Route | string | null, pathname: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Sidebar({ instanceName }: { instanceName: string }) {
+export function Sidebar({
+  instanceName: _instanceName,
+  instances,
+  currentInstanceId,
+}: {
+  instanceName: string;
+  instances: InstanceListItem[];
+  currentInstanceId: number | null;
+}) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
   const t = useTranslations("configuration.algolia");
@@ -314,6 +323,16 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         <span className="s-brand-name">GroLabs</span>
       </div>
 
+      {/* Instance switcher — moved here from the topbar so it sits as the
+          first interactive element below the logo. Truncates the
+          instance name when the sidebar can't fit it. */}
+      <div className="s-sidebar-instance">
+        <InstanceSwitcher
+          instances={instances}
+          currentInstanceId={currentInstanceId}
+        />
+      </div>
+
       {/* Nav groups */}
       {NAV.map((group) => {
         // Flat group (Dashboard): a single link, no header, no collapse.
@@ -365,24 +384,8 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         );
       })}
 
-      {/* Instance badge */}
-      <div style={{ marginTop: 24, padding: "8px 10px" }}>
-        <div
-          style={{
-            fontSize: 10,
-            color: "var(--s-text-tertiary)",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: 4,
-          }}
-        >
-          {tNav("instance")}
-        </div>
-        <div style={{ fontSize: 13, color: "var(--s-text)" }}>{instanceName}</div>
-      </div>
-
       {/* Version */}
-      <div style={{ padding: "4px 10px 8px" }}>
+      <div style={{ marginTop: "auto", padding: "12px 10px 8px" }}>
         <div
           style={{
             fontSize: 10,

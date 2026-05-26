@@ -1,4 +1,5 @@
 import { Icon } from "@/components/ui/icon";
+import { HintIcon } from "@/components/ui/hint-icon";
 import {
   ChevronDown,
   Check,
@@ -522,8 +523,37 @@ function InputsDemo() {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div className="s-field">
-        <label className="s-field-label">Text input</label>
-        <input className="s-input" type="text" placeholder="example@grolabs.ai" />
+        <label className="s-field-label">Required field</label>
+        <div className="s-input-wrap">
+          <input className="s-input" type="text" placeholder=" " />
+          <HintIcon hint="example.com" required />
+        </div>
+        <div className="s-field-hint">
+          Yellow circle = mandatory. Tooltip on hover shows the hint;
+          the icon disappears once the field has content.
+        </div>
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Optional field</label>
+        <div className="s-input-wrap">
+          <input className="s-input" type="text" placeholder=" " />
+          <HintIcon hint="A few sentences about your store" />
+        </div>
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Pre-filled (icon hidden)</label>
+        <div className="s-input-wrap">
+          <input
+            className="s-input"
+            type="text"
+            placeholder=" "
+            defaultValue="wazu.com"
+          />
+          <HintIcon hint="example.com" required />
+        </div>
+        <div className="s-field-hint">
+          The hint icon hides automatically once the input has a value.
+        </div>
       </div>
       <div className="s-field">
         <label className="s-field-label">Search</label>
@@ -542,27 +572,33 @@ function InputsDemo() {
           <input
             className="s-input"
             type="search"
-            placeholder="Search products…"
+            placeholder=" "
             style={{ paddingLeft: 36 }}
           />
         </div>
       </div>
       <div className="s-field">
         <label className="s-field-label">Number</label>
-        <input className="s-input" type="number" defaultValue={1200} />
+        <input className="s-input" type="number" defaultValue={1200} placeholder=" " />
       </div>
       <div className="s-field">
         <label className="s-field-label">Textarea</label>
         <textarea
           className="s-textarea"
           rows={3}
-          placeholder="A few sentences…"
+          placeholder=" "
           style={{ resize: "vertical", minHeight: 60 }}
         />
       </div>
       <div className="s-field">
         <label className="s-field-label">Disabled</label>
-        <input className="s-input" type="text" defaultValue="Read only" disabled />
+        <input
+          className="s-input"
+          type="text"
+          defaultValue="Read only"
+          placeholder=" "
+          disabled
+        />
       </div>
       <div className="s-field">
         <label className="s-field-label">Invalid</label>
@@ -570,10 +606,11 @@ function InputsDemo() {
           className="s-input"
           type="text"
           defaultValue="bad@input"
+          placeholder=" "
           style={{ borderColor: "var(--s-danger)" }}
         />
         <div style={{ fontSize: 11, color: "var(--s-danger-text)", marginTop: 6 }}>
-          That doesn’t look like a valid email.
+          That doesn&rsquo;t look like a valid email.
         </div>
       </div>
     </div>

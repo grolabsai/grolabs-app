@@ -839,6 +839,118 @@ button {
   border-color: var(--scout-accent);
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
+
+/* Content text inside form controls is semi-bold (600). The placeholder
+   stays at the normal weight so the empty + filled states are visually
+   distinct. */
+.s-input,
+.s-select,
+.s-textarea {
+  font-weight: 600;
+}
+.s-input::placeholder,
+.s-textarea::placeholder {
+  font-weight: 400;
+}
+
+/* =============================================================================
+   HINT ICON + tooltip — paired with the new <HintIcon> component
+   =============================================================================
+   Replaces the "hint as placeholder text" pattern. The hint copy lives in
+   a tooltip that appears on hover of a circular `?` icon sitting at the
+   trailing edge of an input. Visibility:
+
+     • Icon shows only while the input is empty (:placeholder-shown).
+       Required: the input must declare placeholder=" " to make the
+       pseudo-class engage.
+     • Icon hides as soon as the user starts typing.
+     • Tooltip opens on hover of the icon itself; it never opens on
+       hover of the input area.
+
+   Required-field variant has a kinetic-yellow background so a scan
+   of the form picks out mandatory fields without reading any copy.
+*/
+.s-input-wrap {
+  position: relative;
+  width: 100%;
+  display: inline-block;
+}
+/* Reserve trailing space inside an input for the hint icon. */
+.s-input-wrap .s-input,
+.s-input-wrap input.s-input,
+.s-input-wrap textarea.s-textarea {
+  padding-right: 36px;
+}
+.s-hint-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--s-surface-alt);
+  color: var(--s-text-tertiary);
+  border: 0.5px solid var(--s-border);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--s-font);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  z-index: 2;
+}
+.s-hint-icon:hover {
+  background: var(--s-surface-hover);
+  color: var(--s-text);
+}
+.s-hint-icon--required {
+  background: var(--scout-accent);
+  color: var(--scout-accent-on);
+  border-color: var(--scout-accent);
+}
+.s-hint-icon--required:hover {
+  background: var(--scout-accent-hover);
+}
+
+/* Hide the icon when the input has content. The icon must live as a
+   following sibling of the input/textarea inside .s-input-wrap. */
+.s-input-wrap input:not(:placeholder-shown) ~ .s-hint-icon,
+.s-input-wrap textarea:not(:placeholder-shown) ~ .s-hint-icon,
+.s-input-wrap select:not([data-empty="true"]) ~ .s-hint-icon {
+  display: none;
+}
+
+/* Tooltip — opens to the left of the icon on hover. Built into the same
+   element so callers don't need to wire anything up. */
+.s-hint-icon-tip {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  background: var(--s-surface);
+  color: var(--s-text);
+  border: 0.5px solid var(--s-border-strong);
+  border-radius: var(--s-radius-md);
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s, visibility 0.12s;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+}
+.s-hint-icon:hover .s-hint-icon-tip,
+.s-hint-icon:focus-visible .s-hint-icon-tip {
+  opacity: 1;
+  visibility: visible;
+}
 .s-textarea {
   padding: 12px;
   min-height: 90px;

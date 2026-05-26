@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { HintIcon } from "@/components/ui/hint-icon";
 import { startDiagnostic, setProspectEconomics } from "./_actions";
 
 export function NewRunForm({
@@ -80,38 +81,53 @@ export function NewRunForm({
           <label className="s-field-label" style={{ fontSize: 11 }}>
             {t("form.rootUrl")}
           </label>
-          <input
-            type="text"
-            className="s-input"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="example.com"
-            required
-          />
+          <div className="s-input-wrap">
+            <input
+              type="text"
+              className="s-input"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder=" "
+              required
+            />
+            <HintIcon hint="example.com" required />
+          </div>
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
-            {t("form.pdpUrl")} <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>({t("form.optional")})</span>
+            {t("form.pdpUrl")}{" "}
+            <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>
+              ({t("form.optional")})
+            </span>
           </label>
-          <input
-            type="text"
-            className="s-input"
-            value={pdpUrl}
-            onChange={(e) => setPdpUrl(e.target.value)}
-            placeholder={t("form.pdpUrlPlaceholder")}
-          />
+          <div className="s-input-wrap">
+            <input
+              type="text"
+              className="s-input"
+              value={pdpUrl}
+              onChange={(e) => setPdpUrl(e.target.value)}
+              placeholder=" "
+            />
+            <HintIcon hint={t("form.pdpUrlPlaceholder")} />
+          </div>
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
-            {t("form.categoryUrl")} <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>({t("form.optional")})</span>
+            {t("form.categoryUrl")}{" "}
+            <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>
+              ({t("form.optional")})
+            </span>
           </label>
-          <input
-            type="text"
-            className="s-input"
-            value={categoryUrl}
-            onChange={(e) => setCategoryUrl(e.target.value)}
-            placeholder={t("form.categoryUrlPlaceholder")}
-          />
+          <div className="s-input-wrap">
+            <input
+              type="text"
+              className="s-input"
+              value={categoryUrl}
+              onChange={(e) => setCategoryUrl(e.target.value)}
+              placeholder=" "
+            />
+            <HintIcon hint={t("form.categoryUrlPlaceholder")} />
+          </div>
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
@@ -122,6 +138,7 @@ export function NewRunForm({
             className="s-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder=" "
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
@@ -145,26 +162,32 @@ export function NewRunForm({
           <label className="s-field-label" style={{ fontSize: 11 }}>
             {t("form.annualTraffic")}
           </label>
-          <input
-            type="number"
-            className="s-input"
-            value={annualTraffic}
-            onChange={(e) => setAnnualTraffic(e.target.value)}
-            placeholder="500000"
-          />
+          <div className="s-input-wrap">
+            <input
+              type="number"
+              className="s-input"
+              value={annualTraffic}
+              onChange={(e) => setAnnualTraffic(e.target.value)}
+              placeholder=" "
+            />
+            <HintIcon hint="500000" />
+          </div>
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
             {t("form.aov")}
           </label>
-          <input
-            type="number"
-            step="0.01"
-            className="s-input"
-            value={aov}
-            onChange={(e) => setAov(e.target.value)}
-            placeholder="45"
-          />
+          <div className="s-input-wrap">
+            <input
+              type="number"
+              step="0.01"
+              className="s-input"
+              value={aov}
+              onChange={(e) => setAov(e.target.value)}
+              placeholder=" "
+            />
+            <HintIcon hint="45" />
+          </div>
         </div>
         <button
           type="submit"

@@ -202,6 +202,29 @@ export type PdpSignals = {
   description_text: string;
   description_word_count: number;
   all_schema_types: string[];
+  // Extended signals from GLPIM /tools/pdp-signals (v2 onward).
+  // Older deploys may not return these — fields are optional.
+  variant_selector_count?: number;
+  variant_swatch_count?: number;
+  has_variant_selectors?: boolean;
+  has_cross_sell?: boolean;
+  has_stock_indicator?: boolean;
+  stock_availability?: string | null;
+  stock_text_excerpt?: string | null;
+  has_delivery_indicator?: boolean;
+};
+
+export type SiteSignals = {
+  url: string;
+  platform_detected: string | null;
+  engine_detected: string | null;
+  has_search_box: boolean;
+  category_url?: string;
+  category_engine_detected?: string | null;
+  category_error?: string;
+  facet_count: number | null;
+  facet_labels: string[];
+  has_counts: boolean | null;
 };
 
 /**
@@ -218,6 +241,27 @@ export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
   });
   if (!res.ok) throw await glpimError(res, "pdp-signals");
   return (await res.json()) as PdpSignals;
+}
+
+/**
+ * Call GLPIM's site-level scanner. Returns platform / engine fingerprints
+ * and, when a category URL is provided, faceting signals from that page.
+ */
+export async function scanSiteSignals(input: {
+  url: string;
+  categoryUrl?: string | null;
+}): Promise<SiteSignals> {
+  const url = `${ensureBaseUrl()}/tools/site-signals`;
+  const body: Record<string, unknown> = { url: input.url };
+  if (input.categoryUrl) body.category_url = input.categoryUrl;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) throw await glpimError(res, "site-signals");
+  return (await res.json()) as SiteSignals;
 }
 
 // ─── Internals ─────────────────────────────────────────────────────────────

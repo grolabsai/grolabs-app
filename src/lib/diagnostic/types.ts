@@ -8,7 +8,7 @@
  * in the catalog before code lands, they just won't score until they do.
  */
 
-import type { PdpSignals } from "@/lib/glpim";
+import type { PdpSignals, SiteSignals } from "@/lib/glpim";
 
 export type FindingStatus = "pass" | "fail" | "partial" | "na" | "error";
 
@@ -34,9 +34,15 @@ export type PdpContext = {
   fetchError: string | null;
 };
 
+export type SiteSignalsContext = {
+  signals: SiteSignals | null;
+  fetchError: string | null;
+};
+
 export type RunContext = {
   site: SiteWideContext;
   pdp: PdpContext;
+  siteSignals: SiteSignalsContext;
 };
 
 export type CheckScorer = (ctx: RunContext) => ScoringResult;

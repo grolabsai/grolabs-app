@@ -215,6 +215,165 @@ const scorePdpReviews: CheckScorer = ({ pdp }) => {
   };
 };
 
+// ── PDP — extended signals (variants, cross-sell, stock/delivery) ──────────
+
+const scorePdpVariantClarity: CheckScorer = ({ pdp }) => {
+  if (!pdp.signals) {
+    return { result_status: "error", score: null, evidence: { fetch_error: pdp.fetchError } };
+  }
+  const s = pdp.signals;
+  if (s.has_variant_selectors === undefined) {
+    // Older GLPIM deploy without the extended-signals field.
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "extended_signals_missing" },
+      notes:
+        "GLPIM /tools/pdp-signals did not return variant_selector_count — upgrade to the v2 endpoint.",
+    };
+  }
+  const count = s.variant_selector_count ?? 0;
+  const swatches = s.variant_swatch_count ?? 0;
+  if (count === 0) {
+    // No variants present isn't necessarily bad — single-SKU product.
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { variant_selector_count: 0 },
+      notes: "PDP appears to have no variants; check is not applicable.",
+    };
+  }
+  // Has variants — score on clarity: any swatch = much better than plain selects.
+  let score = 50; // baseline: variants exist
+  if (swatches > 0) score += 40;
+  if (count >= 2) score += 10; // multiple axes
+  score = Math.min(100, score);
+  const status = score >= 80 ? "pass" : score >= 50 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      variant_selector_count: count,
+      variant_swatch_count: swatches,
+    },
+  };
+};
+
+const scorePdpCrossSell: CheckScorer = ({ pdp }) => {
+  if (!pdp.signals) {
+    return { result_status: "error", score: null, evidence: { fetch_error: pdp.fetchError } };
+  }
+  if (pdp.signals.has_cross_sell === undefined) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "extended_signals_missing" },
+    };
+  }
+  const present = pdp.signals.has_cross_sell;
+  return {
+    result_status: present ? "pass" : "fail",
+    score: present ? 100 : 0,
+    evidence: { has_cross_sell: present },
+  };
+};
+
+const scorePdpStockDelivery: CheckScorer = ({ pdp }) => {
+  if (!pdp.signals) {
+    return { result_status: "error", score: null, evidence: { fetch_error: pdp.fetchError } };
+  }
+  if (
+    pdp.signals.has_stock_indicator === undefined ||
+    pdp.signals.has_delivery_indicator === undefined
+  ) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "extended_signals_missing" },
+    };
+  }
+  const stock = pdp.signals.has_stock_indicator;
+  const delivery = pdp.signals.has_delivery_indicator;
+  let score = 0;
+  if (stock) score += 60;
+  if (delivery) score += 40;
+  const status = score >= 100 ? "pass" : score >= 40 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      has_stock_indicator: stock,
+      has_delivery_indicator: delivery,
+      stock_availability: pdp.signals.stock_availability ?? null,
+    },
+  };
+};
+
+// ── On-site nav — engine ID + faceting (from site-signals) ─────────────────
+
+const scoreSearchEngineId: CheckScorer = ({ siteSignals }) => {
+  if (!siteSignals.signals) {
+    return {
+      result_status: "error",
+      score: null,
+      evidence: { fetch_error: siteSignals.fetchError },
+    };
+  }
+  const s = siteSignals.signals;
+  const engine = s.engine_detected;
+  // This check is context — not pass/fail. Record what we found.
+  return {
+    result_status: engine ? "pass" : "partial",
+    score: engine ? 100 : 50,
+    evidence: {
+      engine_detected: engine,
+      platform_detected: s.platform_detected,
+      has_search_box: s.has_search_box,
+      category_engine_detected: s.category_engine_detected ?? null,
+    },
+    notes: engine
+      ? `Search engine identified as ${engine}.`
+      : "No third-party search engine fingerprint detected — likely native platform search.",
+  };
+};
+
+const scoreFaceting: CheckScorer = ({ siteSignals }) => {
+  if (!siteSignals.signals) {
+    return {
+      result_status: "error",
+      score: null,
+      evidence: { fetch_error: siteSignals.fetchError },
+    };
+  }
+  const s = siteSignals.signals;
+  if (s.facet_count == null) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "no_category_url_sampled" },
+      notes: "Provide a category URL on the run form to score faceting.",
+    };
+  }
+  const count = s.facet_count;
+  const hasCounts = !!s.has_counts;
+  // 4+ facets is a healthy listing; 1-3 partial; 0 fail.
+  let score = 0;
+  if (count >= 4) score = 70;
+  else if (count >= 1) score = Math.round((count / 4) * 70);
+  if (hasCounts) score += 30;
+  score = Math.min(100, score);
+  const status = score >= 80 ? "pass" : score >= 30 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      facet_count: count,
+      has_counts: hasCounts,
+      facet_labels: s.facet_labels.slice(0, 8),
+    },
+  };
+};
+
 // ── Registry ────────────────────────────────────────────────────────────────
 
 export const SCORERS: Record<string, CheckScorer> = {
@@ -225,6 +384,11 @@ export const SCORERS: Record<string, CheckScorer> = {
   "pdp.image_count_quality": scorePdpImages,
   "pdp.attribute_table": scorePdpAttributeTable,
   "pdp.reviews": scorePdpReviews,
+  "pdp.variant_clarity": scorePdpVariantClarity,
+  "pdp.cross_sell": scorePdpCrossSell,
+  "pdp.stock_delivery": scorePdpStockDelivery,
+  "on_site_nav.search_engine_id": scoreSearchEngineId,
+  "on_site_nav.faceting": scoreFaceting,
 };
 
 export function scoreCheck(

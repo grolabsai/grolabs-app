@@ -2371,6 +2371,8 @@
         "rootUrl": "URL raíz",
         "pdpUrl": "URL de PDP",
         "pdpUrlPlaceholder": "Si no se especifica, se prueba la raíz",
+        "categoryUrl": "URL de categoría",
+        "categoryUrlPlaceholder": "Para medir facetas (opcional)",
         "displayName": "Nombre",
         "vertical": "Vertical",
         "optional": "opcional",

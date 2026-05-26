@@ -16,6 +16,7 @@ export function NewRunForm({
   const [error, setError] = useState<string | null>(null);
   const [url, setUrl] = useState("");
   const [pdpUrl, setPdpUrl] = useState("");
+  const [categoryUrl, setCategoryUrl] = useState("");
   const [name, setName] = useState("");
   const [verticalId, setVerticalId] = useState<number | null>(null);
 
@@ -26,6 +27,7 @@ export function NewRunForm({
       const result = await startDiagnostic({
         url,
         pdpUrl: pdpUrl || null,
+        categoryUrl: categoryUrl || null,
         prospectName: name || null,
         verticalId,
       });
@@ -59,7 +61,7 @@ export function NewRunForm({
         {t("form.title")}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
             {t("form.rootUrl")}
@@ -83,6 +85,18 @@ export function NewRunForm({
             value={pdpUrl}
             onChange={(e) => setPdpUrl(e.target.value)}
             placeholder={t("form.pdpUrlPlaceholder")}
+          />
+        </div>
+        <div className="s-field" style={{ marginBottom: 0 }}>
+          <label className="s-field-label" style={{ fontSize: 11 }}>
+            {t("form.categoryUrl")} <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>({t("form.optional")})</span>
+          </label>
+          <input
+            type="text"
+            className="s-input"
+            value={categoryUrl}
+            onChange={(e) => setCategoryUrl(e.target.value)}
+            placeholder={t("form.categoryUrlPlaceholder")}
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>

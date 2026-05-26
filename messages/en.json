@@ -2371,6 +2371,8 @@
         "rootUrl": "Root URL",
         "pdpUrl": "PDP URL",
         "pdpUrlPlaceholder": "Falls back to the root if not set",
+        "categoryUrl": "Category URL",
+        "categoryUrlPlaceholder": "Required to score faceting",
         "displayName": "Display name",
         "vertical": "Vertical",
         "optional": "optional",

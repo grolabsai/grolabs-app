@@ -21,20 +21,24 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
-import { scanPdpSignals, type PdpSignals } from "@/lib/glpim";
+import {
+  scanPdpSignals,
+  scanSiteSignals,
+  type PdpSignals,
+  type SiteSignals,
+} from "@/lib/glpim";
 import { probeSiteWide } from "./site-checks";
 import { SCORERS, scoreCheck } from "./scorers";
 import type {
   Evidence,
   FindingStatus,
-  PdpContext,
-  RunContext,
   ScoringResult,
 } from "./types";
 
 export type StartDiagnosticInput = {
   url: string;
   pdpUrl?: string | null;
+  categoryUrl?: string | null;
   prospectName?: string | null;
   verticalId?: number | null;
 };
@@ -164,6 +168,7 @@ export async function startDiagnostic(
 
   const rootUrl = normalizeUrl(input.url);
   const pdpUrl = input.pdpUrl ? normalizeUrl(input.pdpUrl) : rootUrl;
+  const categoryUrl = input.categoryUrl ? normalizeUrl(input.categoryUrl) : null;
 
   const supabase = await createClient();
 
@@ -197,7 +202,12 @@ export async function startDiagnostic(
   const runId = runRow.run_id as string;
 
   // Sample list for evidence/reproducibility
-  await supabase.from("run_sample").insert([
+  const samples: {
+    run_id: string;
+    sample_type: "homepage" | "pdp" | "category" | "search_query";
+    url_or_query: string;
+    selection_reason: string;
+  }[] = [
     {
       run_id: runId,
       sample_type: "homepage",
@@ -210,18 +220,43 @@ export async function startDiagnostic(
       url_or_query: pdpUrl,
       selection_reason: input.pdpUrl ? "user_supplied" : "root_as_pdp_fallback",
     },
-  ]);
+  ];
+  if (categoryUrl) {
+    samples.push({
+      run_id: runId,
+      sample_type: "category",
+      url_or_query: categoryUrl,
+      selection_reason: "user_supplied_category",
+    });
+  }
+  await supabase.from("run_sample").insert(samples);
 
-  // 3 + 4. Probe in parallel
-  const [siteCtx, pdpResult] = await Promise.all([
+  // 3 + 4. Probe in parallel: site-wide HTTP, GLPIM PDP, GLPIM site-signals
+  const [siteCtx, pdpResult, siteSignalsResult] = await Promise.all([
     probeSiteWide(rootUrl),
     fetchPdpSignals(pdpUrl),
+    fetchSiteSignals({ url: rootUrl, categoryUrl }),
   ]);
 
-  const ctx: RunContext = {
+  const ctx: import("./types").RunContext = {
     site: siteCtx,
     pdp: { url: pdpUrl, signals: pdpResult.signals, fetchError: pdpResult.error },
+    siteSignals: {
+      signals: siteSignalsResult.signals,
+      fetchError: siteSignalsResult.error,
+    },
   };
+
+  // Persist the detected platform/engine on the prospect for future runs.
+  if (siteSignalsResult.signals) {
+    await supabase
+      .from("prospect")
+      .update({
+        platform_detected: siteSignalsResult.signals.platform_detected,
+        engine_detected: siteSignalsResult.signals.engine_detected,
+      })
+      .eq("prospect_id", prospectId);
+  }
 
   // 5. Load active checks (this instance + template fallthrough via RLS).
   const { data: checksRaw, error: checksErr } = await supabase
@@ -353,6 +388,21 @@ async function fetchPdpSignals(
 ): Promise<{ signals: PdpSignals | null; error: string | null }> {
   try {
     const signals = await scanPdpSignals(url);
+    return { signals, error: null };
+  } catch (e) {
+    return { signals: null, error: String(e instanceof Error ? e.message : e) };
+  }
+}
+
+async function fetchSiteSignals(input: {
+  url: string;
+  categoryUrl: string | null;
+}): Promise<{ signals: SiteSignals | null; error: string | null }> {
+  try {
+    const signals = await scanSiteSignals({
+      url: input.url,
+      categoryUrl: input.categoryUrl,
+    });
     return { signals, error: null };
   } catch (e) {
     return { signals: null, error: String(e instanceof Error ? e.message : e) };

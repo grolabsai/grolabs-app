@@ -135,9 +135,31 @@ type NavGroup = {
   items: NavItem[];
 };
 
-function isItemActive(href: Route | string | null, pathname: string) {
+function itemMatchesPath(href: Route | string | null, pathname: string): boolean {
   if (!href) return false;
   return pathname === href || pathname.startsWith(href + "/");
+}
+
+/**
+ * Pick the single active NAV item across all groups: the longest matching
+ * href wins. Without this, a parent like `/prospects` and a child like
+ * `/prospects/rubric` both light up when you're on `/prospects/rubric` —
+ * the parent's prefix match collides with the child's exact match.
+ */
+function computeActiveHref(
+  groups: { items: { href: Route | string | null }[] }[],
+  pathname: string,
+): string | null {
+  let best: string | null = null;
+  for (const group of groups) {
+    for (const item of group.items) {
+      const href = item.href;
+      if (!href) continue;
+      if (!itemMatchesPath(href, pathname)) continue;
+      if (best === null || href.length > best.length) best = href;
+    }
+  }
+  return best;
 }
 
 export function Sidebar({
@@ -258,13 +280,16 @@ export function Sidebar({
     },
   ];
 
-  // Which collapsible group owns the current route. Computed identically on
-  // server and first client render (usePathname is isomorphic), so the
-  // route-derived default never causes a hydration mismatch.
+  // Single active href across all NAV. Longest matching href wins so
+  // parent rows (e.g. /prospects) don't light up alongside their
+  // children (/prospects/rubric).
+  const activeHref = computeActiveHref(NAV, pathname);
+
+  // Which collapsible group owns the active item — used for the default
+  // expanded state.
   const activeGroupKey =
-    NAV.find(
-      (g) => !g.flat && g.items.some((it) => isItemActive(it.href, pathname)),
-    )?.key ?? null;
+    NAV.find((g) => !g.flat && g.items.some((it) => it.href === activeHref))
+      ?.key ?? null;
 
   // Manual expand/collapse choices, persisted per browser tab. The server
   // snapshot is empty so SSR always uses route-derived defaults; the client
@@ -281,7 +306,7 @@ export function Sidebar({
 
   function renderItem(item: NavItem) {
     const ItemIcon = item.icon;
-    const isActive = isItemActive(item.href, pathname);
+    const isActive = item.href !== null && item.href === activeHref;
 
     // Active items force the icon stroke yellow via the `color` prop
     // on Lucide. Lucide renders `<svg stroke={color}>`, so passing the

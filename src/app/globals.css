@@ -1415,10 +1415,16 @@ input[type="date"].s-input {
 .s-tab:hover {
   color: var(--s-text);
 }
+/* Active tab: yellow underline + a contrast bump on the label.
+   The text color itself is NOT yellow — only the underline carries
+   the accent. The label switches from secondary to strong so the
+   active tab reads as "more present" against the background:
+     dark theme  →  inactive: muted bone   active: pure white
+     light theme →  inactive: gray         active: pure black */
 .s-tab.active {
-  color: var(--scout-accent-800);
+  color: var(--s-text-strong);
   border-bottom-color: var(--scout-accent);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* =============================================================================

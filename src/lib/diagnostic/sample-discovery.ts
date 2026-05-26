@@ -32,6 +32,9 @@ export type DiscoveredSamples = {
     h2?: string[];
     productTypes?: string[];
   };
+  /** Best-effort URL of the prospect's logo, derived from the homepage. */
+  logoUrl: string | null;
+  logoSource: string | null;
 };
 
 const PDP_PATTERNS = [
@@ -72,6 +75,8 @@ export async function discoverSamples(rootUrl: string): Promise<DiscoveredSample
     categoryReason: "homepage_fetch_failed",
     homepageText: "",
     homepageHints: {},
+    logoUrl: null,
+    logoSource: null,
   };
 
   let html = "";
@@ -150,6 +155,11 @@ export async function discoverSamples(rootUrl: string): Promise<DiscoveredSample
   // Strip tags for the snippet text the classifier will read.
   const text = stripTags(html).slice(0, 6000);
 
+  // Logo extraction — prefer Organization JSON-LD logo, then large
+  // touch/icon links, then og:image, then fall back to Google's
+  // s2 favicon service (always works).
+  const logo = extractLogo(html, rootUrl);
+
   return {
     pdpUrl,
     pdpReason: pdpUrl ? pdpReason : "no_pdp_link_found",
@@ -162,7 +172,121 @@ export async function discoverSamples(rootUrl: string): Promise<DiscoveredSample
       h2,
       productTypes,
     },
+    logoUrl: logo.url,
+    logoSource: logo.source,
   };
+}
+
+/**
+ * Pick the best logo candidate from a homepage HTML payload.
+ *
+ * Source priority:
+ *   1. JSON-LD Organization (or @type=*Store) → `logo` — the merchant
+ *      explicitly named this as their logo
+ *   2. <link rel="apple-touch-icon" ...> — usually a clean square asset
+ *      sized for mobile bookmark icons (180x180 typical)
+ *   3. <link rel="icon" sizes="...">  — pick the largest
+ *   4. <meta property="og:image"> — generic but often present
+ *   5. /favicon.ico — last resort, smaller but always exists
+ *   6. Google's s2 favicon service — terminal fallback when nothing
+ *      above resolves
+ */
+function extractLogo(
+  html: string,
+  rootUrl: string,
+): { url: string | null; source: string | null } {
+  // 1. JSON-LD Organization logo
+  const scriptRe = /<script\s+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
+  for (const m of html.matchAll(scriptRe)) {
+    try {
+      const data = JSON.parse(m[1]);
+      const nodes = flattenJsonLd(data);
+      for (const n of nodes) {
+        if (!n || typeof n !== "object") continue;
+        const node = n as Record<string, unknown>;
+        const type = String(node["@type"] ?? "").toLowerCase();
+        if (type.includes("organization") || type.includes("store") || type.includes("website")) {
+          const logo = node.logo;
+          if (typeof logo === "string") {
+            const abs = normalizeHref(logo, rootUrl);
+            if (abs) return { url: abs, source: "jsonld_organization" };
+          } else if (logo && typeof logo === "object") {
+            const url = (logo as { url?: unknown; contentUrl?: unknown }).url
+              ?? (logo as { contentUrl?: unknown }).contentUrl;
+            if (typeof url === "string") {
+              const abs = normalizeHref(url, rootUrl);
+              if (abs) return { url: abs, source: "jsonld_organization" };
+            }
+          }
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 2. apple-touch-icon — large, square, usually clean
+  const apple = html.match(
+    /<link\s+[^>]*rel=["']apple-touch-icon[^"']*["'][^>]*href=["']([^"']+)["']/i,
+  );
+  if (apple?.[1]) {
+    const abs = normalizeHref(apple[1], rootUrl);
+    if (abs) return { url: abs, source: "apple_touch_icon" };
+  }
+
+  // 3. <link rel="icon" sizes="…"> — pick the biggest
+  const iconLinks = Array.from(
+    html.matchAll(/<link\s+([^>]*rel=["'](?:icon|shortcut icon)[^"']*["'][^>]*)>/gi),
+  );
+  let bestIcon: { href: string; sizeNum: number } | null = null;
+  for (const link of iconLinks) {
+    const attrs = link[1];
+    const hrefMatch = attrs.match(/href=["']([^"']+)["']/i);
+    if (!hrefMatch) continue;
+    const sizeMatch = attrs.match(/sizes=["']([^"']+)["']/i);
+    const sizeNum = sizeMatch
+      ? Math.max(
+          0,
+          ...sizeMatch[1].split(/\s+/).map((s) => {
+            const n = parseInt(s.split("x")[0], 10);
+            return Number.isFinite(n) ? n : 0;
+          }),
+        )
+      : 16;
+    if (!bestIcon || sizeNum > bestIcon.sizeNum) {
+      bestIcon = { href: hrefMatch[1], sizeNum };
+    }
+  }
+  if (bestIcon) {
+    const abs = normalizeHref(bestIcon.href, rootUrl);
+    if (abs) return { url: abs, source: "icon_link" };
+  }
+
+  // 4. og:image
+  const og = html.match(
+    /<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i,
+  ) ?? html.match(
+    /<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i,
+  );
+  if (og?.[1]) {
+    const abs = normalizeHref(og[1], rootUrl);
+    if (abs) return { url: abs, source: "og_image" };
+  }
+
+  // 5. /favicon.ico — exists on virtually every site
+  try {
+    const u = new URL(rootUrl);
+    return {
+      url: `${u.protocol}//${u.host}/favicon.ico`,
+      source: "favicon_fallback",
+    };
+  } catch {
+    // 6. Terminal: Google's favicon service
+    return {
+      url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(rootUrl)}&sz=128`,
+      source: "google_s2_fallback",
+    };
+  }
 }
 
 function normalizeHref(href: string, base: string): string | null {

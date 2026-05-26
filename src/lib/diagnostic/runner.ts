@@ -383,12 +383,15 @@ async function runDiagnostic(opts: {
     });
   }
 
-  // Persist the resolved vertical on the prospect so subsequent runs
-  // skip the classifier (vertical is stable for a given storefront).
-  if (resolvedVerticalId != null) {
+  // Persist the resolved vertical + logo on the prospect so subsequent
+  // runs skip the classifier and the UI has a visual badge to show.
+  const prospectPatch: Record<string, unknown> = {};
+  if (resolvedVerticalId != null) prospectPatch.vertical_id = resolvedVerticalId;
+  if (discovered.logoUrl) prospectPatch.logo_url = discovered.logoUrl;
+  if (Object.keys(prospectPatch).length > 0) {
     await supabase
       .from("prospect")
-      .update({ vertical_id: resolvedVerticalId })
+      .update(prospectPatch)
       .eq("prospect_id", prospectId);
   }
 

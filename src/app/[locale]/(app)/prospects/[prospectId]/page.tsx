@@ -11,6 +11,7 @@ type Prospect = {
   prospect_id: number;
   url: string;
   display_name: string | null;
+  logo_url: string | null;
   vertical_id: number | null;
   contact_first_name: string | null;
   contact_last_name: string | null;
@@ -65,7 +66,7 @@ export default async function ProspectDetailPage({
   const { data: prospectRaw } = await supabase
     .from("prospect")
     .select(
-      "prospect_id, url, display_name, vertical_id, contact_first_name, contact_last_name, contact_position, contact_email, platform_detected, engine_detected, est_annual_traffic, est_aov_usd, notes, created_at, updated_at",
+      "prospect_id, url, display_name, logo_url, vertical_id, contact_first_name, contact_last_name, contact_position, contact_email, platform_detected, engine_detected, est_annual_traffic, est_aov_usd, notes, created_at, updated_at",
     )
     .eq("prospect_id", prospectId)
     .maybeSingle();
@@ -124,18 +125,24 @@ export default async function ProspectDetailPage({
         </Link>
       </div>
       <div className="s-title-row" style={{ marginBottom: 24 }}>
-        <div className="s-title-inner">
-          <h1 className="s-title">{prospect.display_name ?? prospect.url}</h1>
-          <p className="s-subtitle">
-            <a
-              href={prospect.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "var(--s-text-secondary)", textDecoration: "underline" }}
-            >
-              {prospect.url}
-            </a>
-          </p>
+        <div
+          className="s-title-inner"
+          style={{ display: "flex", alignItems: "center", gap: 16 }}
+        >
+          <ProspectLogoBig url={prospect.logo_url} fallback={prospect.url} />
+          <div>
+            <h1 className="s-title">{prospect.display_name ?? prospect.url}</h1>
+            <p className="s-subtitle">
+              <a
+                href={prospect.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--s-text-secondary)", textDecoration: "underline" }}
+              >
+                {prospect.url}
+              </a>
+            </p>
+          </div>
         </div>
         <ProspectActions
           prospectId={prospect.prospect_id}
@@ -324,6 +331,57 @@ export default async function ProspectDetailPage({
         )}
       </div>
     </div>
+  );
+}
+
+function ProspectLogoBig({
+  url,
+  fallback,
+}: {
+  url: string | null;
+  fallback: string;
+}) {
+  let src = url;
+  if (!src) {
+    try {
+      const host = new URL(fallback).host;
+      src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+    } catch {
+      src = null;
+    }
+  }
+  if (!src) {
+    return (
+      <div
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 10,
+          background: "var(--s-surface-alt)",
+          border: "0.5px solid var(--s-border)",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={src}
+      alt=""
+      width={56}
+      height={56}
+      style={{
+        width: 56,
+        height: 56,
+        objectFit: "contain",
+        background: "#ffffff",
+        borderRadius: 10,
+        border: "0.5px solid var(--s-border)",
+        flexShrink: 0,
+        padding: 4,
+      }}
+    />
   );
 }
 

@@ -10,6 +10,7 @@ type ProspectRow = {
   prospect_id: number;
   url: string;
   display_name: string | null;
+  logo_url: string | null;
   contact_first_name: string | null;
   contact_last_name: string | null;
   contact_position: string | null;
@@ -50,7 +51,7 @@ export default async function ProspectsPage() {
     supabase
       .from("prospect")
       .select(
-        "prospect_id, url, display_name, contact_first_name, contact_last_name, contact_position, contact_email, platform_detected, engine_detected, updated_at",
+        "prospect_id, url, display_name, logo_url, contact_first_name, contact_last_name, contact_position, contact_email, platform_detected, engine_detected, updated_at",
       )
       .order("updated_at", { ascending: false }),
     supabase
@@ -165,23 +166,28 @@ export default async function ProspectsPage() {
                         style={{
                           color: "var(--s-text)",
                           textDecoration: "none",
-                          display: "block",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
                         }}
                       >
-                        <div style={{ fontWeight: 600 }}>
-                          {p.display_name ?? p.url}
-                        </div>
-                        {p.display_name && (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "var(--s-text-tertiary)",
-                              fontFamily: "var(--s-font-mono)",
-                            }}
-                          >
-                            {p.url}
+                        <ProspectLogo url={p.logo_url} fallback={p.url} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600 }}>
+                            {p.display_name ?? p.url}
                           </div>
-                        )}
+                          {p.display_name && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "var(--s-text-tertiary)",
+                                fontFamily: "var(--s-font-mono)",
+                              }}
+                            >
+                              {p.url}
+                            </div>
+                          )}
+                        </div>
                       </Link>
                     </Td>
                     <Td>
@@ -240,6 +246,61 @@ export default async function ProspectsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ProspectLogo({
+  url,
+  fallback,
+}: {
+  url: string | null;
+  fallback: string;
+}) {
+  // 32px square logo badge. <img> is intentional — these point at
+  // arbitrary remote URLs and we don't want next/image's domain
+  // whitelist to gate them. onError swap to Google's s2 favicon
+  // service as a graceful degrade.
+  let initialSrc = url;
+  if (!initialSrc) {
+    try {
+      const host = new URL(fallback).host;
+      initialSrc = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
+    } catch {
+      initialSrc = null;
+    }
+  }
+  if (!initialSrc) {
+    return (
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 6,
+          background: "var(--s-surface-alt)",
+          border: "0.5px solid var(--s-border)",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={initialSrc}
+      alt=""
+      width={32}
+      height={32}
+      style={{
+        width: 32,
+        height: 32,
+        objectFit: "contain",
+        background: "#ffffff",
+        borderRadius: 6,
+        border: "0.5px solid var(--s-border)",
+        flexShrink: 0,
+        padding: 2,
+      }}
+    />
   );
 }
 

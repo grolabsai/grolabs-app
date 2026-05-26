@@ -36,7 +36,7 @@ const ACCENT: { label: string; token: string; hex: string }[] = [
   { label: "Accent hover", token: "--scout-accent-hover", hex: "#fcebab" },
   { label: "Accent 50", token: "--scout-accent-50", hex: "#fff8e0" },
   { label: "Accent 100", token: "--scout-accent-100", hex: "#fdeec4" },
-  { label: "Accent 600 (gold)", token: "--scout-accent-600", hex: "#d4af37" },
+  { label: "Accent 600 (alias)", token: "--scout-accent-600", hex: "= kinetic yellow" },
 ];
 
 const SURFACES_DARK = [

@@ -49,8 +49,14 @@ svg {
   --scout-accent-hover: #fcebab;
   --scout-accent-50: #fff8e0;
   --scout-accent-100: #fdeec4;
-  --scout-accent-600: #d4af37;          /* legacy gold kept for warmth */
-  --scout-accent-800: #8a6f24;
+  /* The "-600" and "-800" tokens used to be the older kinetic gold
+     (#d4af37 / #8a6f24). Aliased to the kinetic yellow so every
+     legacy usage immediately picks up the new accent — we no longer
+     ship the gold tone anywhere. Don't reintroduce hardcoded gold
+     hexes; if a stronger yellow is ever needed, derive a new token
+     here instead of re-adding the old values. */
+  --scout-accent-600: var(--scout-accent);
+  --scout-accent-800: var(--scout-accent);
   --scout-accent-on: #131316;            /* text/icon on yellow surfaces */
 
   /* ── GL fixed tokens — never theme-flipped ─────────────────────────────

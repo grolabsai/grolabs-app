@@ -156,6 +156,16 @@ svg {
   --s-text-tertiary: #888780;
   --s-text-muted: #B4B2A9;
 
+  /* The sidebar stays dark in both themes — it's the brand frame. Pin
+     every nav-* token to its dark-mode value so even when a `scout-light`
+     wrapper is present, the sidebar reads identically to dark mode.
+     Only the content area picks up the light surface. */
+  --nav-surface: #0E0E11;
+  --nav-border: rgba(255, 255, 255, 0.06);
+  --nav-text: #ffffff;
+  --nav-text-hover: #ffffff;
+  --nav-text-muted: rgba(255, 255, 255, 0.45);
+
   --s-success: #1D9E75;
   --s-success-bg: #E1F5EE;
   --s-success-text: #085041;
@@ -272,6 +282,15 @@ button {
 .s-brand-mark {
   display: none;
 }
+.s-brand-stack {
+  display: flex;
+  flex-direction: column;
+  /* width tuned so the tagline below sits inside the same horizontal
+     footprint as the wordmark; the tagline picks up this width because
+     it's a block element with letter-spacing — wider would push it
+     past the logo, narrower wraps it. */
+  width: max-content;
+}
 .s-brand-name {
   font-family: var(--s-font-brand);
   font-size: 26px;
@@ -279,6 +298,21 @@ button {
   letter-spacing: 0.02em;
   color: #ffffff;
   line-height: 1;
+  display: block;
+}
+.s-brand-tagline {
+  /* Eyebrow voice: mono uppercase tracked, in kinetic yellow. Sized so
+     "RECOVER LOST REVENUE" lands at roughly the same width as the
+     "GroLabs" wordmark above it. Tuned by eye — the exact width
+     depends on the rendered Permanent Marker glyphs. */
+  font-family: var(--s-font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scout-accent);
+  margin-top: 5px;
+  white-space: nowrap;
+  display: block;
 }
 
 .s-nav-section {

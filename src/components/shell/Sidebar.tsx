@@ -320,7 +320,10 @@ export function Sidebar({
       {/* Brand mark */}
       <div className="s-brand">
         <div className="s-brand-mark" />
-        <span className="s-brand-name">GroLabs</span>
+        <div className="s-brand-stack">
+          <span className="s-brand-name">GroLabs</span>
+          <span className="s-brand-tagline">Recover lost revenue</span>
+        </div>
       </div>
 
       {/* Instance switcher — moved here from the topbar so it sits as the

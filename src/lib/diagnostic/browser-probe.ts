@@ -43,6 +43,9 @@ export type SynonymTestResult = {
   a_returned: boolean;
   b_returned: boolean;
   both_returned: boolean;
+  a_result_names: string[];
+  b_result_names: string[];
+  overlap_count: number;
 };
 
 export type EmptyStateTestResult = {
@@ -54,6 +57,8 @@ export type EmptyStateTestResult = {
 export type BrandTestResult = {
   brand: string;
   results_returned: boolean;
+  brand_in_top_results: boolean | null;
+  top_result_names: string[];
 };
 
 export type BrowserProbeResult = {
@@ -163,17 +168,24 @@ export async function runBrowserProbe(
       });
     }
 
-    // 4. Synonym tests — up to MAX_QUERIES/2 pairs.
+    // 4. Synonym tests — up to MAX_QUERIES/2 pairs. We also capture
+    // top result names so the scorer can measure overlap (true synonym
+    // coverage means similar products surface for both terms).
     const synonymResults: SynonymTestResult[] = [];
     for (const pair of input.synonymPairs.slice(0, Math.floor(MAX_QUERIES / 2))) {
       const a = await runSearchQuery(page, context, input.rootUrl, pair.term_a);
       const b = await runSearchQuery(page, context, input.rootUrl, pair.term_b);
+      const aSet = new Set(a.topResultNames.map((s) => s.toLowerCase()));
+      const overlap = b.topResultNames.filter((n) => aSet.has(n.toLowerCase())).length;
       synonymResults.push({
         term_a: pair.term_a,
         term_b: pair.term_b,
         a_returned: a.resultsPresent,
         b_returned: b.resultsPresent,
         both_returned: a.resultsPresent && b.resultsPresent,
+        a_result_names: a.topResultNames.slice(0, 5),
+        b_result_names: b.topResultNames.slice(0, 5),
+        overlap_count: overlap,
       });
     }
 
@@ -189,13 +201,23 @@ export async function runBrowserProbe(
       };
     }
 
-    // 6. Brand relevance — first discovered brand.
+    // 6. Brand relevance — first discovered brand. We check whether the
+    // brand name actually appears in the top result names (i.e. the site
+    // ranked that brand first, not just "any results came back").
     const brandResults: BrandTestResult[] = [];
     for (const brand of brands.slice(0, 1)) {
       const res = await runSearchQuery(page, context, input.rootUrl, brand);
+      const brandLower = brand.toLowerCase();
+      const topNames = res.topResultNames.slice(0, 3);
+      const brandInTop =
+        topNames.length === 0
+          ? null
+          : topNames.some((n) => n.toLowerCase().includes(brandLower));
       brandResults.push({
         brand,
         results_returned: res.resultsPresent,
+        brand_in_top_results: brandInTop,
+        top_result_names: topNames,
       });
     }
 
@@ -350,6 +372,7 @@ type SearchOutcome = {
   estimate: number | null;
   hasFallbackContent: boolean;
   hardError: boolean;
+  topResultNames: string[];
 };
 
 async function runSearchQuery(
@@ -363,7 +386,13 @@ async function runSearchQuery(
     await safeGoto(page, rootUrl);
     const input = await findSearchInput(page);
     if (!input) {
-      return { resultsPresent: false, estimate: null, hasFallbackContent: false, hardError: true };
+      return {
+        resultsPresent: false,
+        estimate: null,
+        hasFallbackContent: false,
+        hardError: true,
+        topResultNames: [],
+      };
     }
     await input.fill("");
     await input.type(query, { delay: 20 });
@@ -400,11 +429,42 @@ async function runSearchQuery(
         ".search-results .item",
         ".instantsearch-hit",
         ".algolia-autocomplete .product",
+        ".collection-grid .product-card",
+        ".product-list .product-item",
       ];
+      let resultEls: Element[] = [];
       let estimate = 0;
       for (const sel of resultSelectors) {
-        const n = document.querySelectorAll(sel).length;
-        if (n > estimate) estimate = n;
+        const els = Array.from(document.querySelectorAll(sel));
+        if (els.length > estimate) {
+          estimate = els.length;
+          resultEls = els;
+        }
+      }
+
+      // Extract names of the top result cards — title selectors that
+      // work across WC / Shopify / generic.
+      const nameSelectors = [
+        ".woocommerce-loop-product__title",
+        ".product-title",
+        ".product-name",
+        ".product-card__title",
+        "h2.product__title",
+        "h3.product-card__heading",
+        "[class*='product-title']",
+        "h2",
+        "h3",
+      ];
+      const names: string[] = [];
+      for (const el of resultEls.slice(0, 10)) {
+        for (const sel of nameSelectors) {
+          const nameEl = el.querySelector(sel);
+          const text = nameEl?.textContent?.trim();
+          if (text && text.length > 2 && text.length < 200) {
+            names.push(text);
+            break;
+          }
+        }
       }
 
       const hasFallbackContent =
@@ -415,6 +475,7 @@ async function runSearchQuery(
         estimate: estimate > 0 ? estimate : null,
         hasFallbackContent,
         hardError: false,
+        topResultNames: names,
       };
     });
   } catch (e) {
@@ -423,6 +484,7 @@ async function runSearchQuery(
       estimate: null,
       hasFallbackContent: false,
       hardError: true,
+      topResultNames: [],
     };
   }
 }

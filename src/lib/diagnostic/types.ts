@@ -10,6 +10,7 @@
 
 import type { PdpSignals, SiteSignals } from "@/lib/glpim";
 import type { BrowserProbeResult } from "./browser-probe";
+import type { CoreWebVitals } from "./psi";
 
 export type FindingStatus = "pass" | "fail" | "partial" | "na" | "error";
 
@@ -45,11 +46,31 @@ export type BrowserContext = {
   enabled: boolean;
 };
 
+export type CwvContext = {
+  cwv: CoreWebVitals | null;
+};
+
+export type ExpectedAttribute = {
+  attribute_code: string;
+  label: string;
+  match_keywords: string[];
+  weight: number;
+};
+
+export type VerticalKnowledge = {
+  vertical_id: number | null;
+  vertical_code: string | null;
+  locale: string | null;
+  expectedAttributes: ExpectedAttribute[];
+};
+
 export type RunContext = {
   site: SiteWideContext;
   pdp: PdpContext;
   siteSignals: SiteSignalsContext;
   browser: BrowserContext;
+  cwv: CwvContext;
+  vertical: VerticalKnowledge;
 };
 
 export type CheckScorer = (ctx: RunContext) => ScoringResult;

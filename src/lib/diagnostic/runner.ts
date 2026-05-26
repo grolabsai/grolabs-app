@@ -36,6 +36,10 @@ import {
   resolveFactors,
   type BenchmarkRow,
 } from "./revenue";
+import { discoverSamples } from "./sample-discovery";
+import { classifyVertical } from "./classify-vertical";
+import { fetchCoreWebVitals } from "./psi";
+import type { ExpectedAttribute, VerticalKnowledge } from "./types";
 import type {
   Evidence,
   FindingStatus,
@@ -211,8 +215,36 @@ async function runDiagnostic(opts: {
   const { input, instanceId, supabase, runSource } = opts;
 
   const rootUrl = normalizeUrl(input.url);
-  const pdpUrl = input.pdpUrl ? normalizeUrl(input.pdpUrl) : rootUrl;
-  const categoryUrl = input.categoryUrl ? normalizeUrl(input.categoryUrl) : null;
+
+  // ── Pre-flight: discover samples + (when needed) classify vertical ─────
+  // discoverSamples does one homepage fetch and returns featured-PDP +
+  // category links plus the snippet hints the classifier consumes.
+  const discovered = await discoverSamples(rootUrl);
+  const pdpUrl = input.pdpUrl
+    ? normalizeUrl(input.pdpUrl)
+    : discovered.pdpUrl ?? rootUrl;
+  const categoryUrl = input.categoryUrl
+    ? normalizeUrl(input.categoryUrl)
+    : discovered.categoryUrl;
+
+  // Vertical classification: explicit > prospect's stored vertical >
+  // homepage classifier. When the user supplies it, we trust them; when
+  // missing, we run the classifier (keyword first, Haiku tie-breaker).
+  let resolvedVerticalId: number | null = input.verticalId ?? null;
+  let verticalDetection: { method: string; scores: Record<string, number>; confidence: string } | null = null;
+  if (resolvedVerticalId == null) {
+    const classification = await classifyVertical({
+      homepageText: discovered.homepageText,
+      homepageHints: discovered.homepageHints,
+      supabase,
+    });
+    resolvedVerticalId = classification.vertical_id;
+    verticalDetection = {
+      method: classification.method,
+      scores: classification.scores,
+      confidence: classification.confidence,
+    };
+  }
 
   // 1. Upsert prospect
   const prospectResult = await upsertProspect(
@@ -220,7 +252,7 @@ async function runDiagnostic(opts: {
     instanceId,
     rootUrl,
     input.prospectName?.trim() || null,
-    input.verticalId ?? null,
+    resolvedVerticalId,
     input.contactEmail?.trim() || null,
   );
   if ("error" in prospectResult) return { error: prospectResult.error };
@@ -244,7 +276,8 @@ async function runDiagnostic(opts: {
   }
   const runId = runRow.run_id as string;
 
-  // Sample list for evidence/reproducibility
+  // Sample list for evidence/reproducibility. selection_reason carries
+  // how each URL was picked (user-supplied vs auto-discovered).
   const samples: {
     run_id: string;
     sample_type: "homepage" | "pdp" | "category" | "search_query";
@@ -261,7 +294,11 @@ async function runDiagnostic(opts: {
       run_id: runId,
       sample_type: "pdp",
       url_or_query: pdpUrl,
-      selection_reason: input.pdpUrl ? "user_supplied" : "root_as_pdp_fallback",
+      selection_reason: input.pdpUrl
+        ? "user_supplied"
+        : discovered.pdpUrl
+          ? `auto:${discovered.pdpReason}`
+          : "root_as_pdp_fallback",
     },
   ];
   if (categoryUrl) {
@@ -269,24 +306,50 @@ async function runDiagnostic(opts: {
       run_id: runId,
       sample_type: "category",
       url_or_query: categoryUrl,
-      selection_reason: "user_supplied_category",
+      selection_reason: input.categoryUrl
+        ? "user_supplied"
+        : `auto:${discovered.categoryReason}`,
     });
   }
   await supabase.from("run_sample").insert(samples);
+
+  // Persist the resolved vertical on the prospect so subsequent runs
+  // skip the classifier (vertical is stable for a given storefront).
+  if (resolvedVerticalId != null) {
+    await supabase
+      .from("prospect")
+      .update({ vertical_id: resolvedVerticalId })
+      .eq("prospect_id", prospectId);
+  }
+
+  // Detect locale from the homepage snippet so we can prefer matching
+  // synonym pairs and empty-state queries. ES vs EN heuristic is rough
+  // but good enough for v1; failure falls back to "everything".
+  const detectedLocale = detectLocaleFromText(discovered.homepageText);
 
   // Resolve test vocabulary for the prospect's vertical (or generic
   // fallback when no vertical is set). Always read template-instance rows
   // — anon callers see them too via the diagnostic_check_anon_template_read
   // policy; authenticated runs see their own + template via RLS.
-  const vocab = await loadTestVocabulary(supabase, input.verticalId ?? null);
+  const vocab = await loadTestVocabulary(
+    supabase,
+    resolvedVerticalId,
+    detectedLocale,
+  );
+
+  // Expected-attribute catalog for the returns scorer.
+  const expectedAttributes = await loadExpectedAttributes(
+    supabase,
+    resolvedVerticalId,
+  );
 
   const probeEnabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
+  const psiEnabled = process.env.PROSPECTOS_PSI_ENABLED !== "0";
 
-  // 3 + 4 + 5. Probe in parallel: site-wide HTTP, GLPIM PDP, GLPIM site-
-  // signals, and (when enabled) the browser probe. Browser probe is the
-  // slowest leg — running it in parallel hides its latency behind the
-  // others.
-  const [siteCtx, pdpResult, siteSignalsResult, browserResult] = await Promise.all([
+  // 3 + 4 + 5 + CWV. Probe in parallel: site-wide HTTP, GLPIM PDP,
+  // GLPIM site-signals, Core Web Vitals (PSI), and (when enabled) the
+  // browser probe. Each leg is independent.
+  const [siteCtx, pdpResult, siteSignalsResult, browserResult, cwvResult] = await Promise.all([
     probeSiteWide(rootUrl),
     fetchPdpSignals(pdpUrl),
     fetchSiteSignals({ url: rootUrl, categoryUrl }),
@@ -297,6 +360,7 @@ async function runDiagnostic(opts: {
           emptyStateQueries: vocab.emptyStateQueries,
         })
       : Promise.resolve(null as BrowserProbeResult | null),
+    psiEnabled ? fetchCoreWebVitals(pdpUrl) : Promise.resolve(null),
   ]);
 
   const ctx: import("./types").RunContext = {
@@ -309,6 +373,13 @@ async function runDiagnostic(opts: {
     browser: {
       enabled: probeEnabled,
       probe: browserResult,
+    },
+    cwv: { cwv: cwvResult },
+    vertical: {
+      vertical_id: resolvedVerticalId,
+      vertical_code: null,
+      locale: detectedLocale,
+      expectedAttributes,
     },
   };
 
@@ -356,8 +427,8 @@ async function runDiagnostic(opts: {
   // formula. Benchmarks come from instance 0 (canonical) plus the user's
   // own instance when authenticated; resolveFactors picks the most
   // specific match per finding.
-  const { data: benchmarksRaw } = input.verticalId != null
-    ? await loadBenchmarks(supabase, instanceId, input.verticalId)
+  const { data: benchmarksRaw } = resolvedVerticalId != null
+    ? await loadBenchmarks(supabase, instanceId, resolvedVerticalId)
     : { data: [] as BenchmarkRow[] };
   const benchmarks: BenchmarkRow[] = (benchmarksRaw ?? []) as BenchmarkRow[];
 
@@ -516,8 +587,15 @@ async function runDiagnostic(opts: {
   const revenueAssumptions = {
     traffic: prospectTraffic,
     aov: prospectAov,
-    vertical_id: input.verticalId ?? null,
+    vertical_id: resolvedVerticalId,
+    vertical_supplied: input.verticalId != null,
+    vertical_detection: verticalDetection,
+    locale_detected: detectedLocale,
     benchmarks_used: benchmarks.length,
+    samples_auto_discovered: {
+      pdp: !input.pdpUrl,
+      category: !input.categoryUrl,
+    },
   };
 
   await supabase
@@ -587,12 +665,11 @@ async function loadBenchmarks(
 async function loadTestVocabulary(
   supabase: SupabaseClient,
   verticalId: number | null,
+  preferredLocale: string | null = null,
 ): Promise<{
   synonymPairs: { term_a: string; term_b: string; locale: string }[];
   emptyStateQueries: string[];
 }> {
-  // No vertical? Fall back to the 'generic' vertical's queries — at least
-  // we get an empty-state probe.
   let resolvedVerticalId = verticalId;
   if (resolvedVerticalId == null) {
     const { data: gen } = await supabase
@@ -612,25 +689,86 @@ async function loadTestVocabulary(
       .select("term_a, term_b, locale")
       .eq("is_active", true)
       .eq("vertical_id", resolvedVerticalId)
-      .limit(20),
+      .limit(50),
     supabase
       .from("vertical_test_query")
-      .select("query_text, intent")
+      .select("query_text, locale, intent")
       .eq("is_active", true)
       .eq("vertical_id", resolvedVerticalId)
       .eq("intent", "empty_state")
-      .limit(5),
+      .limit(20),
   ]);
 
+  // Locale-aware preference: keep rows whose locale matches the detected
+  // prospect locale when one is available. If nothing matches, fall back
+  // to everything (better to test than to skip).
+  const filterByLocale = <T extends { locale: string }>(rows: T[]): T[] => {
+    if (!preferredLocale) return rows;
+    const matched = rows.filter((r) => r.locale === preferredLocale);
+    return matched.length > 0 ? matched : rows;
+  };
+
   return {
-    synonymPairs:
+    synonymPairs: filterByLocale(
       (pairs ?? []).map((p) => ({
         term_a: p.term_a as string,
         term_b: p.term_b as string,
         locale: p.locale as string,
       })),
-    emptyStateQueries: (queries ?? []).map((q) => q.query_text as string),
+    ).slice(0, 20),
+    emptyStateQueries: filterByLocale(
+      (queries ?? []).map((q) => ({
+        query_text: q.query_text as string,
+        locale: q.locale as string,
+      })),
+    )
+      .map((q) => q.query_text)
+      .slice(0, 5),
   };
+}
+
+async function loadExpectedAttributes(
+  supabase: SupabaseClient,
+  verticalId: number | null,
+): Promise<ExpectedAttribute[]> {
+  if (verticalId == null) return [];
+  const { data } = await supabase
+    .from("vertical_expected_attribute")
+    .select("attribute_code, label, match_keywords, weight, locale")
+    .eq("vertical_id", verticalId)
+    .eq("is_active", true);
+  return (data ?? []).map((r) => ({
+    attribute_code: r.attribute_code as string,
+    label: r.label as string,
+    match_keywords: (r.match_keywords as string[]) ?? [],
+    weight: typeof r.weight === "number" ? r.weight : Number(r.weight),
+  }));
+}
+
+function detectLocaleFromText(text: string): string | null {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  // Spanish keywords (presence ≥ 2 suggests 'es').
+  const esSignals = [
+    "envío",
+    "envio",
+    "carrito",
+    "comprar",
+    "agregar al carrito",
+    "agotado",
+    "talla",
+    "ñ",
+    "guía",
+    "categoría",
+    "iniciar sesión",
+    "mi cuenta",
+    "ofertas",
+  ];
+  let esHits = 0;
+  for (const w of esSignals) if (lower.includes(w)) esHits += 1;
+  if (esHits >= 2) return "es";
+  // English fallback when no strong Spanish signal.
+  return "en";
 }
 
 async function markRunFailed(

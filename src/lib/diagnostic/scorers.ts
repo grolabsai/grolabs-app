@@ -45,8 +45,12 @@ const scoreProductJsonld: CheckScorer = ({ pdp }) => {
     };
   }
   const fields = new Set(s.product_schema_fields.map((f) => f.toLowerCase()));
-  const requiredHits = PRODUCT_REQUIRED_FIELDS.filter((f) => fields.has(f)).length;
-  const bonusHits = PRODUCT_BONUS_FIELDS.filter((f) => fields.has(f)).length;
+  const requiredHits = PRODUCT_REQUIRED_FIELDS.filter((f) =>
+    fields.has(f.toLowerCase()),
+  ).length;
+  const bonusHits = PRODUCT_BONUS_FIELDS.filter((f) =>
+    fields.has(f.toLowerCase()),
+  ).length;
   const required = PRODUCT_REQUIRED_FIELDS.length; // 5
   const bonus = PRODUCT_BONUS_FIELDS.length; // 3
   // Required carries 80 of the 100; bonus the remaining 20.
@@ -444,21 +448,31 @@ const scoreSynonyms: CheckScorer = (ctx) => {
       evidence: { reason: "no_synonym_pairs_tested" },
     };
   }
-  // Synonyms are "covered" when both terms return results (and ideally
-  // overlap, but we don't currently capture result identities — that's
-  // a future enhancement).
-  const covered = probe.synonym_tests.filter((s) => s.both_returned).length;
-  const ratio = covered / probe.synonym_tests.length;
-  const score = Math.round(ratio * 100);
-  const status =
-    ratio >= 0.8 ? "pass" : ratio >= 0.4 ? "partial" : "fail";
+  // Layered scoring:
+  //   both_returned    → base 50pts
+  //   overlap > 0      → +30pts (synonyms actually surface similar products)
+  //   overlap >= 3     → +20pts more (strong overlap)
+  let totalScore = 0;
+  let strongCovered = 0;
+  for (const s of probe.synonym_tests) {
+    let v = 0;
+    if (s.both_returned) v += 50;
+    if (s.overlap_count > 0) v += 30;
+    if (s.overlap_count >= 3) {
+      v += 20;
+      strongCovered += 1;
+    }
+    totalScore += v;
+  }
+  const score = Math.round(totalScore / probe.synonym_tests.length);
+  const status = score >= 80 ? "pass" : score >= 40 ? "partial" : "fail";
   return {
     result_status: status,
     score,
     evidence: {
       synonym_tests: probe.synonym_tests,
-      covered,
       total: probe.synonym_tests.length,
+      strong_overlap_count: strongCovered,
     },
   };
 };
@@ -504,18 +518,152 @@ const scoreBrandRelevance: CheckScorer = (ctx) => {
         "No brand could be extracted from the homepage to test brand-query relevance.",
     };
   }
-  // v1: we only check whether *any* results came back for the brand
-  // query. Confirming that brand's products rank first requires inspecting
-  // result content, which the probe doesn't capture yet.
-  const ok = probe.brand_tests.filter((b) => b.results_returned).length;
-  const score = Math.round((ok / probe.brand_tests.length) * 100);
-  const status = score >= 99 ? "pass" : score >= 50 ? "partial" : "fail";
+  // Layered: results came back (50pts) + brand name appears in top
+  // results (50pts). brand_in_top_results is null when we couldn't
+  // extract top result names — score conservatively in that case.
+  let total = 0;
+  let topHits = 0;
+  for (const b of probe.brand_tests) {
+    let v = 0;
+    if (b.results_returned) v += 50;
+    if (b.brand_in_top_results === true) {
+      v += 50;
+      topHits += 1;
+    } else if (b.brand_in_top_results === null) {
+      // Couldn't measure — give half credit when results were present.
+      if (b.results_returned) v += 25;
+    }
+    total += v;
+  }
+  const score = Math.round(total / probe.brand_tests.length);
+  const status = score >= 90 ? "pass" : score >= 40 ? "partial" : "fail";
   return {
     result_status: status,
     score,
-    evidence: { brand_tests: probe.brand_tests },
+    evidence: {
+      brand_tests: probe.brand_tests,
+      top_position_hits: topHits,
+    },
+  };
+};
+
+// ── Discovery — Core Web Vitals (PSI) ──────────────────────────────────────
+
+const scoreCoreWebVitals: CheckScorer = ({ cwv }) => {
+  if (!cwv.cwv) {
+    return {
+      result_status: "error",
+      score: null,
+      evidence: { reason: "psi_fetch_failed_or_disabled" },
+    };
+  }
+  const m = cwv.cwv;
+  const lcp = m.lcp_ms ?? null;
+  const cls = m.cls ?? null;
+  const inp = m.inp_ms ?? null;
+
+  // Web.dev thresholds: LCP < 2500 good, < 4000 needs-improvement, else poor.
+  // CLS < 0.1 good, < 0.25 ni, else poor. INP < 200 good, < 500 ni, else poor.
+  function band(value: number | null, good: number, poor: number, lowerIsBetter = true) {
+    if (value == null) return null;
+    if (lowerIsBetter) {
+      if (value <= good) return 100;
+      if (value >= poor) return 0;
+      return Math.round(100 * (1 - (value - good) / (poor - good)));
+    }
+    return value;
+  }
+
+  const lcpScore = band(lcp, 2500, 4000);
+  const clsScore = band(cls, 0.1, 0.25);
+  const inpScore = band(inp, 200, 500);
+
+  const parts = [lcpScore, clsScore, inpScore].filter((s): s is number => s != null);
+  if (parts.length === 0) {
+    return {
+      result_status: "error",
+      score: null,
+      evidence: { reason: "psi_returned_no_metrics", lighthouse: m },
+    };
+  }
+  const score = Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
+  const status = score >= 80 ? "pass" : score >= 50 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      lcp_ms: lcp,
+      cls,
+      inp_ms: inp,
+      performance_score: m.performance_score,
+      source: m.source,
+      strategy: m.strategy,
+    },
+  };
+};
+
+// ── Returns risk — attribute completeness ───────────────────────────────────
+
+const scoreReturnsAttributeCompleteness: CheckScorer = ({ pdp, vertical }) => {
+  if (!pdp.signals) {
+    return { result_status: "error", score: null, evidence: { fetch_error: pdp.fetchError } };
+  }
+  if (vertical.expectedAttributes.length === 0) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "no_expected_attributes_for_vertical", vertical_code: vertical.vertical_code },
+      notes:
+        "No expected-attribute list seeded for this vertical. Add rows to vertical_expected_attribute to score this check.",
+    };
+  }
+
+  const hay = (
+    pdp.signals.description_text +
+    " " +
+    pdp.signals.product_schema_fields.join(" ") +
+    " " +
+    pdp.signals.page_title +
+    " " +
+    pdp.signals.meta_description
+  ).toLowerCase();
+
+  let matchedWeight = 0;
+  let totalWeight = 0;
+  const matched: string[] = [];
+  const missing: string[] = [];
+  for (const attr of vertical.expectedAttributes) {
+    totalWeight += attr.weight;
+    const hit = attr.match_keywords.some((kw) => hay.includes(kw.toLowerCase()));
+    if (hit) {
+      matchedWeight += attr.weight;
+      matched.push(attr.attribute_code);
+    } else {
+      missing.push(attr.attribute_code);
+    }
+  }
+  if (totalWeight === 0) {
+    return {
+      result_status: "na",
+      score: null,
+      evidence: { reason: "zero_total_weight" },
+    };
+  }
+  const score = Math.round((matchedWeight / totalWeight) * 100);
+  const status = score >= 80 ? "pass" : score >= 50 ? "partial" : "fail";
+  return {
+    result_status: status,
+    score,
+    evidence: {
+      vertical_code: vertical.vertical_code,
+      matched,
+      missing,
+      total_expected: vertical.expectedAttributes.length,
+    },
     notes:
-      "v1 only confirms the brand query returns results — confirming top-position relevance needs result-content inspection (next iteration).",
+      score < 80
+        ? `Missing on PDP: ${missing.join(", ")}. Add these as a structured attribute table to reduce 'didn't match' returns.`
+        : null,
   };
 };
 
@@ -538,6 +686,8 @@ export const SCORERS: Record<string, CheckScorer> = {
   "on_site_nav.synonyms": scoreSynonyms,
   "on_site_nav.empty_state": scoreEmptyState,
   "on_site_nav.relevance_brand": scoreBrandRelevance,
+  "discovery.core_web_vitals": scoreCoreWebVitals,
+  "returns.attribute_completeness": scoreReturnsAttributeCompleteness,
 };
 
 export function scoreCheck(

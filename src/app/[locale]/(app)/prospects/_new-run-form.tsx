@@ -131,10 +131,7 @@ export function NewRunForm({
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
-            {t("form.pdpUrl")}{" "}
-            <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>
-              ({t("form.optional")})
-            </span>
+            {t("form.pdpUrl")}
           </label>
           <input
             type="text"
@@ -147,10 +144,7 @@ export function NewRunForm({
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
-            {t("form.categoryUrl")}{" "}
-            <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>
-              ({t("form.optional")})
-            </span>
+            {t("form.categoryUrl")}
           </label>
           <input
             type="text"

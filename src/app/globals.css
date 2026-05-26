@@ -33,98 +33,161 @@ svg {
    ========================================================================== */
 
 :root {
-  /* -------------------------------------------------------------------------
-     shadcn CSS variables — HSL values mapped to GroLabs tokens.
-     These drive all shadcn/ui component styles.
-     Color derivation notes are in CLAUDE.md § Design tokens.
-     ----------------------------------------------------------------------- */
-  --background: 60 6% 98%;           /* ≈ #FAFAF9  --s-bg                  */
-  --foreground: 0 0% 10%;            /* ≈ #1A1A1A  --s-text                */
-  --card: 0 0% 100%;                 /* ≈ #FFFFFF  --s-surface             */
-  --card-foreground: 0 0% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  --primary: 45 65% 52%;             /* ≈ #d4af37  Kinetic Gold            */
-  --primary-foreground: 0 0% 10%;
-  --secondary: 60 5% 96%;            /* ≈ #F5F5F4  --s-surface-alt         */
-  --secondary-foreground: 0 0% 10%;
-  --muted: 60 5% 96%;
-  --muted-foreground: 48 7% 36%;     /* ≈ #5F5E5A  --s-text-secondary      */
-  --accent: 60 4% 94%;               /* ≈ #EFEFEE  --s-surface-hover       */
-  --accent-foreground: 0 0% 10%;
-  --destructive: 0 57% 41%;          /* ≈ #A32D2D  --s-danger              */
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 92%;                /* ≈ rgba(0,0,0,0.08) on white        */
-  --input: 0 0% 89%;
-  --ring: 45 65% 52%;                /* ≈ #d4af37  Kinetic Gold            */
-  --radius: 0.5rem;                  /* 8px — matches --s-radius-md        */
+  /* =========================================================================
+     GroLabs Admin — design tokens
+     Engineered Luxury palette (matches grolabs-landing). Defaults to DARK
+     because that's the brand look. The `.scout-light` modifier flips
+     everything to light values — used by the /styleguide split view and
+     anywhere we want a light surface inside an otherwise dark app.
+     ========================================================================= */
 
   /* -------------------------------------------------------------------------
-     GroLabs design tokens — source of truth, kept intact.
-     Existing CSS using --s-* and --scout-* references continues to work.
-     Kinetic Gold (#d4af37) is the brand action color: it accents primary
-     CTAs, active nav state, and brand moments. Neutral buttons stay neutral.
+     Engineered Luxury — accent (kinetic yellow). #fae194 single source.
+     Replaces the old #d4af37 kinetic gold across the app.
      ----------------------------------------------------------------------- */
-  --scout-accent: #d4af37;
-  --scout-accent-hover: #b8941f;
-  --scout-accent-50: #faf3dc;
-  --scout-accent-100: #f0e2a4;
-  --scout-accent-600: #a08018;
-  --scout-accent-800: #6d5712;
-  --s-bg: #ffffff;
-  --s-surface: #ffffff;
-  --s-surface-alt: #f7f7f6;
-  --s-surface-hover: #efefee;
+  --scout-accent: #fae194;
+  --scout-accent-hover: #fcebab;
+  --scout-accent-50: #fff8e0;
+  --scout-accent-100: #fdeec4;
+  --scout-accent-600: #d4af37;          /* legacy gold kept for warmth */
+  --scout-accent-800: #8a6f24;
+  --scout-accent-on: #131316;            /* text/icon on yellow surfaces */
+
+  /* -------------------------------------------------------------------------
+     Dark mode (default) — Engineered Luxury canvas palette
+     Canvas (page bg)   #131316
+     Canvas deeper      #0E0E11   (recessed section bg)
+     Surface (cards)    #1c1d24   (one tone above canvas)
+     Surface alt        #1a1a1f   (between canvas and surface)
+     Surface hover      #22232a
+     ----------------------------------------------------------------------- */
+  --s-bg: #131316;
+  --s-bg-deeper: #0E0E11;
+  --s-surface: #1c1d24;
+  --s-surface-alt: #16171c;
+  --s-surface-hover: #22232a;
+  --s-border: rgba(255, 255, 255, 0.08);
+  --s-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text — bone white rather than pure #FFF, per landing's design.
+     Pure white is reserved for headlines + strong accents. */
+  --s-text: #EDEAE0;
+  --s-text-strong: #FFFFFF;
+  --s-text-secondary: rgba(237, 234, 224, 0.6);
+  --s-text-tertiary: rgba(237, 234, 224, 0.4);
+  --s-text-muted: rgba(237, 234, 224, 0.28);
+
+  /* Sidebar / nav — was always dark, but tokens reused for consistency. */
+  --nav-surface: var(--s-bg-deeper);
+  --nav-border: rgba(255, 255, 255, 0.06);
+  --nav-text: rgba(237, 234, 224, 0.6);
+  --nav-text-hover: var(--s-text-strong);
+  --nav-text-muted: rgba(237, 234, 224, 0.35);
+
+  /* Status colors */
+  --s-success: #10b981;
+  --s-success-bg: rgba(16, 185, 129, 0.12);
+  --s-success-text: #34d399;
+  --s-danger: #ef4444;
+  --s-danger-bg: rgba(239, 68, 68, 0.12);
+  --s-danger-text: #fca5a5;
+  --s-warning: #f59e0b;
+  --s-warning-bg: rgba(245, 158, 11, 0.12);
+  --s-warning-text: #fbbf24;
+
+  /* Radii (unchanged) */
+  --s-radius-sm: 6px;
+  --s-radius-md: 8px;
+  --s-radius-lg: 12px;
+  --s-radius-xl: 16px;
+
+  /* Fonts — landing-aligned. Permanent Marker for the brand mark + section
+     H2s; Hanken Grotesk for body; ui-mono for eyebrow labels. */
+  --s-font: var(--font-hanken), "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  --s-font-brand: var(--font-marker), "Permanent Marker", cursive;
+  --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+
+  /* -------------------------------------------------------------------------
+     shadcn CSS variables (HSL) — derived from the tokens above so every
+     shadcn primitive picks up the Engineered Luxury look automatically.
+     ----------------------------------------------------------------------- */
+  --background: 240 7% 9%;              /* #131316 */
+  --foreground: 50 16% 90%;             /* #EDEAE0 */
+  --card: 233 14% 13%;                  /* #1c1d24 */
+  --card-foreground: 50 16% 90%;
+  --popover: 233 14% 13%;
+  --popover-foreground: 50 16% 90%;
+  --primary: 45 92% 79%;                /* #fae194 */
+  --primary-foreground: 240 7% 9%;
+  --secondary: 233 14% 17%;             /* #22232a */
+  --secondary-foreground: 50 16% 90%;
+  --muted: 233 14% 17%;
+  --muted-foreground: 50 8% 65%;
+  --accent: 233 14% 17%;
+  --accent-foreground: 50 16% 90%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 100% / 0.08;
+  --input: 0 0% 100% / 0.08;
+  --ring: 45 92% 79%;
+  --radius: 0.5rem;
+}
+
+/* -----------------------------------------------------------------------------
+   Light-mode override — opt-in via `.scout-light` on any container.
+   Used by the /styleguide split view and by future light surfaces. The
+   sidebar stays dark either way (nav-surface tokens are not overridden).
+   --------------------------------------------------------------------------- */
+.scout-light {
+  --s-bg: #FAFAF9;
+  --s-bg-deeper: #F2F2F0;
+  --s-surface: #FFFFFF;
+  --s-surface-alt: #F7F7F6;
+  --s-surface-hover: #EFEFEE;
   --s-border: rgba(0, 0, 0, 0.08);
   --s-border-strong: rgba(0, 0, 0, 0.16);
-  /* Dark navigation surface */
-  --nav-surface: #18181b;
-  --nav-border: rgba(255, 255, 255, 0.06);
-  --nav-text: rgba(255, 255, 255, 0.6);
-  --nav-text-hover: rgba(255, 255, 255, 0.92);
-  --nav-text-muted: rgba(255, 255, 255, 0.4);
+
   --s-text: #1A1A1A;
+  --s-text-strong: #000000;
   --s-text-secondary: #5F5E5A;
   --s-text-tertiary: #888780;
   --s-text-muted: #B4B2A9;
+
   --s-success: #1D9E75;
   --s-success-bg: #E1F5EE;
   --s-success-text: #085041;
   --s-danger: #A32D2D;
   --s-danger-bg: #FCEBEB;
   --s-danger-text: #501313;
-  --s-radius-sm: 6px;
-  --s-radius-md: 8px;
-  --s-radius-lg: 12px;
-  --s-radius-xl: 16px;
-  --s-font: var(--font-hanken), -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
-  --s-font-brand: var(--font-marker), "Permanent Marker", cursive;
-  --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  --s-warning: #B27A00;
+  --s-warning-bg: #FBEFD3;
+  --s-warning-text: #5D3F00;
+
+  /* shadcn HSL for the light surface */
+  --background: 60 6% 98%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 45 92% 79%;
+  --primary-foreground: 240 7% 9%;
+  --secondary: 60 5% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 60 5% 96%;
+  --muted-foreground: 48 7% 36%;
+  --accent: 60 4% 94%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 57% 41%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 0% / 0.08;
+  --input: 0 0% 0% / 0.08;
+  --ring: 45 92% 79%;
 }
 
 .dark {
-  /* Dark mode — no dark design exists yet; these are reasonable defaults
-     that maintain visual coherence. Activate by adding class="dark" to
-     <html>. The app does not switch automatically in Phase 1. */
-  --background: 222 47% 11%;
-  --foreground: 210 20% 98%;
-  --card: 222 47% 14%;
-  --card-foreground: 210 20% 98%;
-  --popover: 222 47% 14%;
-  --popover-foreground: 210 20% 98%;
-  --primary: 210 71% 60%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 222 47% 18%;
-  --secondary-foreground: 210 20% 98%;
-  --muted: 222 47% 18%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 222 47% 20%;
-  --accent-foreground: 210 20% 98%;
-  --destructive: 0 63% 55%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 222 47% 22%;
-  --input: 222 47% 22%;
-  --ring: 210 71% 60%;
+  /* Legacy class kept as alias of :root since dark is now the default.
+     Adding `class="dark"` to a wrapper is a no-op — same tokens apply. */
 }
 
 @layer base {
@@ -230,8 +293,8 @@ button {
   color: var(--nav-text-hover);
 }
 .s-nav-item.active {
-  background: rgba(212, 175, 55, 0.12);
-  color: var(--scout-accent);
+  background: rgba(250, 225, 148, 0.10);
+  color: var(--s-text-strong);
   font-weight: 500;
 }
 .s-nav-icon {
@@ -650,7 +713,8 @@ button {
   top: -7px;
   left: 10px;
   padding: 0 6px;
-  background: #ffffff;
+  /* Match the field surface so the label "notch" reads as a cutout. */
+  background: var(--s-surface);
   font-size: 10px;
   color: var(--s-text-tertiary);
   text-transform: uppercase;
@@ -674,7 +738,7 @@ button {
 .s-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: #ffffff;
+  background: var(--s-surface);
   border: 1px solid var(--s-border);
   border-radius: var(--s-radius-md);
   font-size: 14px;
@@ -687,7 +751,7 @@ button {
 .s-input:disabled,
 .s-select:disabled,
 .s-textarea:disabled {
-  background: #ffffff;
+  background: var(--s-surface-alt);
   color: var(--s-text-tertiary);
   cursor: not-allowed;
   opacity: 0.7;
@@ -711,7 +775,7 @@ button {
 .s-select:focus,
 .s-textarea:focus {
   border-color: var(--scout-accent);
-  box-shadow: 0 0 0 3px var(--scout-accent-50);
+  box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 .s-textarea {
   padding: 12px;
@@ -1057,12 +1121,19 @@ button {
 }
 .s-btn-primary {
   background: var(--scout-accent);
-  color: #fff;
+  /* Dark text on yellow — the kinetic yellow accent (#fae194) has
+     poor contrast with white, so the action color uses #131316. */
+  color: var(--scout-accent-on);
   border-color: var(--scout-accent);
+  font-weight: 600;
 }
 .s-btn-primary:hover {
   background: var(--scout-accent-hover);
   border-color: var(--scout-accent-hover);
+  transform: translateY(-1px);
+}
+.s-btn-primary:active {
+  transform: translateY(0);
 }
 .s-btn-ghost {
   background: transparent;
@@ -1469,7 +1540,7 @@ button {
   width: 100%;
   height: 32px;
   padding: 0 10px 0 30px;
-  background: #ffffff;
+  background: var(--s-surface);
   border: 0.5px solid var(--s-border);
   border-radius: var(--s-radius-md);
   font-size: 12px;

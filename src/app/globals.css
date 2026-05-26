@@ -887,7 +887,11 @@ button {
   width: 100%;
   padding: 10px 12px;
   background: var(--s-surface);
-  border: 1px solid var(--s-border);
+  /* Border picks up the same muted tone as field-hint copy
+     (--s-text-tertiary) so an empty input still reads as a tangible
+     surface — not invisible. The earlier "empty = transparent border"
+     rule made fields disappear; this matches the hint-tone instead. */
+  border: 1px solid var(--s-text-tertiary);
   border-radius: var(--s-radius-md);
   font-size: 14px;
   font-weight: 400;
@@ -973,38 +977,11 @@ input[type="date"].s-input {
   font-weight: 400;
 }
 
-/* =============================================================================
-   EMPTY-STATE BORDERLESS rule (RRE)
-   =============================================================================
-   When an input is empty AND not focused, render no border and a
-   transparent background — the field reads as "nothing" until the user
-   commits to interacting with it. The floating label above remains the
-   only visible affordance. Focus or content brings the border back.
-
-   Required for every input using this pattern:
-     • declare placeholder=" " (single space) so :placeholder-shown
-       engages — otherwise the input never reads as "empty"
-     • wrap in .s-field (the floating-label wrapper) so the label
-       stays visible while the input shell is invisible
-
-   Native <select> doesn't have :placeholder-shown. Pair the select with
-   a data-empty="true" attribute (set by the consuming component when
-   the value matches its placeholder option) to get the same treatment.
-*/
-.s-input:placeholder-shown:not(:focus),
-.s-textarea:placeholder-shown:not(:focus),
-.s-select[data-empty="true"]:not(:focus) {
-  border-color: transparent;
-  background: transparent;
-}
-.s-input:placeholder-shown:not(:focus):hover,
-.s-textarea:placeholder-shown:not(:focus):hover,
-.s-select[data-empty="true"]:not(:focus):hover {
-  /* subtle hint that the surface is interactive without bringing the
-     full border back */
-  border-color: var(--s-border);
-  background: var(--s-surface);
-}
+/* The earlier "empty = transparent border / background" rule was
+   removed per design feedback — empty inputs should still read as
+   tangible surfaces. The border color above (--s-text-tertiary)
+   matches the field-hint copy so empty fields look like a tangible
+   tray instead of disappearing. */
 
 /* The old in-input `?` hint-icon pattern was replaced by the focus-driven
    yellow card in the AgentPanel — see <FieldHintProvider> +

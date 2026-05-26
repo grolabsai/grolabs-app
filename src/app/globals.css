@@ -364,17 +364,20 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--nav-text-hover);
 }
-/* Active row: NO highlight on the row itself. The yellow icon is the
-   sole visual cue for the active state. !important + the :hover /
-   :focus overrides remove every avenue something else could use to
-   re-introduce a background tint. */
+/* Active row: text + icon both yellow. We tried "yellow icon only with
+   white text" several times; CSS specificity wars with Lucide's
+   inline stroke attribute kept making it land inconsistently. Going
+   monochrome yellow is the robust answer — the parent's `color`
+   cascades to both the text and (via currentColor) the icon stroke
+   without any per-element overrides.
+   Background stays transparent: no row highlight, ever. */
 .s-nav-item.active,
 .s-nav-item.active:hover,
 .s-nav-item.active:focus,
 .s-nav-item.active:focus-visible,
 .s-nav-item.active:active {
   background: transparent !important;
-  color: var(--s-text-strong);
+  color: var(--scout-accent);
   outline: none;
   box-shadow: none;
 }

@@ -234,6 +234,10 @@ function ModeOption({
       type="button"
       onClick={onClick}
       aria-pressed={checked}
+      // When checked, the card paints a pale-yellow background. Text
+      // inside must read on light regardless of the ambient theme —
+      // .on-light-surface flips --s-text* tokens locally.
+      className={checked ? "on-light-surface" : undefined}
       style={{
         textAlign: "left",
         background: checked ? "var(--scout-accent-50)" : "var(--s-surface)",

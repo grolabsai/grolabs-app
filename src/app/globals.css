@@ -231,6 +231,38 @@ svg {
      Adding `class="dark"` to a wrapper is a no-op — same tokens apply. */
 }
 
+/* =============================================================================
+   Local contrast overrides — `.on-light-surface` / `.on-dark-surface`
+   =============================================================================
+   When a single element (card, banner, badge) sits on a background whose
+   color doesn't match the ambient theme, wrap it in one of these classes
+   to flip the text tokens locally — without changing the surrounding
+   theme.
+
+   Use case: a selected-state card paints itself in `--scout-accent-50`
+   (pale yellow). In dark mode, text inside that card needs to be dark
+   to be legible — but everywhere else on the page is still dark theme.
+   Adding `className="on-light-surface"` flips --s-text* to dark just
+   for that subtree.
+
+   Same shape as the global `.scout-light` class, just scoped to one
+   element. Stack with theme-wide light/dark however you like.
+*/
+.on-light-surface {
+  --s-text: #1A1A1A;
+  --s-text-strong: #000000;
+  --s-text-secondary: rgba(19, 19, 22, 0.65);
+  --s-text-tertiary: rgba(19, 19, 22, 0.5);
+  --s-text-muted: rgba(19, 19, 22, 0.32);
+}
+.on-dark-surface {
+  --s-text: #EDEAE0;
+  --s-text-strong: #FFFFFF;
+  --s-text-secondary: rgba(237, 234, 224, 0.65);
+  --s-text-tertiary: rgba(237, 234, 224, 0.45);
+  --s-text-muted: rgba(237, 234, 224, 0.3);
+}
+
 @layer base {
   * {
     @apply border-border;

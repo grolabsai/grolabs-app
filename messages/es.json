@@ -2356,7 +2356,38 @@
         "engine": "Buscador",
         "traffic": "Tráfico estimado",
         "updated": "Actualizado"
+      },
+      "recentRunsTitle": "Diagnósticos recientes",
+      "runTable": {
+        "site": "Sitio",
+        "status": "Estado",
+        "score": "Score",
+        "tier": "Madurez",
+        "started": "Iniciado",
+        "completed": "Completado"
+      },
+      "form": {
+        "title": "Nuevo diagnóstico",
+        "rootUrl": "URL raíz",
+        "pdpUrl": "URL de PDP",
+        "pdpUrlPlaceholder": "Si no se especifica, se prueba la raíz",
+        "displayName": "Nombre",
+        "vertical": "Vertical",
+        "optional": "opcional",
+        "runButton": "Ejecutar",
+        "running": "Ejecutando…",
+        "hint": "El diagnóstico v1 cubre los checks de HTML estático (JSON-LD, OG, llms.txt, sitemap, imágenes/atributos de PDP). Los checks de navegador (typo, facetas, motor, CWV) llegan con la sonda Playwright.",
+        "errorEmptyUrl": "Ingresá una URL."
       }
+    },
+    "run": {
+      "backToList": "Volver a la lista",
+      "overallScore": "Score general",
+      "maturityTier": "Madurez",
+      "status": "Estado",
+      "completedAt": "Completado",
+      "failedTitle": "El diagnóstico falló",
+      "samplesTitle": "Páginas analizadas"
     },
     "rubric": {
       "title": "Rúbrica diagnóstica",

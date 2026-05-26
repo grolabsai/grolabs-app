@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
+import { NewRunForm } from "./_new-run-form";
 
 export const dynamic = "force-dynamic";
 
@@ -9,12 +10,25 @@ type ProspectRow = {
   prospect_id: number;
   url: string;
   display_name: string | null;
-  vertical_id: number | null;
   platform_detected: string | null;
   engine_detected: string | null;
-  est_annual_traffic: number | null;
-  created_at: string;
   updated_at: string;
+};
+
+type RunRow = {
+  run_id: string;
+  prospect_id: number;
+  run_status: "queued" | "running" | "completed" | "failed";
+  overall_score: number | null;
+  maturity_tier: "low" | "medium" | "high" | null;
+  est_annual_uplift_usd: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+type VerticalRow = {
+  vertical_id: number;
+  vertical_name: string;
 };
 
 export default async function ProspectsPage() {
@@ -32,14 +46,29 @@ export default async function ProspectsPage() {
   }
 
   const supabase = await createClient();
-  const { data: prospectsRaw } = await supabase
-    .from("prospect")
-    .select(
-      "prospect_id, url, display_name, vertical_id, platform_detected, engine_detected, est_annual_traffic, created_at, updated_at",
-    )
-    .order("updated_at", { ascending: false });
+  const [{ data: prospectsRaw }, { data: runsRaw }, { data: verticalsRaw }] = await Promise.all([
+    supabase
+      .from("prospect")
+      .select("prospect_id, url, display_name, platform_detected, engine_detected, updated_at")
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("diagnostic_run")
+      .select(
+        "run_id, prospect_id, run_status, overall_score, maturity_tier, est_annual_uplift_usd, started_at, completed_at",
+      )
+      .order("started_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("vertical")
+      .select("vertical_id, vertical_name")
+      .order("vertical_name"),
+  ]);
 
   const prospects: ProspectRow[] = (prospectsRaw ?? []) as ProspectRow[];
+  const runs: RunRow[] = (runsRaw ?? []) as RunRow[];
+  const verticals: VerticalRow[] = (verticalsRaw ?? []) as VerticalRow[];
+
+  const prospectsById = new Map(prospects.map((p) => [p.prospect_id, p]));
 
   return (
     <div className="s-content">
@@ -66,35 +95,21 @@ export default async function ProspectsPage() {
         </div>
       </div>
 
-      {prospects.length === 0 ? (
+      <NewRunForm verticals={verticals} />
+
+      {runs.length === 0 && prospects.length === 0 ? (
         <div
           style={{
             background: "var(--s-surface)",
             border: "0.5px solid var(--s-border)",
             borderRadius: "var(--s-radius-lg)",
-            padding: 48,
+            padding: 32,
             textAlign: "center",
+            color: "var(--s-text-tertiary)",
+            fontSize: 13,
           }}
         >
-          <div style={{ fontSize: 14, color: "var(--s-text)", marginBottom: 8 }}>
-            {t("empty.title")}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--s-text-tertiary)",
-              maxWidth: 520,
-              margin: "0 auto 16px",
-              lineHeight: 1.5,
-            }}
-          >
-            {t("empty.description")}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
-            <Link href="/prospects/rubric" className="s-btn s-btn-primary">
-              {t("empty.editRubric")}
-            </Link>
-          </div>
+          {t("empty.title")}
         </div>
       ) : (
         <div
@@ -105,49 +120,104 @@ export default async function ProspectsPage() {
             overflow: "hidden",
           }}
         >
-          <table
-            style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}
+          <div
+            style={{
+              padding: "10px 16px",
+              borderBottom: "0.5px solid var(--s-border)",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--s-text-tertiary)",
+            }}
           >
+            {t("recentRunsTitle")}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr style={{ background: "var(--s-surface-alt)" }}>
-                <Th>{t("table.url")}</Th>
-                <Th>{t("table.platform")}</Th>
-                <Th>{t("table.engine")}</Th>
-                <Th>{t("table.traffic")}</Th>
-                <Th>{t("table.updated")}</Th>
+                <Th>{t("runTable.site")}</Th>
+                <Th>{t("runTable.status")}</Th>
+                <Th>{t("runTable.score")}</Th>
+                <Th>{t("runTable.tier")}</Th>
+                <Th>{t("runTable.started")}</Th>
+                <Th>{t("runTable.completed")}</Th>
               </tr>
             </thead>
             <tbody>
-              {prospects.map((p) => (
-                <tr
-                  key={p.prospect_id}
-                  style={{ borderBottom: "0.5px solid var(--s-border)" }}
-                >
-                  <Td>
-                    <div style={{ fontWeight: 500 }}>
-                      {p.display_name ?? p.url}
-                    </div>
-                    {p.display_name && (
-                      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
-                        {p.url}
-                      </div>
-                    )}
-                  </Td>
-                  <Td>{p.platform_detected ?? ""}</Td>
-                  <Td>{p.engine_detected ?? ""}</Td>
-                  <Td mono>
-                    {p.est_annual_traffic != null
-                      ? p.est_annual_traffic.toLocaleString()
-                      : ""}
-                  </Td>
-                  <Td>{p.updated_at.slice(0, 10)}</Td>
-                </tr>
-              ))}
+              {runs.map((r) => {
+                const p = prospectsById.get(r.prospect_id);
+                return (
+                  <tr
+                    key={r.run_id}
+                    style={{
+                      borderBottom: "0.5px solid var(--s-border)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Td>
+                      <Link
+                        href={`/prospects/runs/${r.run_id}` as unknown as `/prospects/runs/${string}`}
+                        style={{ color: "var(--s-text)", textDecoration: "none" }}
+                      >
+                        <div style={{ fontWeight: 500 }}>
+                          {p?.display_name ?? p?.url ?? r.prospect_id}
+                        </div>
+                        {p?.display_name && (
+                          <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+                            {p.url}
+                          </div>
+                        )}
+                      </Link>
+                    </Td>
+                    <Td>
+                      <StatusBadge status={r.run_status} />
+                    </Td>
+                    <Td mono>{r.overall_score ?? ""}</Td>
+                    <Td>{r.maturity_tier ?? ""}</Td>
+                    <Td>{r.started_at ? formatDateTime(r.started_at) : ""}</Td>
+                    <Td>{r.completed_at ? formatDateTime(r.completed_at) : ""}</Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
     </div>
+  );
+}
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const color =
+    status === "completed"
+      ? "var(--s-success)"
+      : status === "failed"
+        ? "var(--s-danger)"
+        : "var(--s-text-tertiary)";
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        color,
+        fontWeight: 600,
+      }}
+    >
+      {status}
+    </span>
   );
 }
 

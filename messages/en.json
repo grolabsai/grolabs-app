@@ -2356,7 +2356,38 @@
         "engine": "Search engine",
         "traffic": "Est. traffic",
         "updated": "Updated"
+      },
+      "recentRunsTitle": "Recent diagnostics",
+      "runTable": {
+        "site": "Site",
+        "status": "Status",
+        "score": "Score",
+        "tier": "Maturity",
+        "started": "Started",
+        "completed": "Completed"
+      },
+      "form": {
+        "title": "New diagnostic",
+        "rootUrl": "Root URL",
+        "pdpUrl": "PDP URL",
+        "pdpUrlPlaceholder": "Falls back to the root if not set",
+        "displayName": "Display name",
+        "vertical": "Vertical",
+        "optional": "optional",
+        "runButton": "Run",
+        "running": "Running…",
+        "hint": "v1 covers static-HTML checks (JSON-LD, OG, llms.txt, sitemap, PDP images/attributes). Browser-based checks (typo, facets, engine, CWV) arrive with the Playwright probe.",
+        "errorEmptyUrl": "Enter a URL."
       }
+    },
+    "run": {
+      "backToList": "Back to list",
+      "overallScore": "Overall score",
+      "maturityTier": "Maturity tier",
+      "status": "Status",
+      "completedAt": "Completed",
+      "failedTitle": "Diagnostic failed",
+      "samplesTitle": "Pages probed"
     },
     "rubric": {
       "title": "Diagnostic rubric",

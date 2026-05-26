@@ -181,6 +181,45 @@ export async function groupProducts(input: {
   return (await res.json()) as GroupProductsResponse;
 }
 
+// ─── /tools/pdp-signals ────────────────────────────────────────────────────
+
+export type PdpSignals = {
+  url: string;
+  page_title: string;
+  meta_description: string;
+  canonical_url: string;
+  product_name: string | null;
+  has_jsonld: boolean;
+  has_product_schema: boolean;
+  product_schema_fields: string[];
+  has_faqpage_schema: boolean;
+  has_breadcrumb_schema: boolean;
+  opengraph: Record<string, string>;
+  has_opengraph: boolean;
+  image_count: number;
+  descriptive_alt_count: number;
+  has_faq: boolean;
+  description_text: string;
+  description_word_count: number;
+  all_schema_types: string[];
+};
+
+/**
+ * Call GLPIM's static-HTML PDP signal extractor. Returns raw extracted
+ * signals — Scout scores them against the diagnostic_check rubric.
+ */
+export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
+  const url = `${ensureBaseUrl()}/tools/pdp-signals`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: targetUrl }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw await glpimError(res, "pdp-signals");
+  return (await res.json()) as PdpSignals;
+}
+
 // ─── Internals ─────────────────────────────────────────────────────────────
 
 async function glpimError(res: Response, where: string): Promise<Error> {

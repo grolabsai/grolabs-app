@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+// Locale-aware: strips the `/en` prefix from the pathname so NAV hrefs
+// like `/dashboard` match correctly when the user is on `/en/dashboard`.
+// The raw `next/navigation` usePathname returns the prefixed string and
+// breaks every active-state match on non-default locales.
+import { usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import type { Route } from "next";
 import { useCallback, useSyncExternalStore } from "react";

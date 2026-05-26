@@ -34,7 +34,11 @@
     "pricingViolations": "Autorizaciones",
     "pricingSync": "Sincronización",
     "content": "Contenido",
-    "blog": "Blog"
+    "blog": "Blog",
+    "prospects": "Prospectos",
+    "prospectsList": "Lista",
+    "prospectsRubric": "Rúbrica",
+    "prospectsBenchmarks": "Benchmarks"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -2331,6 +2335,234 @@
         "draft": "Borrador",
         "scheduled": "Programado",
         "published": "Publicado"
+      }
+    }
+  },
+  "prospects": {
+    "list": {
+      "title": "Prospectos",
+      "subtitle": "Sitios diagnosticados, puntuados por la oportunidad de mejora.",
+      "sessionExpired": "Sesión expirada",
+      "editRubricButton": "Editar rúbrica",
+      "benchmarksButton": "Benchmarks",
+      "empty": {
+        "title": "Aún no hay prospectos diagnosticados.",
+        "description": "Los diagnósticos crean un prospecto la primera vez que se analiza un sitio. Mientras tanto, configurá la rúbrica de diagnóstico — los checks que se ejecutan, los fixes recomendados y los benchmarks por vertical — para que cuando los resultados lleguen, signifiquen algo.",
+        "editRubric": "Editar la rúbrica"
+      },
+      "table": {
+        "url": "Sitio",
+        "platform": "Plataforma",
+        "engine": "Buscador",
+        "traffic": "Tráfico estimado",
+        "updated": "Actualizado"
+      },
+      "recentRunsTitle": "Diagnósticos recientes",
+      "runTable": {
+        "site": "Sitio",
+        "status": "Estado",
+        "score": "Score",
+        "tier": "Madurez",
+        "uplift": "Uplift estimado",
+        "started": "Iniciado",
+        "completed": "Completado"
+      },
+      "form": {
+        "title": "Nuevo diagnóstico",
+        "rootUrl": "URL raíz",
+        "pdpUrl": "URL de PDP",
+        "pdpUrlPlaceholder": "Si no se especifica, se prueba la raíz",
+        "categoryUrl": "URL de categoría",
+        "categoryUrlPlaceholder": "Para medir facetas (opcional)",
+        "annualTraffic": "Tráfico anual",
+        "aov": "AOV (USD)",
+        "displayName": "Nombre",
+        "vertical": "Vertical",
+        "optional": "opcional",
+        "runButton": "Ejecutar",
+        "running": "Ejecutando…",
+        "hint": "El diagnóstico v1 cubre los checks de HTML estático (JSON-LD, OG, llms.txt, sitemap, imágenes/atributos de PDP). Los checks de navegador (typo, facetas, motor, CWV) llegan con la sonda Playwright.",
+        "errorEmptyUrl": "Ingresá una URL."
+      }
+    },
+    "run": {
+      "backToList": "Volver a la lista",
+      "overallScore": "Score general",
+      "maturityTier": "Madurez",
+      "uplift": "Uplift anual (USD)",
+      "status": "Estado",
+      "completedAt": "Completado",
+      "failedTitle": "El diagnóstico falló",
+      "samplesTitle": "Páginas analizadas"
+    },
+    "vocabulary": {
+      "title": "Vocabulario de prueba",
+      "subtitle": "Sinónimos y consultas que la sonda de navegador usa para probar la búsqueda interna del prospecto.",
+      "sessionExpired": "Sesión expirada",
+      "backToRubric": "Volver a la rúbrica",
+      "synonymsTab": "Pares de sinónimos",
+      "queriesTab": "Consultas",
+      "synonymsTitle": "Pares de sinónimos",
+      "queriesTitle": "Consultas",
+      "addSynonym": "Agregar par",
+      "addQuery": "Agregar consulta",
+      "addButton": "Agregar",
+      "empty": "Sin entradas todavía.",
+      "templateHint": "Los pares de instancia plantilla son solo lectura.",
+      "template": "plantilla",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar esta entrada?",
+      "fields": {
+        "vertical": "Vertical",
+        "termA": "Término A",
+        "termB": "Término B",
+        "locale": "Idioma",
+        "queryText": "Consulta",
+        "intent": "Intento",
+        "notes": "Notas",
+        "actions": "Acciones"
+      }
+    },
+    "rubric": {
+      "title": "Rúbrica diagnóstica",
+      "subtitle": "El catálogo de checks que el diagnóstico ejecuta y los fixes que recomienda.",
+      "sessionExpired": "Sesión expirada",
+      "listTitle": "Checks",
+      "createButton": "Nuevo check",
+      "searchPlaceholder": "Buscar checks…",
+      "templateBadge": "Provisto por GroLabs (instancia plantilla)",
+      "templateBadgeShort": "plantilla",
+      "readOnlyTemplate": "Solo lectura (check de plantilla)",
+      "vocabularyButton": "Vocabulario de prueba",
+      "empty": {
+        "selectPrompt": "Seleccioná un check o creá uno nuevo.",
+        "stageNoChecks": "Sin checks en esta etapa todavía."
+      },
+      "probeType": {
+        "search": "Búsqueda interna",
+        "pdp": "PDP",
+        "site_wide": "Sitio entero",
+        "homepage": "Home",
+        "category": "Categoría"
+      },
+      "confidence": {
+        "low": "Baja",
+        "medium": "Media",
+        "high": "Alta"
+      },
+      "form": {
+        "createTitle": "Nuevo check",
+        "editTitle": "Editar check",
+        "sections": {
+          "identity": "Identidad",
+          "taxonomy": "Taxonomía",
+          "scoring": "Puntuación y revenue"
+        },
+        "fields": {
+          "checkName": "Nombre",
+          "checkCode": "Código",
+          "checkCodeHint": "Identificador estable (snake_case con prefijo de etapa).",
+          "description": "Descripción",
+          "stage": "Etapa del funnel",
+          "probeType": "Tipo de sonda",
+          "weight": "Peso",
+          "weightHint": "Contribución al score de la etapa (0–1).",
+          "deltaRate": "Δ por defecto",
+          "deltaRateHint": "Mejora estimada si se arregla (ej. 0.08 = +8%).",
+          "confidence": "Confianza",
+          "revenueLever": "Fórmula de revenue",
+          "revenueLeverHint": "Cadena legible que documenta la palanca económica.",
+          "notes": "Notas internas",
+          "active": "Activo",
+          "activeHint": "Incluir en los diagnósticos"
+        }
+      },
+      "fixes": {
+        "sectionTitle": "Recomendaciones de fix",
+        "addButton": "Agregar fix",
+        "empty": "Sin fixes definidos para este check.",
+        "view": "Ver",
+        "edit": "Editar",
+        "effortShort": "Esfuerzo",
+        "impactShort": "Impacto",
+        "level": {
+          "low": "Bajo",
+          "medium": "Medio",
+          "high": "Alto"
+        },
+        "fields": {
+          "code": "Código",
+          "title": "Título",
+          "body": "Cuerpo",
+          "trigger": "Condición de disparo",
+          "triggerHint": "Cuándo aplicar este fix. Ej: {\"result_status\": \"fail\"} o {\"score_below\": 50}.",
+          "effort": "Esfuerzo",
+          "impact": "Impacto",
+          "order": "Orden",
+          "active": "Activo"
+        },
+        "confirmDelete": "¿Eliminar este fix?",
+        "invalidJson": "La condición no es JSON válido."
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "saved": "Guardado",
+        "cancel": "Cancelar",
+        "collapse": "Colapsar",
+        "delete": "Eliminar",
+        "confirmDelete": "¿Eliminar este check?",
+        "deleteLinked": "No se puede eliminar: hay {n} finding(s) que referencian este check."
+      },
+      "errors": {
+        "emptyRequired": "El código y el nombre son obligatorios.",
+        "noInstance": "No hay instancia activa."
+      }
+    },
+    "benchmarks": {
+      "title": "Benchmarks por vertical",
+      "subtitle": "Las entradas que la fórmula de revenue usa para estimar el uplift anual.",
+      "sessionExpired": "Sesión expirada",
+      "listTitle": "Benchmarks",
+      "createButton": "Nuevo benchmark",
+      "template": "plantilla",
+      "empty": "Sin benchmarks definidos todavía.",
+      "scope": {
+        "vertical": "Toda la vertical",
+        "stage": "Etapa",
+        "check": "Check"
+      },
+      "table": {
+        "scope": "Alcance",
+        "baselineCr": "CR base",
+        "stageShare": "Share etapa",
+        "deltaRate": "Δ rate",
+        "aov": "AOV (USD)",
+        "source": "Fuente",
+        "effectiveFrom": "Vigente desde",
+        "actions": "Acciones"
+      },
+      "fields": {
+        "vertical": "Vertical",
+        "stage": "Etapa",
+        "check": "Check",
+        "allStages": "(toda la vertical)",
+        "allChecks": "(toda la etapa)",
+        "baselineCr": "Conversión base",
+        "stageShare": "Share de la etapa",
+        "deltaRate": "Δ rate al arreglar",
+        "aov": "AOV (USD)",
+        "source": "Fuente",
+        "effectiveFrom": "Vigente desde",
+        "notes": "Notas"
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "confirmDelete": "¿Eliminar este benchmark?"
       }
     }
   }

@@ -38,6 +38,9 @@ import {
   Library,
   Wrench,
   FileText,
+  Stethoscope,
+  ListChecks,
+  Gauge,
   ChevronRight,
   ChevronDown,
   type LucideIcon,
@@ -198,6 +201,16 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       icon: FileText,
       items: [
         { href: "/content/posts" as Route, label: tNav("blog"), icon: FileText },
+      ],
+    },
+    {
+      key: "prospects",
+      title: tNav("prospects"),
+      icon: Stethoscope,
+      items: [
+        { href: "/prospects" as Route, label: tNav("prospectsList"), icon: Stethoscope, useIconWrapper: true },
+        { href: "/prospects/rubric" as Route, label: tNav("prospectsRubric"), icon: ListChecks, useIconWrapper: true },
+        { href: "/prospects/benchmarks" as Route, label: tNav("prospectsBenchmarks"), icon: Gauge, useIconWrapper: true },
       ],
     },
     {

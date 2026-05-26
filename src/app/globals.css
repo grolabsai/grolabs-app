@@ -356,8 +356,15 @@ button {
   opacity: 1;
   color: inherit;
 }
-.s-nav-item.active .s-nav-icon {
+/* Active row: icon switches to kinetic yellow. Belt-and-suspenders —
+   `color` drives currentColor (which Lucide picks up via stroke), and
+   `stroke` is set directly so a passed inline `color="…"` prop on the
+   <svg> can't override it. Applies to both flat group items
+   (Dashboard) and collapsible group children (Funnel, Prospectos, …). */
+.s-nav-item.active .s-nav-icon,
+.s-nav-item.active > svg {
   color: var(--scout-accent);
+  stroke: var(--scout-accent);
 }
 .s-nav-badge {
   margin-left: auto;

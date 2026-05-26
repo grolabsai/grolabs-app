@@ -370,20 +370,19 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--nav-text-hover);
 }
-/* Active row: text + icon both yellow. We tried "yellow icon only with
-   white text" several times; CSS specificity wars with Lucide's
-   inline stroke attribute kept making it land inconsistently. Going
-   monochrome yellow is the robust answer — the parent's `color`
-   cascades to both the text and (via currentColor) the icon stroke
-   without any per-element overrides.
-   Background stays transparent: no row highlight, ever. */
+/* Active row: yellow icon, logo-white text.
+   The icon picks up the yellow from the inline `color="#fae194"` prop
+   passed to Lucide in Sidebar.tsx — that bypasses every CSS cascade
+   issue we ran into. The label here renders in --s-text-strong so the
+   active row reads "lit up but not loud". Background stays transparent
+   either way: no row highlight, ever. */
 .s-nav-item.active,
 .s-nav-item.active:hover,
 .s-nav-item.active:focus,
 .s-nav-item.active:focus-visible,
 .s-nav-item.active:active {
   background: transparent !important;
-  color: var(--scout-accent);
+  color: var(--s-text-strong);
   outline: none;
   box-shadow: none;
 }

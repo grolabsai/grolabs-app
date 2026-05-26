@@ -70,6 +70,13 @@ export default async function PublicReportPage({
 }) {
   const { runId } = await params;
 
+  // SUPABASE_SERVICE_ROLE_KEY isn't set on every preview deploy. Treat
+  // missing env as "report not available" rather than crashing the
+  // server component with an uncaught throw.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    notFound();
+  }
+
   const supabase = createServiceRoleClient();
 
   const { data: runRaw } = await supabase

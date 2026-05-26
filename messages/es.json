@@ -2357,6 +2357,7 @@
         "traffic": "Tráfico estimado",
         "updated": "Actualizado"
       },
+      "prospectsTitle": "Prospectos diagnosticados",
       "recentRunsTitle": "Diagnósticos recientes",
       "runTable": {
         "site": "Sitio",
@@ -2366,6 +2367,14 @@
         "uplift": "Uplift estimado",
         "started": "Iniciado",
         "completed": "Completado"
+      },
+      "table": {
+        "url": "Sitio",
+        "contact": "Contacto",
+        "platform": "Plataforma",
+        "lastScore": "Último score",
+        "lastUplift": "Último uplift",
+        "lastScanned": "Último escaneo"
       },
       "form": {
         "title": "Nuevo diagnóstico",
@@ -2394,6 +2403,70 @@
       "completedAt": "Completado",
       "failedTitle": "El diagnóstico falló",
       "samplesTitle": "Páginas analizadas"
+    },
+    "detail": {
+      "backToList": "Volver a prospectos",
+      "scanAll": "Escanear todas las páginas",
+      "scanning": "Escaneando…",
+      "rescan": "Re-escanear",
+      "contact": "Contacto",
+      "platform": "Plataforma",
+      "economics": "Economía",
+      "trafficUnit": "sesiones/año",
+      "aovSuffix": "AOV",
+      "pagesTitle": "Páginas",
+      "noPagesYet": "Aún no hay páginas. Ejecutá un diagnóstico para descubrirlas.",
+      "pageTable": {
+        "type": "Tipo",
+        "url": "URL",
+        "scans": "Escaneos",
+        "latestScore": "Último score",
+        "latestUplift": "Último uplift",
+        "lastScanned": "Último escaneo",
+        "actions": "Acciones"
+      }
+    },
+    "page": {
+      "openPage": "Abrir página ↗",
+      "comparison": "Último vs anterior",
+      "latestScan": "Último escaneo",
+      "previousScan": "Anterior",
+      "delta": "Δ",
+      "compareTable": {
+        "check": "Check",
+        "previous": "Anterior",
+        "latest": "Último",
+        "delta": "Δ"
+      },
+      "scanHistory": "Historial de escaneos",
+      "noScansYet": "Sin escaneos todavía.",
+      "scanTable": {
+        "when": "Fecha y hora",
+        "status": "Estado",
+        "score": "Score",
+        "uplift": "Uplift",
+        "openRun": "Ver run",
+        "view": "Ver",
+        "failureLabel": "Escaneo fallido"
+      },
+      "revealDetail": "Click para ver detalle en el panel lateral",
+      "detail": {
+        "status": "Estado",
+        "score": "Score",
+        "notes": "Notas",
+        "evidence": "Evidencia",
+        "when": "Cuándo",
+        "errorMessage": "Mensaje de error",
+        "guidance": {
+          "fetchError": "El probe no pudo obtener esta URL. El sitio puede haber bloqueado la petición, devuelto un HTTP error, o tardado demasiado. Revisa el campo fetch_error para el detalle exacto.",
+          "browserDisabled": "El probe de navegador está desactivado en este ambiente (PROSPECTOS_BROWSER_PROBE_ENABLED=0). Los checks que requieren ejecución de JavaScript no se pueden evaluar.",
+          "psiDisabled": "La integración con Google PageSpeed Insights está desactivada (PROSPECTOS_PSI_ENABLED=0). Core Web Vitals no se evalúa.",
+          "psiError": "La API de Google PageSpeed Insights falló. Puede ser un rate limit, una key inválida, o un timeout. Revisa psi_error.",
+          "glpimError": "El servicio GLPIM no respondió. Verifica que GLPIM_API_URL esté configurado y el servicio esté arriba.",
+          "genericError": "El scorer falló sin un tipo de error reconocido. Revisa la evidencia más abajo.",
+          "notApplicable": "Este check no aplica para esta página. Por ejemplo: faceting solo se evalúa en URLs de categoría; variantes solo en PDPs con variantes."
+        }
+      }
     },
     "vocabulary": {
       "title": "Vocabulario de prueba",

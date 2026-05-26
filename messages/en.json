@@ -2357,6 +2357,7 @@
         "traffic": "Est. traffic",
         "updated": "Updated"
       },
+      "prospectsTitle": "Diagnosed prospects",
       "recentRunsTitle": "Recent diagnostics",
       "runTable": {
         "site": "Site",
@@ -2366,6 +2367,14 @@
         "uplift": "Est. uplift",
         "started": "Started",
         "completed": "Completed"
+      },
+      "table": {
+        "url": "Site",
+        "contact": "Contact",
+        "platform": "Platform",
+        "lastScore": "Last score",
+        "lastUplift": "Last uplift",
+        "lastScanned": "Last scanned"
       },
       "form": {
         "title": "New diagnostic",
@@ -2394,6 +2403,70 @@
       "completedAt": "Completed",
       "failedTitle": "Diagnostic failed",
       "samplesTitle": "Pages probed"
+    },
+    "detail": {
+      "backToList": "Back to prospects",
+      "scanAll": "Scan all pages",
+      "scanning": "Scanning…",
+      "rescan": "Re-scan",
+      "contact": "Contact",
+      "platform": "Platform",
+      "economics": "Economics",
+      "trafficUnit": "sessions/yr",
+      "aovSuffix": "AOV",
+      "pagesTitle": "Pages",
+      "noPagesYet": "No pages yet. Run a diagnostic to discover them.",
+      "pageTable": {
+        "type": "Type",
+        "url": "URL",
+        "scans": "Scans",
+        "latestScore": "Last score",
+        "latestUplift": "Last uplift",
+        "lastScanned": "Last scanned",
+        "actions": "Actions"
+      }
+    },
+    "page": {
+      "openPage": "Open page ↗",
+      "comparison": "Latest vs previous",
+      "latestScan": "Latest scan",
+      "previousScan": "Previous",
+      "delta": "Δ",
+      "compareTable": {
+        "check": "Check",
+        "previous": "Previous",
+        "latest": "Latest",
+        "delta": "Δ"
+      },
+      "scanHistory": "Scan history",
+      "noScansYet": "No scans yet.",
+      "scanTable": {
+        "when": "When",
+        "status": "Status",
+        "score": "Score",
+        "uplift": "Uplift",
+        "openRun": "Open run",
+        "view": "View",
+        "failureLabel": "Failed scan"
+      },
+      "revealDetail": "Click to see detail in the side panel",
+      "detail": {
+        "status": "Status",
+        "score": "Score",
+        "notes": "Notes",
+        "evidence": "Evidence",
+        "when": "When",
+        "errorMessage": "Error message",
+        "guidance": {
+          "fetchError": "The probe couldn't fetch this URL. The site may have blocked the request, returned an HTTP error, or timed out. Check fetch_error below for the exact reason.",
+          "browserDisabled": "Browser probe is disabled in this environment (PROSPECTOS_BROWSER_PROBE_ENABLED=0). Checks that require JavaScript execution can't be evaluated.",
+          "psiDisabled": "Google PageSpeed Insights integration is disabled (PROSPECTOS_PSI_ENABLED=0). Core Web Vitals isn't being evaluated.",
+          "psiError": "Google PageSpeed Insights API failed. Could be rate limiting, invalid key, or timeout. See psi_error.",
+          "glpimError": "The GLPIM service didn't respond. Verify GLPIM_API_URL is set and the service is up.",
+          "genericError": "The scorer failed with no recognized error type. Inspect the evidence below.",
+          "notApplicable": "This check doesn't apply for this page. For example: faceting only runs on category URLs; variant clarity only runs on PDPs with variants."
+        }
+      }
     },
     "vocabulary": {
       "title": "Test vocabulary",

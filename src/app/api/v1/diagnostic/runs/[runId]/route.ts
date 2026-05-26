@@ -36,6 +36,9 @@ export async function GET(
 ) {
   const { runId } = await ctx.params;
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(503, { error: "diagnostic_not_configured" });
+  }
   const supabase = createServiceRoleClient();
 
   const { data: run, error: runErr } = await supabase

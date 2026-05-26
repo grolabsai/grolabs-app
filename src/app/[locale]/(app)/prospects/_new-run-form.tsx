@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useFieldHint } from "@/components/shell/FieldHintContext";
 import { startDiagnostic, setProspectEconomics } from "./_actions";
 
 export function NewRunForm({
@@ -21,6 +22,44 @@ export function NewRunForm({
   const [verticalId, setVerticalId] = useState<number | null>(null);
   const [annualTraffic, setAnnualTraffic] = useState("");
   const [aov, setAov] = useState("");
+
+  // Field hints — focus any input to surface these in the AgentPanel.
+  // Multi-line copy is fine; the yellow card accommodates 4-5 lines.
+  const rootUrlHint = useFieldHint({
+    label: t("form.rootUrl"),
+    body:
+      "Paste the storefront's home page (example.com). We'll fetch the homepage once, auto-detect the industry, pick a featured product and a category to probe, and probe the search box. Mandatory — everything else is optional.",
+  });
+  const pdpUrlHint = useFieldHint({
+    label: t("form.pdpUrl"),
+    body:
+      "A specific product detail page to audit. If left empty, we'll auto-pick one from the homepage (featured / best-seller block first, otherwise the first product link we find).",
+  });
+  const categoryUrlHint = useFieldHint({
+    label: t("form.categoryUrl"),
+    body:
+      "A category / collection / listing page. Required to score faceting (filter depth, count display, multi-select). If empty, the faceting check is skipped and shows as N/A.",
+  });
+  const nameHint = useFieldHint({
+    label: t("form.displayName"),
+    body:
+      "Optional human-readable name for the prospect (e.g. \"Acme Pet Co.\"). Shown in the prospect list. If empty, we use the URL.",
+  });
+  const verticalHint = useFieldHint({
+    label: t("form.vertical"),
+    body:
+      "Override the industry vertical. Leave on \"Generic\" and we'll auto-classify the storefront from its homepage content. Setting this explicitly skips the classifier and locks the vertical for revenue benchmarks and test vocabulary.",
+  });
+  const trafficHint = useFieldHint({
+    label: t("form.annualTraffic"),
+    body:
+      "Estimated annual sessions across the storefront. Used to compute the dollar uplift per finding (traffic × stage share × baseline CR × AOV × Δ rate × headroom). Skip and the per-finding uplift stays blank.",
+  });
+  const aovHint = useFieldHint({
+    label: t("form.aov"),
+    body:
+      "Average order value in USD. Lets the revenue formula convert percentage uplifts into dollar amounts. If unset, the per-vertical benchmark default is used.",
+  });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,32 +124,35 @@ export function NewRunForm({
             className="s-input"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="example.com"
+            placeholder=" "
             required
+            {...rootUrlHint}
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
-            {t("form.pdpUrl")} <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>({t("form.optional")})</span>
+            {t("form.pdpUrl")}
           </label>
           <input
             type="text"
             className="s-input"
             value={pdpUrl}
             onChange={(e) => setPdpUrl(e.target.value)}
-            placeholder={t("form.pdpUrlPlaceholder")}
+            placeholder=" "
+            {...pdpUrlHint}
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
           <label className="s-field-label" style={{ fontSize: 11 }}>
-            {t("form.categoryUrl")} <span style={{ color: "var(--s-text-tertiary)", fontWeight: 400 }}>({t("form.optional")})</span>
+            {t("form.categoryUrl")}
           </label>
           <input
             type="text"
             className="s-input"
             value={categoryUrl}
             onChange={(e) => setCategoryUrl(e.target.value)}
-            placeholder={t("form.categoryUrlPlaceholder")}
+            placeholder=" "
+            {...categoryUrlHint}
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
@@ -122,6 +164,8 @@ export function NewRunForm({
             className="s-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder=" "
+            {...nameHint}
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
@@ -131,7 +175,9 @@ export function NewRunForm({
           <select
             className="s-input"
             value={verticalId ?? ""}
+            data-empty={verticalId == null ? "true" : "false"}
             onChange={(e) => setVerticalId(e.target.value ? Number(e.target.value) : null)}
+            {...verticalHint}
           >
             <option value="">—</option>
             {verticals.map((v) => (
@@ -150,7 +196,8 @@ export function NewRunForm({
             className="s-input"
             value={annualTraffic}
             onChange={(e) => setAnnualTraffic(e.target.value)}
-            placeholder="500000"
+            placeholder=" "
+            {...trafficHint}
           />
         </div>
         <div className="s-field" style={{ marginBottom: 0 }}>
@@ -163,7 +210,8 @@ export function NewRunForm({
             className="s-input"
             value={aov}
             onChange={(e) => setAov(e.target.value)}
-            placeholder="45"
+            placeholder=" "
+            {...aovHint}
           />
         </div>
         <button

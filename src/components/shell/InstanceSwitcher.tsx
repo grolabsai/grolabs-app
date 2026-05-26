@@ -83,10 +83,24 @@ export function InstanceSwitcher({
           <button
             type="button"
             aria-label={t("triggerLabel")}
-            className="inline-flex items-center gap-1.5 rounded-[var(--s-radius-md)] px-2 py-1 text-[13px] hover:bg-[var(--s-surface-alt)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--s-border-strong)]"
-            style={{ color: "var(--s-text)" }}
+            className="inline-flex items-center gap-1.5 rounded-[var(--s-radius-md)] px-2.5 py-1.5 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--s-border-strong)]"
+            style={{
+              color: "#ffffff",
+              background: "rgba(255,255,255,0.04)",
+              border: "0.5px solid rgba(255,255,255,0.08)",
+              minWidth: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+            }}
           >
-            <span className="truncate max-w-[200px]">
+            <span
+              className="truncate"
+              style={{ flex: 1, minWidth: 0, textAlign: "left" }}
+            >
               {pendingId !== null ? t("switching") : triggerLabel}
             </span>
             <Icon icon={ChevronDown} size={12} />

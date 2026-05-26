@@ -10,19 +10,20 @@ type ProspectRow = {
   prospect_id: number;
   url: string;
   display_name: string | null;
+  logo_url: string | null;
+  contact_first_name: string | null;
+  contact_last_name: string | null;
+  contact_position: string | null;
+  contact_email: string | null;
   platform_detected: string | null;
   engine_detected: string | null;
   updated_at: string;
 };
 
-type RunRow = {
-  run_id: string;
+type RunSummary = {
   prospect_id: number;
-  run_status: "queued" | "running" | "completed" | "failed";
   overall_score: number | null;
-  maturity_tier: "low" | "medium" | "high" | null;
   est_annual_uplift_usd: number | null;
-  started_at: string | null;
   completed_at: string | null;
 };
 
@@ -46,29 +47,33 @@ export default async function ProspectsPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: prospectsRaw }, { data: runsRaw }, { data: verticalsRaw }] = await Promise.all([
+  const [{ data: prospectsRaw }, { data: verticalsRaw }, { data: runsRaw }] = await Promise.all([
     supabase
       .from("prospect")
-      .select("prospect_id, url, display_name, platform_detected, engine_detected, updated_at")
-      .order("updated_at", { ascending: false }),
-    supabase
-      .from("diagnostic_run")
       .select(
-        "run_id, prospect_id, run_status, overall_score, maturity_tier, est_annual_uplift_usd, started_at, completed_at",
+        "prospect_id, url, display_name, logo_url, contact_first_name, contact_last_name, contact_position, contact_email, platform_detected, engine_detected, updated_at",
       )
-      .order("started_at", { ascending: false })
-      .limit(20),
+      .order("updated_at", { ascending: false }),
     supabase
       .from("vertical")
       .select("vertical_id, vertical_name")
       .order("vertical_name"),
+    supabase
+      .from("diagnostic_run")
+      .select("prospect_id, overall_score, est_annual_uplift_usd, completed_at")
+      .eq("run_status", "completed")
+      .order("completed_at", { ascending: false }),
   ]);
 
   const prospects: ProspectRow[] = (prospectsRaw ?? []) as ProspectRow[];
-  const runs: RunRow[] = (runsRaw ?? []) as RunRow[];
   const verticals: VerticalRow[] = (verticalsRaw ?? []) as VerticalRow[];
+  const runs: RunSummary[] = (runsRaw ?? []) as RunSummary[];
 
-  const prospectsById = new Map(prospects.map((p) => [p.prospect_id, p]));
+  // Latest completed run per prospect (the array is already sorted desc).
+  const latestByProspect = new Map<number, RunSummary>();
+  for (const r of runs) {
+    if (!latestByProspect.has(r.prospect_id)) latestByProspect.set(r.prospect_id, r);
+  }
 
   return (
     <div className="s-content">
@@ -97,7 +102,7 @@ export default async function ProspectsPage() {
 
       <NewRunForm verticals={verticals} />
 
-      {runs.length === 0 && prospects.length === 0 ? (
+      {prospects.length === 0 ? (
         <div
           style={{
             background: "var(--s-surface)",
@@ -131,58 +136,108 @@ export default async function ProspectsPage() {
               color: "var(--s-text-tertiary)",
             }}
           >
-            {t("recentRunsTitle")}
+            {t("prospectsTitle")} ({prospects.length})
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ background: "var(--s-surface-alt)" }}>
-                <Th>{t("runTable.site")}</Th>
-                <Th>{t("runTable.status")}</Th>
-                <Th>{t("runTable.score")}</Th>
-                <Th>{t("runTable.tier")}</Th>
-                <Th>{t("runTable.uplift")}</Th>
-                <Th>{t("runTable.started")}</Th>
-                <Th>{t("runTable.completed")}</Th>
+                <Th>{t("table.url")}</Th>
+                <Th>{t("table.contact")}</Th>
+                <Th>{t("table.platform")}</Th>
+                <Th>{t("table.lastScore")}</Th>
+                <Th>{t("table.lastUplift")}</Th>
+                <Th>{t("table.lastScanned")}</Th>
               </tr>
             </thead>
             <tbody>
-              {runs.map((r) => {
-                const p = prospectsById.get(r.prospect_id);
+              {prospects.map((p) => {
+                const latest = latestByProspect.get(p.prospect_id) ?? null;
+                const contactName = [p.contact_first_name, p.contact_last_name]
+                  .filter(Boolean)
+                  .join(" ");
                 return (
                   <tr
-                    key={r.run_id}
-                    style={{
-                      borderBottom: "0.5px solid var(--s-border)",
-                      cursor: "pointer",
-                    }}
+                    key={p.prospect_id}
+                    style={{ borderTop: "1px solid var(--s-border)" }}
                   >
                     <Td>
                       <Link
-                        href={`/prospects/runs/${r.run_id}` as unknown as `/prospects/runs/${string}`}
-                        style={{ color: "var(--s-text)", textDecoration: "none" }}
+                        href={`/prospects/${p.prospect_id}` as never}
+                        style={{
+                          color: "var(--s-text)",
+                          textDecoration: "none",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
                       >
-                        <div style={{ fontWeight: 500 }}>
-                          {p?.display_name ?? p?.url ?? r.prospect_id}
-                        </div>
-                        {p?.display_name && (
-                          <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
-                            {p.url}
+                        <ProspectLogo url={p.logo_url} fallback={p.url} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600 }}>
+                            {p.display_name ?? p.url}
                           </div>
-                        )}
+                          {p.display_name && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "var(--s-text-tertiary)",
+                                fontFamily: "var(--s-font-mono)",
+                              }}
+                            >
+                              {p.url}
+                            </div>
+                          )}
+                        </div>
                       </Link>
                     </Td>
                     <Td>
-                      <StatusBadge status={r.run_status} />
+                      {contactName ? (
+                        <div>
+                          <div style={{ fontWeight: 500 }}>{contactName}</div>
+                          {p.contact_position && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "var(--s-text-tertiary)",
+                              }}
+                            >
+                              {p.contact_position}
+                            </div>
+                          )}
+                        </div>
+                      ) : p.contact_email ? (
+                        <span style={{ color: "var(--s-text-tertiary)" }}>
+                          {p.contact_email}
+                        </span>
+                      ) : (
+                        ""
+                      )}
                     </Td>
-                    <Td mono>{r.overall_score ?? ""}</Td>
-                    <Td>{r.maturity_tier ?? ""}</Td>
+                    <Td>
+                      {p.platform_detected ?? ""}
+                      {p.engine_detected && (
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "var(--s-text-tertiary)",
+                            fontFamily: "var(--s-font-mono)",
+                          }}
+                        >
+                          {p.engine_detected}
+                        </div>
+                      )}
+                    </Td>
+                    <Td mono>{latest?.overall_score ?? ""}</Td>
                     <Td mono>
-                      {r.est_annual_uplift_usd != null
-                        ? `$${Math.round(r.est_annual_uplift_usd).toLocaleString()}`
+                      {latest?.est_annual_uplift_usd != null
+                        ? `$${Math.round(latest.est_annual_uplift_usd).toLocaleString()}`
                         : ""}
                     </Td>
-                    <Td>{r.started_at ? formatDateTime(r.started_at) : ""}</Td>
-                    <Td>{r.completed_at ? formatDateTime(r.completed_at) : ""}</Td>
+                    <Td>
+                      {latest?.completed_at
+                        ? formatDateTime(latest.completed_at)
+                        : ""}
+                    </Td>
                   </tr>
                 );
               })}
@@ -191,6 +246,61 @@ export default async function ProspectsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ProspectLogo({
+  url,
+  fallback,
+}: {
+  url: string | null;
+  fallback: string;
+}) {
+  // 32px square logo badge. <img> is intentional — these point at
+  // arbitrary remote URLs and we don't want next/image's domain
+  // whitelist to gate them. onError swap to Google's s2 favicon
+  // service as a graceful degrade.
+  let initialSrc = url;
+  if (!initialSrc) {
+    try {
+      const host = new URL(fallback).host;
+      initialSrc = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
+    } catch {
+      initialSrc = null;
+    }
+  }
+  if (!initialSrc) {
+    return (
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 6,
+          background: "var(--s-surface-alt)",
+          border: "0.5px solid var(--s-border)",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={initialSrc}
+      alt=""
+      width={32}
+      height={32}
+      style={{
+        width: 32,
+        height: 32,
+        objectFit: "contain",
+        background: "#ffffff",
+        borderRadius: 6,
+        border: "0.5px solid var(--s-border)",
+        flexShrink: 0,
+        padding: 2,
+      }}
+    />
   );
 }
 
@@ -203,28 +313,6 @@ function formatDateTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const color =
-    status === "completed"
-      ? "var(--s-success)"
-      : status === "failed"
-        ? "var(--s-danger)"
-        : "var(--s-text-tertiary)";
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        textTransform: "uppercase",
-        letterSpacing: "0.04em",
-        color,
-        fontWeight: 600,
-      }}
-    >
-      {status}
-    </span>
-  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
@@ -251,12 +339,13 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
     <td
       style={{
         padding: "10px 14px",
-        fontSize: 12,
+        fontSize: 13,
         color: "var(--s-text)",
         fontFamily: mono
           ? "var(--s-font-mono, ui-monospace, monospace)"
           : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
+        verticalAlign: "top",
       }}
     >
       {children}

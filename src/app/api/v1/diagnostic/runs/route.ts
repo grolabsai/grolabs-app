@@ -69,6 +69,14 @@ export async function POST(req: NextRequest) {
   const url = typeof body.url === "string" ? body.url.trim() : "";
   if (!url) return json(400, { error: "url_required" });
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(503, {
+      error: "diagnostic_not_configured",
+      detail:
+        "SUPABASE_SERVICE_ROLE_KEY is not set on this deployment — the public diagnostic API is offline.",
+    });
+  }
+
   // Rate limit (per-IP sliding window).
   const ip = getClientIp(req);
   const service = createServiceRoleClient();

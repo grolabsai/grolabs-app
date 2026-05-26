@@ -137,6 +137,10 @@ export function InlineText({
         border: "1px solid transparent",
         fontFamily: monospace ? "var(--s-font-mono)" : "inherit",
         fontSize: 13,
+        // Content weight matches the s-input it swaps into on edit, so
+        // display ↔ edit feels seamless. Empty placeholder text stays
+        // at the normal weight to read as a hint.
+        fontWeight: optimistic ? 600 : 400,
         color: optimistic ? "var(--s-text)" : "var(--s-text-muted)",
         fontStyle: optimistic ? "normal" : "italic",
       }}
@@ -242,6 +246,7 @@ export function InlineTextarea({
         borderRadius: 6,
         border: "1px solid transparent",
         fontSize: 13,
+        fontWeight: previewLine ? 600 : 400,
         color: previewLine ? "var(--s-text)" : "var(--s-text-muted)",
         fontStyle: previewLine ? "normal" : "italic",
         whiteSpace: "nowrap",

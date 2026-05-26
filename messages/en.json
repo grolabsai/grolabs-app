@@ -2462,7 +2462,7 @@
           "browserDisabled": "Browser probe is disabled in this environment (PROSPECTOS_BROWSER_PROBE_ENABLED=0). Checks that require JavaScript execution can't be evaluated.",
           "psiDisabled": "Google PageSpeed Insights integration is disabled (PROSPECTOS_PSI_ENABLED=0). Core Web Vitals isn't being evaluated.",
           "psiError": "Google PageSpeed Insights API failed. Could be rate limiting, invalid key, or timeout. See psi_error.",
-          "glpimError": "The GLPIM service didn't respond. Verify GLPIM_API_URL is set and the service is up.",
+          "aseError": "The ASE service didn't respond. Verify ASE_API_URL is set and the service is up.",
           "genericError": "The scorer failed with no recognized error type. Inspect the evidence below.",
           "notApplicable": "This check doesn't apply for this page. For example: faceting only runs on category URLs; variant clarity only runs on PDPs with variants."
         }

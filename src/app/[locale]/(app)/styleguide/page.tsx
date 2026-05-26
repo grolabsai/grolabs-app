@@ -1127,7 +1127,7 @@ function BannersDemo() {
         icon={AlertTriangle}
         tone="warning"
         title="Heads up"
-        text="GLPIM is not reachable — PDP findings will be reported as errors."
+        text="ASE is not reachable — PDP findings will be reported as errors."
       />
       <Banner
         icon={XCircle}

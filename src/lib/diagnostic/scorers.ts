@@ -227,13 +227,13 @@ const scorePdpVariantClarity: CheckScorer = ({ pdp }) => {
   }
   const s = pdp.signals;
   if (s.has_variant_selectors === undefined) {
-    // Older GLPIM deploy without the extended-signals field.
+    // Older ASE deploy without the extended-signals field.
     return {
       result_status: "na",
       score: null,
       evidence: { reason: "extended_signals_missing" },
       notes:
-        "GLPIM /tools/pdp-signals did not return variant_selector_count — upgrade to the v2 endpoint.",
+        "ASE /tools/pdp-signals did not return variant_selector_count — upgrade to the v2 endpoint.",
     };
   }
   const count = s.variant_selector_count ?? 0;

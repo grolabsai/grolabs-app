@@ -1,8 +1,8 @@
 ---
 Status: Active policy
 Owner: Tuncho
-Scope: Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in Scout (Next.js) + GLPIM (Python tools).
-Audience: Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, the `prospect`/`diagnostic_run`/`finding` tables, GLPIM's `tools/pdp_scanner.py` + `tools/site_scanner.py`, or `src/lib/diagnostic/**`.
+Scope: Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in Scout (Next.js) + ASE (Agentic Services Engine — Python, formerly GLPIM).
+Audience: Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, the `prospect`/`diagnostic_run`/`finding` tables, ASE's `tools/pdp_scanner.py` + `tools/site_scanner.py`, or `src/lib/diagnostic/**`.
 ---
 
 # Prospectos — policy
@@ -39,7 +39,7 @@ and an overall score (average of stages).
 ## 2. Two-service architecture
 
 ```
-Scout (Next.js, this repo)              GLPIM (Python, grolabsai/glpimbk)
+Scout (Next.js, this repo)              ASE (Python, grolabsai/grolabs-ASE — formerly GLPIM)
 ─────────────────────────────           ───────────────────────────────────
 • Orchestrator + rubric                 • POST /tools/pdp-signals
 • Public API + report viewer            • POST /tools/site-signals
@@ -49,7 +49,7 @@ Scout (Next.js, this repo)              GLPIM (Python, grolabsai/glpimbk)
 • Persistence (Supabase)
 ```
 
-GLPIM owns the static-HTML extraction primitives (selector fallbacks,
+ASE owns the static-HTML extraction primitives (selector fallbacks,
 JSON-LD flattening, alt-text filtering, platform + engine fingerprints).
 Scout calls them, runs its own browser + CWV probes alongside, and
 scores everything against the catalog in DB.
@@ -133,8 +133,8 @@ flows funnel through a single `runDiagnostic(opts)`. Sequence:
 5. **Probes run in parallel:**
    - `probeSiteWide(rootUrl)` — HTTP fetches for llms.txt, robots.txt,
      sitemap.xml (8s timeout, AI-bot policy detection)
-   - GLPIM `/tools/pdp-signals` — PDP signals
-   - GLPIM `/tools/site-signals` — platform + engine fingerprint + facets
+   - ASE `/tools/pdp-signals` — PDP signals
+   - ASE `/tools/site-signals` — platform + engine fingerprint + facets
    - `runBrowserProbe(...)` — Playwright (only when
      `PROSPECTOS_BROWSER_PROBE_ENABLED=1`)
    - `fetchCoreWebVitals(pdpUrl)` — Google PSI (only when
@@ -240,7 +240,7 @@ probes are enabled).
 
 | Env | Purpose | Default |
 |---|---|---|
-| `GLPIM_API_URL` | Required for PDP + site signals to score | unset → those scorers degrade to `error` |
+| `ASE_API_URL` | Required for PDP + site signals to score | unset → those scorers degrade to `error` |
 | `ANTHROPIC_API_KEY` | Enables Haiku tie-breaker for vertical classification | unset → classifier returns no LLM result |
 | `PROSPECTOS_BROWSER_PROBE_ENABLED` | Enables Playwright probe | unset → browser-based scorers report `na` |
 | `PROSPECTOS_PSI_ENABLED` | Set to `0` to disable Core Web Vitals fetching | enabled by default |

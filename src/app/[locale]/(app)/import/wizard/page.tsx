@@ -7,8 +7,8 @@ import { ImportWizard } from "@/components/import/ImportWizard";
 /**
  * Bulk-import wizard. Six steps:
  *   1. Upload xlsx/csv → preview
- *   2. Pick brand + product-name column → ask GLPIM to suggest categories
- *   3. Ask GLPIM to group rows into base products with variants/attributes
+ *   2. Pick brand + product-name column → ask ASE to suggest categories
+ *   3. Ask ASE to group rows into base products with variants/attributes
  *   4. Map remaining GroLabs fields to file columns
  *   5. Review (edit cells, fix errors)
  *   6. Submit → bulk-create products

@@ -52,7 +52,7 @@ rather than working around it.
   URL, scores the storefront against a DB-driven rubric (catalog
   + per-vertical synonyms/queries/expected attributes), computes
   annual revenue uplift, surfaces fix recommendations. Two-service
-  architecture (Scout orchestrator + GLPIM static-HTML primitives).
+  architecture (Scout orchestrator + ASE static-HTML primitives).
   Public anonymous API for the landing-page widget, gated by per-IP
   rate-limit RPC. Playwright probe is feature-flagged (deployment
   caveats inside). Owner: Tuncho.

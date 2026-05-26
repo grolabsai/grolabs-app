@@ -2462,7 +2462,7 @@
           "browserDisabled": "El probe de navegador está desactivado en este ambiente (PROSPECTOS_BROWSER_PROBE_ENABLED=0). Los checks que requieren ejecución de JavaScript no se pueden evaluar.",
           "psiDisabled": "La integración con Google PageSpeed Insights está desactivada (PROSPECTOS_PSI_ENABLED=0). Core Web Vitals no se evalúa.",
           "psiError": "La API de Google PageSpeed Insights falló. Puede ser un rate limit, una key inválida, o un timeout. Revisa psi_error.",
-          "glpimError": "El servicio GLPIM no respondió. Verifica que GLPIM_API_URL esté configurado y el servicio esté arriba.",
+          "aseError": "El servicio ASE no respondió. Verifica que ASE_API_URL esté configurado y el servicio esté arriba.",
           "genericError": "El scorer falló sin un tipo de error reconocido. Revisa la evidencia más abajo.",
           "notApplicable": "Este check no aplica para esta página. Por ejemplo: faceting solo se evalúa en URLs de categoría; variantes solo en PDPs con variantes."
         }

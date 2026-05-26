@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
 import { NewRunForm } from "./_new-run-form";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -234,9 +235,7 @@ export default async function ProspectsPage() {
                         : ""}
                     </Td>
                     <Td>
-                      {latest?.completed_at
-                        ? formatDateTime(latest.completed_at)
-                        : ""}
+                      <LocalTime iso={latest?.completed_at ?? null} />
                     </Td>
                   </tr>
                 );
@@ -302,17 +301,6 @@ function ProspectLogo({
       }}
     />
   );
-}
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function Th({ children }: { children: React.ReactNode }) {

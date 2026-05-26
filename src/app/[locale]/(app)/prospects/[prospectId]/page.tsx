@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
 import { ProspectActions, RescanPageClient } from "./_client";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -318,7 +319,7 @@ export default async function ProspectDetailPage({
                         : ""}
                     </Td>
                     <Td>
-                      {latest?.started_at ? formatDateTime(latest.started_at) : ""}
+                      <LocalTime iso={latest?.started_at ?? null} />
                     </Td>
                     <Td>
                       <RescanPageClient prospectPageId={p.prospect_page_id} />
@@ -437,17 +438,6 @@ function shortenUrl(url: string): string {
   } catch {
     return url;
   }
-}
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function Th({ children }: { children: React.ReactNode }) {

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -210,7 +211,19 @@ export default async function RunDetailPage({
         <Stat label={t("status")} value={run.run_status} />
         <Stat
           label={t("completedAt")}
-          value={run.completed_at ? new Date(run.completed_at).toLocaleString() : "—"}
+          value={
+            <LocalTime
+              iso={run.completed_at}
+              fallback="—"
+              options={{
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }}
+            />
+          }
         />
       </div>
 

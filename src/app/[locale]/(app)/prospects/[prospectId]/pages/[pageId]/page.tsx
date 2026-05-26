@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { RescanPageClient } from "../../_client";
 import { ComparisonTable, type ComparisonRow as ComparisonRowData } from "./_comparison-table";
 import { ScanStatusBadge } from "./_scan-status";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -253,7 +254,11 @@ export default async function PageDetailPage({
           </div>
 
           {previous && comparisonRows.length > 0 && (
-            <ComparisonTable rows={comparisonRows} />
+            <ComparisonTable
+              rows={comparisonRows}
+              latestAt={latest.completed_at ?? latest.started_at}
+              previousAt={previous.completed_at ?? previous.started_at}
+            />
           )}
         </div>
       )}
@@ -306,7 +311,7 @@ export default async function PageDetailPage({
               {scans.map((s) => (
                 <tr key={s.scan_id} style={{ borderTop: "1px solid var(--s-border)" }}>
                   <Td>
-                    {s.started_at ? formatDateTime(s.started_at) : "—"}
+                    <LocalTime iso={s.started_at} fallback="—" />
                   </Td>
                   <Td>
                     <ScanStatusBadge
@@ -398,7 +403,7 @@ function ScoreCard({
           fontFamily: "var(--s-font-mono)",
         }}
       >
-        {when ? formatDateTime(when) : ""}
+        <LocalTime iso={when} />
       </div>
     </div>
   );
@@ -480,17 +485,6 @@ function shortenUrl(url: string): string {
   } catch {
     return url;
   }
-}
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function Th({ children }: { children: React.ReactNode }) {

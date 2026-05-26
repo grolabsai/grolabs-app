@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useFieldHintState } from "@/components/shell/FieldHintContext";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 /**
  * Client-side comparison table for the page detail. Each cell is a
@@ -26,7 +27,15 @@ export type ComparisonRow = {
   previous: ComparisonCell | null;
 };
 
-export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
+export function ComparisonTable({
+  rows,
+  latestAt,
+  previousAt,
+}: {
+  rows: ComparisonRow[];
+  latestAt: string | null;
+  previousAt: string | null;
+}) {
   const t = useTranslations("prospects.page");
 
   return (
@@ -41,8 +50,12 @@ export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
         <thead>
           <tr style={{ background: "var(--s-surface-alt)" }}>
             <Th>{t("compareTable.check")}</Th>
-            <Th>{t("compareTable.previous")}</Th>
-            <Th>{t("compareTable.latest")}</Th>
+            <Th>
+              {previousAt ? <LocalTime iso={previousAt} /> : t("compareTable.previous")}
+            </Th>
+            <Th>
+              {latestAt ? <LocalTime iso={latestAt} /> : t("compareTable.latest")}
+            </Th>
             <Th>{t("compareTable.delta")}</Th>
           </tr>
         </thead>

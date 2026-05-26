@@ -367,10 +367,16 @@ function PctCell({
         min={0}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        // .s-input gives this input the canonical focus ring (yellow
+        // border + soft glow) without inheriting the empty-state
+        // borderless rule (that one only fires on :placeholder-shown,
+        // and this input has no placeholder).
+        className="s-input"
         style={{
           width: "100%",
           padding: "6px 28px 6px 8px",
           fontSize: 13,
+          height: "auto",
           border: "1px solid var(--s-border-strong)",
           borderRadius: "var(--s-radius-md)",
           background: "var(--s-surface)",

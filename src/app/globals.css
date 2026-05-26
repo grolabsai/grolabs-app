@@ -926,6 +926,21 @@ button {
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
+/* ── Universal focus ring ────────────────────────────────────────────────
+   Every focusable input/select/textarea — regardless of class — gets the
+   kinetic yellow border + soft glow on focus. Standardizes the affordance
+   across .s-input, shadcn primitives, and any one-off inline-styled input
+   (pricing margin number boxes, etc.). Removes the browser-default blue
+   outline. Components that want a different focus color (e.g. error-state
+   red) can override with higher specificity. */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--scout-accent);
+  box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
+}
+
 /* Content text inside ALL form controls is semi-bold (600) — whether
    you type into an input, pick from a dropdown, type in a textarea, or
    enter a number. The placeholder stays at the normal weight so the

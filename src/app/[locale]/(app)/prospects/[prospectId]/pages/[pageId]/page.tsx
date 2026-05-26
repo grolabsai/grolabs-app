@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
 import { RescanPageClient } from "../../_client";
+import { ComparisonTable, type ComparisonRow as ComparisonRowData } from "./_comparison-table";
+import { ScanStatusBadge } from "./_scan-status";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,7 @@ type Finding = {
   score: number | null;
   result_status: "pass" | "fail" | "partial" | "na" | "error";
   notes: string | null;
+  evidence: Record<string, unknown> | null;
 };
 type Check = {
   diagnostic_check_id: number;
@@ -101,7 +104,7 @@ export default async function PageDetailPage({
       ? supabase
           .from("finding")
           .select(
-            "finding_id, page_scan_id, diagnostic_check_id, score, result_status, notes",
+            "finding_id, page_scan_id, diagnostic_check_id, score, result_status, notes, evidence",
           )
           .in("page_scan_id", scanIdsToLoad)
       : Promise.resolve({ data: [] as Finding[] }),
@@ -115,14 +118,7 @@ export default async function PageDetailPage({
 
   // Pivot findings into a check_id → { latest, previous } map for the
   // compare table.
-  type ComparisonRow = {
-    check_id: number;
-    check_name: string;
-    check_code: string;
-    latest: { score: number | null; status: string } | null;
-    previous: { score: number | null; status: string } | null;
-  };
-  const comparison = new Map<number, ComparisonRow>();
+  const comparison = new Map<number, ComparisonRowData>();
   for (const f of findings) {
     const isLatest = latest && f.page_scan_id === latest.scan_id;
     const isPrev = previous && f.page_scan_id === previous.scan_id;
@@ -138,10 +134,14 @@ export default async function PageDetailPage({
         latest: null,
         previous: null,
       };
-    if (isLatest)
-      row.latest = { score: f.score, status: f.result_status };
-    else if (isPrev)
-      row.previous = { score: f.score, status: f.result_status };
+    const cell = {
+      score: f.score,
+      status: f.result_status,
+      notes: f.notes,
+      evidence: f.evidence,
+    };
+    if (isLatest) row.latest = cell;
+    else if (isPrev) row.previous = cell;
     comparison.set(f.diagnostic_check_id, row);
   }
   const comparisonRows = Array.from(comparison.values()).sort((a, b) =>
@@ -253,29 +253,7 @@ export default async function PageDetailPage({
           </div>
 
           {previous && comparisonRows.length > 0 && (
-            <div
-              style={{
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-md)",
-                overflow: "hidden",
-              }}
-            >
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: "var(--s-surface-alt)" }}>
-                    <Th>{t("compareTable.check")}</Th>
-                    <Th>{t("compareTable.previous")}</Th>
-                    <Th>{t("compareTable.latest")}</Th>
-                    <Th>{t("compareTable.delta")}</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonRows.map((r) => (
-                    <ComparisonRow key={r.check_id} row={r} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ComparisonTable rows={comparisonRows} />
           )}
         </div>
       )}
@@ -331,7 +309,11 @@ export default async function PageDetailPage({
                     {s.started_at ? formatDateTime(s.started_at) : "—"}
                   </Td>
                   <Td>
-                    <StatusBadge status={s.status} />
+                    <ScanStatusBadge
+                      status={s.status}
+                      errorMessage={s.error_message}
+                      startedAt={s.started_at}
+                    />
                   </Td>
                   <Td mono>{s.overall_score ?? ""}</Td>
                   <Td mono>
@@ -489,140 +471,6 @@ function DeltaCard({
       </div>
     </div>
   );
-}
-
-function ComparisonRow({
-  row,
-}: {
-  row: {
-    check_name: string;
-    check_code: string;
-    latest: { score: number | null; status: string } | null;
-    previous: { score: number | null; status: string } | null;
-  };
-}) {
-  const ps = row.previous?.score ?? null;
-  const ls = row.latest?.score ?? null;
-  const delta = ps != null && ls != null ? ls - ps : null;
-  const sign = (n: number) => (n > 0 ? `+${n}` : String(n));
-  const color =
-    delta == null
-      ? "var(--s-text-tertiary)"
-      : delta > 0
-        ? "var(--s-success)"
-        : delta < 0
-          ? "var(--s-danger)"
-          : "var(--s-text-secondary)";
-  return (
-    <tr style={{ borderTop: "1px solid var(--s-border)" }}>
-      <td style={{ padding: "8px 12px", fontSize: 12 }}>
-        <div style={{ fontWeight: 500 }}>{row.check_name}</div>
-        <div
-          style={{
-            fontSize: 10,
-            color: "var(--s-text-tertiary)",
-            fontFamily: "var(--s-font-mono)",
-          }}
-        >
-          {row.check_code}
-        </div>
-      </td>
-      <td style={cellStyle()}>
-        {row.previous ? (
-          <ScoreCell score={row.previous.score} status={row.previous.status} />
-        ) : (
-          ""
-        )}
-      </td>
-      <td style={cellStyle()}>
-        {row.latest ? (
-          <ScoreCell score={row.latest.score} status={row.latest.status} />
-        ) : (
-          ""
-        )}
-      </td>
-      <td
-        style={{
-          ...cellStyle(),
-          color,
-          fontFamily: "var(--s-font-mono)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {delta != null ? sign(delta) : ""}
-      </td>
-    </tr>
-  );
-}
-
-function ScoreCell({
-  score,
-  status,
-}: {
-  score: number | null;
-  status: string;
-}) {
-  const color: Record<string, string> = {
-    pass: "var(--s-success)",
-    partial: "var(--s-warning-text)",
-    fail: "var(--s-danger)",
-    na: "var(--s-text-tertiary)",
-    error: "var(--s-danger)",
-  };
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span
-        style={{
-          fontSize: 9,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          color: color[status] ?? "var(--s-text-tertiary)",
-          minWidth: 50,
-        }}
-      >
-        {status}
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--s-font-mono)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {score ?? ""}
-      </span>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const color =
-    status === "completed"
-      ? "var(--s-success)"
-      : status === "failed"
-        ? "var(--s-danger)"
-        : "var(--s-text-tertiary)";
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        textTransform: "uppercase",
-        letterSpacing: "0.04em",
-        color,
-        fontWeight: 600,
-      }}
-    >
-      {status}
-    </span>
-  );
-}
-
-function cellStyle(): React.CSSProperties {
-  return {
-    padding: "8px 12px",
-    fontSize: 12,
-    color: "var(--s-text)",
-  };
 }
 
 function shortenUrl(url: string): string {

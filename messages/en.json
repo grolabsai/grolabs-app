@@ -34,7 +34,11 @@
     "pricingViolations": "Authorizations",
     "pricingSync": "Sync",
     "content": "Content",
-    "blog": "Blog"
+    "blog": "Blog",
+    "prospects": "Prospects",
+    "prospectsList": "List",
+    "prospectsRubric": "Rubric",
+    "prospectsBenchmarks": "Benchmarks"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -2331,6 +2335,168 @@
         "draft": "Draft",
         "scheduled": "Scheduled",
         "published": "Published"
+      }
+    }
+  },
+  "prospects": {
+    "list": {
+      "title": "Prospects",
+      "subtitle": "Diagnosed sites, ranked by uplift opportunity.",
+      "sessionExpired": "Session expired",
+      "editRubricButton": "Edit rubric",
+      "benchmarksButton": "Benchmarks",
+      "empty": {
+        "title": "No prospects diagnosed yet.",
+        "description": "Diagnostics create a prospect the first time a site is analyzed. In the meantime, configure the diagnostic rubric — the checks that run, the fixes recommended, and the per-vertical benchmarks — so results mean something when they arrive.",
+        "editRubric": "Edit the rubric"
+      },
+      "table": {
+        "url": "Site",
+        "platform": "Platform",
+        "engine": "Search engine",
+        "traffic": "Est. traffic",
+        "updated": "Updated"
+      }
+    },
+    "rubric": {
+      "title": "Diagnostic rubric",
+      "subtitle": "The catalog of checks the diagnostic runs and the fixes it recommends.",
+      "sessionExpired": "Session expired",
+      "listTitle": "Checks",
+      "createButton": "New check",
+      "searchPlaceholder": "Search checks…",
+      "templateBadge": "Shipped by GroLabs (template instance)",
+      "templateBadgeShort": "template",
+      "readOnlyTemplate": "Read-only (template check)",
+      "empty": {
+        "selectPrompt": "Select a check or create a new one.",
+        "stageNoChecks": "No checks in this stage yet."
+      },
+      "probeType": {
+        "search": "Internal search",
+        "pdp": "PDP",
+        "site_wide": "Site-wide",
+        "homepage": "Homepage",
+        "category": "Category"
+      },
+      "confidence": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "form": {
+        "createTitle": "New check",
+        "editTitle": "Edit check",
+        "sections": {
+          "identity": "Identity",
+          "taxonomy": "Taxonomy",
+          "scoring": "Scoring & revenue"
+        },
+        "fields": {
+          "checkName": "Name",
+          "checkCode": "Code",
+          "checkCodeHint": "Stable identifier (snake_case with stage prefix).",
+          "description": "Description",
+          "stage": "Funnel stage",
+          "probeType": "Probe type",
+          "weight": "Weight",
+          "weightHint": "Contribution to the stage score (0–1).",
+          "deltaRate": "Default Δ",
+          "deltaRateHint": "Estimated uplift if fixed (e.g. 0.08 = +8%).",
+          "confidence": "Confidence",
+          "revenueLever": "Revenue formula",
+          "revenueLeverHint": "Human-readable string documenting the revenue lever.",
+          "notes": "Internal notes",
+          "active": "Active",
+          "activeHint": "Include in diagnostic runs"
+        }
+      },
+      "fixes": {
+        "sectionTitle": "Fix recommendations",
+        "addButton": "Add fix",
+        "empty": "No fixes defined for this check.",
+        "view": "View",
+        "edit": "Edit",
+        "effortShort": "Effort",
+        "impactShort": "Impact",
+        "level": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "fields": {
+          "code": "Code",
+          "title": "Title",
+          "body": "Body",
+          "trigger": "Trigger condition",
+          "triggerHint": "When to surface this fix. E.g. {\"result_status\": \"fail\"} or {\"score_below\": 50}.",
+          "effort": "Effort",
+          "impact": "Impact",
+          "order": "Order",
+          "active": "Active"
+        },
+        "confirmDelete": "Delete this fix?",
+        "invalidJson": "Trigger is not valid JSON."
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "cancel": "Cancel",
+        "collapse": "Collapse",
+        "delete": "Delete",
+        "confirmDelete": "Delete this check?",
+        "deleteLinked": "Cannot delete: {n} finding(s) reference this check."
+      },
+      "errors": {
+        "emptyRequired": "Code and name are required.",
+        "noInstance": "No active instance."
+      }
+    },
+    "benchmarks": {
+      "title": "Per-vertical benchmarks",
+      "subtitle": "Inputs the revenue formula uses to estimate annual uplift.",
+      "sessionExpired": "Session expired",
+      "listTitle": "Benchmarks",
+      "createButton": "New benchmark",
+      "template": "template",
+      "empty": "No benchmarks defined yet.",
+      "scope": {
+        "vertical": "Whole vertical",
+        "stage": "Stage",
+        "check": "Check"
+      },
+      "table": {
+        "scope": "Scope",
+        "baselineCr": "Baseline CR",
+        "stageShare": "Stage share",
+        "deltaRate": "Δ rate",
+        "aov": "AOV (USD)",
+        "source": "Source",
+        "effectiveFrom": "Effective from",
+        "actions": "Actions"
+      },
+      "fields": {
+        "vertical": "Vertical",
+        "stage": "Stage",
+        "check": "Check",
+        "allStages": "(whole vertical)",
+        "allChecks": "(whole stage)",
+        "baselineCr": "Baseline conversion",
+        "stageShare": "Stage share",
+        "deltaRate": "Δ rate when fixed",
+        "aov": "AOV (USD)",
+        "source": "Source",
+        "effectiveFrom": "Effective from",
+        "notes": "Notes"
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete",
+        "confirmDelete": "Delete this benchmark?"
       }
     }
   }

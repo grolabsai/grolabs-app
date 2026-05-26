@@ -279,13 +279,28 @@ export function Sidebar({
     const ItemIcon = item.icon;
     const isActive = isItemActive(item.href, pathname);
 
-    // New entries route through the shared <Icon> wrapper; legacy
-    // entries render the lucide component directly until the
-    // whole-sidebar migration lands. Visual output matches.
+    // Active items force the icon stroke yellow via the `color` prop
+    // on Lucide. Lucide renders `<svg stroke={color}>`, so passing the
+    // hex directly here bypasses every CSS cascade quirk that bit us
+    // earlier — no !important wars, no Tailwind utility leakage, no
+    // hydration races. Inactive items inherit currentColor (white)
+    // from the parent .s-nav-item.
+    const iconColor = isActive ? "#fae194" : undefined;
     const iconNode = item.useIconWrapper ? (
-      <Icon icon={ItemIcon} className="s-nav-icon" size={14} strokeWidth={1.5} />
+      <Icon
+        icon={ItemIcon}
+        className="s-nav-icon"
+        size={14}
+        strokeWidth={1.5}
+        color={iconColor}
+      />
     ) : (
-      <ItemIcon className="s-nav-icon" size={14} strokeWidth={1.5} />
+      <ItemIcon
+        className="s-nav-icon"
+        size={14}
+        strokeWidth={1.5}
+        color={iconColor}
+      />
     );
 
     if (!item.href) {

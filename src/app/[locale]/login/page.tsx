@@ -68,7 +68,7 @@ export default async function LoginPage({
         <form action={login}>
           <div className="s-field">
             <label className="s-field-label" htmlFor="email">
-              Correo
+              Email
             </label>
             <input
               className="s-input"
@@ -77,7 +77,6 @@ export default async function LoginPage({
               type="email"
               autoComplete="email"
               required
-              placeholder="tuncho@wazu.test"
             />
           </div>
           <div className="s-field">

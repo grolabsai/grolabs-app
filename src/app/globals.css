@@ -77,12 +77,15 @@ svg {
   --s-text-tertiary: rgba(237, 234, 224, 0.4);
   --s-text-muted: rgba(237, 234, 224, 0.28);
 
-  /* Sidebar / nav — was always dark, but tokens reused for consistency. */
+  /* Sidebar / nav — every menu item reads in the same logo-white tone.
+     Active state is communicated by the icon color (yellow) + a soft
+     yellow-tinted background, not by varying the text weight. Section
+     headers + version footer still use a muted tone. */
   --nav-surface: var(--s-bg-deeper);
   --nav-border: rgba(255, 255, 255, 0.06);
-  --nav-text: rgba(237, 234, 224, 0.6);
-  --nav-text-hover: var(--s-text-strong);
-  --nav-text-muted: rgba(237, 234, 224, 0.35);
+  --nav-text: #ffffff;
+  --nav-text-hover: #ffffff;
+  --nav-text-muted: rgba(255, 255, 255, 0.45);
 
   /* Status colors */
   --s-success: #10b981;
@@ -301,10 +304,12 @@ button {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  opacity: 0.8;
+  /* All nav icons render at full opacity. The active state is signaled
+     by recoloring the icon to yellow — not by varying brightness. */
+  opacity: 1;
+  color: inherit;
 }
 .s-nav-item.active .s-nav-icon {
-  opacity: 1;
   color: var(--scout-accent);
 }
 .s-nav-badge {

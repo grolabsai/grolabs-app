@@ -964,7 +964,9 @@ function NavDemo() {
             padding: "8px 10px",
             borderRadius: "var(--s-radius-md)",
             background: it.active ? "rgba(250,225,148,0.10)" : "transparent",
-            color: it.active ? "#FFFFFF" : "rgba(237,234,224,0.6)",
+            /* Every item reads in the logo-white tone. Active state is
+               signaled by the yellow icon + tinted background. */
+            color: "#FFFFFF",
             fontWeight: it.active ? 500 : 400,
             fontSize: 13,
             textDecoration: "none",
@@ -975,8 +977,7 @@ function NavDemo() {
             icon={it.icon}
             size={14}
             style={{
-              color: it.active ? "var(--scout-accent)" : "rgba(237,234,224,0.6)",
-              opacity: it.active ? 1 : 0.8,
+              color: it.active ? "var(--scout-accent)" : "#FFFFFF",
             }}
           />
           {it.label}

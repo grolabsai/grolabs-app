@@ -167,7 +167,7 @@ export function Step2Categories({
         return;
       }
       // Map response → CategoryAssignment[]
-      // Note: GLPIM may skip products it doesn't have a match for; we backfill those as null suggestions.
+      // Note: ASE may skip products it doesn't have a match for; we backfill those as null suggestions.
       const byRef = new Map(r.data.suggestions.map((s) => [s.product_ref, s]));
       const assignments: CategoryAssignment[] = products.map((p) => {
         const s = byRef.get(p.product_ref);

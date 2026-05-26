@@ -258,8 +258,8 @@ function guidanceFor(
     if (typeof ev.psi_error === "string") {
       return t("detail.guidance.psiError");
     }
-    if (typeof ev.glpim_error === "string") {
-      return t("detail.guidance.glpimError");
+    if (typeof ev.ase_error === "string") {
+      return t("detail.guidance.aseError");
     }
     return t("detail.guidance.genericError");
   }

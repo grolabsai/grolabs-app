@@ -1,7 +1,7 @@
 /**
  * Site-wide HTTP probes for the Prospectos diagnostic.
  *
- * These are the checks that don't need GLPIM or a browser — just an HTTP
+ * These are the checks that don't need ASE or a browser — just an HTTP
  * fetch and some light parsing. Used by the runner before per-PDP probes.
  */
 

@@ -1,25 +1,25 @@
 /**
- * Typed client for GLPIM's GroLabs-facing /agents/* endpoints.
+ * Typed client for ASE's GroLabs-facing /agents/* endpoints.
  *
  * Both functions are server-only (called from server actions). They read
- * the GLPIM URL from the GLPIM_API_URL env var and fail loudly if it's
+ * the ASE URL from the ASE_API_URL env var and fail loudly if it's
  * not set — easier than discovering the misconfig at runtime per request.
  *
- * Contract is documented at: glpim/docs/integration.md
+ * Contract is documented at: ase/docs/integration.md
  */
 
-const GLPIM_API_URL = process.env.GLPIM_API_URL;
+const ASE_API_URL = process.env.ASE_API_URL;
 
 function ensureBaseUrl(): string {
-  if (!GLPIM_API_URL) {
+  if (!ASE_API_URL) {
     throw new Error(
-      "GLPIM_API_URL is not set. Configure it in your environment so GroLabs can call the GLPIM agent service.",
+      "ASE_API_URL is not set. Configure it in your environment so GroLabs can call the ASE (Agentic Services Engine).",
     );
   }
-  return GLPIM_API_URL.replace(/\/+$/, "");
+  return ASE_API_URL.replace(/\/+$/, "");
 }
 
-// ─── Shared shapes that mirror GLPIM's Pydantic models ────────────────────
+// ─── Shared shapes that mirror ASE's Pydantic models ────────────────────
 
 export type ProductIn = {
   product_ref: string;
@@ -49,7 +49,7 @@ export type AnalyzeCategoriesResponse = {
 
 export async function analyzeCategories(input: {
   products: ProductIn[];
-  /** When set, GLPIM fetches active categories for that instance. */
+  /** When set, ASE fetches active categories for that instance. */
   instanceId?: number;
   /** When set, used directly instead of a DB lookup. */
   candidates?: Array<{
@@ -65,7 +65,7 @@ export async function analyzeCategories(input: {
   const body: Record<string, unknown> = {
     products: input.products,
   };
-  // GLPIM's validator requires *exactly one* of `candidates` or `instance_id`.
+  // ASE's validator requires *exactly one* of `candidates` or `instance_id`.
   // Caller-supplied candidates win; instance_id is only used when no inline
   // candidate set is provided (the agent then fetches them by instance).
   if (input.candidates !== undefined) {
@@ -81,7 +81,7 @@ export async function analyzeCategories(input: {
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) throw await glpimError(res, "analyze-categories");
+  if (!res.ok) throw await aseError(res, "analyze-categories");
   return (await res.json()) as AnalyzeCategoriesResponse;
 }
 
@@ -177,7 +177,7 @@ export async function groupProducts(input: {
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) throw await glpimError(res, "group-products");
+  if (!res.ok) throw await aseError(res, "group-products");
   return (await res.json()) as GroupProductsResponse;
 }
 
@@ -202,7 +202,7 @@ export type PdpSignals = {
   description_text: string;
   description_word_count: number;
   all_schema_types: string[];
-  // Extended signals from GLPIM /tools/pdp-signals (v2 onward).
+  // Extended signals from ASE /tools/pdp-signals (v2 onward).
   // Older deploys may not return these — fields are optional.
   variant_selector_count?: number;
   variant_swatch_count?: number;
@@ -228,7 +228,7 @@ export type SiteSignals = {
 };
 
 /**
- * Call GLPIM's static-HTML PDP signal extractor. Returns raw extracted
+ * Call ASE's static-HTML PDP signal extractor. Returns raw extracted
  * signals — Scout scores them against the diagnostic_check rubric.
  */
 export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
@@ -239,12 +239,12 @@ export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
     body: JSON.stringify({ url: targetUrl }),
     cache: "no-store",
   });
-  if (!res.ok) throw await glpimError(res, "pdp-signals");
+  if (!res.ok) throw await aseError(res, "pdp-signals");
   return (await res.json()) as PdpSignals;
 }
 
 /**
- * Call GLPIM's site-level scanner. Returns platform / engine fingerprints
+ * Call ASE's site-level scanner. Returns platform / engine fingerprints
  * and, when a category URL is provided, faceting signals from that page.
  */
 export async function scanSiteSignals(input: {
@@ -260,13 +260,13 @@ export async function scanSiteSignals(input: {
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) throw await glpimError(res, "site-signals");
+  if (!res.ok) throw await aseError(res, "site-signals");
   return (await res.json()) as SiteSignals;
 }
 
 // ─── Internals ─────────────────────────────────────────────────────────────
 
-async function glpimError(res: Response, where: string): Promise<Error> {
+async function aseError(res: Response, where: string): Promise<Error> {
   let detail = "";
   try {
     const j = await res.json();
@@ -297,5 +297,5 @@ async function glpimError(res: Response, where: string): Promise<Error> {
       detail = "<no response body>";
     }
   }
-  return new Error(`GLPIM ${where} failed (${res.status}): ${detail}`);
+  return new Error(`ASE ${where} failed (${res.status}): ${detail}`);
 }

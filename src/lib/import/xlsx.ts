@@ -9,7 +9,7 @@
  *   3. Optionally treat the first row as a header.
  *
  * Everything else (column inference, type guessing, etc.) is handled in
- * the wizard steps or shipped to the GLPIM agent.
+ * the wizard steps or shipped to ASE.
  */
 
 import * as XLSX from "xlsx";

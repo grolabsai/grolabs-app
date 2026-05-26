@@ -8,7 +8,7 @@
  * in the catalog before code lands, they just won't score until they do.
  */
 
-import type { PdpSignals, SiteSignals } from "@/lib/glpim";
+import type { PdpSignals, SiteSignals } from "@/lib/ase";
 import type { BrowserProbeResult } from "./browser-probe";
 import type { CoreWebVitals } from "./psi";
 

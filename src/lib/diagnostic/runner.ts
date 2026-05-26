@@ -5,7 +5,7 @@
  *  1. Upsert a `prospect` row for (instance_id, url).
  *  2. Create a `diagnostic_run` (status=running).
  *  3. Probe site-wide (llms.txt / robots.txt / sitemap.xml).
- *  4. Probe the PDP via GLPIM `/tools/pdp-signals`.
+ *  4. Probe the PDP via ASE `/tools/pdp-signals`.
  *  5. For each active diagnostic_check, dispatch to a registered scorer
  *     (or write 'na' if none exists yet).
  *  6. Write `finding` rows in a single batch.
@@ -27,7 +27,7 @@ import {
   scanSiteSignals,
   type PdpSignals,
   type SiteSignals,
-} from "@/lib/glpim";
+} from "@/lib/ase";
 import { probeSiteWide } from "./site-checks";
 import { runBrowserProbe, type BrowserProbeResult } from "./browser-probe";
 import { scoreCheck } from "./scorers";
@@ -449,8 +449,8 @@ async function runDiagnostic(opts: {
   const probeEnabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
   const psiEnabled = process.env.PROSPECTOS_PSI_ENABLED !== "0";
 
-  // 3 + 4 + 5 + CWV. Probe in parallel: site-wide HTTP, GLPIM PDP,
-  // GLPIM site-signals, Core Web Vitals (PSI), and (when enabled) the
+  // 3 + 4 + 5 + CWV. Probe in parallel: site-wide HTTP, ASE PDP,
+  // ASE site-signals, Core Web Vitals (PSI), and (when enabled) the
   // browser probe. Each leg is independent.
   const [siteCtx, pdpResult, siteSignalsResult, browserResult, cwvResult] = await Promise.all([
     probeSiteWide(rootUrl),
@@ -753,7 +753,7 @@ async function runDiagnostic(opts: {
         est_annual_uplift_usd: scanUplift > 0 ? Math.round(scanUplift * 100) / 100 : null,
         // Capture the signals payload for this scan so re-scoring can
         // happen without re-fetching the page. PDP scan gets the
-        // GLPIM PDP signals; homepage scan gets the GLPIM site
+        // ASE PDP signals; homepage scan gets the ASE site
         // signals; category scan reuses site signals (faceting only).
         signals:
           ref.pageType === "pdp"

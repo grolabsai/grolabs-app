@@ -184,7 +184,7 @@ describe("scoreCheck: discovery.llms_txt", () => {
   });
 });
 
-function pdpSignalsStub(o: Partial<import("@/lib/glpim").PdpSignals>) {
+function pdpSignalsStub(o: Partial<import("@/lib/ase").PdpSignals>) {
   return {
     url: "https://example.com/p",
     page_title: "",

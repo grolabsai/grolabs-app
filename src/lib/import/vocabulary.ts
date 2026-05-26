@@ -8,7 +8,7 @@
  * one column per attribute (axis or descriptive) regardless of which
  * level in the tree defined it.
  *
- * The GLPIM adapter does the same thing on the server side (so the
+ * The ASE adapter does the same thing on the server side (so the
  * agent sees the right vocabulary for extraction). This is the GroLabs
  * counterpart, used purely for rendering the editor in Step 3.
  */

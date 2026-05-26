@@ -2357,6 +2357,7 @@
         "traffic": "Tráfico estimado",
         "updated": "Actualizado"
       },
+      "prospectsTitle": "Prospectos diagnosticados",
       "recentRunsTitle": "Diagnósticos recientes",
       "runTable": {
         "site": "Sitio",
@@ -2366,6 +2367,14 @@
         "uplift": "Uplift estimado",
         "started": "Iniciado",
         "completed": "Completado"
+      },
+      "table": {
+        "url": "Sitio",
+        "contact": "Contacto",
+        "platform": "Plataforma",
+        "lastScore": "Último score",
+        "lastUplift": "Último uplift",
+        "lastScanned": "Último escaneo"
       },
       "form": {
         "title": "Nuevo diagnóstico",
@@ -2394,6 +2403,51 @@
       "completedAt": "Completado",
       "failedTitle": "El diagnóstico falló",
       "samplesTitle": "Páginas analizadas"
+    },
+    "detail": {
+      "backToList": "Volver a prospectos",
+      "scanAll": "Escanear todas las páginas",
+      "scanning": "Escaneando…",
+      "rescan": "Re-escanear",
+      "contact": "Contacto",
+      "platform": "Plataforma",
+      "economics": "Economía",
+      "trafficUnit": "sesiones/año",
+      "aovSuffix": "AOV",
+      "pagesTitle": "Páginas",
+      "noPagesYet": "Aún no hay páginas. Ejecutá un diagnóstico para descubrirlas.",
+      "pageTable": {
+        "type": "Tipo",
+        "url": "URL",
+        "scans": "Escaneos",
+        "latestScore": "Último score",
+        "latestUplift": "Último uplift",
+        "lastScanned": "Último escaneo",
+        "actions": "Acciones"
+      }
+    },
+    "page": {
+      "openPage": "Abrir página ↗",
+      "comparison": "Último vs anterior",
+      "latestScan": "Último escaneo",
+      "previousScan": "Anterior",
+      "delta": "Δ",
+      "compareTable": {
+        "check": "Check",
+        "previous": "Anterior",
+        "latest": "Último",
+        "delta": "Δ"
+      },
+      "scanHistory": "Historial de escaneos",
+      "noScansYet": "Sin escaneos todavía.",
+      "scanTable": {
+        "when": "Fecha y hora",
+        "status": "Estado",
+        "score": "Score",
+        "uplift": "Uplift",
+        "openRun": "Ver run",
+        "view": "Ver"
+      }
     },
     "vocabulary": {
       "title": "Vocabulario de prueba",

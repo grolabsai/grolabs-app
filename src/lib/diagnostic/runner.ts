@@ -313,6 +313,76 @@ async function runDiagnostic(opts: {
   }
   await supabase.from("run_sample").insert(samples);
 
+  // ── Persist prospect_pages and create page_scan rows ────────────────
+  // Each unique URL we're about to probe becomes (or reuses) a
+  // prospect_page row, and a page_scan row links that page to this
+  // run. Scan results (overall_score, etc.) are written back at the
+  // end alongside the run rollup.
+  type PageRef = {
+    pageType: "homepage" | "pdp" | "category";
+    url: string;
+    pageId: number;
+    scanId: number;
+  };
+  const pageRefs: PageRef[] = [];
+  for (const sample of samples) {
+    if (
+      sample.sample_type !== "homepage" &&
+      sample.sample_type !== "pdp" &&
+      sample.sample_type !== "category"
+    ) {
+      continue;
+    }
+    const url = sample.url_or_query;
+    const pageType = sample.sample_type;
+
+    // Insert-or-update prospect_page. Unique on (prospect_id, url).
+    let { data: pageRow } = await supabase
+      .from("prospect_page")
+      .select("prospect_page_id")
+      .eq("prospect_id", prospectId)
+      .eq("url", url)
+      .maybeSingle();
+    if (!pageRow) {
+      const { data: inserted } = await supabase
+        .from("prospect_page")
+        .insert({
+          prospect_id: prospectId,
+          instance_id: instanceId,
+          url,
+          page_type: pageType,
+          discovered_via:
+            sample.selection_reason.startsWith("user_supplied") ? "manual" : "auto",
+        })
+        .select("prospect_page_id")
+        .single();
+      if (inserted) pageRow = inserted;
+    }
+    if (!pageRow) continue;
+    const pageId = pageRow.prospect_page_id as number;
+
+    // Create the scan row for this page within this run.
+    const { data: scanRow } = await supabase
+      .from("page_scan")
+      .insert({
+        prospect_page_id: pageId,
+        run_id: runId,
+        instance_id: instanceId,
+        status: "running",
+        started_at: startedAt,
+      })
+      .select("scan_id")
+      .single();
+    if (!scanRow) continue;
+
+    pageRefs.push({
+      pageType,
+      url,
+      pageId,
+      scanId: scanRow.scan_id as number,
+    });
+  }
+
   // Persist the resolved vertical on the prospect so subsequent runs
   // skip the classifier (vertical is stable for a given storefront).
   if (resolvedVerticalId != null) {
@@ -320,6 +390,36 @@ async function runDiagnostic(opts: {
       .from("prospect")
       .update({ vertical_id: resolvedVerticalId })
       .eq("prospect_id", prospectId);
+  }
+
+  // Helper: pick the appropriate scan_id for a finding based on which
+  // signal source primarily drives the check. The runner sets
+  // finding.page_scan_id directly when inserting findings.
+  function scanIdForCheck(checkCode: string): number | null {
+    // PDP-specific checks → the PDP scan
+    if (checkCode.startsWith("pdp.")) {
+      return pageRefs.find((p) => p.pageType === "pdp")?.scanId ?? null;
+    }
+    // Returns-risk + product JSON-LD checks also read PDP signals
+    if (
+      checkCode === "returns.attribute_completeness" ||
+      checkCode === "discovery.product_jsonld_complete" ||
+      checkCode === "discovery.og_cards" ||
+      checkCode === "discovery.core_web_vitals"
+    ) {
+      return pageRefs.find((p) => p.pageType === "pdp")?.scanId ?? null;
+    }
+    // Faceting + engine ID read the category page when supplied
+    if (checkCode === "on_site_nav.faceting") {
+      return (
+        pageRefs.find((p) => p.pageType === "category")?.scanId ??
+        pageRefs.find((p) => p.pageType === "homepage")?.scanId ??
+        null
+      );
+    }
+    // Site-wide checks (llms.txt, sitemap, search engine, browser probes)
+    // are owned by the homepage scan
+    return pageRefs.find((p) => p.pageType === "homepage")?.scanId ?? null;
   }
 
   // Detect locale from the homepage snippet so we can prefer matching
@@ -476,6 +576,12 @@ async function runDiagnostic(opts: {
     run_id: runId,
     instance_id: instanceId,
     diagnostic_check_id: check.diagnostic_check_id,
+    // Wire each finding to the page_scan it primarily measured. Lets
+    // the per-page history view show "this scan: 12 of 18 checks
+    // ran" without joining through run_sample. Null when no page_scan
+    // matches the check (rare — site-wide checks that have no
+    // homepage scan).
+    page_scan_id: scanIdForCheck(check.check_code),
     score: result.score,
     result_status: result.result_status,
     evidence: result.evidence,
@@ -598,11 +704,13 @@ async function runDiagnostic(opts: {
     },
   };
 
+  const completedAt = new Date().toISOString();
+
   await supabase
     .from("diagnostic_run")
     .update({
       run_status: "completed",
-      completed_at: new Date().toISOString(),
+      completed_at: completedAt,
       overall_score: overall,
       stage_scores: stageScores,
       maturity_tier: maturityTier(overall),
@@ -612,6 +720,47 @@ async function runDiagnostic(opts: {
       revenue_assumptions: revenueAssumptions,
     })
     .eq("run_id", runId);
+
+  // Per-scan rollup: each page_scan gets its own overall_score derived
+  // from the findings linked to it. Lets the per-page history table
+  // render "scan @ <time> scored 72" without re-aggregating findings
+  // every read.
+  for (const ref of pageRefs) {
+    const pageScanFindings = findingsToInsert.filter(({ check }) => {
+      return scanIdForCheck(check.check_code) === ref.scanId;
+    });
+    const scanScores = pageScanFindings
+      .map(({ result }) => result.score)
+      .filter((s): s is number => s != null);
+    const scanOverall =
+      scanScores.length > 0
+        ? Math.round(scanScores.reduce((a, b) => a + b, 0) / scanScores.length)
+        : null;
+    const scanUplift = pageScanFindings.reduce(
+      (acc, { uplift }) => acc + (uplift.uplift_usd ?? 0),
+      0,
+    );
+
+    await supabase
+      .from("page_scan")
+      .update({
+        status: "completed",
+        completed_at: completedAt,
+        overall_score: scanOverall,
+        est_annual_uplift_usd: scanUplift > 0 ? Math.round(scanUplift * 100) / 100 : null,
+        // Capture the signals payload for this scan so re-scoring can
+        // happen without re-fetching the page. PDP scan gets the
+        // GLPIM PDP signals; homepage scan gets the GLPIM site
+        // signals; category scan reuses site signals (faceting only).
+        signals:
+          ref.pageType === "pdp"
+            ? (pdpResult.signals as unknown as Record<string, unknown>) ?? null
+            : ref.pageType === "homepage"
+              ? (siteSignalsResult.signals as unknown as Record<string, unknown>) ?? null
+              : null,
+      })
+      .eq("scan_id", ref.scanId);
+  }
 
   return { ok: true, runId, prospectId };
 }

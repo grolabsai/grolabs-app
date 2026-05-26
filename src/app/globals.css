@@ -342,8 +342,13 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--nav-text-hover);
 }
+/* Active row: text stays in the same logo-white the other items use.
+   No background tint — the active state is signaled by the yellow
+   icon alone. (Earlier versions used a soft yellow rgba tint here
+   but it read as a "different style" on Dashboard / Funnel and broke
+   the rule that every menu item should read at the same hierarchy.) */
 .s-nav-item.active {
-  background: rgba(250, 225, 148, 0.10);
+  background: transparent;
   color: var(--s-text-strong);
   font-weight: 500;
 }
@@ -351,20 +356,22 @@ button {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  /* All nav icons render at full opacity. The active state is signaled
-     by recoloring the icon to yellow — not by varying brightness. */
   opacity: 1;
   color: inherit;
 }
-/* Active row: icon switches to kinetic yellow. Belt-and-suspenders —
-   `color` drives currentColor (which Lucide picks up via stroke), and
-   `stroke` is set directly so a passed inline `color="…"` prop on the
-   <svg> can't override it. Applies to both flat group items
-   (Dashboard) and collapsible group children (Funnel, Prospectos, …). */
+/* The active item's icon recolors to kinetic yellow. Belt-and-suspenders
+   to make sure the rule lands regardless of how Lucide renders the SVG
+   (raw <ItemIcon className> vs <Icon wrapper>):
+     • set `color` so currentColor resolves to yellow
+     • set `stroke` directly so any inline stroke attribute is overridden
+     • match both the .s-nav-icon class AND the direct-child svg, since
+       raw Lucide imports render as <svg class="lucide … s-nav-icon">
+     • !important removes any doubt about cascade specificity. */
 .s-nav-item.active .s-nav-icon,
-.s-nav-item.active > svg {
-  color: var(--scout-accent);
-  stroke: var(--scout-accent);
+.s-nav-item.active svg,
+.s-nav-item.active svg * {
+  color: var(--scout-accent) !important;
+  stroke: var(--scout-accent) !important;
 }
 .s-nav-badge {
   margin-left: auto;

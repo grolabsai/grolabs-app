@@ -27,17 +27,21 @@ export function LocalTime({
   const [formatted, setFormatted] = useState<string | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // setState inside an effect is intentional here: we must defer
+    // toLocaleString to after hydration so it picks up the browser's
+    // timezone (the SSR pass renders with Vercel's UTC, which is wrong
+    // for every viewer). Same pattern used by ThemeSwitcher.
+    let next: string | null;
     if (iso == null) {
-      setFormatted(null);
-      return;
+      next = null;
+    } else {
+      const d = new Date(iso);
+      next = Number.isNaN(d.getTime())
+        ? iso
+        : d.toLocaleString(undefined, options);
     }
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) {
-      setFormatted(iso);
-      return;
-    }
-    setFormatted(d.toLocaleString(undefined, options));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormatted(next);
   }, [iso, options]);
 
   if (iso == null) return <>{fallback}</>;

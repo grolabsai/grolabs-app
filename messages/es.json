@@ -2452,6 +2452,7 @@
         "latest": "Último",
         "delta": "Δ"
       },
+      "searchTestsTitle": "Pruebas de búsqueda",
       "scanHistory": "Historial de escaneos",
       "noScansYet": "Sin escaneos todavía.",
       "scanTable": {
@@ -2502,22 +2503,23 @@
       "deleted": "Entrada eliminada",
       "confirmDelete": "¿Eliminar esta entrada?",
       "intentLabel": "Intención",
-      "intentLabelHint": "Descripción corta de qué se está probando (ej. \"Zapatillas para correr\").",
-      "intentPlaceholder": "Ej: Zapatillas para correr",
+      "intentLabelHint": "Descripción corta de qué se está probando. Ejemplo: \"Zapatillas para correr\". Esta es la etiqueta humana del intento, no la palabra que se busca.",
       "localeField": "Idioma",
       "notesField": "Notas",
-      "notesPlaceholder": "Contexto adicional (opcional)",
       "variantsHeader": "Variantes de búsqueda",
+      "variantTypeLabel": "Tipo",
+      "variantQueryLabel": "Texto de la búsqueda",
+      "removeVariant": "Quitar variante",
       "addTypo": "Typo",
       "addSynonym": "Sinónimo",
       "addPlural": "Plural",
       "addPartial": "Parcial",
-      "variantPlaceholders": {
-        "canonical": "ej. zapatillas para correr",
-        "typo": "ej. zapatilas para correr",
-        "synonym": "ej. tenis para correr",
-        "plural": "ej. zapatilla para correr",
-        "partial": "ej. zapatilla"
+      "variantHintBodies": {
+        "canonical": "La palabra exacta que el cliente esperaría escribir. Ejemplo: \"zapatillas para correr\". Si la búsqueda no devuelve resultados con esta, el sitio falla de plano.",
+        "typo": "La misma intención escrita con un error tipográfico. Ejemplo: \"zapatilas para correr\". Si el sitio sigue devolviendo resultados, tiene tolerancia a typos.",
+        "synonym": "Una forma alterna de pedir lo mismo. Ejemplo: \"tenis para correr\". Si el sitio devuelve los mismos productos que la canónica, entiende sinónimos.",
+        "plural": "La misma intención en singular/plural. Ejemplo: \"zapatilla para correr\". Pone a prueba si el buscador maneja flexión.",
+        "partial": "Un fragmento o prefijo. Ejemplo: \"zapatilla\". Pone a prueba el autocompletado y la coincidencia parcial."
       },
       "errors": {
         "emptyLabel": "La intención no puede estar vacía.",

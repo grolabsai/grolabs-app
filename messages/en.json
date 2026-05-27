@@ -2452,6 +2452,7 @@
         "latest": "Latest",
         "delta": "Δ"
       },
+      "searchTestsTitle": "Search tests",
       "scanHistory": "Scan history",
       "noScansYet": "No scans yet.",
       "scanTable": {
@@ -2502,22 +2503,23 @@
       "deleted": "Entry deleted",
       "confirmDelete": "Delete this entry?",
       "intentLabel": "Intent",
-      "intentLabelHint": "Short description of what's being tested (e.g. \"Running shoes\").",
-      "intentPlaceholder": "e.g. Running shoes",
+      "intentLabelHint": "Short human label for what's being tested. Example: \"Running shoes\". This is the human description of the intent, not the word that gets typed into search.",
       "localeField": "Locale",
       "notesField": "Notes",
-      "notesPlaceholder": "Additional context (optional)",
       "variantsHeader": "Search variants",
+      "variantTypeLabel": "Type",
+      "variantQueryLabel": "Search text",
+      "removeVariant": "Remove variant",
       "addTypo": "Typo",
       "addSynonym": "Synonym",
       "addPlural": "Plural",
       "addPartial": "Partial",
-      "variantPlaceholders": {
-        "canonical": "e.g. running shoes",
-        "typo": "e.g. runing shoes",
-        "synonym": "e.g. sneakers",
-        "plural": "e.g. running shoe",
-        "partial": "e.g. runn"
+      "variantHintBodies": {
+        "canonical": "The exact word a customer would expect to type. Example: \"running shoes\". If search returns nothing for this, the site fails outright.",
+        "typo": "The same intent with a typo. Example: \"runing shoes\". If the site still returns results, it has typo tolerance.",
+        "synonym": "An alternate way to ask for the same thing. Example: \"sneakers\". If the site returns the same products as the canonical, it understands synonyms.",
+        "plural": "Singular or plural form. Example: \"running shoe\". Tests whether the search handles inflection.",
+        "partial": "A prefix or fragment. Example: \"runn\". Tests autocomplete + partial matching."
       },
       "errors": {
         "emptyLabel": "Intent cannot be empty.",

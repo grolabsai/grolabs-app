@@ -7,6 +7,11 @@ import { RescanPageClient } from "../../_client";
 import { ComparisonTable, type ComparisonRow as ComparisonRowData } from "./_comparison-table";
 import { ScanStatusBadge } from "./_scan-status";
 import { LocalTime } from "@/components/ui/LocalTime";
+import {
+  SearchTestsBody,
+  groupSearchTestResults,
+  SEARCH_TEST_RESULT_SELECT,
+} from "@/components/diagnostic/SearchTestsCard";
 
 export const dynamic = "force-dynamic";
 
@@ -100,7 +105,11 @@ export default async function PageDetailPage({
   const scanIdsToLoad = [latest, previous]
     .filter((s): s is Scan => s !== null)
     .map((s) => s.scan_id);
-  const [{ data: findingsRaw }, { data: checksRaw }] = await Promise.all([
+  const [
+    { data: findingsRaw },
+    { data: checksRaw },
+    { data: entryResultsRaw },
+  ] = await Promise.all([
     scanIdsToLoad.length > 0
       ? supabase
           .from("finding")
@@ -112,10 +121,23 @@ export default async function PageDetailPage({
     supabase
       .from("diagnostic_check")
       .select("diagnostic_check_id, check_code, check_name"),
+    // Search-test results scoped to the latest scan's run. Surfacing on
+    // the page detail too so the user sees their entry results next to
+    // the same scan's check findings — no need to navigate to the run
+    // detail.
+    latest
+      ? supabase
+          .from("search_test_result")
+          .select(SEARCH_TEST_RESULT_SELECT)
+          .eq("run_id", latest.run_id)
+      : Promise.resolve({ data: [] }),
   ]);
   const findings: Finding[] = (findingsRaw ?? []) as Finding[];
   const checks: Check[] = (checksRaw ?? []) as Check[];
   const checkById = new Map(checks.map((c) => [c.diagnostic_check_id, c]));
+  const searchTestEntries = groupSearchTestResults(
+    (entryResultsRaw ?? []) as Parameters<typeof groupSearchTestResults>[0],
+  );
 
   // Pivot findings into a check_id → { latest, previous } map for the
   // compare table.
@@ -260,6 +282,36 @@ export default async function PageDetailPage({
               previousAt={previous.completed_at ?? previous.started_at}
             />
           )}
+        </div>
+      )}
+
+      {/* Search tests for the latest scan's run — rendered here so the
+          entry-based results sit alongside the check findings for the
+          same scan. */}
+      {searchTestEntries.length > 0 && (
+        <div
+          style={{
+            background: "var(--s-surface)",
+            border: "0.5px solid var(--s-border)",
+            borderRadius: "var(--s-radius-lg)",
+            overflow: "hidden",
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              padding: "12px 16px",
+              borderBottom: "0.5px solid var(--s-border)",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--s-text-tertiary)",
+            }}
+          >
+            {t("searchTestsTitle")}
+          </div>
+          <SearchTestsBody entries={searchTestEntries} />
         </div>
       )}
 

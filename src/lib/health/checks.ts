@@ -163,13 +163,18 @@ function checkPsi(): HealthCheck {
   };
 }
 
-// ── Browser probe (Playwright) ────────────────────────────────────────────
+// ── Browser probe (Playwright + Browserless) ─────────────────────────────
 
-function checkBrowserProbe(): HealthCheck {
+async function checkBrowserProbe(): Promise<HealthCheck> {
   const envVars = [
     {
       name: "PROSPECTOS_BROWSER_PROBE_ENABLED",
       set: envPresent("PROSPECTOS_BROWSER_PROBE_ENABLED"),
+      required: false,
+    },
+    {
+      name: "BROWSERLESS_WS_URL",
+      set: envPresent("BROWSERLESS_WS_URL"),
       required: false,
     },
   ];
@@ -177,25 +182,91 @@ function checkBrowserProbe(): HealthCheck {
   if (!enabled) {
     return {
       id: "browser-probe",
-      name: "Browser probe (Playwright)",
+      name: "Browser probe (Playwright via Browserless)",
       status: "disabled",
       summary: "Flag off — browser-driven scorers return NA",
       detail:
         "Empty-state, search-relevance, synonym, and typo-tolerance scorers need a real " +
-        "browser. Vercel can't host Playwright; you'd need Browserless, Railway worker, " +
-        "or @sparticuz/chromium. Enable by setting PROSPECTOS_BROWSER_PROBE_ENABLED=1 " +
-        "*after* deploying that host.",
+        "browser. Enable by setting PROSPECTOS_BROWSER_PROBE_ENABLED=1 *after* setting " +
+        "BROWSERLESS_WS_URL to a managed Chromium endpoint.",
       envVars,
     };
   }
-  return {
-    id: "browser-probe",
-    name: "Browser probe (Playwright)",
-    status: "ok",
-    summary: "Flag on",
-    detail: "Browser-driven scorers will attempt to run. Failures will be reflected per-check.",
-    envVars,
-  };
+  const wsUrl = process.env.BROWSERLESS_WS_URL;
+  if (!wsUrl) {
+    return {
+      id: "browser-probe",
+      name: "Browser probe (Playwright via Browserless)",
+      status: "error",
+      summary: "Flag on but BROWSERLESS_WS_URL is not set",
+      detail:
+        "The probe is enabled but has no remote browser to connect to. It will try to " +
+        "launch a local Chromium (won't work on Vercel) and fail. Set BROWSERLESS_WS_URL " +
+        "to the wss:// endpoint from your Browserless project.",
+      envVars,
+    };
+  }
+  // Browserless exposes /pressure (or a parent HTTPS host) for health.
+  // We translate ws[s]:// → http[s]:// and hit /pressure?token=...
+  // (works on shared Browserless). Best-effort: if it 404s, fall back
+  // to OK on env-var presence so a self-hosted Browserless that doesn't
+  // expose pressure still reports green.
+  const httpUrl = wsUrl.replace(/^ws/, "http");
+  let host: string;
+  try {
+    host = new URL(httpUrl).origin;
+  } catch {
+    return {
+      id: "browser-probe",
+      name: "Browser probe (Playwright via Browserless)",
+      status: "error",
+      summary: "BROWSERLESS_WS_URL is not a valid URL",
+      detail: `Could not parse: ${wsUrl}`,
+      envVars,
+    };
+  }
+  const start = Date.now();
+  try {
+    const res = await fetchWithTimeout(`${host}/pressure${new URL(httpUrl).search}`);
+    const latencyMs = Date.now() - start;
+    if (res.status === 404 || res.status === 405) {
+      // Endpoint not exposed — assume OK on env-var presence.
+      return {
+        id: "browser-probe",
+        name: "Browser probe (Playwright via Browserless)",
+        status: "ok",
+        summary: "Configured (health endpoint not exposed)",
+        envVars,
+      };
+    }
+    if (!res.ok) {
+      return {
+        id: "browser-probe",
+        name: "Browser probe (Playwright via Browserless)",
+        status: "error",
+        summary: `Browserless health returned HTTP ${res.status}`,
+        envVars,
+        latencyMs,
+      };
+    }
+    return {
+      id: "browser-probe",
+      name: "Browser probe (Playwright via Browserless)",
+      status: "ok",
+      summary: `Connected (${latencyMs}ms)`,
+      envVars,
+      latencyMs,
+    };
+  } catch (e) {
+    return {
+      id: "browser-probe",
+      name: "Browser probe (Playwright via Browserless)",
+      status: "error",
+      summary: "Could not reach Browserless host",
+      detail: e instanceof Error ? e.message : String(e),
+      envVars,
+    };
+  }
 }
 
 // ── Anthropic (blog AI, vertical classifier) ──────────────────────────────
@@ -369,13 +440,17 @@ function checkBuild(): HealthCheck {
 
 export async function runHealthChecks(): Promise<HealthCheck[]> {
   // Probes run in parallel — total wall-clock = slowest probe (capped at FETCH_TIMEOUT_MS).
-  const [ase, supabase] = await Promise.all([checkAse(), checkSupabase()]);
+  const [ase, supabase, browserProbe] = await Promise.all([
+    checkAse(),
+    checkSupabase(),
+    checkBrowserProbe(),
+  ]);
   return [
     checkBuild(),
     ase,
     supabase,
     checkPsi(),
-    checkBrowserProbe(),
+    browserProbe,
     checkAnthropic(),
     checkReplicate(),
     checkMeilisearch(),

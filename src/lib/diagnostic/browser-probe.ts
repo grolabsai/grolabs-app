@@ -7,25 +7,26 @@
  * navigation, and inspects the results page. This module is that.
  *
  * Gated on PROSPECTOS_BROWSER_PROBE_ENABLED=1. When disabled or if
- * Playwright fails to launch (no Chromium binaries available, e.g. on
- * Vercel serverless without setup), the probe returns null and the
+ * Playwright fails to launch / connect, the probe returns null and the
  * scorers degrade those checks to result_status='na' with a clear
  * reason.
  *
- * Deployment notes:
- *   - Local dev: `npx playwright install chromium` after `npm install`.
- *   - Vercel: not supported on serverless functions today. Deploy this
- *     workload to a Railway / Fly / dedicated host, or wrap with
- *     @sparticuz/chromium + playwright-core.
- *   - Managed alt: Browserless.io / Browserbase — use the CDP URL and
- *     swap chromium.launch() for chromium.connect(wsEndpoint).
+ * Browser source:
+ *   - Production: BROWSERLESS_WS_URL set → connect to a managed
+ *     Chromium via CDP. No binaries shipped in the deploy bundle, no
+ *     cold-start launch cost. Recommended for serverless (Vercel).
+ *   - Local dev: BROWSERLESS_WS_URL unset → launch a local Chromium
+ *     via `playwright install chromium`. Useful for debugging the
+ *     probe itself; not viable on Vercel.
  *
- * Time budget: ~60s per run. Each query test ~5s.
+ * Time budget: ~60s per run. Each query test ~5s. Vercel Pro plan
+ * gives 60s function timeout — exactly the budget we plan for.
  */
 
 import type { Browser, BrowserContext, Page, Request } from "playwright";
 
 const PROBE_ENABLED = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
+const BROWSERLESS_WS_URL = process.env.BROWSERLESS_WS_URL;
 const MAX_QUERIES = 6; // safety cap so a wide vocabulary doesn't blow the budget
 const PER_QUERY_TIMEOUT_MS = 12_000;
 const NAV_TIMEOUT_MS = 20_000;
@@ -94,12 +95,24 @@ export async function runBrowserProbe(
   }
 
   let browser: Browser | null = null;
+  // We "own" the browser only when we launched it locally — in that case
+  // we must browser.close() at the end. When connected via CDP to a
+  // shared Browserless instance, we only close our context; the remote
+  // browser keeps serving other connections.
+  let weLaunchedIt = false;
   const notes: string[] = [];
   try {
-    browser = await playwright.chromium.launch({ headless: true });
+    if (BROWSERLESS_WS_URL) {
+      browser = await playwright.chromium.connectOverCDP(BROWSERLESS_WS_URL);
+      notes.push("browser_source:browserless");
+    } else {
+      browser = await playwright.chromium.launch({ headless: true });
+      weLaunchedIt = true;
+      notes.push("browser_source:local_launch");
+    }
   } catch (e) {
-    console.warn("[browser-probe] chromium launch failed:", e);
-    notes.push(`browser_launch_failed:${String(e).slice(0, 80)}`);
+    console.warn("[browser-probe] could not obtain browser:", e);
+    notes.push(`browser_obtain_failed:${String(e).slice(0, 120)}`);
     return {
       product_names_discovered: [],
       brands_discovered: [],
@@ -253,8 +266,16 @@ export async function runBrowserProbe(
     } catch {
       /* ignore */
     }
+    // Only close the browser when we launched it ourselves. For
+    // Browserless we just disconnect — calling close() would also work
+    // but the disconnect is cleaner (doesn't ask the remote browser
+    // to fully shut down its process for our session).
     try {
-      await browser.close();
+      if (weLaunchedIt) {
+        await browser.close();
+      } else {
+        await browser.close(); // Playwright's CDP close ≅ disconnect
+      }
     } catch {
       /* ignore */
     }

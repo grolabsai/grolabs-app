@@ -398,7 +398,15 @@ button {
   gap: 10px;
   padding: 8px 10px;
   border-radius: var(--s-radius-md);
-  font-size: 15px;
+  /* Match the section-trigger typography so leaf items (Dashboard, List,
+     Rubric, Benchmarks, Style) read consistently with their section
+     headers (CONVERSION, CATALOG, …). All nav rows now use the same
+     uppercase, letter-spaced small-caps style — the active row is still
+     distinguished by --s-text-strong + yellow icon. */
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
   color: var(--nav-text);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;

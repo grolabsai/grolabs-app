@@ -41,6 +41,7 @@ import {
   Database,
   Library,
   Wrench,
+  Activity,
   FileText,
   Stethoscope,
   ListChecks,
@@ -176,6 +177,7 @@ export function Sidebar({
   const t = useTranslations("configuration.algolia");
   const tSearch = useTranslations("configuration.search");
   const tGa4 = useTranslations("configuration.ga4");
+  const tHealth = useTranslations("configuration.systemHealth");
 
   const NAV: NavGroup[] = [
     {
@@ -275,6 +277,7 @@ export function Sidebar({
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
         { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
         { href: "/configuration/ga4" as Route, label: tGa4("navLabel"), icon: LineChart, useIconWrapper: true },
+        { href: "/configuration/system-health" as Route, label: tHealth("navLabel"), icon: Activity, useIconWrapper: true },
         { href: null, label: tNav("storeSettings"), icon: Settings },
       ],
     },

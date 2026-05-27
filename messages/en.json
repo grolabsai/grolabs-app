@@ -1151,6 +1151,18 @@
     }
   },
   "configuration": {
+    "systemHealth": {
+      "navLabel": "System health",
+      "title": "System health",
+      "subtitle": "Live status of external integrations and environment variables. If something breaks in production, this is the first screen to check.",
+      "footer": "{count} checks · refresh the page to re-probe",
+      "overall": {
+        "ok": "All OK",
+        "warn": "Warnings",
+        "error": "Action required",
+        "disabled": "Disabled"
+      }
+    },
     "algolia": {
       "navLabel": "Algolia",
       "pageTitle": "Algolia",

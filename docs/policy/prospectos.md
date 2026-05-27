@@ -320,3 +320,32 @@ browser-based scorers just report `result_status='na'` with reason
      (Claude vision pass that highlights the failure region).
   Cost: 4 screenshots × ~150KB = ~600KB per run. Browserless free
   tier covers screenshots. Supabase Storage at this volume is free.
+- **Visual categorization of checks** (next iteration, user feedback
+  2026-05-27) — every check should carry a category (e.g. *internal
+  search*, *SEO/AEO*, *data completeness*, *page performance*,
+  *navigation*, *trust signals*), an icon, and an accent color so the
+  user can scan a report and immediately know what kind of problem
+  each row is about. Concretely: add `category` + `icon_name` columns
+  on `diagnostic_check` (FK to a small `check_category` lookup table
+  with name + icon + color); render the icon + chip alongside the
+  check name in the run detail, page detail, comparison table, and
+  search-tests card. First-pass category mapping draft:
+  * `internal_search` — 🔍 magnifying glass — sky blue
+  * `seo_aeo` — 🌐 globe / ai citation — purple
+  * `data_completeness` — 🏷️ tag — orange
+  * `page_performance` — ⚡ bolt — yellow
+  * `pdp_quality` — 🛒 cart — teal
+  * `returns_risk` — ↩️ return arrow — coral
+  * `trust_signals` — 🛡️ shield — green
+  Move the assignment to a docs/policy spec once colors get nailed
+  down — the storefront landing page styleguide is the source of truth
+  for the palette, so synchronize before locking in.
+- **Cut over legacy on_site_nav scorers to entry-based testing** —
+  once `search_test_entry` coverage is good across verticals, retire
+  `on_site_nav.typo_tolerance` / `synonyms` / `empty_state` /
+  `relevance_brand` as standalone scorers. They become summaries
+  derived from the entry results (e.g. "typo tolerance: X/Y entries
+  returned results for their typo variants").
+- **Surface the entry-based Search Tests card on page detail too** —
+  currently only the run detail renders it. Page detail should also
+  show entries that target the homepage (where the search box lives).

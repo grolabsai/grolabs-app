@@ -92,6 +92,39 @@ export type ProbeScreenshot = {
   buffer: Buffer;
 };
 
+/**
+ * Per-variant result from probing a user-defined search_test_entry.
+ * Persisted to the search_test_result table by the runner, joined to
+ * a page_scan_id so the report can render results grouped by entry.
+ */
+export type EntryVariantResult = {
+  variant_id: number;
+  variant_type: "canonical" | "typo" | "synonym" | "plural" | "partial" | string;
+  query_text: string;
+  results_returned: boolean;
+  result_count_estimate: number | null;
+  top_result_names: string[];
+  screenshot: Buffer | null;
+  latency_ms: number | null;
+};
+
+export type EntryProbeResult = {
+  entry_id: number;
+  intent_label: string;
+  variant_results: EntryVariantResult[];
+};
+
+/** Shape the runner passes in for the new entry-based probe. */
+export type TestEntryInput = {
+  entry_id: number;
+  intent_label: string;
+  variants: Array<{
+    variant_id: number;
+    variant_type: string;
+    query_text: string;
+  }>;
+};
+
 export type BrowserProbeResult = {
   product_names_discovered: string[];
   brands_discovered: string[];
@@ -104,13 +137,24 @@ export type BrowserProbeResult = {
   engine_network_fingerprint: string | null;
   notes: string[];
   screenshots: ProbeScreenshot[];
+  /** Per-entry, per-variant results from the new search-test-entries path. */
+  entry_results: EntryProbeResult[];
 };
 
 export type RunBrowserProbeInput = {
   rootUrl: string;
   synonymPairs: { term_a: string; term_b: string; locale: string }[];
   emptyStateQueries: string[];
+  /**
+   * User-defined test entries (search_test_entry rows for this prospect
+   * + inherited vertical templates). Each entry's variants are typed
+   * into the search box and results are captured per variant. Capped
+   * by MAX_ENTRY_VARIANTS to keep the probe under its 60s budget.
+   */
+  testEntries?: TestEntryInput[];
 };
+
+const MAX_ENTRY_VARIANTS = 12;
 
 export async function runBrowserProbe(
   input: RunBrowserProbeInput,
@@ -158,6 +202,7 @@ export async function runBrowserProbe(
       engine_network_fingerprint: null,
       notes,
       screenshots,
+      entry_results: [],
     };
   }
 
@@ -200,6 +245,7 @@ export async function runBrowserProbe(
         engine_network_fingerprint: detectEngineFromNetwork(networkUrls),
         notes,
         screenshots,
+        entry_results: [],
       };
     }
 
@@ -299,6 +345,49 @@ export async function runBrowserProbe(
       }
     }
 
+    // 7. NEW: iterate user-defined test entries → variants. Each variant
+    // is typed into the search box; we capture result count + top names
+    // + a screenshot. Capped at MAX_ENTRY_VARIANTS total variants across
+    // all entries to keep the probe inside the 60s budget.
+    const entryResults: EntryProbeResult[] = [];
+    let variantBudget = MAX_ENTRY_VARIANTS;
+    for (const entry of input.testEntries ?? []) {
+      if (variantBudget <= 0) {
+        notes.push(`entry_variant_budget_exceeded:skipped_entry_${entry.entry_id}`);
+        break;
+      }
+      const variantResults: EntryVariantResult[] = [];
+      // Run canonical first so synonym overlap analysis (future) has
+      // it as the reference point.
+      const ordered = [...entry.variants].sort((a, b) => {
+        if (a.variant_type === "canonical") return -1;
+        if (b.variant_type === "canonical") return 1;
+        return 0;
+      });
+      for (const variant of ordered) {
+        if (variantBudget <= 0) break;
+        variantBudget -= 1;
+        const start = Date.now();
+        const res = await runSearchQuery(page, context, input.rootUrl, variant.query_text);
+        const latency = Date.now() - start;
+        variantResults.push({
+          variant_id: variant.variant_id,
+          variant_type: variant.variant_type,
+          query_text: variant.query_text,
+          results_returned: res.resultsPresent,
+          result_count_estimate: res.estimate,
+          top_result_names: res.topResultNames.slice(0, 5),
+          screenshot: res.screenshot,
+          latency_ms: latency,
+        });
+      }
+      entryResults.push({
+        entry_id: entry.entry_id,
+        intent_label: entry.intent_label,
+        variant_results: variantResults,
+      });
+    }
+
     return {
       product_names_discovered: productNames,
       brands_discovered: brands,
@@ -311,6 +400,7 @@ export async function runBrowserProbe(
       engine_network_fingerprint: detectEngineFromNetwork(networkUrls),
       notes,
       screenshots,
+      entry_results: entryResults,
     };
   } catch (e) {
     notes.push(`browser_probe_error:${String(e).slice(0, 160)}`);
@@ -326,6 +416,7 @@ export async function runBrowserProbe(
       engine_network_fingerprint: null,
       notes,
       screenshots,
+      entry_results: [],
     };
   } finally {
     try {

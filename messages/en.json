@@ -2414,13 +2414,15 @@
       "status": "Status",
       "completedAt": "Completed",
       "failedTitle": "Diagnostic failed",
-      "samplesTitle": "Pages probed"
+      "samplesTitle": "Pages probed",
+      "searchTestsTitle": "Search tests"
     },
     "detail": {
       "backToList": "Back to prospects",
       "scanAll": "Scan all pages",
       "scanning": "Scanning…",
       "rescan": "Re-scan",
+      "vocabularyButton": "Edit search tests",
       "contact": "Contact",
       "platform": "Platform",
       "economics": "Economics",
@@ -2478,6 +2480,48 @@
           "genericError": "The scorer failed with no recognized error type. Inspect the evidence below.",
           "notApplicable": "This check doesn't apply for this page. For example: faceting only runs on category URLs; variant clarity only runs on PDPs with variants."
         }
+      }
+    },
+    "testEntries": {
+      "title": "Searches to test",
+      "subtitle": "Define the words the bot will test against the prospect's internal search. Each entry has a canonical query plus its variants (typos, synonyms). The bot tries every variant and reports per-variant results.",
+      "prospectSection": "This prospect's tests",
+      "prospectSubtitle": "Entries specific to this prospect. Layered on top of the vertical's templates.",
+      "verticalSection": "Inherited vertical templates",
+      "verticalSubtitle": "Read-only here. Edit in /prospects/rubric/vocabulary.",
+      "noProspectEntries": "No prospect-specific entries yet. Add one to customize this prospect's tests.",
+      "addEntry": "Add entry",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "create": "Create",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "created": "Entry created",
+      "updated": "Entry updated",
+      "deleted": "Entry deleted",
+      "confirmDelete": "Delete this entry?",
+      "intentLabel": "Intent",
+      "intentLabelHint": "Short description of what's being tested (e.g. \"Running shoes\").",
+      "intentPlaceholder": "e.g. Running shoes",
+      "localeField": "Locale",
+      "notesField": "Notes",
+      "notesPlaceholder": "Additional context (optional)",
+      "variantsHeader": "Search variants",
+      "addTypo": "Typo",
+      "addSynonym": "Synonym",
+      "addPlural": "Plural",
+      "addPartial": "Partial",
+      "variantPlaceholders": {
+        "canonical": "e.g. running shoes",
+        "typo": "e.g. runing shoes",
+        "synonym": "e.g. sneakers",
+        "plural": "e.g. running shoe",
+        "partial": "e.g. runn"
+      },
+      "errors": {
+        "emptyLabel": "Intent cannot be empty.",
+        "needsCanonical": "Every entry needs at least one canonical variant."
       }
     },
     "vocabulary": {

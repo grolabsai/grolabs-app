@@ -145,10 +145,19 @@ export default async function ProspectDetailPage({
             </p>
           </div>
         </div>
-        <ProspectActions
-          prospectId={prospect.prospect_id}
-          hasPages={pages.length > 0}
-        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Link
+            href={`/prospects/${prospect.prospect_id}/vocabulary` as never}
+            className="s-btn"
+            style={{ fontSize: 12, padding: "6px 12px" }}
+          >
+            {t("vocabularyButton")}
+          </Link>
+          <ProspectActions
+            prospectId={prospect.prospect_id}
+            hasPages={pages.length > 0}
+          />
+        </div>
       </div>
 
       {/* Contact + platform card */}

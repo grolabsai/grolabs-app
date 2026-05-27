@@ -242,8 +242,9 @@ probes are enabled).
 |---|---|---|
 | `ASE_API_URL` | Required for PDP + site signals to score | unset → those scorers degrade to `error` |
 | `ANTHROPIC_API_KEY` | Enables Haiku tie-breaker for vertical classification | unset → classifier returns no LLM result |
-| `PROSPECTOS_BROWSER_PROBE_ENABLED` | Enables Playwright probe (used together with `BROWSERLESS_WS_URL`) | unset → browser-based scorers report `na` |
-| `BROWSERLESS_WS_URL` | Browserless `wss://` endpoint (includes token) that Playwright connects to via CDP | required on Vercel for the browser probe to run |
+| `PROSPECTOS_BROWSER_PROBE_ENABLED` | Enables Playwright probe (used together with `BROWSERLESS_HOST` + `BROWSERLESS_TOKEN`) | unset → browser-based scorers report `na` |
+| `BROWSERLESS_HOST` | Browserless host without protocol (e.g. `production-sfo.browserless.io`, or `chrome.browserless.io` for enterprise) | required on Vercel for the browser probe to run |
+| `BROWSERLESS_TOKEN` | Browserless API token | required on Vercel for the browser probe to run |
 | `PROSPECTOS_PSI_ENABLED` | Set to `0` to disable Core Web Vitals fetching | enabled by default |
 | `GOOGLE_PSI_API_KEY` | Lifts PSI free-tier throttle | optional |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for the public API + landing-page report | required for anon flow |
@@ -253,14 +254,21 @@ probes are enabled).
 ## 11. Deployment notes for Playwright
 
 **Current production setup: Browserless via CDP.** Scout connects to a
-managed Chromium pool by setting `BROWSERLESS_WS_URL` to the project's
-`wss://` endpoint (includes the access token). `runBrowserProbe()`
-uses `chromium.connectOverCDP(BROWSERLESS_WS_URL)` to attach to a
-pre-warmed browser, so there's no cold-start launch cost and the
-Vercel deploy bundle stays small (no Chromium binary).
+managed Chromium pool by setting two env vars:
 
-**Local dev**: leave `BROWSERLESS_WS_URL` unset — the probe falls back
-to `chromium.launch()` and uses the locally-installed Chromium
+- `BROWSERLESS_HOST` — host without protocol (e.g. `production-sfo.browserless.io`,
+  `production-lon.browserless.io`, `production-ams.browserless.io`, or
+  `chrome.browserless.io` for an enterprise private fleet).
+- `BROWSERLESS_TOKEN` — the API token from the Browserless dashboard.
+
+Scout assembles `wss://<host>?token=<token>` at runtime, so region or
+fleet swaps are an env-var change, not a code change. The probe uses
+`chromium.connectOverCDP(...)` to attach to a pre-warmed browser, so
+there's no cold-start launch cost and the Vercel deploy bundle stays
+small (no Chromium binary).
+
+**Local dev**: leave both vars unset — the probe falls back to
+`chromium.launch()` and uses the locally-installed Chromium
 (`npx playwright install chromium`).
 
 **Why not the alternatives**:

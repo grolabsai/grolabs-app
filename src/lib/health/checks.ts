@@ -172,11 +172,8 @@ async function checkBrowserProbe(): Promise<HealthCheck> {
       set: envPresent("PROSPECTOS_BROWSER_PROBE_ENABLED"),
       required: false,
     },
-    {
-      name: "BROWSERLESS_WS_URL",
-      set: envPresent("BROWSERLESS_WS_URL"),
-      required: false,
-    },
+    { name: "BROWSERLESS_HOST", set: envPresent("BROWSERLESS_HOST"), required: false },
+    { name: "BROWSERLESS_TOKEN", set: envPresent("BROWSERLESS_TOKEN"), required: false },
   ];
   const enabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
   if (!enabled) {
@@ -188,55 +185,63 @@ async function checkBrowserProbe(): Promise<HealthCheck> {
       detail:
         "Empty-state, search-relevance, synonym, and typo-tolerance scorers need a real " +
         "browser. Enable by setting PROSPECTOS_BROWSER_PROBE_ENABLED=1 *after* setting " +
-        "BROWSERLESS_WS_URL to a managed Chromium endpoint.",
+        "BROWSERLESS_HOST and BROWSERLESS_TOKEN.",
       envVars,
     };
   }
-  const wsUrl = process.env.BROWSERLESS_WS_URL;
-  if (!wsUrl) {
+  const host = process.env.BROWSERLESS_HOST;
+  const token = process.env.BROWSERLESS_TOKEN;
+  if (!host || !token) {
+    const missing = [
+      !host && "BROWSERLESS_HOST",
+      !token && "BROWSERLESS_TOKEN",
+    ]
+      .filter(Boolean)
+      .join(" + ");
     return {
       id: "browser-probe",
       name: "Browser probe (Playwright via Browserless)",
       status: "error",
-      summary: "Flag on but BROWSERLESS_WS_URL is not set",
+      summary: `Flag on but ${missing} not set`,
       detail:
-        "The probe is enabled but has no remote browser to connect to. It will try to " +
-        "launch a local Chromium (won't work on Vercel) and fail. Set BROWSERLESS_WS_URL " +
-        "to the wss:// endpoint from your Browserless project.",
+        "The probe is enabled but cannot connect. Set BROWSERLESS_HOST (e.g. " +
+        "production-sfo.browserless.io) and BROWSERLESS_TOKEN from your Browserless " +
+        "dashboard.",
       envVars,
     };
   }
-  // Browserless exposes /pressure (or a parent HTTPS host) for health.
-  // We translate ws[s]:// → http[s]:// and hit /pressure?token=...
-  // (works on shared Browserless). Best-effort: if it 404s, fall back
-  // to OK on env-var presence so a self-hosted Browserless that doesn't
-  // expose pressure still reports green.
-  const httpUrl = wsUrl.replace(/^ws/, "http");
-  let host: string;
-  try {
-    host = new URL(httpUrl).origin;
-  } catch {
-    return {
-      id: "browser-probe",
-      name: "Browser probe (Playwright via Browserless)",
-      status: "error",
-      summary: "BROWSERLESS_WS_URL is not a valid URL",
-      detail: `Could not parse: ${wsUrl}`,
-      envVars,
-    };
-  }
+  // Browserless exposes /pressure as a health endpoint. We hit
+  // https://<host>/pressure?token=... to verify both reachability and
+  // that the token is accepted. Best-effort: if /pressure is not
+  // exposed (404/405) we fall back to OK on env-var presence — useful
+  // for self-hosted Browserless variants.
+  const cleanHost = host.replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/\/+$/, "");
+  const probeUrl = `https://${cleanHost}/pressure?token=${encodeURIComponent(token)}`;
   const start = Date.now();
   try {
-    const res = await fetchWithTimeout(`${host}/pressure${new URL(httpUrl).search}`);
+    const res = await fetchWithTimeout(probeUrl);
     const latencyMs = Date.now() - start;
     if (res.status === 404 || res.status === 405) {
-      // Endpoint not exposed — assume OK on env-var presence.
       return {
         id: "browser-probe",
         name: "Browser probe (Playwright via Browserless)",
         status: "ok",
         summary: "Configured (health endpoint not exposed)",
         envVars,
+        latencyMs,
+      };
+    }
+    if (res.status === 401 || res.status === 403) {
+      return {
+        id: "browser-probe",
+        name: "Browser probe (Playwright via Browserless)",
+        status: "error",
+        summary: "Token rejected by Browserless",
+        detail:
+          "Host reached, but the token was refused. Check that BROWSERLESS_TOKEN matches " +
+          "the value on your Browserless dashboard and that the project is active.",
+        envVars,
+        latencyMs,
       };
     }
     if (!res.ok) {
@@ -253,7 +258,7 @@ async function checkBrowserProbe(): Promise<HealthCheck> {
       id: "browser-probe",
       name: "Browser probe (Playwright via Browserless)",
       status: "ok",
-      summary: `Connected (${latencyMs}ms)`,
+      summary: `Connected to ${cleanHost} (${latencyMs}ms)`,
       envVars,
       latencyMs,
     };
@@ -263,7 +268,9 @@ async function checkBrowserProbe(): Promise<HealthCheck> {
       name: "Browser probe (Playwright via Browserless)",
       status: "error",
       summary: "Could not reach Browserless host",
-      detail: e instanceof Error ? e.message : String(e),
+      detail:
+        `Could not connect to ${cleanHost}: ` +
+        (e instanceof Error ? e.message : String(e)),
       envVars,
     };
   }

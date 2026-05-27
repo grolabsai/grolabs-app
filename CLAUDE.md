@@ -135,6 +135,18 @@ Always set explicit `width` and `height`:
 
 Use `FloatingLabelInput` from `src/components/ui/floating-label-input.tsx` for all form fields.
 
+### Surface tokens — no nested gray fills
+
+`--s-surface-alt` resolves to the same color as `--s-surface` in both themes. Information surfaces (cards, inputs, dropdowns, table rows, panels) always sit on the canvas — never on a slightly-darker tint. Visual hierarchy comes from borders, shadows, and typography — not from nested gray fills.
+
+```css
+/* ✅ Correct — surface-alt resolves to the same as surface */
+:root { --s-surface: #1c1d24; --s-surface-alt: #1c1d24; }
+.scout-light { --s-surface: #FFFFFF; --s-surface-alt: #FFFFFF; }
+```
+
+The alias is kept for back-compat with old component code that references `var(--s-surface-alt)` (hover states, disabled fields, sub-zones). New code should prefer `--s-surface` directly. If you need a nested visual zone, use a border or a shadow — not a fill.
+
 ### Toasts
 
 Use `sonner` via `src/components/ui/sonner.tsx`. The `<Toaster />` is mounted in the root layout.

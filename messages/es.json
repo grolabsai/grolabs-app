@@ -2414,13 +2414,15 @@
       "status": "Estado",
       "completedAt": "Completado",
       "failedTitle": "El diagnóstico falló",
-      "samplesTitle": "Páginas analizadas"
+      "samplesTitle": "Páginas analizadas",
+      "searchTestsTitle": "Pruebas de búsqueda"
     },
     "detail": {
       "backToList": "Volver a prospectos",
       "scanAll": "Escanear todas las páginas",
       "scanning": "Escaneando…",
       "rescan": "Re-escanear",
+      "vocabularyButton": "Editar pruebas de búsqueda",
       "contact": "Contacto",
       "platform": "Plataforma",
       "economics": "Economía",
@@ -2478,6 +2480,48 @@
           "genericError": "El scorer falló sin un tipo de error reconocido. Revisa la evidencia más abajo.",
           "notApplicable": "Este check no aplica para esta página. Por ejemplo: faceting solo se evalúa en URLs de categoría; variantes solo en PDPs con variantes."
         }
+      }
+    },
+    "testEntries": {
+      "title": "Búsquedas a probar",
+      "subtitle": "Define las palabras que el bot va a probar contra la búsqueda interna del prospecto. Cada entrada tiene una palabra canónica más sus variantes (typos, sinónimos). El bot prueba cada variante y reporta los resultados.",
+      "prospectSection": "Pruebas de este prospecto",
+      "prospectSubtitle": "Entradas específicas para este prospecto. Se agregan a las plantillas heredadas del vertical.",
+      "verticalSection": "Plantillas heredadas del vertical",
+      "verticalSubtitle": "Solo lectura aquí. Edita en /prospects/rubric/vocabulary.",
+      "noProspectEntries": "Sin entradas específicas. Agrega una para personalizar las pruebas de este prospecto.",
+      "addEntry": "Agregar entrada",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "create": "Crear",
+      "cancel": "Cancelar",
+      "saving": "Guardando…",
+      "created": "Entrada creada",
+      "updated": "Entrada actualizada",
+      "deleted": "Entrada eliminada",
+      "confirmDelete": "¿Eliminar esta entrada?",
+      "intentLabel": "Intención",
+      "intentLabelHint": "Descripción corta de qué se está probando (ej. \"Zapatillas para correr\").",
+      "intentPlaceholder": "Ej: Zapatillas para correr",
+      "localeField": "Idioma",
+      "notesField": "Notas",
+      "notesPlaceholder": "Contexto adicional (opcional)",
+      "variantsHeader": "Variantes de búsqueda",
+      "addTypo": "Typo",
+      "addSynonym": "Sinónimo",
+      "addPlural": "Plural",
+      "addPartial": "Parcial",
+      "variantPlaceholders": {
+        "canonical": "ej. zapatillas para correr",
+        "typo": "ej. zapatilas para correr",
+        "synonym": "ej. tenis para correr",
+        "plural": "ej. zapatilla para correr",
+        "partial": "ej. zapatilla"
+      },
+      "errors": {
+        "emptyLabel": "La intención no puede estar vacía.",
+        "needsCanonical": "Cada entrada necesita al menos una variante canónica."
       }
     },
     "vocabulary": {

@@ -447,6 +447,15 @@ async function runDiagnostic(opts: {
     resolvedVerticalId,
   );
 
+  // Load search_test_entry rows — prospect-specific overrides + vertical
+  // templates. The browser probe iterates these and persists per-variant
+  // results to search_test_result, surfaced on the run/report UI.
+  const testEntries = await loadTestEntries(
+    supabase,
+    prospectId,
+    resolvedVerticalId,
+  );
+
   const probeEnabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
   const psiEnabled = process.env.PROSPECTOS_PSI_ENABLED !== "0";
 
@@ -462,6 +471,7 @@ async function runDiagnostic(opts: {
           rootUrl,
           synonymPairs: vocab.synonymPairs,
           emptyStateQueries: vocab.emptyStateQueries,
+          testEntries,
         })
       : Promise.resolve(null as BrowserProbeResult | null),
     psiEnabled ? fetchCoreWebVitals(pdpUrl) : Promise.resolve(null),
@@ -699,6 +709,22 @@ async function runDiagnostic(opts: {
     }
   }
 
+  // 7b. Persist search_test_result rows for each user-defined entry/variant
+  // the browser probe ran. Best-effort: any failure here is logged and the
+  // run still completes cleanly.
+  if (browserResult?.entry_results?.length) {
+    try {
+      await persistEntryResults(
+        supabase,
+        runId,
+        scanIdForCheck("on_site_nav.typo_tolerance"), // tied to homepage scan
+        browserResult.entry_results,
+      );
+    } catch (e) {
+      console.warn("[runner] search_test_result persistence failed:", e);
+    }
+  }
+
   // 8. Rollup + complete the run
   const findingsForRollup = findingsToInsert.map(({ check, result }) => ({
     score: result.score,
@@ -907,6 +933,83 @@ async function loadTestVocabulary(
   };
 }
 
+/**
+ * Loads search_test_entry rows that apply to a given prospect:
+ *   - prospect-specific overrides (prospect_id = X)
+ *   - vertical templates (vertical_id = Y, prospect_id NULL)
+ *
+ * Each entry comes back with its variants nested. Used by the browser
+ * probe to iterate canonical/typo/synonym variants and capture per-variant
+ * results.
+ */
+async function loadTestEntries(
+  supabase: SupabaseClient,
+  prospectId: number,
+  verticalId: number | null,
+): Promise<
+  Array<{
+    entry_id: number;
+    intent_label: string;
+    variants: Array<{
+      variant_id: number;
+      variant_type: string;
+      query_text: string;
+    }>;
+  }>
+> {
+  const prospectPromise = supabase
+    .from("search_test_entry")
+    .select(
+      "entry_id, intent_label, is_active, variants:search_test_variant(variant_id, variant_type, query_text, sort_order)",
+    )
+    .eq("prospect_id", prospectId)
+    .eq("is_active", true);
+
+  const verticalPromise = verticalId
+    ? supabase
+        .from("search_test_entry")
+        .select(
+          "entry_id, intent_label, is_active, variants:search_test_variant(variant_id, variant_type, query_text, sort_order)",
+        )
+        .eq("vertical_id", verticalId)
+        .eq("is_active", true)
+    : Promise.resolve({ data: [] });
+
+  const [{ data: prospectEntries }, { data: verticalEntries }] = await Promise.all([
+    prospectPromise,
+    verticalPromise,
+  ]);
+
+  type RawEntry = {
+    entry_id: number;
+    intent_label: string;
+    variants: Array<{
+      variant_id: number;
+      variant_type: string;
+      query_text: string;
+      sort_order: number;
+    }> | null;
+  };
+  const merge = (rows: RawEntry[] | null) =>
+    (rows ?? []).map((e) => ({
+      entry_id: e.entry_id,
+      intent_label: e.intent_label,
+      variants: (e.variants ?? [])
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((v) => ({
+          variant_id: v.variant_id,
+          variant_type: v.variant_type,
+          query_text: v.query_text,
+        })),
+    }));
+
+  // Prospect entries first (more specific), then vertical templates.
+  return [
+    ...merge((prospectEntries ?? []) as RawEntry[]),
+    ...merge((verticalEntries ?? []) as RawEntry[]),
+  ];
+}
+
 async function loadExpectedAttributes(
   supabase: SupabaseClient,
   verticalId: number | null,
@@ -964,4 +1067,83 @@ async function markRunFailed(
       error_message: message,
     })
     .eq("run_id", runId);
+}
+
+/**
+ * Upload per-variant screenshots + insert search_test_result rows for
+ * each entry the browser probe ran. Path convention for screenshots:
+ *   <run_id>/entry-<entry_id>-variant-<variant_id>.png
+ * Failure to upload a single screenshot leaves screenshot_url null but
+ * the result row still persists.
+ */
+async function persistEntryResults(
+  supabase: SupabaseClient,
+  runId: string,
+  pageScanId: number | null,
+  entryResults: Array<{
+    entry_id: number;
+    intent_label: string;
+    variant_results: Array<{
+      variant_id: number;
+      variant_type: string;
+      query_text: string;
+      results_returned: boolean;
+      result_count_estimate: number | null;
+      top_result_names: string[];
+      screenshot: Buffer | null;
+      latency_ms: number | null;
+    }>;
+  }>,
+): Promise<void> {
+  type ResultRow = {
+    variant_id: number;
+    page_scan_id: number | null;
+    run_id: string;
+    results_returned: boolean;
+    result_count_estimate: number | null;
+    top_result_names: string[];
+    screenshot_url: string | null;
+    latency_ms: number | null;
+  };
+  const rows: ResultRow[] = [];
+  for (const entry of entryResults) {
+    for (const variant of entry.variant_results) {
+      let screenshotUrl: string | null = null;
+      if (variant.screenshot) {
+        const path = `${runId}/entry-${entry.entry_id}-variant-${variant.variant_id}.png`;
+        const { error } = await supabase.storage
+          .from("prospect-evidence")
+          .upload(path, variant.screenshot, {
+            contentType: "image/png",
+            cacheControl: "31536000",
+            upsert: true,
+          });
+        if (error) {
+          console.warn(
+            `[runner] entry-variant screenshot upload failed v${variant.variant_id}: ${error.message}`,
+          );
+        } else {
+          const { data } = supabase.storage
+            .from("prospect-evidence")
+            .getPublicUrl(path);
+          screenshotUrl = data.publicUrl;
+        }
+      }
+      rows.push({
+        variant_id: variant.variant_id,
+        page_scan_id: pageScanId,
+        run_id: runId,
+        results_returned: variant.results_returned,
+        result_count_estimate: variant.result_count_estimate,
+        top_result_names: variant.top_result_names,
+        screenshot_url: screenshotUrl,
+        latency_ms: variant.latency_ms,
+      });
+    }
+  }
+  if (rows.length === 0) return;
+  const { error } = await supabase.from("search_test_result").insert(rows);
+  if (error) {
+    console.warn("[runner] search_test_result insert failed:", error.message);
+  }
 }

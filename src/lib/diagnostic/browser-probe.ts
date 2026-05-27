@@ -106,6 +106,17 @@ export type EntryVariantResult = {
   top_result_names: string[];
   screenshot: Buffer | null;
   latency_ms: number | null;
+  /**
+   * 0-100 confidence in the results_returned verdict.
+   *   100 = explicit "no results" copy was matched
+   *   95  = result names contain query tokens (relevant hits)
+   *   70  = cards present but couldn't verify relevance / fallback content suspected
+   *   60  = no signals either way (custom search engine with no visible cards)
+   * Below ~80 → flag for manual review.
+   */
+  confidence: number;
+  /** Human-readable explanation of how the verdict was reached. */
+  verdict_reason: string;
 };
 
 export type EntryProbeResult = {
@@ -368,7 +379,13 @@ export async function runBrowserProbe(
         if (variantBudget <= 0) break;
         variantBudget -= 1;
         const start = Date.now();
-        const res = await runSearchQuery(page, context, input.rootUrl, variant.query_text);
+        const res = await runSearchQuery(
+          page,
+          context,
+          input.rootUrl,
+          variant.query_text,
+          variant.variant_type,
+        );
         const latency = Date.now() - start;
         variantResults.push({
           variant_id: variant.variant_id,
@@ -379,6 +396,8 @@ export async function runBrowserProbe(
           top_result_names: res.topResultNames.slice(0, 5),
           screenshot: res.screenshot,
           latency_ms: latency,
+          confidence: res.confidence,
+          verdict_reason: res.verdictReason,
         });
       }
       entryResults.push({
@@ -558,6 +577,10 @@ type SearchOutcome = {
    * saw"). Null when the page couldn't be reached at all.
    */
   screenshot: Buffer | null;
+  /** 0-100 confidence in the resultsPresent verdict (see EntryVariantResult docs). */
+  confidence: number;
+  /** Human-readable verdict reason. */
+  verdictReason: string;
 };
 
 async function captureScreenshot(page: Page): Promise<Buffer | null> {
@@ -576,6 +599,7 @@ async function runSearchQuery(
   context: BrowserContext,
   rootUrl: string,
   query: string,
+  variantType?: string,
 ): Promise<SearchOutcome> {
   try {
     // Always re-navigate to root to get a clean state.
@@ -589,6 +613,8 @@ async function runSearchQuery(
         hardError: true,
         topResultNames: [],
         screenshot: null,
+        confidence: 100,
+        verdictReason: "Search box not found on the page — probe could not run.",
       };
     }
     await input.fill("");
@@ -612,17 +638,35 @@ async function runSearchQuery(
 
     const domResult = await page.evaluate(() => {
       const bodyText = document.body.innerText.toLowerCase();
+      // Broader phrase list — covers WooCommerce, Shopify, BigCommerce,
+      // generic CMS templates, and custom carts. Each entry is a
+      // contiguous lowercase substring we look for in the body text.
       const noResultsPhrases = [
         "no results",
         "no resultados",
         "sin resultados",
         "0 results",
+        "0 productos",
+        "no products found",
+        "no products were found",
+        "no items found",
+        "no items match",
+        "no matches found",
+        "no matching",
         "no se encontraron",
         "did not match",
+        "did not find",
         "nothing found",
+        "we couldn't find",
+        "we could not find",
+        "we didn't find",
+        "your search returned no",
+        "your search did not match",
       ];
       const hasNoResultsCopy = noResultsPhrases.some((p) => bodyText.includes(p));
 
+      // Step 1 — explicit known selectors (precise count when the site
+      // uses a recognized e-commerce platform's markup).
       const resultSelectors = [
         "ul.products li.product",
         ".products .product",
@@ -630,23 +674,81 @@ async function runSearchQuery(
         "[data-search-result]",
         ".search-result",
         ".search-results .item",
+        ".search-results > *",
         ".instantsearch-hit",
         ".algolia-autocomplete .product",
         ".collection-grid .product-card",
         ".product-list .product-item",
+        // Custom-cart heuristics
+        ".product-tile",
+        "[class*='product-card']",
+        "[class*='product-item']",
+        "[class*='SearchResult']",
       ];
       let resultEls: Element[] = [];
       let estimate = 0;
       for (const sel of resultSelectors) {
-        const els = Array.from(document.querySelectorAll(sel));
-        if (els.length > estimate) {
-          estimate = els.length;
-          resultEls = els;
+        try {
+          const els = Array.from(document.querySelectorAll(sel));
+          if (els.length > estimate) {
+            estimate = els.length;
+            resultEls = els;
+          }
+        } catch {
+          // Invalid selector on this browser — skip.
         }
       }
 
-      // Extract names of the top result cards — title selectors that
-      // work across WC / Shopify / generic.
+      // Step 2 — generic fallback: any anchor in the main content area
+      // that wraps an <img> and points to what looks like a product page.
+      // Catches sites like fastcap.com that use custom <a><img><p>name</p></a>
+      // markup with no recognizable class names.
+      if (estimate === 0 && !hasNoResultsCopy) {
+        const productLinkPattern = /\/(product|products|item|p|shop)\b/i;
+        const anchorsWithImg = Array.from(
+          document.querySelectorAll("a"),
+        ).filter((a) => {
+          if (!a.querySelector("img")) return false;
+          const href = a.getAttribute("href") ?? "";
+          // External or non-product links are noise (social icons, etc.)
+          if (!href || href.startsWith("#")) return false;
+          if (/(facebook|twitter|instagram|youtube|pinterest|linkedin)\.com/i.test(href))
+            return false;
+          // Either the href looks like a product URL, or the anchor sits
+          // beneath a "results" heading.
+          if (productLinkPattern.test(href)) return true;
+          // Walk up to see if a search-results heading is an ancestor sibling.
+          let cur: Element | null = a;
+          for (let i = 0; i < 6 && cur; i++) {
+            cur = cur.parentElement;
+            const prev = cur?.previousElementSibling;
+            const prevText = prev?.textContent?.toLowerCase() ?? "";
+            if (
+              /(search results|resultados|matching|products|productos)/i.test(prevText)
+            ) {
+              return true;
+            }
+          }
+          return false;
+        });
+        // Dedupe by href so an anchor wrapping both image AND text doesn't
+        // count twice when the markup is split.
+        const seen = new Set<string>();
+        const unique = anchorsWithImg.filter((a) => {
+          const h = a.getAttribute("href") ?? "";
+          if (seen.has(h)) return false;
+          seen.add(h);
+          return true;
+        });
+        if (unique.length > 0) {
+          resultEls = unique as Element[];
+          estimate = unique.length;
+        }
+      }
+
+      // Step 3 — extract result names. Try title-class selectors first,
+      // then fall back to the anchor's own text content (covers
+      // <a><img><p>Name</p></a> patterns).
       const nameSelectors = [
         ".woocommerce-loop-product__title",
         ".product-title",
@@ -655,34 +757,69 @@ async function runSearchQuery(
         "h2.product__title",
         "h3.product-card__heading",
         "[class*='product-title']",
+        "[class*='product-name']",
         "h2",
         "h3",
+        "h4",
+        "p",
       ];
       const names: string[] = [];
       for (const el of resultEls.slice(0, 10)) {
+        let found: string | null = null;
         for (const sel of nameSelectors) {
           const nameEl = el.querySelector(sel);
           const text = nameEl?.textContent?.trim();
           if (text && text.length > 2 && text.length < 200) {
-            names.push(text);
+            found = text;
             break;
           }
         }
+        // Last resort: the anchor's own visible text (strip whitespace).
+        if (!found) {
+          const own = el.textContent?.replace(/\s+/g, " ").trim();
+          if (own && own.length > 2 && own.length < 200) found = own;
+        }
+        if (found) names.push(found);
       }
 
       const hasFallbackContent =
         document.body.innerText.length > 600 && !hasNoResultsCopy;
 
+      // Return the raw signals; the verdict + confidence is computed
+      // back in Node so we can keep the logic out of page.evaluate
+      // (easier to test, easier to extend).
       return {
-        resultsPresent: estimate > 0 && !hasNoResultsCopy,
         estimate: estimate > 0 ? estimate : null,
         hasFallbackContent,
-        hardError: false,
+        hasNoResultsCopy,
+        matchedNoResultsPhrase: noResultsPhrases.find((p) =>
+          bodyText.includes(p),
+        ) ?? null,
         topResultNames: names,
+        currentUrl: window.location.href,
       };
     });
 
-    return { ...domResult, screenshot };
+    const verdict = classifyResults({
+      query,
+      variantType,
+      estimate: domResult.estimate,
+      hasNoResultsCopy: domResult.hasNoResultsCopy,
+      matchedNoResultsPhrase: domResult.matchedNoResultsPhrase,
+      topResultNames: domResult.topResultNames,
+      currentUrl: domResult.currentUrl,
+    });
+
+    return {
+      resultsPresent: verdict.resultsPresent,
+      estimate: domResult.estimate,
+      hasFallbackContent: domResult.hasFallbackContent,
+      hardError: false,
+      topResultNames: domResult.topResultNames,
+      screenshot,
+      confidence: verdict.confidence,
+      verdictReason: verdict.reason,
+    };
   } catch (e) {
     return {
       resultsPresent: false,
@@ -691,8 +828,149 @@ async function runSearchQuery(
       hardError: true,
       topResultNames: [],
       screenshot: null,
+      confidence: 0,
+      verdictReason: `Probe threw an exception: ${String(e).slice(0, 120)}`,
     };
   }
+}
+
+/**
+ * Classify a search query's outcome with a confidence score (0-100)
+ * and a human-readable reason. Runs in Node (outside page.evaluate) so
+ * it's easy to extend with future signals (e.g. URL-encoded query check,
+ * Claude vision pass).
+ *
+ * Decision tree:
+ *   1. Explicit "no results" copy   → no results, 100% confident
+ *   2. Cards present + names match  → results, 95% confident
+ *   3. Cards present + names don't  → no results (fallback), 70%
+ *   4. Cards present + no names     → results, 70% (couldn't verify)
+ *   5. URL contains query           → results, 60%
+ *   6. Nothing                      → no results, 60%
+ *
+ * Synonyms are a special case: by definition the result names *won't*
+ * contain the synonym token. We detect that here and avoid penalizing
+ * synonym tests for irrelevant-name signals.
+ */
+function classifyResults(args: {
+  query: string;
+  variantType?: string;
+  estimate: number | null;
+  hasNoResultsCopy: boolean;
+  matchedNoResultsPhrase: string | null;
+  topResultNames: string[];
+  currentUrl: string;
+}): { resultsPresent: boolean; confidence: number; reason: string } {
+  const { query, variantType, estimate, hasNoResultsCopy, matchedNoResultsPhrase, topResultNames, currentUrl } = args;
+  const count = estimate ?? 0;
+  // Synonym tests can't use the query-token relevance check — by
+  // definition, the synonym word ("Tapeline") *won't* appear in the
+  // result names ("Tape Measure"). For synonyms we trust the card
+  // count alone, with reduced confidence.
+  const isSynonym = variantType === "synonym";
+
+  // 1. Explicit no-results copy is the strongest signal we have.
+  if (hasNoResultsCopy) {
+    return {
+      resultsPresent: false,
+      confidence: 100,
+      reason: matchedNoResultsPhrase
+        ? `Page explicitly says no results — matched phrase: "${matchedNoResultsPhrase}".`
+        : "Page contains explicit no-results copy.",
+    };
+  }
+
+  // Tokens of the query for relevance check. Skip tokens shorter than
+  // 3 characters (noise like "is", "to").
+  const tokens = query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.replace(/[^a-z0-9]/g, ""))
+    .filter((t) => t.length >= 3);
+
+  const relevantNames = topResultNames.filter((n) =>
+    tokens.some((t) => n.toLowerCase().includes(t)),
+  );
+  const queryInUrl = tokens.length > 0
+    ? tokens.some((t) => currentUrl.toLowerCase().includes(t))
+    : false;
+
+  // 2. Cards + at least one name contains a query token → very likely real hits.
+  if (count > 0 && relevantNames.length > 0) {
+    const ratio = relevantNames.length / topResultNames.length;
+    let confidence = 95;
+    if (queryInUrl) confidence = Math.min(100, confidence + 3);
+    return {
+      resultsPresent: true,
+      confidence,
+      reason:
+        `Found ${count} result card(s); ${relevantNames.length} of ${topResultNames.length} ` +
+        `top-result name(s) match query tokens (e.g. "${relevantNames[0]}"). ` +
+        (queryInUrl ? "URL also contains the query. " : "") +
+        `Relevance ratio ${Math.round(ratio * 100)}%.`,
+    };
+  }
+
+  // 3. Cards present, names extracted, none match query.
+  //    - Non-synonym variants: likely fallback content. No-results.
+  //    - Synonym variants: by design the synonym word won't appear in
+  //      result names — trust the cards but mark lower confidence so
+  //      a human reviews whether the products are semantically related.
+  if (count > 0 && topResultNames.length > 0) {
+    if (isSynonym) {
+      return {
+        resultsPresent: true,
+        confidence: 65,
+        reason:
+          `Found ${count} card(s); top result(s): "${topResultNames.slice(0, 3).join('", "')}". ` +
+          `Synonym tests can't be auto-verified for semantic match — ` +
+          `confirm manually that these are the products the canonical query would return.`,
+      };
+    }
+    return {
+      resultsPresent: false,
+      confidence: 70,
+      reason:
+        `Found ${count} card(s) on the page but none of the ${topResultNames.length} ` +
+        `extracted name(s) contain query tokens — likely a fallback grid ` +
+        `(popular products / recommendations) rather than real hits.`,
+    };
+  }
+
+  // 4. Cards present but no names extracted → moderate-confidence
+  //    results-true (couldn't verify relevance, but the cards exist).
+  if (count > 0) {
+    return {
+      resultsPresent: true,
+      confidence: 70,
+      reason:
+        `Found ${count} card(s) on the page but couldn't extract their ` +
+        `names to verify relevance to the query. Confidence is reduced — ` +
+        `flag for manual review.`,
+    };
+  }
+
+  // 5. No cards, but query appears in URL → probably search ran but the
+  //    site doesn't expose visible cards in markup we recognize.
+  if (queryInUrl) {
+    return {
+      resultsPresent: false,
+      confidence: 55,
+      reason:
+        `No product cards detected and no explicit "no results" copy, ` +
+        `but the URL reflects the query — the site likely uses a custom ` +
+        `search-engine layout. Flag for manual review.`,
+    };
+  }
+
+  // 6. No signals either way.
+  return {
+    resultsPresent: false,
+    confidence: 60,
+    reason:
+      "No product-like elements detected and no explicit no-results copy. " +
+      "The search engine may use a non-standard layout. Flag for manual review.",
+  };
 }
 
 function mutateOneChar(s: string): string {

@@ -320,3 +320,37 @@ browser-based scorers just report `result_status='na'` with reason
      (Claude vision pass that highlights the failure region).
   Cost: 4 screenshots × ~150KB = ~600KB per run. Browserless free
   tier covers screenshots. Supabase Storage at this volume is free.
+- **Visual categorization of checks** (next iteration, user feedback
+  2026-05-27) — every check should carry a category, an icon (Lucide,
+  via the existing `<Icon>` wrapper — same family used everywhere
+  else in Scout), and an accent color so the user can scan a report
+  and immediately know what kind of problem each row is about.
+  Concretely: add `category` + `icon_name` columns on
+  `diagnostic_check` (FK to a small `check_category` lookup table with
+  name + Lucide icon name + color); render the icon + chip alongside
+  the check name in the run detail, page detail, comparison table,
+  and search-tests card. Locked-in mapping (Lucide names):
+  * `internal_search` — `Search` — sky blue — typo/synonym/empty-state/brand relevance/search engine ID
+  * `seo_aeo` — `Globe` — purple — llms.txt, sitemap, canonical, OG cards, Product JSON-LD
+  * `data_completeness` — `ListChecks` — orange — attribute table, returns-risk attribute coverage
+  * `page_performance` — `Gauge` — yellow — Core Web Vitals
+  * `pdp_quality` — `Package` — teal — image count, variant clarity, cross-sell, reviews, stock/delivery
+  * `returns_risk` — `Undo2` — coral — per-vertical expected attributes
+  * `site_trust_signals` — `ShieldCheck` — green — placeholder for future checks (payment trust, return policy, security badges, ratings/reviews)
+  * `authentication` — `LogIn` — slate — **new check needed**: detects when
+    a site forces email+password auth before browsing or buying.
+    Scored as a friction signal (sites that gate browsing behind auth
+    lose conversion). Icon picked because it directly says "this test is
+    about being forced to log in." Backup options: `KeyRound`,
+    `UserLock`, `LockKeyhole`.
+  Synchronize the color palette with the GroLabs landing-page styleguide
+  before locking in — that's the source of truth for our palette.
+- **Cut over legacy on_site_nav scorers to entry-based testing** —
+  once `search_test_entry` coverage is good across verticals, retire
+  `on_site_nav.typo_tolerance` / `synonyms` / `empty_state` /
+  `relevance_brand` as standalone scorers. They become summaries
+  derived from the entry results (e.g. "typo tolerance: X/Y entries
+  returned results for their typo variants").
+- **Surface the entry-based Search Tests card on page detail too** —
+  currently only the run detail renders it. Page detail should also
+  show entries that target the homepage (where the search box lives).

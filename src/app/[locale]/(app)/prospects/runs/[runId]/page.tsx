@@ -5,6 +5,11 @@ import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { EvidenceScreenshot } from "@/components/diagnostic/EvidenceScreenshot";
+import {
+  SearchTestsBody,
+  groupSearchTestResults,
+  SEARCH_TEST_RESULT_SELECT,
+} from "@/components/diagnostic/SearchTestsCard";
 
 export const dynamic = "force-dynamic";
 
@@ -125,9 +130,7 @@ export default async function RunDetailPage({
     // Renders the "Search tests" section grouped by entry.
     supabase
       .from("search_test_result")
-      .select(
-        "result_id, results_returned, result_count_estimate, top_result_names, screenshot_url, latency_ms, variant:search_test_variant(variant_id, variant_type, query_text, sort_order, entry:search_test_entry(entry_id, intent_label))",
-      )
+      .select(SEARCH_TEST_RESULT_SELECT)
       .eq("run_id", runId),
   ]);
 
@@ -135,73 +138,8 @@ export default async function RunDetailPage({
   const checks: Check[] = (checksRaw ?? []) as Check[];
   const findings: Finding[] = (findingsRaw ?? []) as Finding[];
   const samples: Sample[] = (samplesRaw ?? []) as Sample[];
-  // Supabase joins can return either a single object or an array, depending
-  // on the relationship inference. We normalize to a single object below.
-  type RawVariant = {
-    variant_id: number;
-    variant_type: string;
-    query_text: string;
-    sort_order: number;
-    entry: { entry_id: number; intent_label: string }
-      | { entry_id: number; intent_label: string }[]
-      | null;
-  };
-  type RawResult = {
-    result_id: number;
-    results_returned: boolean;
-    result_count_estimate: number | null;
-    top_result_names: string[];
-    screenshot_url: string | null;
-    latency_ms: number | null;
-    variant: RawVariant | RawVariant[] | null;
-  };
-  const searchTestResults = (entryResultsRaw ?? []) as unknown as RawResult[];
-
-  // Group results by entry → array of variants. Canonical variant comes first.
-  const entryGroups = new Map<
-    number,
-    {
-      intent_label: string;
-      variants: Array<{
-        variant_id: number;
-        variant_type: string;
-        query_text: string;
-        results_returned: boolean;
-        result_count_estimate: number | null;
-        top_result_names: string[];
-        screenshot_url: string | null;
-      }>;
-    }
-  >();
-  for (const r of searchTestResults) {
-    const variant = Array.isArray(r.variant) ? r.variant[0] : r.variant;
-    if (!variant) continue;
-    const entry = Array.isArray(variant.entry) ? variant.entry[0] : variant.entry;
-    if (!entry) continue;
-    const group =
-      entryGroups.get(entry.entry_id) ??
-      { intent_label: entry.intent_label, variants: [] };
-    group.variants.push({
-      variant_id: variant.variant_id,
-      variant_type: variant.variant_type,
-      query_text: variant.query_text,
-      results_returned: r.results_returned,
-      result_count_estimate: r.result_count_estimate,
-      top_result_names: r.top_result_names,
-      screenshot_url: r.screenshot_url,
-    });
-    entryGroups.set(entry.entry_id, group);
-  }
-  // Sort variants: canonical first, then by sort_order
-  for (const group of entryGroups.values()) {
-    group.variants.sort((a, b) => {
-      if (a.variant_type === "canonical") return -1;
-      if (b.variant_type === "canonical") return 1;
-      return 0;
-    });
-  }
-  const entryGroupsList = Array.from(entryGroups.entries()).map(
-    ([entry_id, group]) => ({ entry_id, ...group }),
+  const entryGroupsList = groupSearchTestResults(
+    (entryResultsRaw ?? []) as Parameters<typeof groupSearchTestResults>[0],
   );
 
   // Load fixes attached to findings (joined via finding_fix → fix_recommendation)
@@ -343,11 +281,7 @@ export default async function RunDetailPage({
       {entryGroupsList.length > 0 && (
         <Card>
           <CardHeader>{t("searchTestsTitle")}</CardHeader>
-          <div>
-            {entryGroupsList.map((entry) => (
-              <SearchEntryCard key={entry.entry_id} entry={entry} />
-            ))}
-          </div>
+          <SearchTestsBody entries={entryGroupsList} />
         </Card>
       )}
 
@@ -579,194 +513,3 @@ function FindingRow({
   );
 }
 
-// ── Search-test entry card ──────────────────────────────────────────────
-// Renders one user-defined search_test_entry with its canonical/typo/
-// synonym/etc variants and the result of each. Each variant gets a
-// judgment (good/bad/unclear) computed from variant_type + results_returned.
-
-function SearchEntryCard({
-  entry,
-}: {
-  entry: {
-    entry_id: number;
-    intent_label: string;
-    variants: Array<{
-      variant_id: number;
-      variant_type: string;
-      query_text: string;
-      results_returned: boolean;
-      result_count_estimate: number | null;
-      top_result_names: string[];
-      screenshot_url: string | null;
-    }>;
-  };
-}) {
-  return (
-    <div
-      style={{
-        padding: "14px 18px",
-        borderBottom: "0.5px solid var(--s-border)",
-      }}
-    >
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
-        {entry.intent_label}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {entry.variants.map((v) => (
-          <VariantResultRow key={v.variant_id} variant={v} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function VariantResultRow({
-  variant,
-}: {
-  variant: {
-    variant_type: string;
-    query_text: string;
-    results_returned: boolean;
-    result_count_estimate: number | null;
-    top_result_names: string[];
-    screenshot_url: string | null;
-  };
-}) {
-  const judgment = judgeVariant(variant.variant_type, variant.results_returned);
-  const VARIANT_COLORS: Record<string, string> = {
-    canonical: "var(--scout-accent)",
-    typo: "#facc15",
-    synonym: "#60a5fa",
-    plural: "#a78bfa",
-    partial: "#f97316",
-  };
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "100px 1fr auto 110px",
-        gap: 12,
-        alignItems: "center",
-        padding: "8px 10px",
-        background: "var(--s-surface-alt)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: VARIANT_COLORS[variant.variant_type] ?? "#888",
-          }}
-        />
-        <span
-          style={{
-            fontSize: 10,
-            textTransform: "uppercase",
-            letterSpacing: "0.04em",
-            color: "var(--s-text-tertiary)",
-            fontWeight: 600,
-          }}
-        >
-          {variant.variant_type}
-        </span>
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div
-          style={{
-            fontFamily: "var(--s-font-mono)",
-            fontSize: 12,
-            color: "var(--s-text)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {variant.query_text}
-        </div>
-        {variant.top_result_names.length > 0 && (
-          <div
-            style={{
-              fontSize: 10,
-              color: "var(--s-text-tertiary)",
-              marginTop: 2,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            top: {variant.top_result_names.slice(0, 3).join(" · ")}
-          </div>
-        )}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span
-          style={{
-            fontSize: 11,
-            fontFamily: "var(--s-font-mono)",
-            color: variant.results_returned
-              ? "var(--s-text)"
-              : "var(--s-text-tertiary)",
-            fontWeight: 600,
-          }}
-        >
-          {variant.result_count_estimate != null
-            ? `${variant.result_count_estimate} results`
-            : variant.results_returned
-              ? "results"
-              : "no results"}
-        </span>
-        {variant.screenshot_url && (
-          <EvidenceScreenshot
-            url={variant.screenshot_url}
-            label={`${variant.variant_type}: ${variant.query_text}`}
-            thumbWidth={64}
-          />
-        )}
-      </div>
-      <div
-        style={{
-          textAlign: "right",
-          fontSize: 10,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          color: judgment.color,
-        }}
-      >
-        {judgment.label}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Per-variant judgment:
- *   canonical: should have results → no_results = ❌ FAIL
- *   typo:      should have results (typo tolerance works) → no_results = ❌ FAIL
- *   synonym:   should have results → no_results = ❌ FAIL
- *   plural/partial: should have results → no_results = ⚠ WEAK
- *
- * (Future) overlap analysis between canonical + synonym for green vs amber.
- */
-function judgeVariant(
-  variantType: string,
-  resultsReturned: boolean,
-): { label: string; color: string } {
-  if (resultsReturned) {
-    return { label: "OK", color: "var(--s-success)" };
-  }
-  if (variantType === "canonical") {
-    return { label: "FAIL — no results", color: "var(--s-danger)" };
-  }
-  if (variantType === "typo") {
-    return { label: "FAIL — no typo tolerance", color: "var(--s-danger)" };
-  }
-  if (variantType === "synonym") {
-    return { label: "FAIL — synonym not understood", color: "var(--s-danger)" };
-  }
-  return { label: "WEAK — no results", color: "#d97706" };
-}

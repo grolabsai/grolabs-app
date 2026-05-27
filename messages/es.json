@@ -2452,6 +2452,7 @@
         "latest": "Último",
         "delta": "Δ"
       },
+      "searchTestsTitle": "Pruebas de búsqueda",
       "scanHistory": "Historial de escaneos",
       "noScansYet": "Sin escaneos todavía.",
       "scanTable": {

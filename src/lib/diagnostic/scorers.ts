@@ -400,6 +400,37 @@ function browserDisabledOrUnavailable({ browser }: RunContext): ScoringResult | 
   return null;
 }
 
+/**
+ * Collect every variant of a given type across all entries in the
+ * current run, alongside the entry's intent label so the evidence
+ * can read "Tape Measure → Type Measure (0 results)".
+ */
+function collectVariantResults(
+  ctx: RunContext,
+  variantType: "canonical" | "typo" | "synonym" | "plural" | "partial",
+) {
+  const probe = ctx.browser.probe;
+  if (!probe?.entry_results) return [];
+  const rows: Array<{
+    intent_label: string;
+    query: string;
+    results_returned: boolean;
+    result_count_estimate: number | null;
+  }> = [];
+  for (const entry of probe.entry_results) {
+    for (const v of entry.variant_results) {
+      if (v.variant_type !== variantType) continue;
+      rows.push({
+        intent_label: entry.intent_label,
+        query: v.query_text,
+        results_returned: v.results_returned,
+        result_count_estimate: v.result_count_estimate,
+      });
+    }
+  }
+  return rows;
+}
+
 const scoreTypoTolerance: CheckScorer = (ctx) => {
   const guard = browserDisabledOrUnavailable(ctx);
   if (guard) return guard;
@@ -411,29 +442,55 @@ const scoreTypoTolerance: CheckScorer = (ctx) => {
       evidence: { reason: "search_box_not_found" },
     };
   }
-  if (probe.typo_tests.length === 0) {
+  // Preferred: score from user-defined test entries with variant_type='typo'.
+  // The new entry-based vocabulary lets users specify exactly which
+  // typos they want tested — way more meaningful than the auto-generated
+  // adjacent-char mutations the probe used to do.
+  const typoRows = collectVariantResults(ctx, "typo");
+  if (typoRows.length > 0) {
+    const passed = typoRows.filter((r) => r.results_returned).length;
+    const ratio = passed / typoRows.length;
+    const score = Math.round(ratio * 100);
+    const status = ratio >= 0.99 ? "pass" : ratio >= 0.5 ? "partial" : "fail";
     return {
-      result_status: "na",
-      score: null,
+      result_status: status,
+      score,
       evidence: {
-        reason: "no_product_names_to_mutate",
-        product_names_discovered: probe.product_names_discovered,
+        source: "entries",
+        passed,
+        total: typoRows.length,
+        variant_results: typoRows,
+      },
+      notes: `${passed} of ${typoRows.length} typo variants returned results.`,
+    };
+  }
+  // Legacy fallback: the probe's auto-mutated tests (kept so the scorer
+  // doesn't go NA if the user hasn't added test entries yet).
+  if (probe.typo_tests.length > 0) {
+    const passed = probe.typo_tests.filter((t) => t.results_returned).length;
+    const ratio = passed / probe.typo_tests.length;
+    const score = Math.round(ratio * 100);
+    const status = ratio >= 0.99 ? "pass" : ratio >= 0.5 ? "partial" : "fail";
+    return {
+      result_status: status,
+      score,
+      evidence: {
+        source: "auto_mutation",
+        typo_tests: probe.typo_tests,
+        passed,
+        total: probe.typo_tests.length,
       },
     };
   }
-  const passed = probe.typo_tests.filter((t) => t.results_returned).length;
-  const ratio = passed / probe.typo_tests.length;
-  const score = Math.round(ratio * 100);
-  const status =
-    ratio >= 0.99 ? "pass" : ratio >= 0.5 ? "partial" : "fail";
   return {
-    result_status: status,
-    score,
+    result_status: "na",
+    score: null,
     evidence: {
-      typo_tests: probe.typo_tests,
-      passed,
-      total: probe.typo_tests.length,
+      reason: "no_typo_variants_defined",
+      hint: "Add test entries with `typo` variants on /prospects/[id]/vocabulary",
     },
+    notes:
+      "No typo variants to test. Add some on the prospect's vocabulary page — the probe runs them on every diagnostic.",
   };
 };
 
@@ -441,39 +498,72 @@ const scoreSynonyms: CheckScorer = (ctx) => {
   const guard = browserDisabledOrUnavailable(ctx);
   if (guard) return guard;
   const probe = ctx.browser.probe!;
-  if (!probe.search_box_found || probe.synonym_tests.length === 0) {
+  if (!probe.search_box_found) {
     return {
-      result_status: "na",
+      result_status: "error",
       score: null,
-      evidence: { reason: "no_synonym_pairs_tested" },
+      evidence: { reason: "search_box_not_found" },
     };
   }
-  // Layered scoring:
-  //   both_returned    → base 50pts
-  //   overlap > 0      → +30pts (synonyms actually surface similar products)
-  //   overlap >= 3     → +20pts more (strong overlap)
-  let totalScore = 0;
-  let strongCovered = 0;
-  for (const s of probe.synonym_tests) {
-    let v = 0;
-    if (s.both_returned) v += 50;
-    if (s.overlap_count > 0) v += 30;
-    if (s.overlap_count >= 3) {
-      v += 20;
-      strongCovered += 1;
-    }
-    totalScore += v;
+  // Preferred: user-defined synonym variants. We score on whether the
+  // synonym returns ANY results — strong overlap analysis (matching
+  // products between canonical + synonym) is a future enhancement that
+  // needs both result sets per entry.
+  const synonymRows = collectVariantResults(ctx, "synonym");
+  if (synonymRows.length > 0) {
+    const passed = synonymRows.filter((r) => r.results_returned).length;
+    const ratio = passed / synonymRows.length;
+    const score = Math.round(ratio * 100);
+    const status = ratio >= 0.99 ? "pass" : ratio >= 0.5 ? "partial" : "fail";
+    return {
+      result_status: status,
+      score,
+      evidence: {
+        source: "entries",
+        passed,
+        total: synonymRows.length,
+        variant_results: synonymRows,
+      },
+      notes: `${passed} of ${synonymRows.length} synonym variants returned results.`,
+    };
   }
-  const score = Math.round(totalScore / probe.synonym_tests.length);
-  const status = score >= 80 ? "pass" : score >= 40 ? "partial" : "fail";
+  // Legacy fallback for prospects that still have vertical_synonym_pair
+  // data but no entry-based synonyms yet.
+  if (probe.synonym_tests.length > 0) {
+    let totalScore = 0;
+    let strongCovered = 0;
+    for (const s of probe.synonym_tests) {
+      let v = 0;
+      if (s.both_returned) v += 50;
+      if (s.overlap_count > 0) v += 30;
+      if (s.overlap_count >= 3) {
+        v += 20;
+        strongCovered += 1;
+      }
+      totalScore += v;
+    }
+    const score = Math.round(totalScore / probe.synonym_tests.length);
+    const status = score >= 80 ? "pass" : score >= 40 ? "partial" : "fail";
+    return {
+      result_status: status,
+      score,
+      evidence: {
+        source: "auto_pairs",
+        synonym_tests: probe.synonym_tests,
+        total: probe.synonym_tests.length,
+        strong_overlap_count: strongCovered,
+      },
+    };
+  }
   return {
-    result_status: status,
-    score,
+    result_status: "na",
+    score: null,
     evidence: {
-      synonym_tests: probe.synonym_tests,
-      total: probe.synonym_tests.length,
-      strong_overlap_count: strongCovered,
+      reason: "no_synonym_variants_defined",
+      hint: "Add test entries with `synonym` variants on /prospects/[id]/vocabulary",
     },
+    notes:
+      "No synonym variants to test. Add some on the prospect's vocabulary page.",
   };
 };
 

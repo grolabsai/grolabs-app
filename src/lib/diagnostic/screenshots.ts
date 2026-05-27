@@ -4,12 +4,18 @@
  * is stable per (run, check) and can be computed before the finding
  * is inserted (no chicken-and-egg with finding_id).
  *
- * The bucket (`prospect-evidence`) is public-read; privacy comes from
- * the unguessable run_id prefix — same access model as the public
- * report page itself.
+ * The bucket (`prospect-evidence`) is public-read; writes go through
+ * the service-role client because Storage RLS doesn't grant the
+ * authenticated role write access. We mint the service-role client
+ * internally so callers don't have to thread it through (and so admin
+ * diagnostic runs — which otherwise use the authenticated client —
+ * don't silently lose their screenshots).
+ *
+ * Privacy comes from the unguessable run_id prefix — same access
+ * model as the public report page itself.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 const BUCKET = "prospect-evidence";
 
@@ -20,11 +26,11 @@ export type ScreenshotUploadResult = {
 };
 
 export async function uploadProbeScreenshots(
-  supabase: SupabaseClient,
   runId: string,
   screenshots: Array<{ check_code: string; buffer: Buffer }>,
 ): Promise<ScreenshotUploadResult[]> {
   if (screenshots.length === 0) return [];
+  const supabase = createServiceRoleClient();
   const uploads = await Promise.all(
     screenshots.map(async (ss) => {
       const path = `${runId}/${ss.check_code}.png`;

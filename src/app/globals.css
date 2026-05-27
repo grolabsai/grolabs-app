@@ -1314,7 +1314,11 @@ input[type="date"].s-input {
   font-weight: 500;
   border-radius: var(--s-radius-md);
   cursor: pointer;
-  border: 0.5px solid transparent;
+  /* Default secondary border. A naked `.s-btn` (no -primary / -ghost /
+     -danger modifier) needs to read as a clickable button, not a text
+     label. Modifiers below override where they supply their own
+     border-color (primary fills yellow, danger uses red bg, etc.). */
+  border: 0.5px solid var(--s-border-strong);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
   display: inline-flex;
   align-items: center;
@@ -1323,6 +1327,9 @@ input[type="date"].s-input {
   color: var(--s-text);
   background: transparent;
   text-decoration: none;
+}
+.s-btn:hover {
+  background: var(--s-surface-alt);
 }
 .s-btn:disabled {
   opacity: 0.5;

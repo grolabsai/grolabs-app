@@ -74,7 +74,7 @@ export function RescanPageClient({ prospectPageId }: { prospectPageId: number })
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <button
         type="button"
-        className="s-btn"
+        className="s-btn s-btn-primary"
         onClick={handleClick}
         disabled={isPending}
         style={{ fontSize: 11, padding: "4px 10px", height: 26 }}

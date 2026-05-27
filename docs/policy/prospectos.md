@@ -292,3 +292,23 @@ browser-based scorers just report `result_status='na'` with reason
 - **Vertical-aware fix copy** — `fix_recommendation` is currently
   per-check, locale-neutral. Could split per-vertical for more
   prescriptive recommendations.
+- **Screenshot evidence on browser-probe findings** (phase 2) — the
+  browser probe runs through Browserless, which can capture
+  `page.screenshot()` PNGs alongside the existing assertions. Goal: make
+  the report read as "here's what we tried, here's what we found,
+  here's a *picture* of it" — empty-state screen, top-3 search
+  results, broken faceting, missing variant selector, etc.
+  Implementation sketch:
+  1. In `browser-probe.ts`, capture `page.screenshot({ fullPage: false })`
+     at each evidence moment (post-search, empty state, faceting panel)
+     and return Buffer + intended filename per finding.
+  2. Upload to a new `prospect-evidence` Supabase Storage bucket
+     (path: `<run_id>/<finding_id>.png`, public-read with the same
+     unguessable-uuid pattern as the run-share token).
+  3. Persist the storage path on `finding.evidence.screenshot_url`.
+  4. Page-detail UI + public report render the image inline. Phase 3
+     could add an "annotate / circle the broken area" affordance —
+     either manual (canvas overlay in the report) or AI-assisted
+     (Claude vision pass that highlights the failure region).
+  Cost: 4 screenshots × ~150KB = ~600KB per run. Browserless free
+  tier covers screenshots. Supabase Storage at this volume is free.

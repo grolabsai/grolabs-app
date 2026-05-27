@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createEntry, updateEntry, deleteEntry, type VariantInput } from "./_actions";
+import { HintedInput, HintedSelect } from "@/components/ui/hinted-field";
 
 type VariantType = "canonical" | "typo" | "synonym" | "plural" | "partial";
 
@@ -358,6 +359,7 @@ function EntryForm({
   onCancel: () => void;
 }) {
   const t = useTranslations("prospects.testEntries");
+  const formId = useId();
   const [isPending, startTransition] = useTransition();
   const [intentLabel, setIntentLabel] = useState(entry?.intent_label ?? "");
   const [locale, setLocale] = useState(entry?.locale ?? "en");
@@ -431,36 +433,32 @@ function EntryForm({
         background: "var(--s-surface-alt)",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 12 }}>
-          <Field label={t("intentLabel")} hint={t("intentLabelHint")}>
-            <input
-              className="s-input"
-              value={intentLabel}
-              onChange={(e) => setIntentLabel(e.target.value)}
-              placeholder={t("intentPlaceholder")}
-            />
-          </Field>
-          <Field label={t("localeField")}>
-            <select
-              className="s-select"
-              value={locale}
-              onChange={(e) => setLocale(e.target.value)}
-            >
-              <option value="en">EN</option>
-              <option value="es">ES</option>
-            </select>
-          </Field>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
+          <HintedInput
+            id={`${formId}-intent`}
+            label={t("intentLabel")}
+            value={intentLabel}
+            onChange={(e) => setIntentLabel(e.target.value)}
+            hint={{ label: t("intentLabel"), body: t("intentLabelHint") }}
+          />
+          <HintedSelect
+            id={`${formId}-locale`}
+            label={t("localeField")}
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+          </HintedSelect>
         </div>
 
-        <Field label={t("notesField")}>
-          <input
-            className="s-input"
-            value={notes ?? ""}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={t("notesPlaceholder")}
-          />
-        </Field>
+        <HintedInput
+          id={`${formId}-notes`}
+          label={t("notesField")}
+          value={notes ?? ""}
+          onChange={(e) => setNotes(e.target.value)}
+        />
 
         <div>
           <div
@@ -470,42 +468,46 @@ function EntryForm({
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               color: "var(--s-text-tertiary)",
-              marginBottom: 8,
+              marginBottom: 10,
             }}
           >
             {t("variantsHeader")}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {variants.map((v, idx) => (
               <div
                 key={idx}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "110px 1fr auto",
+                  gridTemplateColumns: "130px 1fr 36px",
                   gap: 8,
                   alignItems: "center",
                 }}
               >
-                <select
-                  className="s-select"
+                <HintedSelect
+                  id={`${formId}-variant-${idx}-type`}
+                  label={t("variantTypeLabel")}
                   value={v.variant_type}
                   onChange={(e) =>
                     updateVariant(idx, { variant_type: e.target.value as VariantType })
                   }
-                  style={{ fontSize: 12 }}
                 >
                   <option value="canonical">{VARIANT_LABELS.canonical}</option>
                   <option value="typo">{VARIANT_LABELS.typo}</option>
                   <option value="synonym">{VARIANT_LABELS.synonym}</option>
                   <option value="plural">{VARIANT_LABELS.plural}</option>
                   <option value="partial">{VARIANT_LABELS.partial}</option>
-                </select>
-                <input
-                  className="s-input"
+                </HintedSelect>
+                <HintedInput
+                  id={`${formId}-variant-${idx}-query`}
+                  label={t("variantQueryLabel")}
                   value={v.query_text}
                   onChange={(e) => updateVariant(idx, { query_text: e.target.value })}
-                  placeholder={t(`variantPlaceholders.${v.variant_type}`)}
-                  style={{ fontFamily: "var(--s-font-mono)" }}
+                  hint={{
+                    label: `${VARIANT_LABELS[v.variant_type]} — ${t("variantQueryLabel")}`,
+                    body: t(`variantHintBodies.${v.variant_type}`),
+                  }}
+                  className="font-mono"
                 />
                 <button
                   type="button"
@@ -514,9 +516,14 @@ function EntryForm({
                   disabled={variants.length === 1}
                   style={{
                     fontSize: 11,
-                    padding: "4px 10px",
+                    padding: "0",
+                    width: 36,
+                    height: 40,
                     color: "var(--s-text-tertiary)",
+                    justifyContent: "center",
                   }}
+                  title={t("removeVariant")}
+                  aria-label={t("removeVariant")}
                 >
                   ×
                 </button>
@@ -550,40 +557,6 @@ function EntryForm({
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label
-        style={{
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: "var(--s-text-tertiary)",
-          display: "block",
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </label>
-      {children}
-      {hint && (
-        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
-          {hint}
-        </div>
-      )}
     </div>
   );
 }

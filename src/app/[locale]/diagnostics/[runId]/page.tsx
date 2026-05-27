@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { EvidenceScreenshot } from "@/components/diagnostic/EvidenceScreenshot";
 
 export const dynamic = "force-dynamic";
 
@@ -398,6 +399,15 @@ function FindingRow({
       </div>
       {finding.notes && (
         <p style={{ marginTop: 6, fontSize: 12, color: "#666", paddingLeft: 86 }}>{finding.notes}</p>
+      )}
+      {typeof finding.evidence?.screenshot_url === "string" && (
+        <div style={{ marginTop: 10, paddingLeft: 86 }}>
+          <EvidenceScreenshot
+            url={finding.evidence.screenshot_url as string}
+            label={`${checkName} — captured by the browser probe`}
+            thumbWidth={160}
+          />
+        </div>
       )}
       {fixes.length > 0 && (
         <div style={{ marginTop: 10, paddingLeft: 86 }}>

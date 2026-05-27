@@ -79,6 +79,19 @@ export type BrandTestResult = {
   top_result_names: string[];
 };
 
+/**
+ * A screenshot captured during the probe, tagged with the check it
+ * serves as evidence for. Uploaded by the runner via uploadProbeScreenshots()
+ * and the resulting public URL is patched onto finding.evidence.screenshot_url.
+ *
+ * At most one screenshot per check_code today (the "most representative"
+ * moment). Future: capture multiple and store as an array.
+ */
+export type ProbeScreenshot = {
+  check_code: string;
+  buffer: Buffer;
+};
+
 export type BrowserProbeResult = {
   product_names_discovered: string[];
   brands_discovered: string[];
@@ -90,6 +103,7 @@ export type BrowserProbeResult = {
   brand_tests: BrandTestResult[];
   engine_network_fingerprint: string | null;
   notes: string[];
+  screenshots: ProbeScreenshot[];
 };
 
 export type RunBrowserProbeInput = {
@@ -118,6 +132,7 @@ export async function runBrowserProbe(
   // browser keeps serving other connections.
   let weLaunchedIt = false;
   const notes: string[] = [];
+  const screenshots: ProbeScreenshot[] = [];
   try {
     const wsUrl = buildBrowserlessWsUrl();
     if (wsUrl) {
@@ -142,6 +157,7 @@ export async function runBrowserProbe(
       brand_tests: [],
       engine_network_fingerprint: null,
       notes,
+      screenshots,
     };
   }
 
@@ -183,12 +199,16 @@ export async function runBrowserProbe(
         brand_tests: [],
         engine_network_fingerprint: detectEngineFromNetwork(networkUrls),
         notes,
+        screenshots,
       };
     }
 
     // 3. Typo tolerance test — use up to 2 discovered product names.
+    // Only the first typo's screenshot is captured as evidence (one
+    // representative moment per finding; multi-screenshot evidence
+    // is a future iteration).
     const typoResults: TypoTestResult[] = [];
-    for (const name of productNames.slice(0, 2)) {
+    for (const [idx, name] of productNames.slice(0, 2).entries()) {
       const mutated = mutateOneChar(name);
       const res = await runSearchQuery(page, context, input.rootUrl, mutated);
       typoResults.push({
@@ -197,13 +217,22 @@ export async function runBrowserProbe(
         results_returned: res.resultsPresent,
         result_count_estimate: res.estimate,
       });
+      if (idx === 0 && res.screenshot) {
+        screenshots.push({
+          check_code: "on_site_nav.typo_tolerance",
+          buffer: res.screenshot,
+        });
+      }
     }
 
     // 4. Synonym tests — up to MAX_QUERIES/2 pairs. We also capture
     // top result names so the scorer can measure overlap (true synonym
-    // coverage means similar products surface for both terms).
+    // coverage means similar products surface for both terms). Only
+    // the first pair's term_a screenshot is captured as evidence.
     const synonymResults: SynonymTestResult[] = [];
-    for (const pair of input.synonymPairs.slice(0, Math.floor(MAX_QUERIES / 2))) {
+    for (const [idx, pair] of input.synonymPairs
+      .slice(0, Math.floor(MAX_QUERIES / 2))
+      .entries()) {
       const a = await runSearchQuery(page, context, input.rootUrl, pair.term_a);
       const b = await runSearchQuery(page, context, input.rootUrl, pair.term_b);
       const aSet = new Set(a.topResultNames.map((s) => s.toLowerCase()));
@@ -218,6 +247,12 @@ export async function runBrowserProbe(
         b_result_names: b.topResultNames.slice(0, 5),
         overlap_count: overlap,
       });
+      if (idx === 0 && a.screenshot) {
+        screenshots.push({
+          check_code: "on_site_nav.synonyms",
+          buffer: a.screenshot,
+        });
+      }
     }
 
     // 5. Empty-state test — first available gibberish query.
@@ -230,13 +265,19 @@ export async function runBrowserProbe(
         graceful: !res.resultsPresent && !res.hardError,
         has_fallback_content: res.hasFallbackContent,
       };
+      if (res.screenshot) {
+        screenshots.push({
+          check_code: "on_site_nav.empty_state",
+          buffer: res.screenshot,
+        });
+      }
     }
 
     // 6. Brand relevance — first discovered brand. We check whether the
     // brand name actually appears in the top result names (i.e. the site
     // ranked that brand first, not just "any results came back").
     const brandResults: BrandTestResult[] = [];
-    for (const brand of brands.slice(0, 1)) {
+    for (const [idx, brand] of brands.slice(0, 1).entries()) {
       const res = await runSearchQuery(page, context, input.rootUrl, brand);
       const brandLower = brand.toLowerCase();
       const topNames = res.topResultNames.slice(0, 3);
@@ -250,6 +291,12 @@ export async function runBrowserProbe(
         brand_in_top_results: brandInTop,
         top_result_names: topNames,
       });
+      if (idx === 0 && res.screenshot) {
+        screenshots.push({
+          check_code: "on_site_nav.relevance_brand",
+          buffer: res.screenshot,
+        });
+      }
     }
 
     return {
@@ -263,6 +310,7 @@ export async function runBrowserProbe(
       brand_tests: brandResults,
       engine_network_fingerprint: detectEngineFromNetwork(networkUrls),
       notes,
+      screenshots,
     };
   } catch (e) {
     notes.push(`browser_probe_error:${String(e).slice(0, 160)}`);
@@ -277,6 +325,7 @@ export async function runBrowserProbe(
       brand_tests: [],
       engine_network_fingerprint: null,
       notes,
+      screenshots,
     };
   } finally {
     try {
@@ -412,7 +461,24 @@ type SearchOutcome = {
   hasFallbackContent: boolean;
   hardError: boolean;
   topResultNames: string[];
+  /**
+   * PNG snapshot of the results page at the moment of capture. Used
+   * as evidence on the diagnostic report ("here's literally what we
+   * saw"). Null when the page couldn't be reached at all.
+   */
+  screenshot: Buffer | null;
 };
+
+async function captureScreenshot(page: Page): Promise<Buffer | null> {
+  try {
+    // Above-the-fold only (fullPage:false). Bigger captures hurt
+    // upload size + report render perf, and the empty-state /
+    // top-results signal lives at the top of the page anyway.
+    return await page.screenshot({ fullPage: false, type: "png" });
+  } catch {
+    return null;
+  }
+}
 
 async function runSearchQuery(
   page: Page,
@@ -431,6 +497,7 @@ async function runSearchQuery(
         hasFallbackContent: false,
         hardError: true,
         topResultNames: [],
+        screenshot: null,
       };
     }
     await input.fill("");
@@ -446,7 +513,13 @@ async function runSearchQuery(
         /* ignore */
       });
 
-    return await page.evaluate(() => {
+    // Capture the screenshot now — after results have settled and
+    // before we read the DOM. The DOM read itself doesn't disturb the
+    // page, but doing screenshot first means timing-sensitive sites
+    // (e.g. lazy-loaded result thumbnails) still look right.
+    const screenshot = await captureScreenshot(page);
+
+    const domResult = await page.evaluate(() => {
       const bodyText = document.body.innerText.toLowerCase();
       const noResultsPhrases = [
         "no results",
@@ -517,6 +590,8 @@ async function runSearchQuery(
         topResultNames: names,
       };
     });
+
+    return { ...domResult, screenshot };
   } catch (e) {
     return {
       resultsPresent: false,
@@ -524,6 +599,7 @@ async function runSearchQuery(
       hasFallbackContent: false,
       hardError: true,
       topResultNames: [],
+      screenshot: null,
     };
   }
 }

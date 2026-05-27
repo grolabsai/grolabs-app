@@ -30,6 +30,7 @@ import {
 } from "@/lib/ase";
 import { probeSiteWide } from "./site-checks";
 import { runBrowserProbe, type BrowserProbeResult } from "./browser-probe";
+import { uploadProbeScreenshots } from "./screenshots";
 import { scoreCheck } from "./scorers";
 import {
   computeFindingUplift,
@@ -575,23 +576,50 @@ async function runDiagnostic(opts: {
     return { check, result, uplift };
   });
 
-  const findingRows = findingsToInsert.map(({ check, result, uplift }) => ({
-    run_id: runId,
-    instance_id: instanceId,
-    diagnostic_check_id: check.diagnostic_check_id,
-    // Wire each finding to the page_scan it primarily measured. Lets
-    // the per-page history view show "this scan: 12 of 18 checks
-    // ran" without joining through run_sample. Null when no page_scan
-    // matches the check (rare — site-wide checks that have no
-    // homepage scan).
-    page_scan_id: scanIdForCheck(check.check_code),
-    score: result.score,
-    result_status: result.result_status,
-    evidence: result.evidence,
-    notes: result.notes ?? null,
-    est_annual_uplift_usd: uplift.uplift_usd,
-    est_confidence: uplift.confidence,
-  }));
+  // 6b. Upload browser-probe screenshots to Storage and build a map of
+  // check_code → public URL. Done before insert so the URL lands on
+  // finding.evidence in a single write (no second UPDATE pass).
+  // Best-effort: upload failures don't fail the run, they just leave
+  // the finding without a screenshot.
+  const screenshotUrlByCheck = new Map<string, string>();
+  if (browserResult?.screenshots?.length) {
+    try {
+      const uploaded = await uploadProbeScreenshots(
+        supabase,
+        runId,
+        browserResult.screenshots,
+      );
+      for (const u of uploaded) {
+        screenshotUrlByCheck.set(u.check_code, u.public_url);
+      }
+    } catch (e) {
+      console.warn("[runner] screenshot upload pass failed:", e);
+    }
+  }
+
+  const findingRows = findingsToInsert.map(({ check, result, uplift }) => {
+    const screenshotUrl = screenshotUrlByCheck.get(check.check_code);
+    const evidence = screenshotUrl
+      ? { ...(result.evidence ?? {}), screenshot_url: screenshotUrl }
+      : result.evidence;
+    return {
+      run_id: runId,
+      instance_id: instanceId,
+      diagnostic_check_id: check.diagnostic_check_id,
+      // Wire each finding to the page_scan it primarily measured. Lets
+      // the per-page history view show "this scan: 12 of 18 checks
+      // ran" without joining through run_sample. Null when no page_scan
+      // matches the check (rare — site-wide checks that have no
+      // homepage scan).
+      page_scan_id: scanIdForCheck(check.check_code),
+      score: result.score,
+      result_status: result.result_status,
+      evidence,
+      notes: result.notes ?? null,
+      est_annual_uplift_usd: uplift.uplift_usd,
+      est_confidence: uplift.confidence,
+    };
+  });
 
   const { data: insertedFindings, error: findingErr } = await supabase
     .from("finding")

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { EvidenceScreenshot } from "@/components/diagnostic/EvidenceScreenshot";
 
 export const dynamic = "force-dynamic";
 
@@ -438,6 +439,15 @@ function FindingRow({
       {finding.notes && (
         <div style={{ marginTop: 6, fontSize: 11, color: "var(--s-text-tertiary)", paddingLeft: 82 }}>
           {finding.notes}
+        </div>
+      )}
+      {typeof finding.evidence?.screenshot_url === "string" && (
+        <div style={{ marginTop: 10, paddingLeft: 82 }}>
+          <EvidenceScreenshot
+            url={finding.evidence.screenshot_url as string}
+            label={`${checkName} — captured by the browser probe`}
+            thumbWidth={140}
+          />
         </div>
       )}
       {fixes.length > 0 && (

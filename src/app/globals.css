@@ -111,7 +111,12 @@ svg {
      headers + version footer still use a muted tone. */
   --nav-surface: var(--s-bg-deeper);
   --nav-border: rgba(255, 255, 255, 0.06);
-  --nav-text: #ffffff;
+  /* Inactive nav items render in nav-text. Keeping this at pure #ffffff
+     made inactive rows visually identical to the active row (which uses
+     --s-text-strong = #ffffff). Bone-tinted 60% lets the active row pop:
+     active = bright bone + yellow icon, inactive = dimmer bone, hover =
+     back to pure white. */
+  --nav-text: rgba(237, 234, 224, 0.6);
   --nav-text-hover: #ffffff;
   --nav-text-muted: rgba(255, 255, 255, 0.45);
 
@@ -190,7 +195,9 @@ svg {
      Only the content area picks up the light surface. */
   --nav-surface: #0E0E11;
   --nav-border: rgba(255, 255, 255, 0.06);
-  --nav-text: #ffffff;
+  /* Light theme — sidebar stays dark, so mirror the dark-mode dimming
+     so the active row pops here too. See the :root block for rationale. */
+  --nav-text: rgba(237, 234, 224, 0.6);
   --nav-text-hover: #ffffff;
   --nav-text-muted: rgba(255, 255, 255, 0.45);
 

@@ -12,12 +12,15 @@
  * reason.
  *
  * Browser source:
- *   - Production: BROWSERLESS_WS_URL set → connect to a managed
- *     Chromium via CDP. No binaries shipped in the deploy bundle, no
- *     cold-start launch cost. Recommended for serverless (Vercel).
- *   - Local dev: BROWSERLESS_WS_URL unset → launch a local Chromium
- *     via `playwright install chromium`. Useful for debugging the
- *     probe itself; not viable on Vercel.
+ *   - Production: BROWSERLESS_HOST + BROWSERLESS_TOKEN both set →
+ *     connect to a managed Chromium via CDP at
+ *     wss://<HOST>?token=<TOKEN>. The host (region or enterprise
+ *     private fleet) is fully configurable; nothing is hardcoded.
+ *     No binaries shipped in the deploy bundle, no cold-start launch
+ *     cost. Recommended for serverless (Vercel).
+ *   - Local dev: BROWSERLESS_HOST / TOKEN unset → launch a local
+ *     Chromium via `playwright install chromium`. Useful for
+ *     debugging the probe itself; not viable on Vercel.
  *
  * Time budget: ~60s per run. Each query test ~5s. Vercel Pro plan
  * gives 60s function timeout — exactly the budget we plan for.
@@ -26,7 +29,21 @@
 import type { Browser, BrowserContext, Page, Request } from "playwright";
 
 const PROBE_ENABLED = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
-const BROWSERLESS_WS_URL = process.env.BROWSERLESS_WS_URL;
+const BROWSERLESS_HOST = process.env.BROWSERLESS_HOST; // e.g. "production-sfo.browserless.io"
+const BROWSERLESS_TOKEN = process.env.BROWSERLESS_TOKEN;
+
+/**
+ * Build the wss:// CDP endpoint from configured host + token. Returns
+ * null when either piece is missing — the caller falls back to a local
+ * Chromium launch (dev) or surfaces the misconfig (prod). The protocol
+ * is fixed at wss:// because that's what Playwright's connectOverCDP
+ * speaks; the host (region or enterprise fleet) is fully configurable.
+ */
+function buildBrowserlessWsUrl(): string | null {
+  if (!BROWSERLESS_HOST || !BROWSERLESS_TOKEN) return null;
+  const host = BROWSERLESS_HOST.replace(/^wss?:\/\//, "").replace(/\/+$/, "");
+  return `wss://${host}?token=${encodeURIComponent(BROWSERLESS_TOKEN)}`;
+}
 const MAX_QUERIES = 6; // safety cap so a wide vocabulary doesn't blow the budget
 const PER_QUERY_TIMEOUT_MS = 12_000;
 const NAV_TIMEOUT_MS = 20_000;
@@ -102,8 +119,9 @@ export async function runBrowserProbe(
   let weLaunchedIt = false;
   const notes: string[] = [];
   try {
-    if (BROWSERLESS_WS_URL) {
-      browser = await playwright.chromium.connectOverCDP(BROWSERLESS_WS_URL);
+    const wsUrl = buildBrowserlessWsUrl();
+    if (wsUrl) {
+      browser = await playwright.chromium.connectOverCDP(wsUrl);
       notes.push("browser_source:browserless");
     } else {
       browser = await playwright.chromium.launch({ headless: true });

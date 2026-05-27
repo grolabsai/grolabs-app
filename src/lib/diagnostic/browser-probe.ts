@@ -612,17 +612,35 @@ async function runSearchQuery(
 
     const domResult = await page.evaluate(() => {
       const bodyText = document.body.innerText.toLowerCase();
+      // Broader phrase list — covers WooCommerce, Shopify, BigCommerce,
+      // generic CMS templates, and custom carts. Each entry is a
+      // contiguous lowercase substring we look for in the body text.
       const noResultsPhrases = [
         "no results",
         "no resultados",
         "sin resultados",
         "0 results",
+        "0 productos",
+        "no products found",
+        "no products were found",
+        "no items found",
+        "no items match",
+        "no matches found",
+        "no matching",
         "no se encontraron",
         "did not match",
+        "did not find",
         "nothing found",
+        "we couldn't find",
+        "we could not find",
+        "we didn't find",
+        "your search returned no",
+        "your search did not match",
       ];
       const hasNoResultsCopy = noResultsPhrases.some((p) => bodyText.includes(p));
 
+      // Step 1 — explicit known selectors (precise count when the site
+      // uses a recognized e-commerce platform's markup).
       const resultSelectors = [
         "ul.products li.product",
         ".products .product",
@@ -630,23 +648,81 @@ async function runSearchQuery(
         "[data-search-result]",
         ".search-result",
         ".search-results .item",
+        ".search-results > *",
         ".instantsearch-hit",
         ".algolia-autocomplete .product",
         ".collection-grid .product-card",
         ".product-list .product-item",
+        // Custom-cart heuristics
+        ".product-tile",
+        "[class*='product-card']",
+        "[class*='product-item']",
+        "[class*='SearchResult']",
       ];
       let resultEls: Element[] = [];
       let estimate = 0;
       for (const sel of resultSelectors) {
-        const els = Array.from(document.querySelectorAll(sel));
-        if (els.length > estimate) {
-          estimate = els.length;
-          resultEls = els;
+        try {
+          const els = Array.from(document.querySelectorAll(sel));
+          if (els.length > estimate) {
+            estimate = els.length;
+            resultEls = els;
+          }
+        } catch {
+          // Invalid selector on this browser — skip.
         }
       }
 
-      // Extract names of the top result cards — title selectors that
-      // work across WC / Shopify / generic.
+      // Step 2 — generic fallback: any anchor in the main content area
+      // that wraps an <img> and points to what looks like a product page.
+      // Catches sites like fastcap.com that use custom <a><img><p>name</p></a>
+      // markup with no recognizable class names.
+      if (estimate === 0 && !hasNoResultsCopy) {
+        const productLinkPattern = /\/(product|products|item|p|shop)\b/i;
+        const anchorsWithImg = Array.from(
+          document.querySelectorAll("a"),
+        ).filter((a) => {
+          if (!a.querySelector("img")) return false;
+          const href = a.getAttribute("href") ?? "";
+          // External or non-product links are noise (social icons, etc.)
+          if (!href || href.startsWith("#")) return false;
+          if (/(facebook|twitter|instagram|youtube|pinterest|linkedin)\.com/i.test(href))
+            return false;
+          // Either the href looks like a product URL, or the anchor sits
+          // beneath a "results" heading.
+          if (productLinkPattern.test(href)) return true;
+          // Walk up to see if a search-results heading is an ancestor sibling.
+          let cur: Element | null = a;
+          for (let i = 0; i < 6 && cur; i++) {
+            cur = cur.parentElement;
+            const prev = cur?.previousElementSibling;
+            const prevText = prev?.textContent?.toLowerCase() ?? "";
+            if (
+              /(search results|resultados|matching|products|productos)/i.test(prevText)
+            ) {
+              return true;
+            }
+          }
+          return false;
+        });
+        // Dedupe by href so an anchor wrapping both image AND text doesn't
+        // count twice when the markup is split.
+        const seen = new Set<string>();
+        const unique = anchorsWithImg.filter((a) => {
+          const h = a.getAttribute("href") ?? "";
+          if (seen.has(h)) return false;
+          seen.add(h);
+          return true;
+        });
+        if (unique.length > 0) {
+          resultEls = unique as Element[];
+          estimate = unique.length;
+        }
+      }
+
+      // Step 3 — extract result names. Try title-class selectors first,
+      // then fall back to the anchor's own text content (covers
+      // <a><img><p>Name</p></a> patterns).
       const nameSelectors = [
         ".woocommerce-loop-product__title",
         ".product-title",
@@ -655,19 +731,29 @@ async function runSearchQuery(
         "h2.product__title",
         "h3.product-card__heading",
         "[class*='product-title']",
+        "[class*='product-name']",
         "h2",
         "h3",
+        "h4",
+        "p",
       ];
       const names: string[] = [];
       for (const el of resultEls.slice(0, 10)) {
+        let found: string | null = null;
         for (const sel of nameSelectors) {
           const nameEl = el.querySelector(sel);
           const text = nameEl?.textContent?.trim();
           if (text && text.length > 2 && text.length < 200) {
-            names.push(text);
+            found = text;
             break;
           }
         }
+        // Last resort: the anchor's own visible text (strip whitespace).
+        if (!found) {
+          const own = el.textContent?.replace(/\s+/g, " ").trim();
+          if (own && own.length > 2 && own.length < 200) found = own;
+        }
+        if (found) names.push(found);
       }
 
       const hasFallbackContent =

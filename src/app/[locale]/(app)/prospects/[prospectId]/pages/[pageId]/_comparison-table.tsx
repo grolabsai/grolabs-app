@@ -245,8 +245,22 @@ function formatDetail(
   if (cell.evidence && Object.keys(cell.evidence).length > 0) {
     lines.push("");
     lines.push(`${t("detail.evidence")}:`);
-    for (const [k, v] of Object.entries(cell.evidence).slice(0, 8)) {
+    // Skip the screenshot_url here — it's an internal pointer, not
+    // meaningful as a text line. The screenshot itself is rendered
+    // separately in the agent-panel hint card (TODO: wire when the
+    // FieldHint type supports image_url).
+    for (const [k, v] of Object.entries(cell.evidence)
+      .filter(([k]) => k !== "screenshot_url")
+      .slice(0, 8)) {
       lines.push(`  ${k}: ${formatValue(v)}`);
+    }
+    const screenshotUrl =
+      typeof cell.evidence.screenshot_url === "string"
+        ? cell.evidence.screenshot_url
+        : null;
+    if (screenshotUrl) {
+      lines.push("");
+      lines.push("📸 Screenshot evidence available — see the run detail page.");
     }
   }
 

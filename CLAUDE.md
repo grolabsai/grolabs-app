@@ -133,7 +133,32 @@ Always set explicit `width` and `height`:
 
 ### Form inputs
 
-Use `FloatingLabelInput` from `src/components/ui/floating-label-input.tsx` for all form fields.
+**Mandatory pattern for every form field in Scout:**
+
+1. **Label inside the border** — use `FloatingLabelInput` or `FloatingLabelSelect` (from `src/components/ui/`). Never a separate `<label>` element above the field, never the bare `className="s-input"` pattern with an external label.
+2. **No placeholders for hint content.** `placeholder="e.g. running shoes"` is forbidden — placeholders are visually invisible to focused users, clash with the floating label, and are dead to assistive tech.
+3. **Hints live in the right Agent panel.** Use `HintedInput` / `HintedSelect` / `HintedTextarea` from `src/components/ui/hinted-field.tsx` — they wrap the floating-label variants, render a small `ⓘ` icon at the end of the field, and bind to `useFieldHint(...)` so the body text appears in the agent panel on focus.
+
+```tsx
+// ✅ Correct — label inside, hint in the agent panel
+<HintedInput
+  id="intent"
+  label={t("intentLabel")}
+  value={v}
+  onChange={(e) => setV(e.target.value)}
+  hint={{ label: t("intentLabel"), body: t("intentLabelHint") }}
+/>
+
+// ❌ Forbidden — three things wrong:
+//   - external label above the field
+//   - placeholder carrying hint content
+//   - hint text rendered below the field instead of the agent panel
+<label>{t("intentLabel")}</label>
+<input className="s-input" placeholder="e.g. running shoes" />
+<p className="hint">{t("intentLabelHint")}</p>
+```
+
+Truly content-less placeholders (e.g. an empty search box where there's literally nothing else to put in the spot) can use `placeholder` for the actual search action label only. Anything that describes the *field* goes in the hint.
 
 ### Toasts
 

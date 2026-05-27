@@ -595,7 +595,6 @@ async function runDiagnostic(opts: {
   if (browserResult?.screenshots?.length) {
     try {
       const uploaded = await uploadProbeScreenshots(
-        supabase,
         runId,
         browserResult.screenshots,
       );
@@ -715,7 +714,6 @@ async function runDiagnostic(opts: {
   if (browserResult?.entry_results?.length) {
     try {
       await persistEntryResults(
-        supabase,
         runId,
         scanIdForCheck("on_site_nav.typo_tolerance"), // tied to homepage scan
         browserResult.entry_results,
@@ -1075,9 +1073,18 @@ async function markRunFailed(
  *   <run_id>/entry-<entry_id>-variant-<variant_id>.png
  * Failure to upload a single screenshot leaves screenshot_url null but
  * the result row still persists.
+ *
+ * Uses the service-role client because:
+ *   - The prospect-evidence bucket has no INSERT policy for the
+ *     authenticated role.
+ *   - search_test_result has no INSERT RLS policy (we rely on
+ *     service-role bypass).
+ * In the admin flow, the runner is otherwise driven by the
+ * authenticated client; using it here would silently fail. Anonymous
+ * runs already pass service-role through everywhere, so they're
+ * unaffected.
  */
 async function persistEntryResults(
-  supabase: SupabaseClient,
   runId: string,
   pageScanId: number | null,
   entryResults: Array<{
@@ -1105,6 +1112,7 @@ async function persistEntryResults(
     screenshot_url: string | null;
     latency_ms: number | null;
   };
+  const supabase = createServiceRoleClient();
   const rows: ResultRow[] = [];
   for (const entry of entryResults) {
     for (const variant of entry.variant_results) {

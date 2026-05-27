@@ -92,7 +92,11 @@ svg {
   --s-bg: #131316;
   --s-bg-deeper: #0E0E11;
   --s-surface: #1c1d24;
-  --s-surface-alt: #16171c;
+  /* Information surfaces always sit on the canvas — never on a darker
+     gray tinted box. surface-alt is kept as an alias for back-compat
+     with old code (cards, hover states, disabled fields) but resolves
+     to the same value as surface so nothing nests as a darker fill. */
+  --s-surface-alt: #1c1d24;
   --s-surface-hover: #22232a;
   --s-border: rgba(255, 255, 255, 0.08);
   --s-border-strong: rgba(255, 255, 255, 0.16);
@@ -178,7 +182,9 @@ svg {
   --s-bg: #FAFAF9;
   --s-bg-deeper: #F2F2F0;
   --s-surface: #FFFFFF;
-  --s-surface-alt: #F7F7F6;
+  /* Light theme — same rule. surface-alt = surface so any nested
+     "alt" container reads as plain white, not off-white-gray. */
+  --s-surface-alt: #FFFFFF;
   --s-surface-hover: #EFEFEE;
   --s-border: rgba(0, 0, 0, 0.08);
   --s-border-strong: rgba(0, 0, 0, 0.16);

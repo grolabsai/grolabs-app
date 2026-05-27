@@ -1151,6 +1151,18 @@
     }
   },
   "configuration": {
+    "systemHealth": {
+      "navLabel": "Salud del sistema",
+      "title": "Salud del sistema",
+      "subtitle": "Estado en tiempo real de las integraciones externas y variables de entorno. Si algo se rompe en producción, esta es la primera pantalla a revisar.",
+      "footer": "{count} chequeos · refrescar la página para volver a probar",
+      "overall": {
+        "ok": "Todo OK",
+        "warn": "Advertencias",
+        "error": "Atención requerida",
+        "disabled": "Apagado"
+      }
+    },
     "algolia": {
       "navLabel": "Algolia",
       "pageTitle": "Algolia",

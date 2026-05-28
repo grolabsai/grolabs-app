@@ -241,9 +241,15 @@ export async function runBrowserProbe(
       notes.push("no_product_names_discovered_from_homepage");
     }
 
-    // 2. Locate the search input.
-    const searchInput = await findSearchInput(page);
-    if (!searchInput) {
+    // 2. Locate the search input. Falls back to clicking a search
+    // trigger (icon button / "Search" link) when the input isn't
+    // directly visible — a UX issue we still want to evaluate around.
+    const located = await locateOrOpenSearchInput(page, input.rootUrl);
+    if (located.discovery !== "direct") {
+      notes.push(`search_input_discovery:${located.discovery}`);
+      notes.push(`search_input_note:${located.note}`);
+    }
+    if (!located.handle) {
       return {
         product_names_discovered: productNames,
         brands_discovered: brands,
@@ -259,6 +265,8 @@ export async function runBrowserProbe(
         entry_results: [],
       };
     }
+    // For subsequent variant tests we re-navigate to rootUrl and
+    // re-locate, so the handle isn't reused here.
 
     // 3. Typo tolerance test — use up to 2 discovered product names.
     // Only the first typo's screenshot is captured as evidence (one
@@ -546,23 +554,187 @@ async function discoverFromHomepage(
   });
 }
 
-async function findSearchInput(page: Page) {
-  const selectors = [
-    'input[type="search"]',
-    'form[role="search"] input',
-    'input[name="s"]',
-    'input[name="q"]',
-    'input[placeholder*="search" i]',
-    'input[placeholder*="buscar" i]',
-    "[data-search-input]",
-    "[aria-label*='search' i]",
-    "[aria-label*='buscar' i]",
-  ];
-  for (const sel of selectors) {
+/**
+ * Result of trying to land on a usable search input.
+ *
+ *   discovery:
+ *     "direct"         — an input matched on the first try (best case)
+ *     "trigger_revealed" — we had to click a search-icon trigger
+ *                          that revealed an input (modal/drawer)
+ *     "trigger_navigated" — the trigger took us to a dedicated
+ *                          /search-style page where we then found the
+ *                          input
+ *     "missing"        — nothing usable found
+ *
+ * `note` is a one-line human description for evidence.
+ */
+type SearchInputResult = {
+  handle: import("playwright").ElementHandle | null;
+  discovery: "direct" | "trigger_revealed" | "trigger_navigated" | "missing";
+  note: string;
+};
+
+const INPUT_SELECTORS = [
+  'input[type="search"]',
+  'form[role="search"] input',
+  'input[name="s"]',
+  'input[name="q"]',
+  'input[name="keyword"]',
+  'input[name="query"]',
+  'input[placeholder*="search" i]',
+  'input[placeholder*="buscar" i]',
+  "[data-search-input]",
+  "[aria-label*='search' i][role='searchbox']",
+  "[aria-label*='buscar' i][role='searchbox']",
+];
+
+async function findInputBySelectors(
+  page: Page,
+): Promise<import("playwright").ElementHandle | null> {
+  for (const sel of INPUT_SELECTORS) {
     const handle = await page.$(sel);
-    if (handle) return handle;
+    if (handle) {
+      const visible = await handle.isVisible().catch(() => false);
+      if (visible) return handle;
+    }
   }
   return null;
+}
+
+/**
+ * Tries to expose a search input even when it isn't visible by
+ * default. Some themes (Squarespace, custom CMS templates) hide the
+ * input behind a magnifying-glass icon — clicking the icon reveals
+ * the input or navigates to a dedicated /search page. We detect the
+ * trigger, click it, and re-locate the input.
+ */
+async function locateOrOpenSearchInput(
+  page: Page,
+  rootUrl: string,
+): Promise<SearchInputResult> {
+  // 1) Direct — happy path.
+  const direct = await findInputBySelectors(page);
+  if (direct) {
+    return { handle: direct, discovery: "direct", note: "Search input visible on the page." };
+  }
+
+  // 2) Find a search-trigger to click.
+  const triggerSelectors = [
+    'button[aria-label*="search" i]',
+    'button[aria-label*="buscar" i]',
+    'a[aria-label*="search" i]',
+    'a[aria-label*="buscar" i]',
+    '[role="button"][aria-label*="search" i]',
+    '[role="button"][aria-label*="buscar" i]',
+    'a[href*="/search" i]',
+    'a[href*="/buscar" i]',
+    "button.search-toggle",
+    "[class*='search-toggle']",
+    "[class*='search-trigger']",
+    "[class*='search-icon']",
+    "[class*='SearchIcon']",
+    '[data-action*="search" i]',
+  ];
+  let trigger: import("playwright").ElementHandle | null = null;
+  for (const sel of triggerSelectors) {
+    const h = await page.$(sel);
+    if (h) {
+      const visible = await h.isVisible().catch(() => false);
+      if (visible) {
+        trigger = h;
+        break;
+      }
+    }
+  }
+
+  // 3) Text-content fallback: any <a> or <button> whose visible text is
+  //    only "Search" / "Buscar" / "Find" etc.
+  if (!trigger) {
+    trigger = await page.evaluateHandle(() => {
+      const targets = Array.from(
+        document.querySelectorAll("a, button"),
+      ) as HTMLElement[];
+      for (const el of targets) {
+        const text = (el.innerText || el.textContent || "").trim().toLowerCase();
+        if (
+          (text === "search" || text === "buscar" || text === "find") &&
+          el.offsetParent !== null
+        ) {
+          return el;
+        }
+      }
+      return null;
+    }).then((j) => j.asElement() as import("playwright").ElementHandle | null);
+  }
+
+  if (!trigger) {
+    return {
+      handle: null,
+      discovery: "missing",
+      note:
+        "No visible search input and no search trigger (icon button, link, or text button) could be found on the homepage.",
+    };
+  }
+
+  // 4) Click and wait for either the input to appear or the page to
+  //    navigate to a search-style URL.
+  const beforeUrl = page.url();
+  try {
+    await trigger.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {});
+    await trigger.click({ timeout: 2500 });
+  } catch {
+    return {
+      handle: null,
+      discovery: "missing",
+      note: "Found a search trigger but clicking it threw an error.",
+    };
+  }
+  await page
+    .waitForLoadState("domcontentloaded", { timeout: 5000 })
+    .catch(() => {});
+  await page.waitForTimeout(700);
+
+  const afterDirect = await findInputBySelectors(page);
+  if (afterDirect) {
+    const afterUrl = page.url();
+    if (afterUrl !== beforeUrl) {
+      return {
+        handle: afterDirect,
+        discovery: "trigger_navigated",
+        note: `The homepage had no visible search input. Clicking the search trigger navigated to "${afterUrl}" where an input is available — extra step that costs conversions.`,
+      };
+    }
+    return {
+      handle: afterDirect,
+      discovery: "trigger_revealed",
+      note:
+        "The homepage's search input is hidden behind a magnifying-glass icon. Clicking it revealed the input — the input is not directly visible.",
+    };
+  }
+
+  // Last-ditch: if we navigated, the new page might already function
+  // as a search box (URL query → server-rendered results). Just report
+  // that without an input.
+  if (page.url() !== beforeUrl) {
+    return {
+      handle: null,
+      discovery: "trigger_navigated",
+      note: `Search trigger navigated to "${page.url()}" but no input was found there either — the site may use a server-rendered search form we don't recognize.`,
+    };
+  }
+
+  return {
+    handle: null,
+    discovery: "missing",
+    note:
+      "Clicked the search trigger but no input appeared and no navigation occurred. Likely a JS-only search that uses a custom widget.",
+  };
+}
+
+// Back-compat shim — older callers expect a bare handle. New callers
+// (the main probe flow) use locateOrOpenSearchInput directly.
+async function findSearchInput(page: Page) {
+  return findInputBySelectors(page);
 }
 
 type SearchOutcome = {
@@ -604,7 +776,8 @@ async function runSearchQuery(
   try {
     // Always re-navigate to root to get a clean state.
     await safeGoto(page, rootUrl);
-    const input = await findSearchInput(page);
+    const located = await locateOrOpenSearchInput(page, rootUrl);
+    const input = located.handle;
     if (!input) {
       return {
         resultsPresent: false,
@@ -614,7 +787,7 @@ async function runSearchQuery(
         topResultNames: [],
         screenshot: null,
         confidence: 100,
-        verdictReason: "Search box not found on the page — probe could not run.",
+        verdictReason: `Search box not found on the page — ${located.note}`,
       };
     }
     await input.fill("");
@@ -810,6 +983,22 @@ async function runSearchQuery(
       currentUrl: domResult.currentUrl,
     });
 
+    // When the input wasn't directly visible, dock confidence and
+    // annotate the verdict reason so the report flags this as a UX
+    // issue. A search box that requires an extra click costs
+    // conversions even if the search itself works once you find it.
+    let finalConfidence = verdict.confidence;
+    let finalReason = verdict.reason;
+    if (located.discovery === "trigger_revealed") {
+      finalConfidence = Math.max(0, finalConfidence - 15);
+      finalReason =
+        `UX issue: search input is hidden behind an icon and only appears after a click. ${finalReason}`;
+    } else if (located.discovery === "trigger_navigated") {
+      finalConfidence = Math.max(0, finalConfidence - 10);
+      finalReason =
+        `UX issue: the homepage has no search input — clicking the search icon navigated to a dedicated search page first. ${finalReason}`;
+    }
+
     return {
       resultsPresent: verdict.resultsPresent,
       estimate: domResult.estimate,
@@ -817,8 +1006,8 @@ async function runSearchQuery(
       hardError: false,
       topResultNames: domResult.topResultNames,
       screenshot,
-      confidence: verdict.confidence,
-      verdictReason: verdict.reason,
+      confidence: finalConfidence,
+      verdictReason: finalReason,
     };
   } catch (e) {
     return {

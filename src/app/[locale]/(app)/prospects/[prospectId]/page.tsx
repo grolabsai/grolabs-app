@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currentInstanceId } from "@/lib/instance";
 import { getTranslations } from "next-intl/server";
-import { ProspectActions, RescanPageClient } from "./_client";
+import { AddProspectPageForm, ProspectActions, RescanPageClient } from "./_client";
 import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
@@ -280,7 +280,9 @@ export default async function ProspectDetailPage({
           >
             {t("noPagesYet")}
           </div>
-        ) : (
+        ) : null}
+        <AddProspectPageForm prospectId={prospect.prospect_id} />
+        {pages.length > 0 && (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ background: "var(--s-surface-alt)" }}>

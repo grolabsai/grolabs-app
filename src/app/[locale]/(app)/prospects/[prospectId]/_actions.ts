@@ -38,6 +38,73 @@ export async function updateProspectContact(input: ContactUpdate) {
 }
 
 /**
+ * Add a new page under a prospect. The user picks the page type
+ * (homepage / pdp / category) so the runner knows which evaluation
+ * lane to route the URL through:
+ *   - homepage → site-wide HTTP probes + browser search probe
+ *   - pdp      → ASE /tools/pdp-signals + JSON-LD, image, attribute,
+ *                variant, reviews, cross-sell, stock checks
+ *   - category → ASE /tools/site-signals + faceting check
+ *
+ * URL is normalized (https:// added if missing, trailing slash stripped).
+ * Uniqueness is enforced by the (prospect_id, url) index — adding a URL
+ * that already exists returns a friendly error.
+ */
+export async function addProspectPage(input: {
+  prospect_id: number;
+  url: string;
+  page_type: "homepage" | "pdp" | "category";
+  label?: string | null;
+}) {
+  const instanceId = await currentInstanceId();
+  if (instanceId === null) return { error: "NO_INSTANCE" };
+  const url = normalizeUrl(input.url);
+  if (!url) return { error: "INVALID_URL" };
+  const supabase = await createClient();
+
+  // Confirm prospect membership via instance scoping.
+  const { data: prospect } = await supabase
+    .from("prospect")
+    .select("prospect_id")
+    .eq("prospect_id", input.prospect_id)
+    .eq("instance_id", instanceId)
+    .maybeSingle();
+  if (!prospect) return { error: "PROSPECT_NOT_FOUND" };
+
+  const { error } = await supabase.from("prospect_page").insert({
+    prospect_id: input.prospect_id,
+    instance_id: instanceId,
+    url,
+    page_type: input.page_type,
+    label: input.label?.trim() || null,
+    is_featured: false,
+    is_active: true,
+    discovered_via: "manual",
+  });
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "DUPLICATE_URL" };
+    }
+    return { error: error.message };
+  }
+  revalidatePath(`/prospects/${input.prospect_id}`, "page");
+  return { ok: true as const };
+}
+
+function normalizeUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  let s = trimmed;
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  try {
+    new URL(s);
+  } catch {
+    return null;
+  }
+  return s.replace(/\/+$/, "");
+}
+
+/**
  * Re-scan one page. Pulls the prospect + URL + page-type assignment
  * from the DB and triggers a diagnostic_run for that single page.
  *

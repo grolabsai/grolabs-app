@@ -1099,6 +1099,8 @@ async function persistEntryResults(
       top_result_names: string[];
       screenshot: Buffer | null;
       latency_ms: number | null;
+      confidence: number;
+      verdict_reason: string;
     }>;
   }>,
 ): Promise<void> {
@@ -1111,6 +1113,8 @@ async function persistEntryResults(
     top_result_names: string[];
     screenshot_url: string | null;
     latency_ms: number | null;
+    confidence: number;
+    verdict_reason: string;
   };
   const supabase = createServiceRoleClient();
   const rows: ResultRow[] = [];
@@ -1146,6 +1150,8 @@ async function persistEntryResults(
         top_result_names: variant.top_result_names,
         screenshot_url: screenshotUrl,
         latency_ms: variant.latency_ms,
+        confidence: variant.confidence,
+        verdict_reason: variant.verdict_reason,
       });
     }
   }

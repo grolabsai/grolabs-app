@@ -16,6 +16,8 @@ export type SearchTestVariantResult = {
   result_count_estimate: number | null;
   top_result_names: string[];
   screenshot_url: string | null;
+  confidence: number | null;
+  verdict_reason: string | null;
 };
 
 export type SearchTestEntryGroup = {
@@ -160,24 +162,73 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
         {variant.screenshot_url && (
           <EvidenceScreenshot
             url={variant.screenshot_url}
-            label={`${variant.variant_type}: ${variant.query_text}`}
+            label={variant.query_text}
+            sublabel={variant.variant_type}
             thumbWidth={64}
           />
         )}
       </div>
       <div
         style={{
-          textAlign: "right",
-          fontSize: 10,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          color: judgment.color,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 4,
         }}
       >
-        {judgment.label}
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            color: judgment.color,
+          }}
+        >
+          {judgment.label}
+        </div>
+        {variant.confidence != null && (
+          <ConfidenceBadge
+            confidence={variant.confidence}
+            reason={variant.verdict_reason ?? ""}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+function ConfidenceBadge({
+  confidence,
+  reason,
+}: {
+  confidence: number;
+  reason: string;
+}) {
+  // ≥80 green (trusted), 50-79 amber (review), <50 red (low confidence)
+  const tier =
+    confidence >= 80 ? "high" : confidence >= 50 ? "medium" : "low";
+  const palette = {
+    high: { bg: "rgba(34,197,94,0.10)", color: "var(--s-success-text, #16a34a)" },
+    medium: { bg: "rgba(250,204,21,0.12)", color: "var(--s-warning-text, #ca8a04)" },
+    low: { bg: "rgba(239,68,68,0.10)", color: "var(--s-danger-text, #dc2626)" },
+  }[tier];
+  return (
+    <span
+      title={reason}
+      style={{
+        fontSize: 9,
+        fontFamily: "var(--s-font-mono)",
+        padding: "1px 6px",
+        borderRadius: 4,
+        background: palette.bg,
+        color: palette.color,
+        whiteSpace: "nowrap",
+        cursor: "help",
+      }}
+    >
+      {confidence}% confidence
+    </span>
   );
 }
 
@@ -227,6 +278,8 @@ type RawResult = {
   top_result_names: string[];
   screenshot_url: string | null;
   latency_ms: number | null;
+  confidence: number | null;
+  verdict_reason: string | null;
   variant: RawVariant | RawVariant[] | null;
 };
 
@@ -248,6 +301,8 @@ export function groupSearchTestResults(rows: RawResult[]): SearchTestEntryGroup[
       result_count_estimate: r.result_count_estimate,
       top_result_names: r.top_result_names,
       screenshot_url: r.screenshot_url,
+      confidence: r.confidence,
+      verdict_reason: r.verdict_reason,
     });
     byEntry.set(entry.entry_id, group);
   }
@@ -262,4 +317,4 @@ export function groupSearchTestResults(rows: RawResult[]): SearchTestEntryGroup[
 }
 
 export const SEARCH_TEST_RESULT_SELECT =
-  "result_id, results_returned, result_count_estimate, top_result_names, screenshot_url, latency_ms, variant:search_test_variant(variant_id, variant_type, query_text, sort_order, entry:search_test_entry(entry_id, intent_label))";
+  "result_id, results_returned, result_count_estimate, top_result_names, screenshot_url, latency_ms, confidence, verdict_reason, variant:search_test_variant(variant_id, variant_type, query_text, sort_order, entry:search_test_entry(entry_id, intent_label))";

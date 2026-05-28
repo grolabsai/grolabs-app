@@ -162,7 +162,8 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
         {variant.screenshot_url && (
           <EvidenceScreenshot
             url={variant.screenshot_url}
-            label={`${variant.variant_type}: ${variant.query_text}`}
+            label={variant.query_text}
+            sublabel={variant.variant_type}
             thumbWidth={64}
           />
         )}

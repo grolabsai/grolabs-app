@@ -1,4 +1,5 @@
 import { Icon } from "@/components/ui/icon";
+import { StatCard, Highlight } from "@/components/landing/StatCard";
 import {
   ChevronDown,
   Check,
@@ -155,6 +156,10 @@ export default function StyleguidePage() {
         <LpCtaDemo />
         <LpCtaDemo />
       </Pair>
+
+      <Section title="LP · Stat card — marker highlight">
+        <StatCardDemo />
+      </Section>
 
       {/* ── RRE — Revenue Recovery Engine (admin) ───────────────────── */}
       <TierHeading
@@ -324,6 +329,28 @@ function TierHeading({
       <p style={{ color: "var(--s-text-secondary)", fontSize: 13, margin: 0, lineHeight: 1.6, maxWidth: 720 }}>
         {body}
       </p>
+    </div>
+  );
+}
+
+function StatCardDemo() {
+  return (
+    <div
+      style={{
+        background: "var(--s-bg)",
+        padding: 32,
+        borderRadius: "var(--s-radius-lg)",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      <StatCard
+        figure={<>2&ndash;3&times;</>}
+        eyebrow="Search conversion uplift with catalog & search optimization"
+      >
+        Users who search convert 2&ndash;3&times; more often than those who
+        don&rsquo;t&mdash;<Highlight>if they find what they want.</Highlight>
+      </StatCard>
     </div>
   );
 }

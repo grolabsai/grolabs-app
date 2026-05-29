@@ -1,3 +1,8 @@
+<!-- 2026-05-29: re-tick to force Vercel to redeploy main HEAD as
+     production. An earlier manual promote-to-prod of an unrelated
+     rubric branch (ef651e8) pinned production behind PRs #158
+     (legal pages) and #159 (stat card), causing /legal/* to 404 on
+     grolabs.ai's footer links. No content change. -->
 # GroLabs — Policy documents
 
 Authoritative specs for feature surfaces. Read the relevant policy doc

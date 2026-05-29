@@ -11,7 +11,6 @@ import {
   Home,
   LayoutList,
   ChevronRight,
-  ChevronLeft,
   Layers,
 } from "lucide-react";
 import type { DiagnosticCheckRow, DiagnosticStageRow, ProbeType } from "./_types";
@@ -42,6 +41,9 @@ const PROBE_ORDER: ProbeType[] = [
   "search",
 ];
 
+const INDENT_BASE = 12;
+const INDENT_STEP = 18;
+
 export function CheckList({
   stages,
   checks,
@@ -61,30 +63,46 @@ export function CheckList({
 
   const [query, setQuery] = useState("");
 
-  // ── Drill-down position: stage → probe type → checks ──────────────────
-  const [view, setView] = useState<{
-    stageId: number | null;
-    probe: ProbeType | null;
-  }>(() => {
-    // Open the panel at the currently-selected check's location on deep link.
-    if (selectedId != null) {
-      const c = checks.find((x) => x.diagnostic_check_id === selectedId);
-      if (c) return { stageId: c.diagnostic_stage_id, probe: c.probe_type };
-    }
-    return { stageId: null, probe: null };
-  });
-
-  const stageById = useMemo(
-    () => new Map(stages.map((s) => [s.diagnostic_stage_id, s])),
-    [stages],
-  );
-
   const byStage = useMemo(() => {
     const map = new Map<number, DiagnosticCheckRow[]>();
     for (const s of stages) map.set(s.diagnostic_stage_id, []);
     for (const c of checks) map.get(c.diagnostic_stage_id)?.push(c);
     return map;
   }, [checks, stages]);
+
+  // ── Expand/collapse state — children render inline under their parent,
+  //    and any number of branches can stay open at once. ──────────────────
+  const [openStages, setOpenStages] = useState<Set<number>>(() => {
+    const s = new Set<number>();
+    if (selectedId != null) {
+      const c = checks.find((x) => x.diagnostic_check_id === selectedId);
+      if (c) s.add(c.diagnostic_stage_id);
+    }
+    return s;
+  });
+  const [openProbes, setOpenProbes] = useState<Set<string>>(() => {
+    const s = new Set<string>();
+    if (selectedId != null) {
+      const c = checks.find((x) => x.diagnostic_check_id === selectedId);
+      if (c) s.add(`${c.diagnostic_stage_id}:${c.probe_type}`);
+    }
+    return s;
+  });
+
+  function toggleStage(id: number) {
+    setOpenStages((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function toggleProbe(key: string) {
+    setOpenProbes((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
 
   const q = query.trim().toLowerCase();
   const searchResults = useMemo(() => {
@@ -102,12 +120,8 @@ export function CheckList({
     const present = new Set(items.map((i) => i.probe_type));
     return PROBE_ORDER.filter((p) => present.has(p)).map((p) => ({
       probe: p,
-      count: items.filter((i) => i.probe_type === p).length,
+      checks: items.filter((i) => i.probe_type === p),
     }));
-  }
-
-  function probeChecks(stageId: number, probe: ProbeType) {
-    return (byStage.get(stageId) ?? []).filter((c) => c.probe_type === probe);
   }
 
   function selectCheck(id: number) {
@@ -175,7 +189,7 @@ export function CheckList({
         )}
 
         {searchResults ? (
-          // ── Search flattens the hierarchy: matching checks, direct ──────
+          // ── Search flattens the tree: matching checks, direct ───────────
           searchResults.length === 0 ? (
             <EmptyNote>{t("empty.noSearchResults")}</EmptyNote>
           ) : (
@@ -184,6 +198,7 @@ export function CheckList({
                 <CheckRow
                   key={check.diagnostic_check_id}
                   check={check}
+                  depth={0}
                   selected={selectedId === check.diagnostic_check_id}
                   isTemplate={check.instance_id === 0 && currentInstanceId !== 0}
                   templateLabel={t("templateBadge")}
@@ -193,65 +208,67 @@ export function CheckList({
               ))}
             </div>
           )
-        ) : view.stageId != null && view.probe != null ? (
-          // ── Level 3: checks within stage + probe type ──────────────────
-          <>
-            <BackRow
-              label={t(`probeType.${view.probe}`)}
-              ariaLabel={t("nav.back")}
-              onClick={() => setView((v) => ({ ...v, probe: null }))}
-            />
-            {probeChecks(view.stageId, view.probe).map((check) => (
-              <CheckRow
-                key={check.diagnostic_check_id}
-                check={check}
-                selected={selectedId === check.diagnostic_check_id}
-                isTemplate={check.instance_id === 0 && currentInstanceId !== 0}
-                templateLabel={t("templateBadge")}
-                templateShort={t("templateBadgeShort")}
-                onClick={() => selectCheck(check.diagnostic_check_id)}
-              />
-            ))}
-          </>
-        ) : view.stageId != null ? (
-          // ── Level 2: probe-type groups within a stage ──────────────────
-          <>
-            <BackRow
-              label={stageById.get(view.stageId)?.stage_name ?? ""}
-              ariaLabel={t("nav.back")}
-              onClick={() => setView({ stageId: null, probe: null })}
-            />
-            {probeGroups(view.stageId).length === 0 ? (
-              <EmptyNote>{t("empty.stageNoChecks")}</EmptyNote>
-            ) : (
-              probeGroups(view.stageId).map(({ probe, count }) => (
-                <GroupRow
-                  key={probe}
-                  icon={PROBE_ICON[probe] ?? Search}
-                  label={t(`probeType.${probe}`)}
-                  count={t("nav.checksCount", { n: count })}
-                  accentColor={PROBE_COLOR[probe]}
-                  onClick={() =>
-                    setView((v) => ({ ...v, probe }))
-                  }
-                />
-              ))
-            )}
-          </>
         ) : (
-          // ── Level 1: funnel stages (top-most grouping) ─────────────────
+          // ── Expandable tree: stage → probe type → checks, inline ────────
           stages.map((stage) => {
-            const count = (byStage.get(stage.diagnostic_stage_id) ?? []).length;
+            const stageOpen = openStages.has(stage.diagnostic_stage_id);
+            const groups = probeGroups(stage.diagnostic_stage_id);
+            const total = (byStage.get(stage.diagnostic_stage_id) ?? []).length;
             return (
-              <GroupRow
-                key={stage.diagnostic_stage_id}
-                icon={Layers}
-                label={stage.stage_name}
-                count={t("nav.checksCount", { n: count })}
-                onClick={() =>
-                  setView({ stageId: stage.diagnostic_stage_id, probe: null })
-                }
-              />
+              <div key={stage.diagnostic_stage_id}>
+                <BranchRow
+                  depth={0}
+                  open={stageOpen}
+                  icon={Layers}
+                  label={stage.stage_name}
+                  count={t("nav.checksCount", { n: total })}
+                  onClick={() => toggleStage(stage.diagnostic_stage_id)}
+                />
+                {stageOpen &&
+                  (groups.length === 0 ? (
+                    <EmptyNote depth={1}>{t("empty.stageNoChecks")}</EmptyNote>
+                  ) : (
+                    groups.map(({ probe, checks: probeChecks }) => {
+                      const pkey = `${stage.diagnostic_stage_id}:${probe}`;
+                      const probeOpen = openProbes.has(pkey);
+                      return (
+                        <div key={probe}>
+                          <BranchRow
+                            depth={1}
+                            open={probeOpen}
+                            icon={PROBE_ICON[probe] ?? Search}
+                            iconColor={PROBE_COLOR[probe]}
+                            accentColor={PROBE_COLOR[probe]}
+                            label={t(`probeType.${probe}`)}
+                            count={t("nav.checksCount", { n: probeChecks.length })}
+                            onClick={() => toggleProbe(pkey)}
+                          />
+                          {probeOpen &&
+                            probeChecks.map((check) => (
+                              <CheckRow
+                                key={check.diagnostic_check_id}
+                                check={check}
+                                depth={2}
+                                accentColor={PROBE_COLOR[probe]}
+                                selected={
+                                  selectedId === check.diagnostic_check_id
+                                }
+                                isTemplate={
+                                  check.instance_id === 0 &&
+                                  currentInstanceId !== 0
+                                }
+                                templateLabel={t("templateBadge")}
+                                templateShort={t("templateBadgeShort")}
+                                onClick={() =>
+                                  selectCheck(check.diagnostic_check_id)
+                                }
+                              />
+                            ))}
+                        </div>
+                      );
+                    })
+                  ))}
+              </div>
             );
           })
         )}
@@ -260,63 +277,23 @@ export function CheckList({
   );
 }
 
-function BackRow({
-  label,
-  ariaLabel,
-  onClick,
-}: {
-  label: string;
-  ariaLabel: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={onClick}
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "8px 12px",
-        marginBottom: 4,
-        border: "none",
-        borderBottom: "0.5px solid var(--s-border)",
-        background: "transparent",
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "var(--s-font)",
-        color: "var(--s-text)",
-        fontWeight: 600,
-        fontSize: 12.5,
-      }}
-    >
-      <Icon icon={ChevronLeft} size={14} />
-      <span
-        style={{
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {label}
-      </span>
-    </button>
-  );
-}
-
-function GroupRow({
+function BranchRow({
+  depth,
+  open,
   icon,
+  iconColor,
+  accentColor,
   label,
   count,
-  accentColor,
   onClick,
 }: {
+  depth: number;
+  open: boolean;
   icon: typeof Search;
+  iconColor?: string;
+  accentColor?: string;
   label: string;
   count: string;
-  accentColor?: string;
   onClick: () => void;
 }) {
   return (
@@ -328,8 +305,9 @@ function GroupRow({
         width: "100%",
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        padding: accentColor ? "10px 12px 10px 15px" : "10px 12px",
+        gap: 8,
+        padding: "9px 12px",
+        paddingLeft: INDENT_BASE + depth * INDENT_STEP,
         borderRadius: "var(--s-radius-md)",
         border: "none",
         background: "transparent",
@@ -343,7 +321,17 @@ function GroupRow({
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       {accentColor && <AccentBar color={accentColor} />}
-      <span style={{ color: accentColor ?? "var(--s-text)", display: "flex" }}>
+      <span
+        style={{
+          display: "flex",
+          color: "var(--s-text-tertiary)",
+          transition: "transform 0.12s ease",
+          transform: open ? "rotate(90deg)" : "none",
+        }}
+      >
+        <Icon icon={ChevronRight} size={13} />
+      </span>
+      <span style={{ display: "flex", color: iconColor ?? "var(--s-text)" }}>
         <Icon icon={icon} size={15} />
       </span>
       <span
@@ -351,7 +339,7 @@ function GroupRow({
           flex: 1,
           minWidth: 0,
           fontSize: 13,
-          fontWeight: 500,
+          fontWeight: depth === 0 ? 600 : 500,
           color: "var(--s-text)",
           whiteSpace: "nowrap",
           overflow: "hidden",
@@ -363,13 +351,14 @@ function GroupRow({
       <span style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
         {count}
       </span>
-      <Icon icon={ChevronRight} size={14} />
     </button>
   );
 }
 
 function CheckRow({
   check,
+  depth,
+  accentColor,
   selected,
   isTemplate,
   templateLabel,
@@ -377,6 +366,8 @@ function CheckRow({
   onClick,
 }: {
   check: DiagnosticCheckRow;
+  depth: number;
+  accentColor?: string;
   selected: boolean;
   isTemplate: boolean;
   templateLabel: string;
@@ -384,7 +375,7 @@ function CheckRow({
   onClick: () => void;
 }) {
   const ProbeIcon = PROBE_ICON[check.probe_type] ?? Search;
-  const accent = PROBE_COLOR[check.probe_type] ?? "var(--s-text)";
+  const accent = accentColor ?? PROBE_COLOR[check.probe_type] ?? "var(--s-text)";
   return (
     <button
       type="button"
@@ -395,7 +386,9 @@ function CheckRow({
         display: "flex",
         alignItems: "flex-start",
         gap: 8,
-        padding: "7px 12px 7px 15px",
+        padding: "7px 12px",
+        // align the check icon under the parent group's icon
+        paddingLeft: INDENT_BASE + depth * INDENT_STEP + 21,
         borderRadius: "var(--s-radius-md)",
         border: "none",
         background: selected ? "var(--s-surface-hover)" : "transparent",
@@ -470,21 +463,27 @@ function AccentBar({ color }: { color: string }) {
       style={{
         position: "absolute",
         left: 4,
-        top: 6,
-        bottom: 6,
+        top: 0,
+        bottom: 0,
         width: 3,
-        borderRadius: 2,
         background: color,
       }}
     />
   );
 }
 
-function EmptyNote({ children }: { children: React.ReactNode }) {
+function EmptyNote({
+  depth = 0,
+  children,
+}: {
+  depth?: number;
+  children: React.ReactNode;
+}) {
   return (
     <div
       style={{
-        padding: "12px 14px",
+        padding: "10px 14px",
+        paddingLeft: INDENT_BASE + depth * INDENT_STEP + 8,
         fontSize: 11.5,
         color: "var(--s-text-tertiary)",
         fontStyle: "italic",

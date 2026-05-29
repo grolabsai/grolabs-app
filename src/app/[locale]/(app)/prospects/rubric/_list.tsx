@@ -12,6 +12,10 @@ import {
   LayoutList,
   ChevronRight,
   Layers,
+  Compass,
+  Navigation,
+  Package,
+  Undo2,
 } from "lucide-react";
 import type { DiagnosticCheckRow, DiagnosticStageRow, ProbeType } from "./_types";
 
@@ -21,6 +25,15 @@ const PROBE_ICON: Record<ProbeType, typeof Search> = {
   site_wide: Globe,
   homepage: Home,
   category: LayoutList,
+};
+
+// Icon per funnel stage, keyed by the stable stage_code. Falls back to a
+// generic glyph for any instance-defined stage not in this map.
+const STAGE_ICON: Record<string, typeof Search> = {
+  discovery: Compass,
+  on_site_nav: Navigation,
+  pdp: Package,
+  returns: Undo2,
 };
 
 // Identity hue per probe type — backed by --s-probe-* style-guide tokens.
@@ -219,7 +232,7 @@ export function CheckList({
                 <BranchRow
                   depth={0}
                   open={stageOpen}
-                  icon={Layers}
+                  icon={STAGE_ICON[stage.stage_code] ?? Layers}
                   label={stage.stage_name}
                   count={t("nav.checksCount", { n: total })}
                   onClick={() => toggleStage(stage.diagnostic_stage_id)}

@@ -3,6 +3,8 @@ GroLabs Search Foundations — Stages 0 & 1
 > **Editor's note:** Reshaped 2026-05-17 to conform to Constitution Articles 1 and 12. Previous version contained pet-specific assumptions baked into core search defaults.
 >
 > **2026-05-20 addendum:** Analytics scaffolding shipped ahead of the formal Stage 4. See §16 — the WP plugin now posts both click and conversion events to Meilisearch `/events` directly (CTR + conversion rate visible in the Meilisearch Cloud dashboard), and a self-contained block bench at `src/components/analytics/` surfaces what `query_log` and Meilisearch `GET /stats` can derive. Remaining Stage 4 scope is Scout-owned event persistence (for retention beyond Meilisearch's 7-day Build-tier window) and metrics Meilisearch exposes only in its dashboard UI.
+>
+> **2026-05-20 addendum (facets + in-Scout emulator):** Faceted refinement is being proven inside Scout *before* widening the WP plugin contract. See §17 for the facets evaluation plan, the search-proxy contract change, and the three-tab restructure of `/configuration/search` (Configuration / Analytics / Emulator). The emulator uses the same Meilisearch client path the public proxy uses — same documents, same filter pinning — so behaviour parity is mechanical, not aspirational. The public `/api/v1/search` contract gains `facets[]` + `facet_stats` in the response now so the plugin can adopt at its own cadence.
 
 Status: Active policy Owner: Tuncho Scope: Stages 0 and 1 of the GroLabs search roadmap. Foundations and basic search live on Wazú. Audience: Claude Code (primary), future GroLabs contributors (secondary)
 This document is the authoritative spec for the foundational search infrastructure. Read this before writing any code, viewing the file tree, or proposing implementation details. Stop at the two checkpoints marked APPROVAL REQUIRED and wait for explicit approval before proceeding.
@@ -121,7 +123,14 @@ Trust model: instance_id is public (like a Stripe publishable key). Origin valid
 7. GroLabs backend — search proxy endpoint
 Stage: 1. The WordPress plugin calls this endpoint, so it lands in the same stage as the plugin.
 Endpoint: `POST /api/v1/search`. The middle-layer endpoint the WordPress plugin calls. Proxies to Meilisearch with server-side tenant token management and adds the variant selection logic.
-Request: `{ instance_id, query, limit, offset, filters, sort }`. Response: `{ hits[], total_hits, processing_time_ms, query_uid }` where each hit is `{ document, matched_variation, _score }`.
+Request: `{ instance_id, query, limit, offset, filters, sort, facets? }`. Response: `{ hits[], total_hits, processing_time_ms, query_uid, facets?, facet_stats? }` where each hit is `{ document, matched_variation, _score }`.
+
+**Facets contract (added 2026-05-20).** Callers can request facet distribution and stats by passing a `facets: string[]` array. Server enforces a per-instance allowlist (currently: `brand`, `category_ids`, `in_stock`, `price`, `scout_attributes.species`, `scout_attributes.lifestage` — must be a subset of the index's `filterableAttributes`). Unknown facet names are silently dropped; an empty array (or omitted) returns no `facets`/`facet_stats` blocks. The response carries:
+
+* `facets: Record<string, Record<string, number>>` — value → count per facet name. Counts respect any active `filters`, i.e. they're restrictive (Meilisearch default). Disjunctive facet behaviour (Algolia-style "all values, counts respect remaining filters") is explicitly out of scope for this iteration — it costs N+1 queries and isn't needed until merchants have UIs that benefit from it.
+* `facet_stats: Record<string, { min: number, max: number }>` — emitted only for numeric facets where Meilisearch returned stats (today: `price`).
+
+Facet *labels* are not translated by the proxy. Per CLAUDE.md §5, data labels come from the DB, never from Scout-side i18n. The proxy returns raw facet values (brand names, category IDs); the consumer renders.
 
 **`matched_variation` shape.** When non-null, `matched_variation` is a **full variant object** matching the exact shape of entries in `document.variants[]`: `variation_id`, `sku`, `attributes` (Record<string,string> with slug keys per §4), `price`, `sale_price`, `in_stock`, `stock_quantity`, `image_url`. Not just a `variation_id` reference — the whole object, so the plugin can render a card without a second lookup. `null` for `simple` products and for `variable_multi` products with no in-stock variation found.
 Variant selection logic
@@ -242,5 +251,76 @@ This section is an honest changelog, not new policy. It records work that landed
 * Meilisearch exposes no read API for aggregated analytics (CTR, conversion rate, average click position, top queries from its side, geo). These stay Cloud-dashboard-only unless we own them.
 * No Scout-side event store yet. If we need history beyond Meilisearch's 7-day Build-tier retention or breakdowns by `instance_id` / WC product type / funnel stage, the WP plugin needs to double-post to a new Scout endpoint that persists to Supabase. The wiring is in place: `queryUid` already crosses the Scout↔storefront boundary, so we only need the ingest endpoint and a target table.
 * No Stage 4 policy doc exists yet (`search-events.md` is still referenced as future work in §14). Spec it out before building the event store.
+
+17. Facets + in-Scout emulator (added 2026-05-20)
+
+The decision recorded here: **prove faceted search inside Scout before broadening the WP plugin's UI to render facets.** The proxy gains the facets contract now (§7 amendment) so the plugin can adopt at its own cadence, but the first consumer is a staff-only emulator on `/configuration/search` that exercises the exact same Meilisearch path the storefront will hit.
+
+### Why an emulator first
+
+Storefront facet UIs are deceptively expensive — they bring in disjunctive-facet semantics, range sliders, filter-state serialization, and a plugin-side cache invalidation story. Building the merchant-facing surface inside Scout first means:
+
+* The facets/filters contract gets a real consumer immediately, with stack traces and instant iteration, instead of waiting for a plugin release cycle.
+* We see Meilisearch's `facetDistribution` / `facetStats` shape against real merchant data, not a fixture, before promising it to a third-party plugin.
+* The per-attribute match highlighting work (§17.3 below) lands somewhere a CS engineer can use it during a support call — "show me what your customer searched and which attribute the match came from."
+
+### `/configuration/search` becomes three tabs
+
+The current page concatenates three concerns. Split:
+
+| Tab | Contents | Source files |
+|---|---|---|
+| **Configuración** | Connection panel, Instance ID, storefront domains, index initialise, indexing status, reindex, request log, event log | existing `_form.tsx`, `_request-log.tsx`, `_event-log.tsx` |
+| **Analytics** | All `src/components/analytics/*` blocks currently rendered at the bottom of the page | existing analytics components, unchanged |
+| **Emulador** | NEW. Full-width search emulator: search box, category dropdown, facet rail, result cards with match highlights | NEW `_emulator.tsx` |
+
+The existing inline `_search-preview.tsx` "Vista previa" pane on the Configuration tab is left in place — it's the quick-glance sibling of the full emulator, useful when checking connection health without leaving the Config tab. The emulator is the dedicated surface for actually exercising query → filter → facet → result flows.
+
+### Emulator layout
+
+Within the Emulador tab the full tab width is for the emulator:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  [ search input — full width                  ] [ category ▼ ]    │
+├────────────┬─────────────────────────────────────────────────────┤
+│            │                                                     │
+│  Facets    │   Result cards                                      │
+│  (left     │   (each card: image, name, price, in-stock,         │
+│   rail,    │    matched attribute → highlighted tokens)          │
+│   ~260px)  │                                                     │
+│            │                                                     │
+└────────────┴─────────────────────────────────────────────────────┘
+```
+
+* **Search input** — debounced re-query. Empty query is valid (Meilisearch returns facets + first page of docs).
+* **Category dropdown** — single-select. Source: `category` table where `is_active = true` for this instance. Selecting a category adds `category_ids = <id>` to the filter; clearing it drops the constraint. Hierarchical labels (`Root › Sub › Leaf`) for disambiguation when names repeat across branches.
+* **Facet rail** — server picks which facet names to render from the allowlist intersected with what `facetDistribution` actually returned. Rail order is **deliberate, not alphabetical** and lives as `FACET_RENDER_ORDER` in `src/lib/search/facets.ts`:
+  * `price` — two numeric inputs bound to `facet_stats.price.{min,max}` (pinned first)
+  * `brand` — checkbox list, top N values by count (pinned second)
+  * **Dynamic per-attribute facets** — one checkbox group per `product_attribute` row marked `is_filterable = true` AND `data_type = 'list'`. When a category is selected, the list is filtered + ordered by that category's `category_product_attribute.form_order`. Without a category, every filterable list-type attribute appears alphabetically. Indexed under `attributes.<attribute_code>`; the document builder emits this block from `product_attribute_value` joined with `product_attribute_option`. `ensureIndex` widens the index's `filterableAttributes` per-instance to include every `attributes.<code>` so Meilisearch will facet on them. **Reindex is required** after enabling a new attribute for filterability — the merchant clicks "Reindexar todo" on the Configuración tab.
+  * `scout_attributes.*` legacy slots — checkbox list when present in the indexed data
+  * `in_stock` — single toggle (boolean, pinned last)
+
+Price + brand are the two dominant deciding factors per shopper research, hence the pinning. The dynamic block in the middle is where merchant-defined priority (`form_order`) takes over. `in_stock` is visual punctuation at the bottom.
+
+**v1 scope: list-type only.** Text, number, and quantity attributes are NOT yet indexed under `attributes.*` — they need different widgets (autocomplete, numeric range, unit-aware range) and land in a follow-up. The document builder skips them; the server action filters them out of the dynamic attribute list.
+
+**Attribute label translation.** Dynamic facet labels in the rail use the `product_attribute.attribute_name` column by default, but if a row exists in `product_attribute_translation` for the active locale (resolved server-side via `next-intl`'s `getLocale()`), that translation wins. NULL or empty translation rows fall through to the canonical name. The indexed Meilisearch document is locale-agnostic — the slug (`attributes.<code>`) is the stable identifier; label resolution is presentation-time, not index-time. No reindex needed when translations change.
+* **Result cards** — same logical card as the storefront, plus a per-attribute match strip beneath the title. Each strip entry reads `<attribute name> — <token1>, <token2>` (e.g. `name — "royal", "canin"` / `description — "puppy"`). Built by walking Meilisearch's `_formatted` block per hit; reuses the helpers already proven by `_search-preview.tsx`.
+
+### Wiring decisions
+
+* The emulator does **not** call the public `/api/v1/search` endpoint. It is staff-only and authenticated by `instance_member`, so it goes through a server action (`runEmulatorSearch`) that calls `searchInstance(...)` directly. Same Meilisearch code path, no `Origin` validation gymnastics, no rate-limit counters polluted by admin testing.
+* The category list is loaded once per page render (server component) and passed into the client emulator. Stale-by-a-page-refresh is fine — categories don't churn.
+* Filter construction is shared between the public route and the emulator action via a small `buildMeilisearchFilter()` helper in `src/lib/search/facets.ts`, so the two surfaces can't drift on filter quoting / escaping.
+* The facets allowlist also lives in `src/lib/search/facets.ts` as the single source of truth.
+
+### Out of scope for this iteration
+
+* **WP plugin facet UI.** The plugin will gain facet rendering in a follow-up release that consumes the now-stable proxy contract.
+* **Disjunctive facets.** Restrictive (Meilisearch default) only.
+* **Custom facet ordering / hidden facets per instance.** Comes with Stage 5's merchant search-config UI.
+* **Per-facet i18n labels.** Data labels come from the DB; UI chrome around them (the section heading "Facets") goes through `t()`.
 
 End of policy document. Start with Checkpoint 1 (section 12) before writing any code.

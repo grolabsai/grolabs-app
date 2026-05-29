@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { searchInstance } from "@/lib/search/meilisearch-client";
 import { pickMatchedVariation, type MatchesPosition } from "@/lib/search/variant-matcher";
+import { sanitizeFacets } from "@/lib/search/facets";
 import type { SearchHit, SearchResponse, ScoutSearchDocument } from "@/lib/search/types";
 import {
   checkRateLimit,
@@ -185,6 +186,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const offset = typeof b.offset === "number" && Number.isFinite(b.offset) ? Math.max(b.offset, 0) : 0;
   const filters = typeof b.filters === "string" ? b.filters : undefined;
   const sort = Array.isArray(b.sort) ? b.sort.filter((s) => typeof s === "string") as string[] : undefined;
+  // Allowlist-gated so a misconfigured caller can't request a high-cardinality
+  // or non-filterable field. Unknown names drop silently — see facets.ts.
+  const facets = sanitizeFacets(b.facets);
 
   // Validate instance + origin against DB. We do this BEFORE the pair rate
   // limit so a denial row can be FK-attached to the real instance — otherwise
@@ -267,6 +271,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       offset,
       filter: finalFilter,
       sort,
+      facets: facets.length > 0 ? facets : undefined,
     });
   } catch (err) {
     console.error("[search] meilisearch failed:", err instanceof Error ? err.message : err);
@@ -309,6 +314,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       requestUid: raw.metadata?.requestUid ?? "",
       indexUid: raw.metadata?.indexUid ?? "",
     },
+    ...(raw.facetDistribution ? { facets: raw.facetDistribution } : {}),
+    ...(raw.facetStats ? { facet_stats: raw.facetStats } : {}),
   };
 
   // Best-effort logging — never blocks the response.

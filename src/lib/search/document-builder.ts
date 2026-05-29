@@ -101,6 +101,25 @@ export type SourceVariantAttribute = {
   option_value: string | null;
 };
 
+/** Pre-joined product-level attribute value row. Drives the dynamic
+ * `attributes.<code>` block on the indexed document so the search proxy
+ * can facet on every merchant-defined attribute, not just the hardcoded
+ * scout_attributes slots. Only attributes marked `is_filterable = true`
+ * surface in the indexed map — others are catalogue metadata, not search
+ * filters. */
+export type SourceProductAttribute = {
+  product_id: number;
+  attribute_code: string;
+  attribute_name: string;
+  data_type: string; // 'list' | 'text' | 'number' | 'quantity'
+  is_filterable: boolean;
+  is_active: boolean;
+  value_text: string | null;
+  /** Resolved display value when value_id pointed at a product_attribute_option
+   * row; null when the value is free-text or unmapped. */
+  option_value: string | null;
+};
+
 /** Subset of the WC product payload that the importer preserves on `wc_raw`.
  * Field names match WC REST v3. We only read the parts we need. */
 export type WcRawShape = {
@@ -149,6 +168,10 @@ export type BuildDocumentInput = {
   product: SourceProductRow;
   variants: SourceVariantRow[];
   variantAttributes?: SourceVariantAttribute[];
+  /** Product-level descriptive attribute values, joined with their
+   * `product_attribute` metadata. Optional for backwards-compat with
+   * existing tests; in production the indexer always supplies this. */
+  productAttributes?: SourceProductAttribute[];
   categoryLinks: SourceCategoryLink[];
   media: SourceMediaRow[];
   storefrontDomain?: string | null;
@@ -585,6 +608,28 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
     age_max_months: null,
   };
 
+  // Dynamic per-attribute block — drives `attributes.<code>` facets in
+  // the search emulator (and, when the WP plugin opts in, the storefront).
+  // v1 scope is list-type attributes only: predefined options translate
+  // directly into checkbox facets without needing range / autocomplete UX.
+  // Free-text values are admitted as fallbacks when an attribute is marked
+  // `data_type = 'list'` but a value snuck in via the free-text column.
+  const productAttrRows = (input.productAttributes ?? []).filter(
+    (a) => a.product_id === product.product_id && a.is_filterable,
+  );
+  const attributes: Record<string, string[]> = {};
+  for (const row of productAttrRows) {
+    if (row.data_type !== "list") continue;
+    const value = row.option_value ?? row.value_text;
+    if (!value) continue;
+    const existing = attributes[row.attribute_code];
+    if (existing) {
+      if (!existing.includes(value)) existing.push(value);
+    } else {
+      attributes[row.attribute_code] = [value];
+    }
+  }
+
   return {
     id: product.product_id,
     instance_id: product.instance_id,
@@ -604,6 +649,7 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
     brand: product.brand?.brand_name ?? null,
 
     scout_attributes,
+    attributes,
     variation_summary: summary,
     variants,
 

@@ -29,6 +29,7 @@ import {
   type SourceCategoryLink,
   type SourceMediaRow,
   type SourceVariantAttribute,
+  type SourceProductAttribute,
 } from "./document-builder";
 import { indexUidFor, type ScoutSearchDocument } from "./types";
 import {
@@ -62,6 +63,7 @@ async function fetchSources(instanceId: number, productIds: number[]): Promise<{
   variantAttributes: SourceVariantAttribute[];
   categoryLinks: SourceCategoryLink[];
   media: SourceMediaRow[];
+  productAttributes: SourceProductAttribute[];
 }> {
   const sb = createServiceRoleClient();
 
@@ -148,12 +150,61 @@ async function fetchSources(instanceId: number, productIds: number[]): Promise<{
     }).filter((r) => r.attribute_code);
   }
 
+  // Product-level descriptive attributes — separate query for the same
+  // reason variant attributes are separate: nested select on
+  // product_attribute_value would need per-data_type aliasing. We only
+  // index list-type attributes for faceting in v1 (predefined options).
+  // Text / number / quantity facets need different widgets (autocomplete,
+  // range slider) and land in a follow-up. is_filterable gates whether
+  // an attribute even surfaces in facets, regardless of indexing cost.
+  let productAttributes: SourceProductAttribute[] = [];
+  if (productIds.length > 0) {
+    const pa = await sb
+      .from("product_attribute_value")
+      .select(
+        `product_id, value_text,
+         product_attribute:product_attribute!inner (
+           attribute_code, attribute_name, data_type, is_filterable, is_active
+         ),
+         option:product_attribute_option ( value )`
+      )
+      .eq("instance_id", instanceId)
+      .in("product_id", productIds);
+    if (pa.error) throw new Error(`load product attribute rows failed: ${pa.error.message}`);
+    productAttributes = (pa.data ?? [])
+      .map((r) => {
+        const row = r as Record<string, unknown>;
+        const meta = row.product_attribute as
+          | {
+              attribute_code?: string;
+              attribute_name?: string;
+              data_type?: string;
+              is_filterable?: boolean;
+              is_active?: boolean;
+            }
+          | null;
+        const opt = row.option as { value?: string } | null;
+        return {
+          product_id: row.product_id as number,
+          attribute_code: meta?.attribute_code ?? "",
+          attribute_name: meta?.attribute_name ?? "",
+          data_type: meta?.data_type ?? "text",
+          is_filterable: !!meta?.is_filterable,
+          is_active: meta?.is_active !== false,
+          value_text: (row.value_text as string | null) ?? null,
+          option_value: opt?.value ?? null,
+        };
+      })
+      .filter((r) => r.attribute_code && r.is_active);
+  }
+
   return {
     products: (products.data ?? []) as unknown as SourceProductRow[],
     variants: (variants.data ?? []) as unknown as SourceVariantRow[],
     variantAttributes,
     categoryLinks: (links.data ?? []) as unknown as SourceCategoryLink[],
     media: (media.data ?? []) as unknown as SourceMediaRow[],
+    productAttributes,
   };
 }
 
@@ -263,6 +314,7 @@ export async function indexProduct(
         product,
         variants: sources.variants.filter((v) => v.product_id === productId),
         variantAttributes: sources.variantAttributes,
+        productAttributes: sources.productAttributes,
         categoryLinks: sources.categoryLinks,
         media: sources.media,
       }),
@@ -488,6 +540,7 @@ export async function indexAllForInstance(
           product,
           variants: sources.variants.filter((v) => v.product_id === product.product_id),
           variantAttributes: sources.variantAttributes,
+          productAttributes: sources.productAttributes,
           categoryLinks: sources.categoryLinks,
           media: sources.media,
         });

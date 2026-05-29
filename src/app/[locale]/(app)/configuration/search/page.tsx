@@ -4,11 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ping } from "@/lib/search/meilisearch-client";
 import { indexUidFor } from "@/lib/search/types";
-import { getIndexingStatus } from "./actions";
+import { getIndexingStatus, listEmulatorCategories } from "./actions";
 import { SearchSettingsForm } from "./_form";
 import { SearchPreview } from "./_search-preview";
 import { SearchRequestLog } from "./_request-log";
 import { SearchEventLog } from "./_event-log";
+import { SearchConfigTabs } from "./_tabs";
+import { SearchEmulator } from "./_emulator";
 import { SearchVolumeBlock } from "@/components/analytics/SearchVolumeBlock";
 import { NoResultRateBlock } from "@/components/analytics/NoResultRateBlock";
 import { LatencyBlock } from "@/components/analytics/LatencyBlock";
@@ -20,11 +22,13 @@ import { IndexSizeBlock } from "@/components/analytics/IndexSizeBlock";
 import { FieldDistributionBlock } from "@/components/analytics/FieldDistributionBlock";
 
 /**
- * Stage 0 admin panel for Meilisearch search infrastructure.
+ * Per docs/policy/search-foundations.md §8 (configuration) + §16 (analytics)
+ * + §17 (emulator). Three tabs: Configuración / Analytics / Emulador.
  *
- * Per docs/policy/search-foundations.md §8. Server component fetches initial
- * connection status and the instance's current storefront_domains; client
- * form handles edits + manual re-test.
+ * Server component fetches initial connection status, the instance's current
+ * storefront_domains, indexing status, and the category list for the
+ * emulator dropdown. All three tab panes are server-rendered and mounted at
+ * once (see _tabs.tsx for the forceMount rationale).
  */
 export default async function SearchConfigPage() {
   const t = await getTranslations("configuration.search");
@@ -55,12 +59,17 @@ export default async function SearchConfigPage() {
     ? instanceRow!.storefront_domains
     : [];
 
-  // Initial health probe (server side). The form re-tests on demand.
-  const initialHealth = await ping();
-  const initialStatus = await getIndexingStatus(instanceId);
+  // Three concurrent server-side fetches — initial health probe, indexing
+  // status snapshot, and the emulator's category list. All scoped to the
+  // current instance.
+  const [initialHealth, initialStatus, emulatorCategories] = await Promise.all([
+    ping(),
+    getIndexingStatus(instanceId),
+    listEmulatorCategories(instanceId),
+  ]);
 
-  return (
-    <div className="s-page-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+  const configurationPane = (
+    <div className="flex flex-col gap-6">
       <div
         style={{
           display: "grid",
@@ -115,7 +124,11 @@ export default async function SearchConfigPage() {
           <SearchEventLog instanceId={instanceId} />
         </CardContent>
       </Card>
+    </div>
+  );
 
+  const analyticsPane = (
+    <div className="flex flex-col gap-4">
       {/* Analytics block bench. Each block is self-contained and can be lifted
           onto /dashboard, an admin overview, or anywhere else by changing only
           the import path. Layout here is intentionally generic (responsive
@@ -146,6 +159,28 @@ export default async function SearchConfigPage() {
         <TopNoResultQueriesBlock instanceId={instanceId} />
         <FieldDistributionBlock instanceId={instanceId} />
       </div>
+    </div>
+  );
+
+  const emulatorPane = (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("emulator.cardTitle")}</CardTitle>
+        <CardDescription>{t("emulator.cardDescription")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <SearchEmulator instanceId={instanceId} categories={emulatorCategories} />
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="s-page-content">
+      <SearchConfigTabs
+        configuration={configurationPane}
+        analytics={analyticsPane}
+        emulator={emulatorPane}
+      />
     </div>
   );
 }

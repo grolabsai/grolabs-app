@@ -2584,7 +2584,12 @@
       "vocabularyButton": "Vocabulario de prueba",
       "empty": {
         "selectPrompt": "Seleccioná un check o creá uno nuevo.",
-        "stageNoChecks": "Sin checks en esta etapa todavía."
+        "stageNoChecks": "Sin checks en esta etapa todavía.",
+        "noSearchResults": "Ningún check coincide con la búsqueda."
+      },
+      "nav": {
+        "back": "Atrás",
+        "checksCount": "{n, plural, one {# check} other {# checks}}"
       },
       "probeType": {
         "search": "Búsqueda interna",

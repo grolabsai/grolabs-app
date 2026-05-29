@@ -2584,7 +2584,12 @@
       "vocabularyButton": "Test vocabulary",
       "empty": {
         "selectPrompt": "Select a check or create a new one.",
-        "stageNoChecks": "No checks in this stage yet."
+        "stageNoChecks": "No checks in this stage yet.",
+        "noSearchResults": "No checks match your search."
+      },
+      "nav": {
+        "back": "Back",
+        "checksCount": "{n, plural, one {# check} other {# checks}}"
       },
       "probeType": {
         "search": "Internal search",

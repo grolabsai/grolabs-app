@@ -100,6 +100,16 @@ The "we don't see events" failure modes, in order of frequency:
 
 ## 6. Non-goals
 
+> **⚠️ Pending amendment (2026-05-29) — do not treat the non-goals below as final.**
+> The unified-findings / event-pipeline work will change several of these once approved. See
+> [`docs/design/unified-findings-and-monitoring.md`](../design/unified-findings-and-monitoring.md)
+> and [`docs/design/search-proxy-event-pipeline.md`](../design/search-proxy-event-pipeline.md).
+> Specifically: best-effort/loss-acceptable (below + §4) no longer holds once events feed revenue
+> findings (→ durable buffer); "no aggregation API on Scout" (below) is reversed (→ we roll up our
+> side); and the event list (§2) gains **Remove-from-cart** + an **un-gated Completed-order** write
+> to `analytics_event`, plus a `userId` column on `query_log`. **Not yet applied — this doc remains
+> authoritative until the amendment is approved and merged.**
+
 - **No cross-device user attribution.** `userId` is a random UUID stored in `localStorage`; clearing the browser starts a new identity.
 - **No aggregation API on Scout.** If a future feature needs to surface event counts in the Scout admin UI, that's net-new work — likely a webhook from Meilisearch into Scout, or a Scout-side proxy that queries Meilisearch's analytics API on demand.
 - **No retries on event POST failures.** Best-effort, async, page-paint-blocking would be worse than the occasional lost signal.

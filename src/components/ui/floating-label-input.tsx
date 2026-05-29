@@ -46,8 +46,9 @@ const FloatingLabelInput = React.forwardRef<
           "absolute -top-[7px] left-[10px] z-10",
           // Padding cuts a gap through the border visually
           "inline-flex items-center gap-1 px-1.5",
-          // Must be white so label visually cuts through the input's border
-          "bg-white",
+          // Matches the input's surface so the label "notch" reads as
+          // a cutout in the border (theme-aware via tokens).
+          "bg-[var(--s-surface)]",
           // Typography — matches .s-field-label
           "text-[10px] font-medium uppercase tracking-[0.08em]",
           "leading-none",

@@ -8,21 +8,21 @@ import {
 } from "@/lib/actions/product";
 import { currentInstanceId } from "@/lib/instance";
 import {
-  analyzeCategories as glpimAnalyzeCategories,
-  groupProducts as glpimGroupProducts,
+  analyzeCategories as aseAnalyzeCategories,
+  groupProducts as aseGroupProducts,
   type AnalyzeCategoriesResponse,
   type GroupProductsResponse,
   type ProductIn,
-} from "@/lib/glpim";
+} from "@/lib/ase";
 
-// ─── Wizard → GLPIM bridges ────────────────────────────────────────────────
+// ─── Wizard → ASE bridges ────────────────────────────────────────────────
 
 /**
  * Step 2 of the wizard: get the agent's category suggestion per product.
  *
- * Wraps GLPIM's /agents/analyze-categories. Two shapes:
+ * Wraps ASE's /agents/analyze-categories. Two shapes:
  *  - omit `candidates` and the agent picks from every active category for
- *    the user's instance (GLPIM does the DB lookup).
+ *    the user's instance (ASE does the DB lookup).
  *  - pass `candidates` and the agent only chooses from that exact set —
  *    used by the wizard to scope the search to the descendants of a
  *    parent category the user picked.
@@ -41,7 +41,7 @@ export async function analyzeImportCategories(input: {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "No instance" };
   try {
-    const data = await glpimAnalyzeCategories({
+    const data = await aseAnalyzeCategories({
       products: input.products,
       instanceId,
       candidates: input.candidates,
@@ -56,7 +56,7 @@ export async function analyzeImportCategories(input: {
 /**
  * Step 3 of the wizard: ask the agent to group rows into base products
  * with extracted variant axes + descriptive attributes for the chosen
- * category. GLPIM builds the vocabulary from GroLabs's tables.
+ * category. ASE builds the vocabulary from GroLabs's tables.
  */
 export async function groupImportProducts(input: {
   products: ProductIn[];
@@ -65,7 +65,7 @@ export async function groupImportProducts(input: {
   const instanceId = await currentInstanceId();
   if (instanceId === null) return { error: "No instance" };
   try {
-    const data = await glpimGroupProducts({
+    const data = await aseGroupProducts({
       products: input.products,
       instanceId,
       categoryId: input.categoryId,

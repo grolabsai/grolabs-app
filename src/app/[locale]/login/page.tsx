@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -68,7 +69,7 @@ export default async function LoginPage({
         <form action={login}>
           <div className="s-field">
             <label className="s-field-label" htmlFor="email">
-              Correo
+              Email
             </label>
             <input
               className="s-input"
@@ -77,7 +78,6 @@ export default async function LoginPage({
               type="email"
               autoComplete="email"
               required
-              placeholder="tuncho@wazu.test"
             />
           </div>
           <div className="s-field">
@@ -103,6 +103,26 @@ export default async function LoginPage({
         </form>
 
         <p className="s-auth-footnote">GroLabs · {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            justifyContent: "center",
+            gap: 14,
+            fontSize: 10,
+            color: "var(--s-text-tertiary)",
+          }}
+        >
+          <Link href="/legal/privacy" style={{ color: "var(--s-text-tertiary)" }}>
+            Privacy · Privacidad
+          </Link>
+          <Link href="/legal/terms" style={{ color: "var(--s-text-tertiary)" }}>
+            Terms · Términos
+          </Link>
+          <Link href="/legal/security" style={{ color: "var(--s-text-tertiary)" }}>
+            Security · Seguridad
+          </Link>
+        </div>
       </div>
     </div>
   );

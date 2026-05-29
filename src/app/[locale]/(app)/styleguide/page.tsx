@@ -1,462 +1,1400 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Icon } from "@/components/ui/icon";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { StatCard, Highlight } from "@/components/landing/StatCard";
 import {
-  ChevronRight,
-  Search,
-  Plus,
-  Trash2,
-  Settings,
+  ChevronDown,
+  Check,
   AlertTriangle,
   Info,
   CheckCircle,
   XCircle,
-  Loader2,
+  Search,
+  Plus,
+  Trash2,
+  Settings,
+  Stethoscope,
+  ListChecks,
+  Gauge,
+  Sparkles,
 } from "lucide-react";
 
 export const metadata = { title: "Estilo — GroLabs" };
 
-const COLORS: { label: string; token: string; hex: string }[] = [
-  // Accent
-  { label: "Accent", token: "--scout-accent", hex: "#378ADD" },
-  { label: "Accent hover", token: "--scout-accent-hover", hex: "#185FA5" },
-  { label: "Accent 50", token: "--scout-accent-50", hex: "#E6F1FB" },
-  { label: "Accent 100", token: "--scout-accent-100", hex: "#B5D4F4" },
-  // Surfaces
-  { label: "BG", token: "--s-bg", hex: "#FAFAF9" },
+/**
+ * Scout — design system styleguide.
+ *
+ * Engineered Luxury palette (matches grolabs-landing). Every component
+ * is rendered twice: once in the default DARK theme and once inside a
+ * `.scout-light` wrapper that flips the tokens to LIGHT. Side-by-side
+ * so the design can be assessed without clicking through pages.
+ *
+ * The .scout-light class overrides all --s-* + shadcn HSL variables.
+ * Everything below uses tokens (no hardcoded colors); add a swatch
+ * here first, then anywhere else.
+ */
+
+const ACCENT: { label: string; token: string; hex: string }[] = [
+  { label: "Accent (yellow)", token: "--scout-accent", hex: "#fae194" },
+  { label: "Accent hover", token: "--scout-accent-hover", hex: "#fcebab" },
+  { label: "Accent 50", token: "--scout-accent-50", hex: "#fff8e0" },
+  { label: "Accent 100", token: "--scout-accent-100", hex: "#fdeec4" },
+  { label: "Accent 600 (alias)", token: "--scout-accent-600", hex: "= kinetic yellow" },
+];
+
+const SURFACES_DARK = [
+  { label: "Canvas (bg)", token: "--s-bg", hex: "#131316" },
+  { label: "Canvas deeper", token: "--s-bg-deeper", hex: "#0E0E11" },
+  { label: "Surface", token: "--s-surface", hex: "#1c1d24" },
+  { label: "Surface alt", token: "--s-surface-alt", hex: "#16171c" },
+  { label: "Surface hover", token: "--s-surface-hover", hex: "#22232a" },
+];
+const SURFACES_LIGHT = [
+  { label: "Canvas (bg)", token: "--s-bg", hex: "#FAFAF9" },
+  { label: "Canvas deeper", token: "--s-bg-deeper", hex: "#F2F2F0" },
   { label: "Surface", token: "--s-surface", hex: "#FFFFFF" },
-  { label: "Surface alt", token: "--s-surface-alt", hex: "#F5F5F4" },
+  { label: "Surface alt", token: "--s-surface-alt", hex: "#F7F7F6" },
   { label: "Surface hover", token: "--s-surface-hover", hex: "#EFEFEE" },
-  // Text
+];
+
+const TEXT_DARK = [
+  { label: "Text strong", token: "--s-text-strong", hex: "#FFFFFF" },
+  { label: "Text (bone)", token: "--s-text", hex: "#EDEAE0" },
+  { label: "Text secondary", token: "--s-text-secondary", hex: "rgba(237,234,224,.6)" },
+  { label: "Text tertiary", token: "--s-text-tertiary", hex: "rgba(237,234,224,.4)" },
+  { label: "Text muted", token: "--s-text-muted", hex: "rgba(237,234,224,.28)" },
+];
+const TEXT_LIGHT = [
+  { label: "Text strong", token: "--s-text-strong", hex: "#000000" },
   { label: "Text", token: "--s-text", hex: "#1A1A1A" },
   { label: "Text secondary", token: "--s-text-secondary", hex: "#5F5E5A" },
   { label: "Text tertiary", token: "--s-text-tertiary", hex: "#888780" },
   { label: "Text muted", token: "--s-text-muted", hex: "#B4B2A9" },
-  // Semantic
-  { label: "Success", token: "--s-success", hex: "#1D9E75" },
-  { label: "Success bg", token: "--s-success-bg", hex: "#E1F5EE" },
-  { label: "Danger", token: "--s-danger", hex: "#A32D2D" },
-  { label: "Danger bg", token: "--s-danger-bg", hex: "#FCEBEB" },
 ];
 
-const RADII: { label: string; token: string; px: string }[] = [
+const SEMANTIC = [
+  { label: "Success", token: "--s-success" },
+  { label: "Danger", token: "--s-danger" },
+  { label: "Warning", token: "--s-warning" },
+];
+
+const RADII = [
   { label: "sm", token: "--s-radius-sm", px: "6px" },
   { label: "md", token: "--s-radius-md", px: "8px" },
   { label: "lg", token: "--s-radius-lg", px: "12px" },
   { label: "xl", token: "--s-radius-xl", px: "16px" },
 ];
 
-const SECTIONS = [
-  "Colores",
-  "Tipografía",
-  "Espaciado",
-  "Superficies",
-  "Botones",
-  "Inputs",
-  "Iconos",
-  "Estados",
-  "Patrones de notas",
-];
-
 export default function StyleguidePage() {
   return (
-    <div className="flex gap-8 p-8 max-w-[1200px]">
-      {/* Sticky TOC */}
-      <aside className="w-44 shrink-0">
-        <div className="sticky top-8 flex flex-col gap-1">
-          <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">
-            Secciones
-          </p>
-          {SECTIONS.map((s) => (
-            <a
-              key={s}
-              href={`#${s.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-[13px] text-[var(--s-text-secondary)] hover:text-[var(--s-text)] transition-colors"
-            >
-              {s}
-            </a>
-          ))}
-        </div>
-      </aside>
+    <div className="s-content" style={{ paddingBottom: 80 }}>
+      <Header />
+      <PrefixLegend />
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 flex flex-col gap-12">
+      {/* ── GL — shared GroLabs foundations ─────────────────────────── */}
+      <TierHeading
+        tag="GL"
+        title="Brand foundations"
+        body="Shared across every GroLabs product. The same palette, fonts, and radii apply on both the marketing site (LP) and the admin (RRE)."
+      />
 
-        {/* ── 1. Colores ──────────────────────────────────────────────────── */}
-        <section id="colores">
-          <h2 className="text-lg font-semibold mb-4">Colores</h2>
-          <div className="grid grid-cols-4 gap-3">
-            {COLORS.map((c) => (
-              <div key={c.token} className="flex flex-col gap-1.5">
-                <div
-                  className="h-12 rounded-md border border-[var(--s-border)]"
-                  style={{ background: c.hex }}
-                />
-                <div className="text-[11px] font-medium text-[var(--s-text)]">{c.label}</div>
-                <div className="text-[10px] font-mono text-[var(--s-text-tertiary)]">{c.hex}</div>
-                <div className="text-[9px] font-mono text-[var(--s-text-muted)] leading-tight">{c.token}</div>
-              </div>
-            ))}
-          </div>
-        </section>
+      <Section title="GL · Typography">
+        <TypeRamp />
+      </Section>
 
-        {/* ── 2. Tipografía ───────────────────────────────────────────────── */}
-        <section id="tipografía">
-          <h2 className="text-lg font-semibold mb-4">Tipografía</h2>
-          <div className="flex flex-col gap-4 p-6 border border-[var(--s-border)] rounded-lg">
-            <div>
-              <p style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2, color: "var(--s-text)" }}>
-                Título grande — 24/700
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">24px · 700 · #1A1A1A</code>
-            </div>
-            <div>
-              <p style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.3, color: "var(--s-text)" }}>
-                Título de sección — 18/600
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">18px · 600 · #1A1A1A</code>
-            </div>
-            <div>
-              <p style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.5, color: "var(--s-text)" }}>
-                Cuerpo de formulario — 15/500 (input content)
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">15px · 500 · #000</code>
-            </div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.5, color: "var(--s-text)" }}>
-                Cuerpo estándar — 13/400
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">13px · 400 · --s-text</code>
-            </div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.5, color: "var(--s-text-secondary)" }}>
-                Secundario — 13/400
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">13px · 400 · --s-text-secondary</code>
-            </div>
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 400, lineHeight: 1.5, color: "var(--s-text-tertiary)" }}>
-                Terciario / metadatos — 12/400
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">12px · 400 · --s-text-tertiary</code>
-            </div>
-            <div>
-              <p
-                style={{
-                  fontSize: 10,
-                  fontWeight: 500,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "var(--s-text-tertiary)",
-                }}
-              >
-                Etiqueta de campo / sección — 10/500 uppercase
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">10px · 500 · uppercase · tracking-0.06em</code>
-            </div>
-            <div>
-              <p style={{ fontSize: 12, fontFamily: "var(--s-font-mono)", color: "var(--s-text)" }}>
-                Mono — SHA · 2026-04-26
-              </p>
-              <code className="text-[10px] text-[var(--s-text-tertiary)]">12px · mono · --s-font-mono</code>
-            </div>
-          </div>
-        </section>
+      <Section title="GL · Accent — Kinetic Yellow">
+        <PaletteGrid items={ACCENT} />
+      </Section>
 
-        {/* ── 3. Espaciado / Radio ────────────────────────────────────────── */}
-        <section id="espaciado">
-          <h2 className="text-lg font-semibold mb-4">Espaciado — radio</h2>
-          <div className="flex gap-6 flex-wrap">
-            {RADII.map((r) => (
-              <div key={r.token} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-16 h-16 bg-[var(--scout-accent-50)] border border-[var(--scout-accent-100)]"
-                  style={{ borderRadius: r.px }}
-                />
-                <div className="text-[12px] font-medium text-[var(--s-text)]">{r.label}</div>
-                <div className="text-[10px] font-mono text-[var(--s-text-tertiary)]">{r.px}</div>
-              </div>
-            ))}
-          </div>
-        </section>
+      <Pair title="GL · Surfaces">
+        <PaletteGrid items={SURFACES_DARK} />
+        <PaletteGrid items={SURFACES_LIGHT} />
+      </Pair>
 
-        {/* ── 4. Superficies ──────────────────────────────────────────────── */}
-        <section id="superficies">
-          <h2 className="text-lg font-semibold mb-4">Superficies</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">
-                Card (shadcn)
-              </p>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Título</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-[var(--s-text-secondary)]">Contenido de la card.</p>
-                </CardContent>
-              </Card>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">
-                Surface alt
-              </p>
-              <div className="rounded-lg border border-[var(--s-border)] bg-[var(--s-surface-alt)] p-4">
-                <p className="text-sm text-[var(--s-text-secondary)]">Superficie alternativa para filas alternas o paneles de detalle secundario.</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">
-                Surface hover
-              </p>
-              <div className="rounded-lg border border-[var(--s-border)] bg-[var(--s-surface-hover)] p-4">
-                <p className="text-sm text-[var(--s-text-secondary)]">Estado hover de filas de tabla y ítems de lista.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+      <Pair title="GL · Text">
+        <PaletteGrid items={TEXT_DARK} />
+        <PaletteGrid items={TEXT_LIGHT} />
+      </Pair>
 
-        {/* ── 5. Botones ──────────────────────────────────────────────────── */}
-        <section id="botones">
-          <h2 className="text-lg font-semibold mb-4">Botones</h2>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap gap-3 items-center">
-              <Button variant="default">Guardar</Button>
-              <Button variant="secondary">Cancelar</Button>
-              <Button variant="outline">
-                <Icon icon={Plus} size={14} />
-                Agregar
-              </Button>
-              <Button variant="destructive">
-                <Icon icon={Trash2} size={14} />
-                Eliminar
-              </Button>
-              <Button variant="ghost">
-                <Icon icon={Settings} size={14} />
-                Configurar
-              </Button>
-              <Button variant="link">Ver más</Button>
-            </div>
-            <div className="flex flex-wrap gap-3 items-center">
-              <Button size="sm">Pequeño</Button>
-              <Button size="default">Mediano</Button>
-              <Button size="lg">Grande</Button>
-              <Button size="icon" variant="outline"><Icon icon={Search} size={16} /></Button>
-            </div>
-            <div className="flex flex-wrap gap-3 items-center">
-              <Button disabled>Deshabilitado</Button>
-              <Button variant="outline" disabled>Deshabilitado outline</Button>
-            </div>
-            {/* s-btn legacy classes */}
-            <div className="flex flex-wrap gap-3 items-center">
-              <button className="s-btn s-btn-primary">s-btn-primary</button>
-              <button className="s-btn s-btn-secondary">s-btn-secondary</button>
-              <button className="s-btn s-btn-danger">s-btn-danger</button>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 6. Inputs ───────────────────────────────────────────────────── */}
-        <section id="inputs">
-          <h2 className="text-lg font-semibold mb-4">Inputs</h2>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-1.5 block">
-                  shadcn Input (default)
-                </label>
-                <Input placeholder="Escribí algo..." />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-1.5 block">
-                  shadcn Input (disabled)
-                </label>
-                <Input placeholder="Deshabilitado" disabled />
-              </div>
-              <div>
-                <FloatingLabelInput
-                  id="sg-name"
-                  label="Nombre del producto"
-                  placeholder="Ej: Alimento perro adulto"
-                />
-              </div>
-              <div>
-                <FloatingLabelInput
-                  id="sg-slug"
-                  label="Slug"
-                  placeholder="alimento-perro-adulto"
-                  className="font-mono text-xs"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-1.5 block">
-                  s-input (legacy)
-                </label>
-                <input className="s-input" placeholder="s-input placeholder" />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-1.5 block">
-                  s-textarea (legacy)
-                </label>
-                <textarea className="s-textarea" placeholder="s-textarea placeholder" rows={3} />
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch id="sg-switch" />
-                <label htmlFor="sg-switch" className="text-sm text-[var(--s-text)]">Switch activado</label>
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch id="sg-switch-off" defaultChecked={false} />
-                <label htmlFor="sg-switch-off" className="text-sm text-[var(--s-text-secondary)]">Switch desactivado</label>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 7. Iconos ───────────────────────────────────────────────────── */}
-        <section id="iconos">
-          <h2 className="text-lg font-semibold mb-4">Iconos</h2>
-          <div className="flex flex-col gap-4 p-6 border border-[var(--s-border)] rounded-lg">
-            <p className="text-[11px] text-[var(--s-text-tertiary)] mb-2">
-              Siempre usar el wrapper <code className="font-mono">&lt;Icon&gt;</code> — nunca Lucide directo sin size + strokeWidth.
-            </p>
-            <div className="flex items-end gap-6">
-              <div className="flex flex-col items-center gap-2">
-                <Icon icon={ChevronRight} size={12} />
-                <code className="text-[9px] text-[var(--s-text-tertiary)]">12px</code>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Icon icon={ChevronRight} size={14} />
-                <code className="text-[9px] text-[var(--s-text-tertiary)]">14px</code>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Icon icon={ChevronRight} size={16} />
-                <code className="text-[9px] text-[var(--s-text-tertiary)]">16px (default)</code>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Icon icon={ChevronRight} size={20} />
-                <code className="text-[9px] text-[var(--s-text-tertiary)]">20px</code>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Icon icon={ChevronRight} size={24} />
-                <code className="text-[9px] text-[var(--s-text-tertiary)]">24px</code>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 pt-2">
-              {[Search, Plus, Trash2, Settings, AlertTriangle, Info, CheckCircle, XCircle, Loader2].map(
-                (Ic) => (
-                  <Icon key={Ic.displayName} icon={Ic} size={16} />
-                )
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 8. Estados ──────────────────────────────────────────────────── */}
-        <section id="estados">
-          <h2 className="text-lg font-semibold mb-4">Estados</h2>
-          <div className="flex flex-col gap-4">
-            {/* Empty state */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">Empty state</p>
-              <div className="flex flex-col items-center justify-center gap-3 py-12 rounded-lg border border-dashed border-[var(--s-border)]">
-                <Icon icon={Search} size={24} />
-                <p className="text-sm font-medium text-[var(--s-text)]">No hay resultados</p>
-                <p className="text-[13px] text-[var(--s-text-secondary)] text-center max-w-xs">
-                  Intentá con otros filtros o creá el primer elemento.
-                </p>
-                <Button variant="outline" size="sm">
-                  <Icon icon={Plus} size={14} />
-                  Crear
-                </Button>
-              </div>
-            </div>
-
-            {/* Error strip */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">Error strip</p>
-              <div
-                className="flex items-center gap-3 px-4 py-3 rounded-md text-sm"
-                style={{ background: "var(--s-danger-bg)", color: "var(--s-danger-text)" }}
-              >
-                <Icon icon={XCircle} size={16} />
-                No se pudo guardar. Verificá los campos e intentá de nuevo.
-              </div>
-            </div>
-
-            {/* Success strip */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">Success strip</p>
-              <div
-                className="flex items-center gap-3 px-4 py-3 rounded-md text-sm"
-                style={{ background: "var(--s-success-bg)", color: "var(--s-success-text)" }}
-              >
-                <Icon icon={CheckCircle} size={16} />
-                Cambios guardados correctamente.
-              </div>
-            </div>
-
-            {/* Loading skeleton */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)] mb-2">Loading skeleton</p>
-              <div className="flex flex-col gap-2">
-                {[160, 240, 200].map((w) => (
+      <Section title="GL · Semantic + Radii">
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+          <PaletteGrid items={SEMANTIC.map((s) => ({ ...s, hex: "" }))} />
+          <div style={radiiCardStyle}>
+            <Label>Radii</Label>
+            <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+              {RADII.map((r) => (
+                <div key={r.label} style={{ textAlign: "center", flex: 1 }}>
                   <div
-                    key={w}
-                    className="h-4 rounded animate-pulse bg-[var(--s-surface-hover)]"
-                    style={{ width: w }}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      background: "var(--scout-accent)",
+                      borderRadius: `var(${r.token})`,
+                      margin: "0 auto 6px",
+                    }}
                   />
-                ))}
-              </div>
+                  <div style={tokenStyle}>{r.label}</div>
+                  <div style={hexStyle}>{r.px}</div>
+                </div>
+              ))}
             </div>
           </div>
-        </section>
+        </div>
+      </Section>
 
-        {/* ── 9. Patrones de notas ────────────────────────────────────────── */}
-        <section id="patrones-de-notas">
-          <h2 className="text-lg font-semibold mb-4">Patrones de notas</h2>
-          <div className="flex flex-col gap-4">
-            {/* Info banner */}
-            <div
-              className="flex items-start gap-3 px-4 py-3 rounded-md text-sm"
-              style={{ background: "var(--scout-accent-50)", color: "var(--scout-accent-800)" }}
-            >
-              <Icon icon={Info} size={16} />
-              <div>
-                <span className="font-medium">Nota de parsing</span>
-                <span className="ml-1">— esta categoría hereda los atributos de &ldquo;Alimentos&rdquo; y agrega &ldquo;Sabor&rdquo; como eje de variante propio.</span>
-              </div>
-            </div>
+      {/* ── LP — landing-page-only patterns ─────────────────────────── */}
+      <TierHeading
+        tag="LP"
+        title="Landing Page"
+        body="Patterns that appear on grolabs.com but never inside the admin. Canonical source: docs/STYLEGUIDE.md in the grolabs-landing repo. The samples below are visual references."
+      />
 
-            {/* Warning banner */}
-            <div
-              className="flex items-start gap-3 px-4 py-3 rounded-md text-sm"
-              style={{ background: "#FEF9EC", color: "#7A5204" }}
-            >
-              <Icon icon={AlertTriangle} size={16} />
-              <div>
-                <span className="font-medium">Sin atributos propios</span>
-                <span className="ml-1">— esta categoría hereda todos los atributos de su padre. Agregá atributos específicos si corresponde.</span>
-              </div>
-            </div>
+      <Pair title="LP · Section heading + eyebrow">
+        <HeadingDemo />
+        <HeadingDemo />
+      </Pair>
 
-            {/* Agent note */}
-            <div className="flex flex-col gap-2">
-              <p className="text-[10px] uppercase tracking-[0.06em] text-[var(--s-text-tertiary)]">
-                Nota del agente (reservado)
-              </p>
-              <div className="rounded-md border border-[var(--scout-accent-100)] bg-[var(--scout-accent-50)] px-4 py-3 text-sm text-[var(--scout-accent-800)]">
-                Detecté que este producto tiene 3 variantes de peso (100g, 250g, 500g) sin eje de variante configurado. ¿Querés que configure &ldquo;Peso&rdquo; como eje?
-              </div>
-            </div>
-          </div>
-        </section>
+      <Pair title="LP · Hero-style CTA">
+        <LpCtaDemo />
+        <LpCtaDemo />
+      </Pair>
 
+      <Section title="LP · Stat card — marker highlight">
+        <StatCardDemo />
+      </Section>
+
+      {/* ── RRE — Revenue Recovery Engine (admin) ───────────────────── */}
+      <TierHeading
+        tag="RRE"
+        title="Revenue Recovery Engine"
+        body="The admin app (previously called Scout). Patterns below are the ones shown on every internal screen — forms, tables, nav, sidebar."
+      />
+
+      <Pair title="RRE · Buttons">
+        <ButtonsDemo />
+        <ButtonsDemo />
+      </Pair>
+
+      <Pair title="RRE · Inputs (focus-driven hints + empty=no-border)">
+        <InputsDemo />
+        <InputsDemo />
+      </Pair>
+
+      <Pair title="RRE · Selects & dropdowns">
+        <SelectsDemo />
+        <SelectsDemo />
+      </Pair>
+
+      <Pair title="RRE · Checkboxes, radios & toggles">
+        <ChecksDemo />
+        <ChecksDemo />
+      </Pair>
+
+      <Pair title="RRE · Tabs">
+        <TabsDemo />
+        <TabsDemo />
+      </Pair>
+
+      <Pair title="RRE · Cards">
+        <CardsDemo />
+        <CardsDemo />
+      </Pair>
+
+      <Pair title="RRE · Tables">
+        <TableDemo />
+        <TableDemo />
+      </Pair>
+
+      <Pair title="RRE · Badges & chips">
+        <BadgesDemo />
+        <BadgesDemo />
+      </Pair>
+
+      <Pair title="RRE · Status banners">
+        <BannersDemo />
+        <BannersDemo />
+      </Pair>
+
+      <Pair title="RRE · Sidebar nav (active state)">
+        <NavDemo />
+        <NavDemo />
+      </Pair>
+    </div>
+  );
+}
+
+function PrefixLegend() {
+  return (
+    <div
+      style={{
+        background: "var(--s-surface)",
+        border: "1px solid var(--s-border)",
+        borderRadius: "var(--s-radius-lg)",
+        padding: 18,
+        marginBottom: 32,
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 18,
+      }}
+    >
+      <PrefixCell
+        tag="GL"
+        label="General GroLabs"
+        body="Shared brand: colors, fonts, radii, iconography. Same across every product."
+      />
+      <PrefixCell
+        tag="LP"
+        label="Landing Page"
+        body="Marketing site only — hero headlines, equation card, kinetic-yellow CTAs, big-type sections."
+      />
+      <PrefixCell
+        tag="RRE"
+        label="Revenue Recovery Engine"
+        body="Admin app (was Scout). Forms, tables, nav, sidebar."
+      />
+    </div>
+  );
+}
+
+function PrefixCell({ tag, label, body }: { tag: string; label: string; body: string }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2px 7px",
+            background: "var(--scout-accent)",
+            color: "var(--scout-accent-on)",
+            borderRadius: 4,
+            fontFamily: "var(--s-font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {tag}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--s-text)" }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 12, color: "var(--s-text-secondary)", lineHeight: 1.5 }}>
+        {body}
       </div>
     </div>
   );
 }
+
+function TierHeading({
+  tag,
+  title,
+  body,
+}: {
+  tag: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div style={{ margin: "40px 0 24px", paddingBottom: 14, borderBottom: "1px solid var(--s-border)" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "3px 9px",
+            background: "var(--scout-accent)",
+            color: "var(--scout-accent-on)",
+            borderRadius: 4,
+            fontFamily: "var(--s-font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+          }}
+        >
+          {tag}
+        </span>
+        <h2
+          style={{
+            fontFamily: "var(--s-font-brand)",
+            fontSize: 26,
+            color: "var(--s-text-strong)",
+            textTransform: "uppercase",
+            letterSpacing: "0.02em",
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+      <p style={{ color: "var(--s-text-secondary)", fontSize: 13, margin: 0, lineHeight: 1.6, maxWidth: 720 }}>
+        {body}
+      </p>
+    </div>
+  );
+}
+
+function StatCardDemo() {
+  return (
+    <div
+      style={{
+        background: "var(--s-bg)",
+        padding: 32,
+        borderRadius: "var(--s-radius-lg)",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      <StatCard
+        figure={<>2&ndash;3&times;</>}
+        eyebrow="Search conversion uplift with catalog & search optimization"
+      >
+        Users who search convert 2&ndash;3&times; more often than those who
+        don&rsquo;t&mdash;<Highlight>if they find what they want.</Highlight>
+      </StatCard>
+    </div>
+  );
+}
+
+function LpCtaDemo() {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 10,
+          color: "var(--s-text-tertiary)",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          marginBottom: 10,
+        }}
+      >
+        Hero / page-top CTA — yellow gradient
+      </div>
+      <button
+        style={{
+          background: "var(--scout-accent)",
+          color: "var(--scout-accent-on)",
+          border: "none",
+          borderRadius: 999,
+          padding: "12px 28px",
+          fontSize: 15,
+          fontWeight: 600,
+          fontFamily: "var(--s-font)",
+          cursor: "pointer",
+          boxShadow: "0 6px 24px rgba(250,225,148,0.25)",
+        }}
+      >
+        Book a free 15-minute call →
+      </button>
+      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 14 }}>
+        Lives in <code style={codeStyle}>grolabs-landing</code> — Astro page,
+        not used in the admin.
+      </div>
+    </div>
+  );
+}
+
+function TabsDemo() {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 10,
+          color: "var(--s-text-tertiary)",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          marginBottom: 10,
+        }}
+      >
+        Tab strip — active underline in kinetic yellow
+      </div>
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--s-border)" }}>
+        {["All", "Draft", "Scheduled", "Published"].map((label, i) => (
+          <div
+            key={label}
+            style={{
+              padding: "8px 14px",
+              fontSize: 13,
+              fontWeight: i === 0 ? 500 : 400,
+              color: i === 0 ? "var(--s-text-strong)" : "var(--s-text-secondary)",
+              borderBottom:
+                i === 0
+                  ? "2px solid var(--scout-accent)"
+                  : "2px solid transparent",
+              cursor: "pointer",
+              marginBottom: -1,
+            }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Section shells ──────────────────────────────────────────────────────
+
+function Header() {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: "var(--scout-accent)",
+          marginBottom: 8,
+        }}
+      >
+        GroLabs · Engineered Luxury
+      </div>
+      <h1
+        style={{
+          fontFamily: "var(--s-font-brand)",
+          fontSize: 36,
+          color: "var(--s-text-strong)",
+          textTransform: "uppercase",
+          letterSpacing: "0.01em",
+          margin: 0,
+        }}
+      >
+        Scout design system
+      </h1>
+      <p
+        style={{
+          color: "var(--s-text-secondary)",
+          fontSize: 14,
+          margin: "8px 0 0",
+          maxWidth: 720,
+          lineHeight: 1.6,
+        }}
+      >
+        Every component is shown twice — on the left in the default dark
+        Engineered Luxury theme, on the right inside a <code style={codeStyle}>.scout-light</code>{" "}
+        wrapper that flips the tokens to light. Anything not yet tokenized
+        will look identical in both columns &mdash; that&rsquo;s a bug, not a feature.
+      </p>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ marginBottom: 36 }}>
+      <SectionTitle title={title} />
+      <div style={sectionBodyStyle}>{children}</div>
+    </section>
+  );
+}
+
+function Pair({ title, children }: { title: string; children: React.ReactNode }) {
+  const [dark, light] = Array.isArray(children) ? children : [children, children];
+  return (
+    <section style={{ marginBottom: 36 }}>
+      <SectionTitle title={title} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16,
+        }}
+      >
+        <div style={paneDarkStyle}>
+          <PaneLabel>Dark</PaneLabel>
+          {dark}
+        </div>
+        <div className="scout-light" style={paneLightStyle}>
+          <PaneLabel light>Light</PaneLabel>
+          {light}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <h2
+      style={{
+        fontFamily: "var(--s-font-brand)",
+        fontSize: 18,
+        color: "var(--s-text-strong)",
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        margin: "0 0 14px",
+      }}
+    >
+      {title}
+    </h2>
+  );
+}
+
+function PaneLabel({ light, children }: { light?: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontFamily: "var(--s-font-mono)",
+        fontSize: 10,
+        letterSpacing: "0.18em",
+        textTransform: "uppercase",
+        color: light ? "#888" : "var(--scout-accent)",
+        marginBottom: 14,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+const sectionBodyStyle: React.CSSProperties = {
+  background: "var(--s-surface)",
+  border: "1px solid var(--s-border)",
+  borderRadius: "var(--s-radius-lg)",
+  padding: 20,
+};
+
+const paneDarkStyle: React.CSSProperties = {
+  background: "#131316",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: "var(--s-radius-lg)",
+  padding: 20,
+  color: "#EDEAE0",
+};
+
+const paneLightStyle: React.CSSProperties = {
+  background: "#FAFAF9",
+  border: "1px solid rgba(0,0,0,0.08)",
+  borderRadius: "var(--s-radius-lg)",
+  padding: 20,
+  color: "#1A1A1A",
+};
+
+// ─── Pieces ──────────────────────────────────────────────────────────────
+
+function TypeRamp() {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <RampRow
+        label="Brand mark — Permanent Marker"
+        fontFamily="var(--s-font-brand)"
+        fontSize={42}
+        textTransform="uppercase"
+      >
+        GroLabs Scout
+      </RampRow>
+      <RampRow
+        label="H1 / Page title — Hanken Grotesk 600"
+        fontFamily="var(--s-font)"
+        fontSize={28}
+        fontWeight={600}
+      >
+        Page title
+      </RampRow>
+      <RampRow
+        label="H2 / Section heading — Permanent Marker uppercase"
+        fontFamily="var(--s-font-brand)"
+        fontSize={22}
+        textTransform="uppercase"
+      >
+        Section heading
+      </RampRow>
+      <RampRow
+        label="H3 / Card title — Hanken Grotesk 600"
+        fontFamily="var(--s-font)"
+        fontSize={16}
+        fontWeight={600}
+      >
+        Card title
+      </RampRow>
+      <RampRow
+        label="Body — Hanken Grotesk 400"
+        fontFamily="var(--s-font)"
+        fontSize={14}
+      >
+        A long paragraph of body copy that uses Hanken Grotesk at 14px. It sets
+        the rhythm for every administrative screen — readable, calm, no
+        ornament.
+      </RampRow>
+      <RampRow
+        label="Eyebrow / label — mono uppercase tracked"
+        fontFamily="var(--s-font-mono)"
+        fontSize={11}
+        textTransform="uppercase"
+        letterSpacing="0.18em"
+        color="var(--scout-accent)"
+      >
+        Eyebrow label
+      </RampRow>
+      <RampRow
+        label="Caption — Hanken Grotesk 400 muted"
+        fontFamily="var(--s-font)"
+        fontSize={12}
+        color="var(--s-text-secondary)"
+      >
+        Caption / helper text
+      </RampRow>
+    </div>
+  );
+}
+
+function RampRow({
+  label,
+  children,
+  ...style
+}: {
+  label: string;
+  children: React.ReactNode;
+} & React.CSSProperties) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 10,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--s-text-tertiary)",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ color: "var(--s-text)", ...style }}>{children}</div>
+    </div>
+  );
+}
+
+function PaletteGrid({
+  items,
+}: {
+  items: { label: string; token: string; hex: string }[];
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+        gap: 12,
+      }}
+    >
+      {items.map((s) => (
+        <div
+          key={s.token}
+          style={{
+            background: "var(--s-surface)",
+            border: "1px solid var(--s-border)",
+            borderRadius: "var(--s-radius-md)",
+            padding: 12,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              height: 56,
+              background: `var(${s.token})`,
+              border: "1px solid var(--s-border)",
+              borderRadius: "var(--s-radius-sm)",
+            }}
+          />
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
+              {s.label}
+            </div>
+            <div style={tokenStyle}>{s.token}</div>
+            {s.hex && <div style={hexStyle}>{s.hex}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ButtonsDemo() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <ButtonRow label="Primary">
+        <button className="s-btn s-btn-primary">Save</button>
+        <button className="s-btn s-btn-primary" disabled>
+          Disabled
+        </button>
+      </ButtonRow>
+      <ButtonRow label="Secondary">
+        <button className="s-btn">Cancel</button>
+        <button className="s-btn" disabled>
+          Disabled
+        </button>
+      </ButtonRow>
+      <ButtonRow label="With icon">
+        <button className="s-btn s-btn-primary">
+          <Icon icon={Plus} size={14} />
+          New
+        </button>
+        <button className="s-btn">
+          <Icon icon={Settings} size={14} />
+          Settings
+        </button>
+      </ButtonRow>
+      <ButtonRow label="Danger">
+        <button
+          className="s-btn"
+          style={{
+            borderColor: "var(--s-danger)",
+            color: "var(--s-danger)",
+          }}
+        >
+          <Icon icon={Trash2} size={14} />
+          Delete
+        </button>
+      </ButtonRow>
+    </div>
+  );
+}
+
+function ButtonRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ width: 110, ...labelInlineStyle }}>{label}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{children}</div>
+    </div>
+  );
+}
+
+function InputsDemo() {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <div className="s-field">
+        <label className="s-field-label">Empty (no border, no bg)</label>
+        <input className="s-input" type="text" placeholder=" " />
+        <div className="s-field-hint">
+          When the field is empty AND not focused, the border + bg are
+          transparent. The label is the only thing that stays visible —
+          everything else disappears until you commit to interacting.
+        </div>
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Pre-filled (border visible)</label>
+        <input
+          className="s-input"
+          type="text"
+          defaultValue="wazu.com"
+          placeholder=" "
+        />
+        <div className="s-field-hint">
+          As soon as content lands, the border + surface come back.
+        </div>
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Focused (border in yellow)</label>
+        <input
+          className="s-input"
+          type="text"
+          placeholder=" "
+          autoFocus
+        />
+        <div className="s-field-hint">
+          Focus also brings the border back, even when empty. The hint
+          for this field will surface in the AgentPanel.
+        </div>
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Search</label>
+        <div style={{ position: "relative" }}>
+          <Icon
+            icon={Search}
+            size={14}
+            style={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              color: "var(--s-text-tertiary)",
+              pointerEvents: "none",
+            }}
+          />
+          <input
+            className="s-input"
+            type="search"
+            placeholder=" "
+            style={{ paddingLeft: 36 }}
+          />
+        </div>
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Number</label>
+        <input className="s-input" type="number" defaultValue={1200} placeholder=" " />
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Textarea</label>
+        <textarea
+          className="s-textarea"
+          rows={3}
+          placeholder=" "
+          style={{ resize: "vertical", minHeight: 60 }}
+        />
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Disabled</label>
+        <input
+          className="s-input"
+          type="text"
+          defaultValue="Read only"
+          placeholder=" "
+          disabled
+        />
+      </div>
+      <div className="s-field">
+        <label className="s-field-label">Invalid</label>
+        <input
+          className="s-input"
+          type="text"
+          defaultValue="bad@input"
+          placeholder=" "
+          style={{ borderColor: "var(--s-danger)" }}
+        />
+        <div style={{ fontSize: 11, color: "var(--s-danger-text)", marginTop: 6 }}>
+          That doesn&rsquo;t look like a valid email.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SelectsDemo() {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <div className="s-field">
+        <label className="s-field-label">Native select</label>
+        <select className="s-select" defaultValue="pet_retail">
+          <option value="pet_retail">Pet retail</option>
+          <option value="fashion">Fashion</option>
+          <option value="electronics">Electronics</option>
+          <option value="generic">Generic</option>
+        </select>
+      </div>
+      <div>
+        <Label>Custom dropdown (preview)</Label>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            background: "var(--s-surface)",
+            border: "1px solid var(--s-border)",
+            borderRadius: "var(--s-radius-md)",
+            padding: "8px 12px",
+            minWidth: 200,
+            color: "var(--s-text)",
+            fontSize: 14,
+            marginTop: 10,
+          }}
+        >
+          <span style={{ flex: 1 }}>Pet retail</span>
+          <Icon icon={ChevronDown} size={14} style={{ color: "var(--s-text-tertiary)" }} />
+        </div>
+        <div
+          style={{
+            marginTop: 6,
+            background: "var(--s-surface)",
+            border: "1px solid var(--s-border)",
+            borderRadius: "var(--s-radius-md)",
+            padding: 6,
+            width: 240,
+            boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+          }}
+        >
+          {["Pet retail", "Fashion", "Electronics", "Generic"].map((o, i) => (
+            <div
+              key={o}
+              style={{
+                padding: "8px 10px",
+                borderRadius: "var(--s-radius-sm)",
+                color: "var(--s-text)",
+                fontSize: 13,
+                cursor: "pointer",
+                background:
+                  i === 0 ? "rgba(250,225,148,0.10)" : "transparent",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {i === 0 && (
+                <Icon icon={Check} size={12} style={{ color: "var(--scout-accent)" }} />
+              )}
+              <span style={{ marginLeft: i === 0 ? 0 : 20 }}>{o}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChecksDemo() {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <Row>
+        <Label>Checkbox</Label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+          <input type="checkbox" defaultChecked /> Active
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+          <input type="checkbox" /> Inactive
+        </label>
+      </Row>
+      <Row>
+        <Label>Radio</Label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+          <input type="radio" name="r1" defaultChecked /> Option A
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+          <input type="radio" name="r1" /> Option B
+        </label>
+      </Row>
+      <Row>
+        <Label>Toggle</Label>
+        <button
+          type="button"
+          style={{
+            width: 38,
+            height: 22,
+            borderRadius: 999,
+            background: "var(--scout-accent)",
+            position: "relative",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 3,
+              right: 3,
+              width: 16,
+              height: 16,
+              borderRadius: "50%",
+              background: "#131316",
+            }}
+          />
+        </button>
+      </Row>
+    </div>
+  );
+}
+
+function CardsDemo() {
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <div style={cardStyle}>
+        <div style={{ ...labelInlineStyle, marginBottom: 6 }}>Surface — default</div>
+        <div style={{ color: "var(--s-text)", fontSize: 13 }}>
+          The default card surface. Most content lives here.
+        </div>
+      </div>
+      <div style={{ ...cardStyle, background: "var(--s-surface-alt)" }}>
+        <div style={{ ...labelInlineStyle, marginBottom: 6 }}>Surface alt</div>
+        <div style={{ color: "var(--s-text)", fontSize: 13 }}>
+          Slightly recessed — used inside cards for table headers and side rails.
+        </div>
+      </div>
+      <div
+        style={{
+          ...cardStyle,
+          background: "rgba(250,225,148,0.06)",
+          borderColor: "rgba(250,225,148,0.3)",
+        }}
+      >
+        <div style={{ ...labelInlineStyle, marginBottom: 6, color: "var(--scout-accent)" }}>
+          Highlighted
+        </div>
+        <div style={{ color: "var(--s-text)", fontSize: 13 }}>
+          Yellow-tinted card for the headline takeaway (uplift estimates, etc.).
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TableDemo() {
+  return (
+    <div
+      style={{
+        background: "var(--s-surface)",
+        border: "1px solid var(--s-border)",
+        borderRadius: "var(--s-radius-md)",
+        overflow: "hidden",
+      }}
+    >
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: "var(--s-surface-alt)" }}>
+            <Th>Site</Th>
+            <Th>Status</Th>
+            <Th>Score</Th>
+            <Th>Uplift</Th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+            <Td>wazu.com</Td>
+            <Td>
+              <span style={{ color: "var(--s-success-text)" }}>completed</span>
+            </Td>
+            <Td mono>72</Td>
+            <Td mono>$48,200</Td>
+          </tr>
+          <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+            <Td>acmepets.com</Td>
+            <Td>
+              <span style={{ color: "var(--s-text-tertiary)" }}>running</span>
+            </Td>
+            <Td mono>—</Td>
+            <Td mono>—</Td>
+          </tr>
+          <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+            <Td>fashionco.com</Td>
+            <Td>
+              <span style={{ color: "var(--s-danger-text)" }}>failed</span>
+            </Td>
+            <Td mono>—</Td>
+            <Td mono>—</Td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function BadgesDemo() {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <Badge label="Default" />
+      <Badge label="Active" tone="success" />
+      <Badge label="Pending" tone="warning" />
+      <Badge label="Failed" tone="danger" />
+      <Badge label="Beta" tone="accent" />
+      <Badge label="3" small />
+    </div>
+  );
+}
+
+function Badge({
+  label,
+  tone,
+  small,
+}: {
+  label: string;
+  tone?: "success" | "warning" | "danger" | "accent";
+  small?: boolean;
+}) {
+  const palettes = {
+    default: {
+      bg: "var(--s-surface-alt)",
+      color: "var(--s-text-secondary)",
+      border: "var(--s-border)",
+    },
+    success: {
+      bg: "var(--s-success-bg)",
+      color: "var(--s-success-text)",
+      border: "transparent",
+    },
+    warning: {
+      bg: "var(--s-warning-bg)",
+      color: "var(--s-warning-text)",
+      border: "transparent",
+    },
+    danger: {
+      bg: "var(--s-danger-bg)",
+      color: "var(--s-danger-text)",
+      border: "transparent",
+    },
+    accent: {
+      bg: "rgba(250,225,148,0.12)",
+      color: "var(--scout-accent)",
+      border: "rgba(250,225,148,0.3)",
+    },
+  };
+  const p = palettes[tone ?? "default"];
+  return (
+    <span
+      style={{
+        padding: small ? "1px 7px" : "3px 10px",
+        background: p.bg,
+        color: p.color,
+        border: `1px solid ${p.border}`,
+        borderRadius: 999,
+        fontSize: small ? 10 : 11,
+        fontWeight: 500,
+        letterSpacing: "0.02em",
+        textTransform: small ? "none" : undefined,
+        fontFamily: small ? "var(--s-font-mono)" : "var(--s-font)",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function BannersDemo() {
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      <Banner icon={CheckCircle} tone="success" title="Saved" text="Your changes were saved." />
+      <Banner
+        icon={Info}
+        tone="info"
+        title="Reminder"
+        text="This run is anonymous. Share the URL to let others view the report."
+      />
+      <Banner
+        icon={AlertTriangle}
+        tone="warning"
+        title="Heads up"
+        text="ASE is not reachable — PDP findings will be reported as errors."
+      />
+      <Banner
+        icon={XCircle}
+        tone="danger"
+        title="Failed"
+        text="The diagnostic couldn’t fetch the homepage. Check the URL."
+      />
+    </div>
+  );
+}
+
+function Banner({
+  icon,
+  tone,
+  title,
+  text,
+}: {
+  icon: typeof Info;
+  tone: "success" | "info" | "warning" | "danger";
+  title: string;
+  text: string;
+}) {
+  const palettes = {
+    success: { bg: "var(--s-success-bg)", color: "var(--s-success-text)" },
+    info: { bg: "rgba(250,225,148,0.12)", color: "var(--scout-accent)" },
+    warning: { bg: "var(--s-warning-bg)", color: "var(--s-warning-text)" },
+    danger: { bg: "var(--s-danger-bg)", color: "var(--s-danger-text)" },
+  };
+  const p = palettes[tone];
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        padding: "12px 14px",
+        background: p.bg,
+        borderRadius: "var(--s-radius-md)",
+        border: "1px solid var(--s-border)",
+      }}
+    >
+      <Icon icon={icon} size={16} style={{ color: p.color, flexShrink: 0, marginTop: 2 }} />
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: p.color }}>{title}</div>
+        <div style={{ fontSize: 12, color: "var(--s-text-secondary)", marginTop: 2 }}>
+          {text}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NavDemo() {
+  const items: { icon: typeof Stethoscope; label: string; active?: boolean }[] = [
+    { icon: Stethoscope, label: "Lista", active: true },
+    { icon: ListChecks, label: "Rúbrica" },
+    { icon: Gauge, label: "Benchmarks" },
+    { icon: Sparkles, label: "Vocabulario" },
+  ];
+  return (
+    <div
+      style={{
+        background: "var(--nav-surface, #131316)",
+        border: "1px solid var(--nav-border, rgba(255,255,255,0.06))",
+        borderRadius: "var(--s-radius-md)",
+        padding: 12,
+        width: 220,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 10,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "rgba(237,234,224,0.4)",
+          padding: "0 10px",
+          marginBottom: 6,
+        }}
+      >
+        Prospectos
+      </div>
+      {items.map((it) => (
+        <a
+          key={it.label}
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 10px",
+            borderRadius: "var(--s-radius-md)",
+            background: it.active ? "rgba(250,225,148,0.10)" : "transparent",
+            /* Every item reads in the logo-white tone. Active state is
+               signaled by the yellow icon + tinted background. */
+            color: "#FFFFFF",
+            fontWeight: it.active ? 500 : 400,
+            fontSize: 13,
+            textDecoration: "none",
+            cursor: "pointer",
+          }}
+        >
+          <Icon
+            icon={it.icon}
+            size={14}
+            style={{
+              color: it.active ? "var(--scout-accent)" : "#FFFFFF",
+            }}
+          />
+          {it.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function HeadingDemo() {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--s-font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: "var(--scout-accent)",
+          marginBottom: 8,
+        }}
+      >
+        Conversion Funnel
+      </div>
+      <h2
+        style={{
+          fontFamily: "var(--s-font-brand)",
+          fontSize: 28,
+          color: "var(--s-text-strong)",
+          textTransform: "uppercase",
+          letterSpacing: "0.01em",
+          margin: "0 0 10px",
+        }}
+      >
+        Revenue leaks
+      </h2>
+      <p style={{ color: "var(--s-text-secondary)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+        Revenue leakage is the gap between the revenue a business has earned and the
+        revenue it actually captures, caused by preventable friction.
+      </p>
+    </div>
+  );
+}
+
+// ─── Small atoms ─────────────────────────────────────────────────────────
+
+function Row({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      {children}
+    </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <div style={labelInlineStyle}>{children}</div>;
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th
+      style={{
+        padding: "10px 12px",
+        textAlign: "left",
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.04em",
+        textTransform: "uppercase",
+        color: "var(--s-text-tertiary)",
+      }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
+  return (
+    <td
+      style={{
+        padding: "10px 12px",
+        fontSize: 12,
+        color: "var(--s-text)",
+        fontFamily: mono ? "var(--s-font-mono)" : undefined,
+        fontVariantNumeric: mono ? "tabular-nums" : undefined,
+      }}
+    >
+      {children}
+    </td>
+  );
+}
+
+const tokenStyle: React.CSSProperties = {
+  fontFamily: "var(--s-font-mono)",
+  fontSize: 10,
+  color: "var(--s-text-tertiary)",
+};
+
+const hexStyle: React.CSSProperties = {
+  fontFamily: "var(--s-font-mono)",
+  fontSize: 10,
+  color: "var(--s-text-muted)",
+  marginTop: 2,
+};
+
+const labelInlineStyle: React.CSSProperties = {
+  fontFamily: "var(--s-font-mono)",
+  fontSize: 10,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--s-text-tertiary)",
+  fontWeight: 600,
+};
+
+const codeStyle: React.CSSProperties = {
+  background: "rgba(250,225,148,0.12)",
+  color: "var(--scout-accent)",
+  padding: "1px 6px",
+  borderRadius: 4,
+  fontFamily: "var(--s-font-mono)",
+  fontSize: 12,
+};
+
+const cardStyle: React.CSSProperties = {
+  background: "var(--s-surface)",
+  border: "1px solid var(--s-border)",
+  borderRadius: "var(--s-radius-md)",
+  padding: 14,
+};
+
+const radiiCardStyle: React.CSSProperties = {
+  background: "var(--s-surface)",
+  border: "1px solid var(--s-border)",
+  borderRadius: "var(--s-radius-lg)",
+  padding: 14,
+};

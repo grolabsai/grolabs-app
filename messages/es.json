@@ -32,7 +32,13 @@
     "pricingProviders": "Proveedores",
     "pricingChanges": "Lotes de cambios",
     "pricingViolations": "Autorizaciones",
-    "pricingSync": "Sincronización"
+    "pricingSync": "Sincronización",
+    "content": "Contenido",
+    "blog": "Blog",
+    "prospects": "Prospectos",
+    "prospectsList": "Lista",
+    "prospectsRubric": "Rúbrica",
+    "prospectsBenchmarks": "Benchmarks"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -1145,6 +1151,18 @@
     }
   },
   "configuration": {
+    "systemHealth": {
+      "navLabel": "Salud del sistema",
+      "title": "Salud del sistema",
+      "subtitle": "Estado en tiempo real de las integraciones externas y variables de entorno. Si algo se rompe en producción, esta es la primera pantalla a revisar.",
+      "footer": "{count} chequeos · refrescar la página para volver a probar",
+      "overall": {
+        "ok": "Todo OK",
+        "warn": "Advertencias",
+        "error": "Atención requerida",
+        "disabled": "Apagado"
+      }
+    },
     "algolia": {
       "navLabel": "Algolia",
       "pageTitle": "Algolia",
@@ -2185,6 +2203,556 @@
       "toastProviderError": "No se pudo crear el proveedor",
       "toastImportError": "Error al importar la lista",
       "toastImportSuccess": "Importados {matched} de {total} productos"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "newPost": "Nuevo artículo",
+    "editTitle": "Editar artículo",
+    "empty": "Todavía no escribiste ningún artículo.",
+    "noInstance": "Sesión expirada — volvé a iniciar sesión.",
+    "colTitle": "Título",
+    "colStatus": "Estado",
+    "colTags": "Etiquetas",
+    "colViews": "Vistas",
+    "colViewsTooltip": "Vistas de los últimos 30 días según Google Analytics",
+    "colUpdated": "Actualizado",
+    "colSlug": "Slug",
+    "filter": {
+      "all": "Todos"
+    },
+    "status": {
+      "draft": "Borrador",
+      "scheduled": "Programado",
+      "published": "Publicado"
+    },
+    "fields": {
+      "title": "Título",
+      "titlePlaceholder": "Título del artículo",
+      "slug": "Slug (URL)",
+      "slugPlaceholder": "se-genera-desde-el-titulo",
+      "summary": "Resumen (descripción meta para SEO)",
+      "content": "Contenido",
+      "contentPlaceholder": "Empezá a escribir. Usá la barra para encabezados, negrita, listas, enlaces e imágenes."
+    },
+    "editor": {
+      "save": "Guardar",
+      "publish": "Publicar",
+      "unpublish": "Despublicar",
+      "insertImage": "Insertar imagen",
+      "uploading": "Subiendo…",
+      "showPreview": "Vista previa",
+      "hidePreview": "Volver al editor",
+      "previewEmpty": "El artículo está vacío.",
+      "savedAt": "Guardado a las {time}",
+      "markdownLegacy": "Este artículo se escribió en Markdown (v1). Lo seguís editando como Markdown; los nuevos artículos usan el editor enriquecido.",
+      "copyPreviewLink": "Copiar enlace de previsualización",
+      "previewLinkCopied": "Enlace de previsualización copiado",
+      "previewLinkCopyFailed": "No se pudo copiar"
+    },
+    "sidebar": {
+      "cover": "Imagen de portada",
+      "uploadCover": "Subir portada",
+      "removeCover": "Quitar portada",
+      "tags": "Etiquetas",
+      "tagsEmpty": "Sin etiquetas",
+      "tagsPlaceholder": "Agregar etiqueta (Enter)",
+      "removeTag": "Quitar etiqueta",
+      "schedule": "Programar publicación",
+      "schedulePublish": "Programar",
+      "aiAssist": "Asistente IA",
+      "shortLink": "Enlace corto",
+      "shortLinkCopy": "Copiar enlace",
+      "shortLinkCopied": "Enlace copiado",
+      "shortLinkCopyFailed": "No se pudo copiar",
+      "dangerZone": "Zona de riesgo",
+      "delete": "Eliminar artículo"
+    },
+    "confirm": {
+      "delete": "¿Eliminar este artículo? Esta acción no se puede deshacer."
+    },
+    "toast": {
+      "saved": "Cambios guardados",
+      "created": "Artículo creado",
+      "published": "Artículo publicado",
+      "unpublished": "Artículo movido a borrador",
+      "scheduled": "Publicación programada",
+      "scheduleRequired": "Elegí una fecha y hora",
+      "coverUploaded": "Portada subida",
+      "imageInserted": "Imagen insertada en el contenido",
+      "titleRequired": "El título es obligatorio",
+      "saveFirst": "Guardá el artículo antes de publicarlo",
+      "missingAlt": "{count, plural, one {Publicado, pero # imagen no tiene texto alternativo} other {Publicado, pero # imágenes no tienen texto alternativo}}"
+    },
+    "tiptap": {
+      "h1": "Encabezado 1",
+      "h2": "Encabezado 2",
+      "h3": "Encabezado 3",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "strike": "Tachado",
+      "code": "Código",
+      "bulletList": "Lista con viñetas",
+      "orderedList": "Lista numerada",
+      "quote": "Cita",
+      "link": "Enlace",
+      "image": "Imagen",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "words": "{count, plural, one {# palabra} other {# palabras}}",
+      "readingTime": "{minutes} min de lectura",
+      "linkPrompt": "URL del enlace (vacío para quitar)",
+      "imageAltPrompt": "Texto alternativo para la imagen (describe brevemente lo que se ve; dejá vacío si es decorativa)",
+      "taskList": "Lista de tareas",
+      "highlight": "Resaltar",
+      "alignLeft": "Alinear a la izquierda",
+      "alignCenter": "Centrar",
+      "alignRight": "Alinear a la derecha",
+      "divider": "Separador",
+      "codeBlock": "Bloque de código",
+      "table": "Tabla",
+      "youtube": "Video de YouTube",
+      "youtubePrompt": "URL del video de YouTube",
+      "imageAlign": {
+        "left": "Alinear a la izquierda",
+        "center": "Centrar",
+        "right": "Alinear a la derecha",
+        "full": "Ancho completo"
+      },
+      "imageCaption": "Editar leyenda",
+      "imageCaptionPrompt": "Texto de la leyenda (vacío para quitar)",
+      "imageAlt": "Editar texto alternativo"
+    },
+    "ai": {
+      "suggestTitles": "Sugerir título",
+      "generateSummary": "Generar resumen",
+      "continue": "Continuar escribiendo",
+      "rewrite": "Reescribir selección",
+      "rewriteShorter": "Más corto",
+      "rewriteLonger": "Más largo",
+      "rewriteClearer": "Más claro",
+      "rewriteFormal": "Más formal",
+      "rewriteCasual": "Más casual",
+      "rewriteGrammar": "Corregir gramática",
+      "thinking": "Pensando…",
+      "emptyContent": "Escribí algo antes de pedir asistencia",
+      "noSelection": "Seleccioná texto para reescribir",
+      "continued": "Texto añadido al final",
+      "rewritten": "Selección reescrita",
+      "summaryGenerated": "Resumen generado",
+      "titleSuggestionsTitle": "Sugerencias de título",
+      "titleApplied": "Título aplicado",
+      "imageGenerate": "Generar imagen con IA",
+      "imagePromptPlaceholder": "Describí la imagen (ej: un escritorio con notas y café, vista isométrica)",
+      "imageBrandHint": "Se aplica automáticamente el estilo y los colores de tu marca.",
+      "imageGenerating": "Generando imagen…",
+      "imageAltPlaceholder": "Texto alternativo (accesibilidad)",
+      "imageCancel": "Cancelar",
+      "imageGenerateBtn": "Generar",
+      "imageRegenerate": "Regenerar",
+      "imageInsert": "Insertar",
+      "imagePromptRequired": "Escribí un prompt para la imagen",
+      "imageInserted": "Imagen insertada",
+      "imageAltSuggested": "Texto alternativo sugerido",
+      "imageTransform": "Transformar al estilo de marca",
+      "imageTransformRestyle": "Reestilizar como ilustración",
+      "imageTransformRecolor": "Recolorear con la paleta",
+      "imageTransformConceptualize": "Conceptualizar como diagrama",
+      "imageTransforming": "Transformando imagen…",
+      "imageTransformed": "Imagen transformada",
+      "imageTransformNoSelection": "Seleccioná una imagen antes de transformar"
+    },
+    "public": {
+      "indexTitle": "Blog",
+      "indexDescription": "Apuntes, notas y aprendizajes.",
+      "empty": "Todavía no hay artículos publicados.",
+      "readingTime": "{minutes} min de lectura",
+      "toc": "Contenido",
+      "filterByTag": "Filtrado por:",
+      "clearFilter": "Limpiar",
+      "related": "Seguí leyendo",
+      "searchPlaceholder": "Buscar en el blog…",
+      "searchButton": "Buscar",
+      "searchResultsFor": "Resultados para",
+      "searchNoResults": "No encontramos resultados. Probá con otras palabras."
+    },
+    "preview": {
+      "badge": "Vista previa",
+      "notIndexed": "No indexado por buscadores",
+      "status": {
+        "draft": "Borrador",
+        "scheduled": "Programado",
+        "published": "Publicado"
+      }
+    }
+  },
+  "prospects": {
+    "list": {
+      "title": "Prospectos",
+      "subtitle": "Sitios diagnosticados, puntuados por la oportunidad de mejora.",
+      "sessionExpired": "Sesión expirada",
+      "editRubricButton": "Editar rúbrica",
+      "benchmarksButton": "Benchmarks",
+      "empty": {
+        "title": "Aún no hay prospectos diagnosticados.",
+        "description": "Los diagnósticos crean un prospecto la primera vez que se analiza un sitio. Mientras tanto, configurá la rúbrica de diagnóstico — los checks que se ejecutan, los fixes recomendados y los benchmarks por vertical — para que cuando los resultados lleguen, signifiquen algo.",
+        "editRubric": "Editar la rúbrica"
+      },
+      "table": {
+        "url": "Sitio",
+        "platform": "Plataforma",
+        "engine": "Buscador",
+        "traffic": "Tráfico estimado",
+        "updated": "Actualizado"
+      },
+      "prospectsTitle": "Prospectos diagnosticados",
+      "recentRunsTitle": "Diagnósticos recientes",
+      "runTable": {
+        "site": "Sitio",
+        "status": "Estado",
+        "score": "Score",
+        "tier": "Madurez",
+        "uplift": "Uplift estimado",
+        "started": "Iniciado",
+        "completed": "Completado"
+      },
+      "table": {
+        "url": "Sitio",
+        "contact": "Contacto",
+        "platform": "Plataforma",
+        "lastScore": "Último score",
+        "lastUplift": "Último uplift",
+        "lastScanned": "Último escaneo"
+      },
+      "form": {
+        "title": "Nuevo diagnóstico",
+        "rootUrl": "URL raíz",
+        "pdpUrl": "URL de PDP",
+        "pdpUrlPlaceholder": "Si no se especifica, se prueba la raíz",
+        "categoryUrl": "URL de categoría",
+        "categoryUrlPlaceholder": "Para medir facetas (opcional)",
+        "annualTraffic": "Tráfico anual",
+        "aov": "AOV (USD)",
+        "displayName": "Nombre",
+        "vertical": "Vertical",
+        "optional": "opcional",
+        "runButton": "Ejecutar",
+        "running": "Ejecutando…",
+        "hint": "El diagnóstico v1 cubre los checks de HTML estático (JSON-LD, OG, llms.txt, sitemap, imágenes/atributos de PDP). Los checks de navegador (typo, facetas, motor, CWV) llegan con la sonda Playwright.",
+        "errorEmptyUrl": "Ingresá una URL."
+      }
+    },
+    "run": {
+      "backToList": "Volver a la lista",
+      "overallScore": "Score general",
+      "maturityTier": "Madurez",
+      "uplift": "Uplift anual (USD)",
+      "status": "Estado",
+      "completedAt": "Completado",
+      "failedTitle": "El diagnóstico falló",
+      "samplesTitle": "Páginas analizadas",
+      "searchTestsTitle": "Pruebas de búsqueda"
+    },
+    "detail": {
+      "backToList": "Volver a prospectos",
+      "scanAll": "Escanear todas las páginas",
+      "scanning": "Escaneando…",
+      "rescan": "Re-escanear",
+      "vocabularyButton": "Editar pruebas de búsqueda",
+      "contact": "Contacto",
+      "platform": "Plataforma",
+      "economics": "Economía",
+      "trafficUnit": "sesiones/año",
+      "aovSuffix": "AOV",
+      "pagesTitle": "Páginas",
+      "noPagesYet": "Aún no hay páginas. Ejecutá un diagnóstico para descubrirlas.",
+      "addPageButton": "Agregar página",
+      "addPageTypeLabel": "Tipo de página",
+      "addPageTypeHint": "Define qué evaluaciones correrá el diagnóstico. Homepage activa pruebas de búsqueda y navegación; PDP corre extracción de atributos y señales del producto; Categoría evalúa faceting.",
+      "addPageTypeHomepage": "Homepage",
+      "addPageTypePdp": "PDP",
+      "addPageTypeCategory": "Categoría",
+      "addPageUrlLabel": "URL",
+      "addPageUrlHint": "URL completa de la página, incluyendo el subpath. Si no incluís https://, se agrega automáticamente.",
+      "addPageLabelLabel": "Etiqueta",
+      "addPageLabelHint": "Nombre interno (opcional) para identificar esta página en la lista.",
+      "addPageCancel": "Cancelar",
+      "addPageSave": "Agregar",
+      "addPageSaving": "Guardando…",
+      "addPageCreated": "Página agregada. Ejecutá un escaneo cuando quieras evaluarla.",
+      "addPageEmptyUrl": "La URL no puede estar vacía.",
+      "addPageInvalidUrl": "La URL no es válida.",
+      "addPageDuplicate": "Esta URL ya existe en este prospecto.",
+      "pageTable": {
+        "type": "Tipo",
+        "url": "URL",
+        "scans": "Escaneos",
+        "latestScore": "Último score",
+        "latestUplift": "Último uplift",
+        "lastScanned": "Último escaneo",
+        "actions": "Acciones"
+      }
+    },
+    "page": {
+      "openPage": "Abrir página ↗",
+      "comparison": "Último vs anterior",
+      "latestScan": "Último escaneo",
+      "previousScan": "Anterior",
+      "delta": "Δ",
+      "compareTable": {
+        "check": "Check",
+        "previous": "Anterior",
+        "latest": "Último",
+        "delta": "Δ"
+      },
+      "searchTestsTitle": "Pruebas de búsqueda",
+      "scanHistory": "Historial de escaneos",
+      "noScansYet": "Sin escaneos todavía.",
+      "scanTable": {
+        "when": "Fecha y hora",
+        "status": "Estado",
+        "score": "Score",
+        "uplift": "Uplift",
+        "openRun": "Ver run",
+        "view": "Ver",
+        "failureLabel": "Escaneo fallido"
+      },
+      "revealDetail": "Click para ver detalle en el panel lateral",
+      "detail": {
+        "status": "Estado",
+        "score": "Score",
+        "notes": "Notas",
+        "evidence": "Evidencia",
+        "when": "Cuándo",
+        "errorMessage": "Mensaje de error",
+        "guidance": {
+          "fetchError": "El probe no pudo obtener esta URL. El sitio puede haber bloqueado la petición, devuelto un HTTP error, o tardado demasiado. Revisa el campo fetch_error para el detalle exacto.",
+          "browserDisabled": "El probe de navegador está desactivado en este ambiente (PROSPECTOS_BROWSER_PROBE_ENABLED=0). Los checks que requieren ejecución de JavaScript no se pueden evaluar.",
+          "psiDisabled": "La integración con Google PageSpeed Insights está desactivada (PROSPECTOS_PSI_ENABLED=0). Core Web Vitals no se evalúa.",
+          "psiError": "La API de Google PageSpeed Insights falló. Puede ser un rate limit, una key inválida, o un timeout. Revisa psi_error.",
+          "aseError": "El servicio ASE no respondió. Verifica que ASE_API_URL esté configurado y el servicio esté arriba.",
+          "genericError": "El scorer falló sin un tipo de error reconocido. Revisa la evidencia más abajo.",
+          "notApplicable": "Este check no aplica para esta página. Por ejemplo: faceting solo se evalúa en URLs de categoría; variantes solo en PDPs con variantes."
+        }
+      }
+    },
+    "testEntries": {
+      "title": "Búsquedas a probar",
+      "subtitle": "Define las palabras que el bot va a probar contra la búsqueda interna del prospecto. Cada entrada tiene una palabra canónica más sus variantes (typos, sinónimos). El bot prueba cada variante y reporta los resultados.",
+      "prospectSection": "Pruebas de este prospecto",
+      "prospectSubtitle": "Entradas específicas para este prospecto. Se agregan a las plantillas heredadas del vertical.",
+      "verticalSection": "Plantillas heredadas del vertical",
+      "verticalSubtitle": "Solo lectura aquí. Edita en /prospects/rubric/vocabulary.",
+      "noProspectEntries": "Sin entradas específicas. Agrega una para personalizar las pruebas de este prospecto.",
+      "addEntry": "Agregar entrada",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "save": "Guardar",
+      "create": "Crear",
+      "cancel": "Cancelar",
+      "saving": "Guardando…",
+      "created": "Entrada creada",
+      "updated": "Entrada actualizada",
+      "deleted": "Entrada eliminada",
+      "confirmDelete": "¿Eliminar esta entrada?",
+      "intentLabel": "Intención",
+      "intentLabelHint": "Descripción corta de qué se está probando. Ejemplo: \"Zapatillas para correr\". Esta es la etiqueta humana del intento, no la palabra que se busca.",
+      "localeField": "Idioma",
+      "notesField": "Notas",
+      "variantsHeader": "Variantes de búsqueda",
+      "variantTypeLabel": "Tipo",
+      "variantQueryLabel": "Texto de la búsqueda",
+      "removeVariant": "Quitar variante",
+      "addTypo": "Typo",
+      "addSynonym": "Sinónimo",
+      "addPlural": "Plural",
+      "addPartial": "Parcial",
+      "variantHintBodies": {
+        "canonical": "La palabra exacta que el cliente esperaría escribir. Ejemplo: \"zapatillas para correr\". Si la búsqueda no devuelve resultados con esta, el sitio falla de plano.",
+        "typo": "La misma intención escrita con un error tipográfico. Ejemplo: \"zapatilas para correr\". Si el sitio sigue devolviendo resultados, tiene tolerancia a typos.",
+        "synonym": "Una forma alterna de pedir lo mismo. Ejemplo: \"tenis para correr\". Si el sitio devuelve los mismos productos que la canónica, entiende sinónimos.",
+        "plural": "La misma intención en singular/plural. Ejemplo: \"zapatilla para correr\". Pone a prueba si el buscador maneja flexión.",
+        "partial": "Un fragmento o prefijo. Ejemplo: \"zapatilla\". Pone a prueba el autocompletado y la coincidencia parcial."
+      },
+      "errors": {
+        "emptyLabel": "La intención no puede estar vacía.",
+        "needsCanonical": "Cada entrada necesita al menos una variante canónica."
+      }
+    },
+    "vocabulary": {
+      "title": "Vocabulario de prueba",
+      "subtitle": "Sinónimos y consultas que la sonda de navegador usa para probar la búsqueda interna del prospecto.",
+      "sessionExpired": "Sesión expirada",
+      "backToRubric": "Volver a la rúbrica",
+      "synonymsTab": "Pares de sinónimos",
+      "queriesTab": "Consultas",
+      "synonymsTitle": "Pares de sinónimos",
+      "queriesTitle": "Consultas",
+      "addSynonym": "Agregar par",
+      "addQuery": "Agregar consulta",
+      "addButton": "Agregar",
+      "empty": "Sin entradas todavía.",
+      "templateHint": "Los pares de instancia plantilla son solo lectura.",
+      "template": "plantilla",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar esta entrada?",
+      "fields": {
+        "vertical": "Vertical",
+        "termA": "Término A",
+        "termB": "Término B",
+        "locale": "Idioma",
+        "queryText": "Consulta",
+        "intent": "Intento",
+        "notes": "Notas",
+        "actions": "Acciones"
+      }
+    },
+    "rubric": {
+      "title": "Rúbrica diagnóstica",
+      "subtitle": "El catálogo de checks que el diagnóstico ejecuta y los fixes que recomienda.",
+      "sessionExpired": "Sesión expirada",
+      "listTitle": "Checks",
+      "createButton": "Nuevo check",
+      "searchPlaceholder": "Buscar checks…",
+      "templateBadge": "Provisto por GroLabs (instancia plantilla)",
+      "templateBadgeShort": "plantilla",
+      "readOnlyTemplate": "Solo lectura (check de plantilla)",
+      "vocabularyButton": "Vocabulario de prueba",
+      "empty": {
+        "selectPrompt": "Seleccioná un check o creá uno nuevo.",
+        "stageNoChecks": "Sin checks en esta etapa todavía.",
+        "noSearchResults": "Ningún check coincide con la búsqueda."
+      },
+      "nav": {
+        "back": "Atrás",
+        "checksCount": "{n, plural, one {# check} other {# checks}}"
+      },
+      "probeType": {
+        "search": "Búsqueda interna",
+        "pdp": "PDP",
+        "site_wide": "Sitio entero",
+        "homepage": "Home",
+        "category": "Categoría"
+      },
+      "confidence": {
+        "low": "Baja",
+        "medium": "Media",
+        "high": "Alta"
+      },
+      "form": {
+        "createTitle": "Nuevo check",
+        "editTitle": "Editar check",
+        "sections": {
+          "identity": "Identidad",
+          "taxonomy": "Taxonomía",
+          "scoring": "Puntuación y revenue"
+        },
+        "fields": {
+          "checkName": "Nombre",
+          "checkCode": "Código",
+          "checkCodeHint": "Identificador estable (snake_case con prefijo de etapa).",
+          "description": "Descripción",
+          "stage": "Etapa del funnel",
+          "probeType": "Tipo de sonda",
+          "weight": "Peso",
+          "weightHint": "Contribución al score de la etapa (0–1).",
+          "deltaRate": "Δ por defecto",
+          "deltaRateHint": "Mejora estimada si se arregla (ej. 0.08 = +8%).",
+          "confidence": "Confianza",
+          "revenueLever": "Fórmula de revenue",
+          "revenueLeverHint": "Cadena legible que documenta la palanca económica.",
+          "notes": "Notas internas",
+          "active": "Activo",
+          "activeHint": "Incluir en los diagnósticos"
+        }
+      },
+      "fixes": {
+        "sectionTitle": "Recomendaciones de fix",
+        "addButton": "Agregar fix",
+        "empty": "Sin fixes definidos para este check.",
+        "view": "Ver",
+        "edit": "Editar",
+        "effortShort": "Esfuerzo",
+        "impactShort": "Impacto",
+        "level": {
+          "low": "Bajo",
+          "medium": "Medio",
+          "high": "Alto"
+        },
+        "fields": {
+          "code": "Código",
+          "title": "Título",
+          "body": "Cuerpo",
+          "trigger": "Condición de disparo",
+          "triggerHint": "Cuándo aplicar este fix. Ej: {\"result_status\": \"fail\"} o {\"score_below\": 50}.",
+          "effort": "Esfuerzo",
+          "impact": "Impacto",
+          "order": "Orden",
+          "active": "Activo"
+        },
+        "confirmDelete": "¿Eliminar este fix?",
+        "invalidJson": "La condición no es JSON válido."
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "saved": "Guardado",
+        "cancel": "Cancelar",
+        "collapse": "Colapsar",
+        "delete": "Eliminar",
+        "confirmDelete": "¿Eliminar este check?",
+        "deleteLinked": "No se puede eliminar: hay {n} finding(s) que referencian este check."
+      },
+      "errors": {
+        "emptyRequired": "El código y el nombre son obligatorios.",
+        "noInstance": "No hay instancia activa."
+      }
+    },
+    "benchmarks": {
+      "title": "Benchmarks por vertical",
+      "subtitle": "Las entradas que la fórmula de revenue usa para estimar el uplift anual.",
+      "sessionExpired": "Sesión expirada",
+      "listTitle": "Benchmarks",
+      "createButton": "Nuevo benchmark",
+      "template": "plantilla",
+      "empty": "Sin benchmarks definidos todavía.",
+      "scope": {
+        "vertical": "Toda la vertical",
+        "stage": "Etapa",
+        "check": "Check"
+      },
+      "table": {
+        "scope": "Alcance",
+        "baselineCr": "CR base",
+        "stageShare": "Share etapa",
+        "deltaRate": "Δ rate",
+        "aov": "AOV (USD)",
+        "source": "Fuente",
+        "effectiveFrom": "Vigente desde",
+        "actions": "Acciones"
+      },
+      "fields": {
+        "vertical": "Vertical",
+        "stage": "Etapa",
+        "check": "Check",
+        "allStages": "(toda la vertical)",
+        "allChecks": "(toda la etapa)",
+        "baselineCr": "Conversión base",
+        "stageShare": "Share de la etapa",
+        "deltaRate": "Δ rate al arreglar",
+        "aov": "AOV (USD)",
+        "source": "Fuente",
+        "effectiveFrom": "Vigente desde",
+        "notes": "Notas"
+      },
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "confirmDelete": "¿Eliminar este benchmark?"
+      }
     }
   }
 }

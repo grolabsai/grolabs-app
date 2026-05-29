@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+// Locale-aware: strips the `/en` prefix from the pathname so NAV hrefs
+// like `/dashboard` match correctly when the user is on `/en/dashboard`.
+// The raw `next/navigation` usePathname returns the prefixed string and
+// breaks every active-state match on non-default locales.
+import { usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import type { Route } from "next";
 import { useCallback, useSyncExternalStore } from "react";
@@ -37,6 +41,11 @@ import {
   Database,
   Library,
   Wrench,
+  Activity,
+  FileText,
+  Stethoscope,
+  ListChecks,
+  Gauge,
   ChevronRight,
   ChevronDown,
   type LucideIcon,
@@ -47,6 +56,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Icon } from "@/components/ui/icon";
+import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
 import { cn } from "@/lib/utils";
 
 const SECTION_STATE_KEY = "grolabs.sidebar.sections";
@@ -126,17 +136,48 @@ type NavGroup = {
   items: NavItem[];
 };
 
-function isItemActive(href: Route | string | null, pathname: string) {
+function itemMatchesPath(href: Route | string | null, pathname: string): boolean {
   if (!href) return false;
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Sidebar({ instanceName }: { instanceName: string }) {
+/**
+ * Pick the single active NAV item across all groups: the longest matching
+ * href wins. Without this, a parent like `/prospects` and a child like
+ * `/prospects/rubric` both light up when you're on `/prospects/rubric` —
+ * the parent's prefix match collides with the child's exact match.
+ */
+function computeActiveHref(
+  groups: { items: { href: Route | string | null }[] }[],
+  pathname: string,
+): string | null {
+  let best: string | null = null;
+  for (const group of groups) {
+    for (const item of group.items) {
+      const href = item.href;
+      if (!href) continue;
+      if (!itemMatchesPath(href, pathname)) continue;
+      if (best === null || href.length > best.length) best = href;
+    }
+  }
+  return best;
+}
+
+export function Sidebar({
+  instanceName: _instanceName,
+  instances,
+  currentInstanceId,
+}: {
+  instanceName: string;
+  instances: InstanceListItem[];
+  currentInstanceId: number | null;
+}) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
   const t = useTranslations("configuration.algolia");
   const tSearch = useTranslations("configuration.search");
   const tGa4 = useTranslations("configuration.ga4");
+  const tHealth = useTranslations("configuration.systemHealth");
 
   const NAV: NavGroup[] = [
     {
@@ -192,6 +233,24 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       ],
     },
     {
+      key: "content",
+      title: tNav("content"),
+      icon: FileText,
+      items: [
+        { href: "/content/posts" as Route, label: tNav("blog"), icon: FileText },
+      ],
+    },
+    {
+      key: "prospects",
+      title: tNav("prospects"),
+      icon: Stethoscope,
+      items: [
+        { href: "/prospects" as Route, label: tNav("prospectsList"), icon: Stethoscope, useIconWrapper: true },
+        { href: "/prospects/rubric" as Route, label: tNav("prospectsRubric"), icon: ListChecks, useIconWrapper: true },
+        { href: "/prospects/benchmarks" as Route, label: tNav("prospectsBenchmarks"), icon: Gauge, useIconWrapper: true },
+      ],
+    },
+    {
       key: "references",
       title: tNav("references"),
       icon: Library,
@@ -218,18 +277,22 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
         { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
         { href: "/configuration/ga4" as Route, label: tGa4("navLabel"), icon: LineChart, useIconWrapper: true },
+        { href: "/configuration/system-health" as Route, label: tHealth("navLabel"), icon: Activity, useIconWrapper: true },
         { href: null, label: tNav("storeSettings"), icon: Settings },
       ],
     },
   ];
 
-  // Which collapsible group owns the current route. Computed identically on
-  // server and first client render (usePathname is isomorphic), so the
-  // route-derived default never causes a hydration mismatch.
+  // Single active href across all NAV. Longest matching href wins so
+  // parent rows (e.g. /prospects) don't light up alongside their
+  // children (/prospects/rubric).
+  const activeHref = computeActiveHref(NAV, pathname);
+
+  // Which collapsible group owns the active item — used for the default
+  // expanded state.
   const activeGroupKey =
-    NAV.find(
-      (g) => !g.flat && g.items.some((it) => isItemActive(it.href, pathname)),
-    )?.key ?? null;
+    NAV.find((g) => !g.flat && g.items.some((it) => it.href === activeHref))
+      ?.key ?? null;
 
   // Manual expand/collapse choices, persisted per browser tab. The server
   // snapshot is empty so SSR always uses route-derived defaults; the client
@@ -246,15 +309,30 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
 
   function renderItem(item: NavItem) {
     const ItemIcon = item.icon;
-    const isActive = isItemActive(item.href, pathname);
+    const isActive = item.href !== null && item.href === activeHref;
 
-    // New entries route through the shared <Icon> wrapper; legacy
-    // entries render the lucide component directly until the
-    // whole-sidebar migration lands. Visual output matches.
+    // Active items force the icon stroke yellow via the `color` prop
+    // on Lucide. Lucide renders `<svg stroke={color}>`, so passing the
+    // hex directly here bypasses every CSS cascade quirk that bit us
+    // earlier — no !important wars, no Tailwind utility leakage, no
+    // hydration races. Inactive items inherit currentColor (white)
+    // from the parent .s-nav-item.
+    const iconColor = isActive ? "#fae194" : undefined;
     const iconNode = item.useIconWrapper ? (
-      <Icon icon={ItemIcon} className="s-nav-icon" size={14} strokeWidth={1.5} />
+      <Icon
+        icon={ItemIcon}
+        className="s-nav-icon"
+        size={14}
+        strokeWidth={1.5}
+        color={iconColor}
+      />
     ) : (
-      <ItemIcon className="s-nav-icon" size={14} strokeWidth={1.5} />
+      <ItemIcon
+        className="s-nav-icon"
+        size={14}
+        strokeWidth={1.5}
+        color={iconColor}
+      />
     );
 
     if (!item.href) {
@@ -289,7 +367,20 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
       {/* Brand mark */}
       <div className="s-brand">
         <div className="s-brand-mark" />
-        <span className="s-brand-name">GroLabs</span>
+        <div className="s-brand-stack">
+          <span className="s-brand-name">GroLabs</span>
+          <span className="s-brand-tagline">Recover lost revenue</span>
+        </div>
+      </div>
+
+      {/* Instance switcher — moved here from the topbar so it sits as the
+          first interactive element below the logo. Truncates the
+          instance name when the sidebar can't fit it. */}
+      <div className="s-sidebar-instance">
+        <InstanceSwitcher
+          instances={instances}
+          currentInstanceId={currentInstanceId}
+        />
       </div>
 
       {/* Nav groups */}
@@ -343,24 +434,8 @@ export function Sidebar({ instanceName }: { instanceName: string }) {
         );
       })}
 
-      {/* Instance badge */}
-      <div style={{ marginTop: 24, padding: "8px 10px" }}>
-        <div
-          style={{
-            fontSize: 10,
-            color: "var(--s-text-tertiary)",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: 4,
-          }}
-        >
-          {tNav("instance")}
-        </div>
-        <div style={{ fontSize: 13, color: "var(--s-text)" }}>{instanceName}</div>
-      </div>
-
       {/* Version */}
-      <div style={{ padding: "4px 10px 8px" }}>
+      <div style={{ marginTop: "auto", padding: "12px 10px 8px" }}>
         <div
           style={{
             fontSize: 10,

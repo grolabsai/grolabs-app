@@ -32,7 +32,13 @@
     "pricingProviders": "Providers",
     "pricingChanges": "Change batches",
     "pricingViolations": "Authorizations",
-    "pricingSync": "Sync"
+    "pricingSync": "Sync",
+    "content": "Content",
+    "blog": "Blog",
+    "prospects": "Prospects",
+    "prospectsList": "List",
+    "prospectsRubric": "Rubric",
+    "prospectsBenchmarks": "Benchmarks"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -1145,6 +1151,18 @@
     }
   },
   "configuration": {
+    "systemHealth": {
+      "navLabel": "System health",
+      "title": "System health",
+      "subtitle": "Live status of external integrations and environment variables. If something breaks in production, this is the first screen to check.",
+      "footer": "{count} checks · refresh the page to re-probe",
+      "overall": {
+        "ok": "All OK",
+        "warn": "Warnings",
+        "error": "Action required",
+        "disabled": "Disabled"
+      }
+    },
     "algolia": {
       "navLabel": "Algolia",
       "pageTitle": "Algolia",
@@ -2185,6 +2203,556 @@
       "toastProviderError": "Could not create the provider",
       "toastImportError": "Error importing the list",
       "toastImportSuccess": "Imported {matched} of {total} products"
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "newPost": "New post",
+    "editTitle": "Edit post",
+    "empty": "You haven't written any posts yet.",
+    "noInstance": "Session expired — please sign in again.",
+    "colTitle": "Title",
+    "colStatus": "Status",
+    "colTags": "Tags",
+    "colViews": "Views",
+    "colViewsTooltip": "Page views in the last 30 days from Google Analytics",
+    "colUpdated": "Updated",
+    "colSlug": "Slug",
+    "filter": {
+      "all": "All"
+    },
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "published": "Published"
+    },
+    "fields": {
+      "title": "Title",
+      "titlePlaceholder": "Post title",
+      "slug": "Slug (URL)",
+      "slugPlaceholder": "auto-from-title",
+      "summary": "Summary (SEO meta description)",
+      "content": "Content",
+      "contentPlaceholder": "Start writing. Use the toolbar for headings, bold, lists, links, and images."
+    },
+    "editor": {
+      "save": "Save",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "insertImage": "Insert image",
+      "uploading": "Uploading…",
+      "showPreview": "Preview",
+      "hidePreview": "Back to editor",
+      "previewEmpty": "Post is empty.",
+      "savedAt": "Saved at {time}",
+      "markdownLegacy": "This post was written in Markdown (v1). You can keep editing as Markdown; new posts use the rich editor.",
+      "copyPreviewLink": "Copy preview link",
+      "previewLinkCopied": "Preview link copied",
+      "previewLinkCopyFailed": "Could not copy"
+    },
+    "sidebar": {
+      "cover": "Cover image",
+      "uploadCover": "Upload cover",
+      "removeCover": "Remove cover",
+      "tags": "Tags",
+      "tagsEmpty": "No tags",
+      "tagsPlaceholder": "Add tag (Enter)",
+      "removeTag": "Remove tag",
+      "schedule": "Schedule publish",
+      "schedulePublish": "Schedule",
+      "aiAssist": "AI assist",
+      "shortLink": "Short link",
+      "shortLinkCopy": "Copy link",
+      "shortLinkCopied": "Link copied",
+      "shortLinkCopyFailed": "Could not copy",
+      "dangerZone": "Danger zone",
+      "delete": "Delete post"
+    },
+    "confirm": {
+      "delete": "Delete this post? This cannot be undone."
+    },
+    "toast": {
+      "saved": "Changes saved",
+      "created": "Post created",
+      "published": "Post published",
+      "unpublished": "Post moved to draft",
+      "scheduled": "Publish scheduled",
+      "scheduleRequired": "Pick a date and time",
+      "coverUploaded": "Cover uploaded",
+      "imageInserted": "Image inserted into content",
+      "titleRequired": "Title is required",
+      "saveFirst": "Save the post before publishing",
+      "missingAlt": "{count, plural, one {Published, but # image has no alt text} other {Published, but # images have no alt text}}"
+    },
+    "tiptap": {
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "quote": "Quote",
+      "link": "Link",
+      "image": "Image",
+      "undo": "Undo",
+      "redo": "Redo",
+      "words": "{count, plural, one {# word} other {# words}}",
+      "readingTime": "{minutes} min read",
+      "linkPrompt": "Link URL (empty to remove)",
+      "imageAltPrompt": "Alt text for the image (briefly describe what it shows; leave empty if decorative)",
+      "taskList": "Task list",
+      "highlight": "Highlight",
+      "alignLeft": "Align left",
+      "alignCenter": "Align center",
+      "alignRight": "Align right",
+      "divider": "Divider",
+      "codeBlock": "Code block",
+      "table": "Table",
+      "youtube": "YouTube video",
+      "youtubePrompt": "YouTube video URL",
+      "imageAlign": {
+        "left": "Align left",
+        "center": "Center",
+        "right": "Align right",
+        "full": "Full width"
+      },
+      "imageCaption": "Edit caption",
+      "imageCaptionPrompt": "Caption text (empty to remove)",
+      "imageAlt": "Edit alt text"
+    },
+    "ai": {
+      "suggestTitles": "Suggest title",
+      "generateSummary": "Generate summary",
+      "continue": "Continue writing",
+      "rewrite": "Rewrite selection",
+      "rewriteShorter": "Shorter",
+      "rewriteLonger": "Longer",
+      "rewriteClearer": "Clearer",
+      "rewriteFormal": "More formal",
+      "rewriteCasual": "More casual",
+      "rewriteGrammar": "Fix grammar",
+      "thinking": "Thinking…",
+      "emptyContent": "Write something before asking for help",
+      "noSelection": "Select text to rewrite",
+      "continued": "Text added to the end",
+      "rewritten": "Selection rewritten",
+      "summaryGenerated": "Summary generated",
+      "titleSuggestionsTitle": "Title suggestions",
+      "titleApplied": "Title applied",
+      "imageGenerate": "Generate AI image",
+      "imagePromptPlaceholder": "Describe the image (e.g. a desk with notes and coffee, isometric)",
+      "imageBrandHint": "Your brand style and palette are applied automatically.",
+      "imageGenerating": "Generating image…",
+      "imageAltPlaceholder": "Alt text (accessibility)",
+      "imageCancel": "Cancel",
+      "imageGenerateBtn": "Generate",
+      "imageRegenerate": "Regenerate",
+      "imageInsert": "Insert",
+      "imagePromptRequired": "Enter a prompt for the image",
+      "imageInserted": "Image inserted",
+      "imageAltSuggested": "Alt text suggested",
+      "imageTransform": "Transform to brand style",
+      "imageTransformRestyle": "Restyle as illustration",
+      "imageTransformRecolor": "Recolor to brand palette",
+      "imageTransformConceptualize": "Conceptualize as diagram",
+      "imageTransforming": "Transforming image…",
+      "imageTransformed": "Image transformed",
+      "imageTransformNoSelection": "Select an image before transforming"
+    },
+    "public": {
+      "indexTitle": "Blog",
+      "indexDescription": "Notes, ideas, and lessons.",
+      "empty": "No posts published yet.",
+      "readingTime": "{minutes} min read",
+      "toc": "Contents",
+      "filterByTag": "Filtered by:",
+      "clearFilter": "Clear",
+      "related": "Keep reading",
+      "searchPlaceholder": "Search the blog…",
+      "searchButton": "Search",
+      "searchResultsFor": "Results for",
+      "searchNoResults": "No matches. Try different keywords."
+    },
+    "preview": {
+      "badge": "Preview",
+      "notIndexed": "Not indexed by search engines",
+      "status": {
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "published": "Published"
+      }
+    }
+  },
+  "prospects": {
+    "list": {
+      "title": "Prospects",
+      "subtitle": "Diagnosed sites, ranked by uplift opportunity.",
+      "sessionExpired": "Session expired",
+      "editRubricButton": "Edit rubric",
+      "benchmarksButton": "Benchmarks",
+      "empty": {
+        "title": "No prospects diagnosed yet.",
+        "description": "Diagnostics create a prospect the first time a site is analyzed. In the meantime, configure the diagnostic rubric — the checks that run, the fixes recommended, and the per-vertical benchmarks — so results mean something when they arrive.",
+        "editRubric": "Edit the rubric"
+      },
+      "table": {
+        "url": "Site",
+        "platform": "Platform",
+        "engine": "Search engine",
+        "traffic": "Est. traffic",
+        "updated": "Updated"
+      },
+      "prospectsTitle": "Diagnosed prospects",
+      "recentRunsTitle": "Recent diagnostics",
+      "runTable": {
+        "site": "Site",
+        "status": "Status",
+        "score": "Score",
+        "tier": "Maturity",
+        "uplift": "Est. uplift",
+        "started": "Started",
+        "completed": "Completed"
+      },
+      "table": {
+        "url": "Site",
+        "contact": "Contact",
+        "platform": "Platform",
+        "lastScore": "Last score",
+        "lastUplift": "Last uplift",
+        "lastScanned": "Last scanned"
+      },
+      "form": {
+        "title": "New diagnostic",
+        "rootUrl": "Root URL",
+        "pdpUrl": "PDP URL",
+        "pdpUrlPlaceholder": "Falls back to the root if not set",
+        "categoryUrl": "Category URL",
+        "categoryUrlPlaceholder": "Required to score faceting",
+        "annualTraffic": "Annual traffic",
+        "aov": "AOV (USD)",
+        "displayName": "Display name",
+        "vertical": "Vertical",
+        "optional": "optional",
+        "runButton": "Run",
+        "running": "Running…",
+        "hint": "v1 covers static-HTML checks (JSON-LD, OG, llms.txt, sitemap, PDP images/attributes). Browser-based checks (typo, facets, engine, CWV) arrive with the Playwright probe.",
+        "errorEmptyUrl": "Enter a URL."
+      }
+    },
+    "run": {
+      "backToList": "Back to list",
+      "overallScore": "Overall score",
+      "maturityTier": "Maturity tier",
+      "uplift": "Annual uplift (USD)",
+      "status": "Status",
+      "completedAt": "Completed",
+      "failedTitle": "Diagnostic failed",
+      "samplesTitle": "Pages probed",
+      "searchTestsTitle": "Search tests"
+    },
+    "detail": {
+      "backToList": "Back to prospects",
+      "scanAll": "Scan all pages",
+      "scanning": "Scanning…",
+      "rescan": "Re-scan",
+      "vocabularyButton": "Edit search tests",
+      "contact": "Contact",
+      "platform": "Platform",
+      "economics": "Economics",
+      "trafficUnit": "sessions/yr",
+      "aovSuffix": "AOV",
+      "pagesTitle": "Pages",
+      "noPagesYet": "No pages yet. Run a diagnostic to discover them.",
+      "addPageButton": "Add page",
+      "addPageTypeLabel": "Page type",
+      "addPageTypeHint": "Tells the diagnostic which evaluations to run. Homepage activates search + navigation probes; PDP runs product-signal extraction (attributes, variants, images, reviews); Category evaluates faceting.",
+      "addPageTypeHomepage": "Homepage",
+      "addPageTypePdp": "PDP",
+      "addPageTypeCategory": "Category",
+      "addPageUrlLabel": "URL",
+      "addPageUrlHint": "Full URL of the page including any subpath. If you don't include https://, we add it automatically.",
+      "addPageLabelLabel": "Label",
+      "addPageLabelHint": "Internal name (optional) so you can identify this page in the list.",
+      "addPageCancel": "Cancel",
+      "addPageSave": "Add",
+      "addPageSaving": "Saving…",
+      "addPageCreated": "Page added. Run a scan whenever you're ready to evaluate it.",
+      "addPageEmptyUrl": "URL cannot be empty.",
+      "addPageInvalidUrl": "URL is not valid.",
+      "addPageDuplicate": "This URL is already attached to this prospect.",
+      "pageTable": {
+        "type": "Type",
+        "url": "URL",
+        "scans": "Scans",
+        "latestScore": "Last score",
+        "latestUplift": "Last uplift",
+        "lastScanned": "Last scanned",
+        "actions": "Actions"
+      }
+    },
+    "page": {
+      "openPage": "Open page ↗",
+      "comparison": "Latest vs previous",
+      "latestScan": "Latest scan",
+      "previousScan": "Previous",
+      "delta": "Δ",
+      "compareTable": {
+        "check": "Check",
+        "previous": "Previous",
+        "latest": "Latest",
+        "delta": "Δ"
+      },
+      "searchTestsTitle": "Search tests",
+      "scanHistory": "Scan history",
+      "noScansYet": "No scans yet.",
+      "scanTable": {
+        "when": "When",
+        "status": "Status",
+        "score": "Score",
+        "uplift": "Uplift",
+        "openRun": "Open run",
+        "view": "View",
+        "failureLabel": "Failed scan"
+      },
+      "revealDetail": "Click to see detail in the side panel",
+      "detail": {
+        "status": "Status",
+        "score": "Score",
+        "notes": "Notes",
+        "evidence": "Evidence",
+        "when": "When",
+        "errorMessage": "Error message",
+        "guidance": {
+          "fetchError": "The probe couldn't fetch this URL. The site may have blocked the request, returned an HTTP error, or timed out. Check fetch_error below for the exact reason.",
+          "browserDisabled": "Browser probe is disabled in this environment (PROSPECTOS_BROWSER_PROBE_ENABLED=0). Checks that require JavaScript execution can't be evaluated.",
+          "psiDisabled": "Google PageSpeed Insights integration is disabled (PROSPECTOS_PSI_ENABLED=0). Core Web Vitals isn't being evaluated.",
+          "psiError": "Google PageSpeed Insights API failed. Could be rate limiting, invalid key, or timeout. See psi_error.",
+          "aseError": "The ASE service didn't respond. Verify ASE_API_URL is set and the service is up.",
+          "genericError": "The scorer failed with no recognized error type. Inspect the evidence below.",
+          "notApplicable": "This check doesn't apply for this page. For example: faceting only runs on category URLs; variant clarity only runs on PDPs with variants."
+        }
+      }
+    },
+    "testEntries": {
+      "title": "Searches to test",
+      "subtitle": "Define the words the bot will test against the prospect's internal search. Each entry has a canonical query plus its variants (typos, synonyms). The bot tries every variant and reports per-variant results.",
+      "prospectSection": "This prospect's tests",
+      "prospectSubtitle": "Entries specific to this prospect. Layered on top of the vertical's templates.",
+      "verticalSection": "Inherited vertical templates",
+      "verticalSubtitle": "Read-only here. Edit in /prospects/rubric/vocabulary.",
+      "noProspectEntries": "No prospect-specific entries yet. Add one to customize this prospect's tests.",
+      "addEntry": "Add entry",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "create": "Create",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "created": "Entry created",
+      "updated": "Entry updated",
+      "deleted": "Entry deleted",
+      "confirmDelete": "Delete this entry?",
+      "intentLabel": "Intent",
+      "intentLabelHint": "Short human label for what's being tested. Example: \"Running shoes\". This is the human description of the intent, not the word that gets typed into search.",
+      "localeField": "Locale",
+      "notesField": "Notes",
+      "variantsHeader": "Search variants",
+      "variantTypeLabel": "Type",
+      "variantQueryLabel": "Search text",
+      "removeVariant": "Remove variant",
+      "addTypo": "Typo",
+      "addSynonym": "Synonym",
+      "addPlural": "Plural",
+      "addPartial": "Partial",
+      "variantHintBodies": {
+        "canonical": "The exact word a customer would expect to type. Example: \"running shoes\". If search returns nothing for this, the site fails outright.",
+        "typo": "The same intent with a typo. Example: \"runing shoes\". If the site still returns results, it has typo tolerance.",
+        "synonym": "An alternate way to ask for the same thing. Example: \"sneakers\". If the site returns the same products as the canonical, it understands synonyms.",
+        "plural": "Singular or plural form. Example: \"running shoe\". Tests whether the search handles inflection.",
+        "partial": "A prefix or fragment. Example: \"runn\". Tests autocomplete + partial matching."
+      },
+      "errors": {
+        "emptyLabel": "Intent cannot be empty.",
+        "needsCanonical": "Every entry needs at least one canonical variant."
+      }
+    },
+    "vocabulary": {
+      "title": "Test vocabulary",
+      "subtitle": "Synonym pairs and canonical queries the browser probe uses to test the prospect's internal search.",
+      "sessionExpired": "Session expired",
+      "backToRubric": "Back to rubric",
+      "synonymsTab": "Synonym pairs",
+      "queriesTab": "Test queries",
+      "synonymsTitle": "Synonym pairs",
+      "queriesTitle": "Test queries",
+      "addSynonym": "Add pair",
+      "addQuery": "Add query",
+      "addButton": "Add",
+      "empty": "No entries yet.",
+      "templateHint": "Template-instance rows are read-only.",
+      "template": "template",
+      "delete": "Delete",
+      "confirmDelete": "Delete this entry?",
+      "fields": {
+        "vertical": "Vertical",
+        "termA": "Term A",
+        "termB": "Term B",
+        "locale": "Locale",
+        "queryText": "Query",
+        "intent": "Intent",
+        "notes": "Notes",
+        "actions": "Actions"
+      }
+    },
+    "rubric": {
+      "title": "Diagnostic rubric",
+      "subtitle": "The catalog of checks the diagnostic runs and the fixes it recommends.",
+      "sessionExpired": "Session expired",
+      "listTitle": "Checks",
+      "createButton": "New check",
+      "searchPlaceholder": "Search checks…",
+      "templateBadge": "Shipped by GroLabs (template instance)",
+      "templateBadgeShort": "template",
+      "readOnlyTemplate": "Read-only (template check)",
+      "vocabularyButton": "Test vocabulary",
+      "empty": {
+        "selectPrompt": "Select a check or create a new one.",
+        "stageNoChecks": "No checks in this stage yet.",
+        "noSearchResults": "No checks match your search."
+      },
+      "nav": {
+        "back": "Back",
+        "checksCount": "{n, plural, one {# check} other {# checks}}"
+      },
+      "probeType": {
+        "search": "Internal search",
+        "pdp": "PDP",
+        "site_wide": "Site-wide",
+        "homepage": "Homepage",
+        "category": "Category"
+      },
+      "confidence": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "form": {
+        "createTitle": "New check",
+        "editTitle": "Edit check",
+        "sections": {
+          "identity": "Identity",
+          "taxonomy": "Taxonomy",
+          "scoring": "Scoring & revenue"
+        },
+        "fields": {
+          "checkName": "Name",
+          "checkCode": "Code",
+          "checkCodeHint": "Stable identifier (snake_case with stage prefix).",
+          "description": "Description",
+          "stage": "Funnel stage",
+          "probeType": "Probe type",
+          "weight": "Weight",
+          "weightHint": "Contribution to the stage score (0–1).",
+          "deltaRate": "Default Δ",
+          "deltaRateHint": "Estimated uplift if fixed (e.g. 0.08 = +8%).",
+          "confidence": "Confidence",
+          "revenueLever": "Revenue formula",
+          "revenueLeverHint": "Human-readable string documenting the revenue lever.",
+          "notes": "Internal notes",
+          "active": "Active",
+          "activeHint": "Include in diagnostic runs"
+        }
+      },
+      "fixes": {
+        "sectionTitle": "Fix recommendations",
+        "addButton": "Add fix",
+        "empty": "No fixes defined for this check.",
+        "view": "View",
+        "edit": "Edit",
+        "effortShort": "Effort",
+        "impactShort": "Impact",
+        "level": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "fields": {
+          "code": "Code",
+          "title": "Title",
+          "body": "Body",
+          "trigger": "Trigger condition",
+          "triggerHint": "When to surface this fix. E.g. {\"result_status\": \"fail\"} or {\"score_below\": 50}.",
+          "effort": "Effort",
+          "impact": "Impact",
+          "order": "Order",
+          "active": "Active"
+        },
+        "confirmDelete": "Delete this fix?",
+        "invalidJson": "Trigger is not valid JSON."
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "cancel": "Cancel",
+        "collapse": "Collapse",
+        "delete": "Delete",
+        "confirmDelete": "Delete this check?",
+        "deleteLinked": "Cannot delete: {n} finding(s) reference this check."
+      },
+      "errors": {
+        "emptyRequired": "Code and name are required.",
+        "noInstance": "No active instance."
+      }
+    },
+    "benchmarks": {
+      "title": "Per-vertical benchmarks",
+      "subtitle": "Inputs the revenue formula uses to estimate annual uplift.",
+      "sessionExpired": "Session expired",
+      "listTitle": "Benchmarks",
+      "createButton": "New benchmark",
+      "template": "template",
+      "empty": "No benchmarks defined yet.",
+      "scope": {
+        "vertical": "Whole vertical",
+        "stage": "Stage",
+        "check": "Check"
+      },
+      "table": {
+        "scope": "Scope",
+        "baselineCr": "Baseline CR",
+        "stageShare": "Stage share",
+        "deltaRate": "Δ rate",
+        "aov": "AOV (USD)",
+        "source": "Source",
+        "effectiveFrom": "Effective from",
+        "actions": "Actions"
+      },
+      "fields": {
+        "vertical": "Vertical",
+        "stage": "Stage",
+        "check": "Check",
+        "allStages": "(whole vertical)",
+        "allChecks": "(whole stage)",
+        "baselineCr": "Baseline conversion",
+        "stageShare": "Stage share",
+        "deltaRate": "Δ rate when fixed",
+        "aov": "AOV (USD)",
+        "source": "Source",
+        "effectiveFrom": "Effective from",
+        "notes": "Notes"
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete",
+        "confirmDelete": "Delete this benchmark?"
+      }
     }
   }
 }

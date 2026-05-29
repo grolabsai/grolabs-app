@@ -33,98 +33,256 @@ svg {
    ========================================================================== */
 
 :root {
-  /* -------------------------------------------------------------------------
-     shadcn CSS variables — HSL values mapped to GroLabs tokens.
-     These drive all shadcn/ui component styles.
-     Color derivation notes are in CLAUDE.md § Design tokens.
-     ----------------------------------------------------------------------- */
-  --background: 60 6% 98%;           /* ≈ #FAFAF9  --s-bg                  */
-  --foreground: 0 0% 10%;            /* ≈ #1A1A1A  --s-text                */
-  --card: 0 0% 100%;                 /* ≈ #FFFFFF  --s-surface             */
-  --card-foreground: 0 0% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  --primary: 45 65% 52%;             /* ≈ #d4af37  Kinetic Gold            */
-  --primary-foreground: 0 0% 10%;
-  --secondary: 60 5% 96%;            /* ≈ #F5F5F4  --s-surface-alt         */
-  --secondary-foreground: 0 0% 10%;
-  --muted: 60 5% 96%;
-  --muted-foreground: 48 7% 36%;     /* ≈ #5F5E5A  --s-text-secondary      */
-  --accent: 60 4% 94%;               /* ≈ #EFEFEE  --s-surface-hover       */
-  --accent-foreground: 0 0% 10%;
-  --destructive: 0 57% 41%;          /* ≈ #A32D2D  --s-danger              */
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 92%;                /* ≈ rgba(0,0,0,0.08) on white        */
-  --input: 0 0% 89%;
-  --ring: 45 65% 52%;                /* ≈ #d4af37  Kinetic Gold            */
-  --radius: 0.5rem;                  /* 8px — matches --s-radius-md        */
+  /* =========================================================================
+     GroLabs Admin — design tokens
+     Engineered Luxury palette (matches grolabs-landing). Defaults to DARK
+     because that's the brand look. The `.scout-light` modifier flips
+     everything to light values — used by the /styleguide split view and
+     anywhere we want a light surface inside an otherwise dark app.
+     ========================================================================= */
 
   /* -------------------------------------------------------------------------
-     GroLabs design tokens — source of truth, kept intact.
-     Existing CSS using --s-* and --scout-* references continues to work.
-     Kinetic Gold (#d4af37) is the brand action color: it accents primary
-     CTAs, active nav state, and brand moments. Neutral buttons stay neutral.
+     Engineered Luxury — accent (kinetic yellow). #fae194 single source.
+     Replaces the old #d4af37 kinetic gold across the app.
      ----------------------------------------------------------------------- */
-  --scout-accent: #d4af37;
-  --scout-accent-hover: #b8941f;
-  --scout-accent-50: #faf3dc;
-  --scout-accent-100: #f0e2a4;
-  --scout-accent-600: #a08018;
-  --scout-accent-800: #6d5712;
-  --s-bg: #ffffff;
-  --s-surface: #ffffff;
-  --s-surface-alt: #f7f7f6;
-  --s-surface-hover: #efefee;
+  --scout-accent: #fae194;
+  --scout-accent-hover: #fcebab;
+  --scout-accent-50: #fff8e0;
+  --scout-accent-100: #fdeec4;
+  /* The "-600" and "-800" tokens used to be the older kinetic gold
+     (#d4af37 / #8a6f24). Aliased to the kinetic yellow so every
+     legacy usage immediately picks up the new accent — we no longer
+     ship the gold tone anywhere. Don't reintroduce hardcoded gold
+     hexes; if a stronger yellow is ever needed, derive a new token
+     here instead of re-adding the old values. */
+  --scout-accent-600: var(--scout-accent);
+  --scout-accent-800: var(--scout-accent);
+  --scout-accent-on: #131316;            /* text/icon on yellow surfaces */
+
+  /* ── GL fixed tokens — never theme-flipped ─────────────────────────────
+     Properties that must look identical in light AND dark mode. The
+     `.scout-light` override deliberately does NOT redefine these. Use
+     these tokens (not --s-bg / --s-text) when a surface needs to stay
+     visually constant regardless of theme — e.g. the yellow field-hint
+     card in the AgentPanel, kinetic-yellow CTAs on the landing page,
+     the app shell (sidebar + topbar). */
+  --gl-accent-fixed: #fae194;            /* same kinetic yellow, "always" */
+  --gl-accent-fixed-on: #131316;         /* dark text/icon on the above */
+  --gl-bg-fixed-dark: #131316;           /* canvas tone that never lightens */
+  --gl-text-fixed-light: #EDEAE0;        /* bone-white that never darkens */
+
+  /* Header bar — slightly lighter than the sidebar so the two read as a
+     distinct frame, but firmly on the dark side ("darker than lighter").
+     The search input inside the header has a white pill that contrasts
+     with this dark band in both themes. */
+  --gl-header-bg-fixed: #1a1a1f;         /* topbar surface, both themes */
+  --gl-header-border-fixed: rgba(255, 255, 255, 0.06);
+  --gl-search-bg-fixed: #ffffff;         /* search-input pill, both themes */
+  --gl-search-text-fixed: #131316;       /* dark text on the white pill */
+  --gl-search-placeholder-fixed: #888780;
+
+  /* -------------------------------------------------------------------------
+     Dark mode (default) — Engineered Luxury canvas palette
+     Canvas (page bg)   #131316
+     Canvas deeper      #0E0E11   (recessed section bg)
+     Surface (cards)    #1c1d24   (one tone above canvas)
+     Surface alt        #1a1a1f   (between canvas and surface)
+     Surface hover      #22232a
+     ----------------------------------------------------------------------- */
+  --s-bg: #131316;
+  --s-bg-deeper: #0E0E11;
+  --s-surface: #1c1d24;
+  /* Information surfaces always sit on the canvas — never on a darker
+     gray tinted box. surface-alt is kept as an alias for back-compat
+     with old code (cards, hover states, disabled fields) but resolves
+     to the same value as surface so nothing nests as a darker fill. */
+  --s-surface-alt: #1c1d24;
+  --s-surface-hover: #22232a;
+  --s-border: rgba(255, 255, 255, 0.08);
+  --s-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text — bone white rather than pure #FFF, per landing's design.
+     Pure white is reserved for headlines + strong accents. */
+  --s-text: #EDEAE0;
+  --s-text-strong: #FFFFFF;
+  --s-text-secondary: rgba(237, 234, 224, 0.6);
+  --s-text-tertiary: rgba(237, 234, 224, 0.4);
+  --s-text-muted: rgba(237, 234, 224, 0.28);
+
+  /* Sidebar / nav — every menu item reads in the same logo-white tone.
+     Active state is communicated by the icon color (yellow) + a soft
+     yellow-tinted background, not by varying the text weight. Section
+     headers + version footer still use a muted tone. */
+  --nav-surface: var(--s-bg-deeper);
+  --nav-border: rgba(255, 255, 255, 0.06);
+  /* Inactive nav items render in nav-text. Keeping this at pure #ffffff
+     made inactive rows visually identical to the active row (which uses
+     --s-text-strong = #ffffff). Bone-tinted 60% lets the active row pop:
+     active = bright bone + yellow icon, inactive = dimmer bone, hover =
+     back to pure white. */
+  --nav-text: rgba(237, 234, 224, 0.6);
+  --nav-text-hover: #ffffff;
+  --nav-text-muted: rgba(255, 255, 255, 0.45);
+
+  /* Status colors */
+  --s-success: #10b981;
+  --s-success-bg: rgba(16, 185, 129, 0.12);
+  --s-success-text: #34d399;
+  --s-danger: #ef4444;
+  --s-danger-bg: rgba(239, 68, 68, 0.12);
+  --s-danger-text: #fca5a5;
+  --s-warning: #f59e0b;
+  --s-warning-bg: rgba(245, 158, 11, 0.12);
+  --s-warning-text: #fbbf24;
+
+  /* Probe-type identity hues — a muted categorical palette used to color-code
+     diagnostic check types (rubric). Mid-tone + moderate saturation so each
+     hue reads on the dark canvas AND the light styleguide without flipping. */
+  --s-probe-pdp: #E5B567;       /* amber  */
+  --s-probe-category: #5FB6A6;  /* teal   */
+  --s-probe-homepage: #A98EDA;  /* violet */
+  --s-probe-site-wide: #6E9BD6; /* blue   */
+  --s-probe-search: #D98AA6;    /* rose   */
+
+  /* Radii (unchanged) */
+  --s-radius-sm: 6px;
+  --s-radius-md: 8px;
+  --s-radius-lg: 12px;
+  --s-radius-xl: 16px;
+
+  /* Fonts — landing-aligned. Permanent Marker for the brand mark + section
+     H2s; Hanken Grotesk for body; ui-mono for eyebrow labels. */
+  --s-font: var(--font-hanken), "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  --s-font-brand: var(--font-marker), "Permanent Marker", cursive;
+  --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+
+  /* -------------------------------------------------------------------------
+     shadcn CSS variables (HSL) — derived from the tokens above so every
+     shadcn primitive picks up the Engineered Luxury look automatically.
+     ----------------------------------------------------------------------- */
+  --background: 240 7% 9%;              /* #131316 */
+  --foreground: 50 16% 90%;             /* #EDEAE0 */
+  --card: 233 14% 13%;                  /* #1c1d24 */
+  --card-foreground: 50 16% 90%;
+  --popover: 233 14% 13%;
+  --popover-foreground: 50 16% 90%;
+  --primary: 45 92% 79%;                /* #fae194 */
+  --primary-foreground: 240 7% 9%;
+  --secondary: 233 14% 17%;             /* #22232a */
+  --secondary-foreground: 50 16% 90%;
+  --muted: 233 14% 17%;
+  --muted-foreground: 50 8% 65%;
+  --accent: 233 14% 17%;
+  --accent-foreground: 50 16% 90%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 100% / 0.08;
+  --input: 0 0% 100% / 0.08;
+  --ring: 45 92% 79%;
+  --radius: 0.5rem;
+}
+
+/* -----------------------------------------------------------------------------
+   Light-mode override — opt-in via `.scout-light` on any container.
+   Used by the /styleguide split view and by future light surfaces. The
+   sidebar stays dark either way (nav-surface tokens are not overridden).
+   --------------------------------------------------------------------------- */
+.scout-light {
+  --s-bg: #FAFAF9;
+  --s-bg-deeper: #F2F2F0;
+  --s-surface: #FFFFFF;
+  /* Light theme — same rule. surface-alt = surface so any nested
+     "alt" container reads as plain white, not off-white-gray. */
+  --s-surface-alt: #FFFFFF;
+  --s-surface-hover: #EFEFEE;
   --s-border: rgba(0, 0, 0, 0.08);
   --s-border-strong: rgba(0, 0, 0, 0.16);
-  /* Dark navigation surface */
-  --nav-surface: #18181b;
-  --nav-border: rgba(255, 255, 255, 0.06);
-  --nav-text: rgba(255, 255, 255, 0.6);
-  --nav-text-hover: rgba(255, 255, 255, 0.92);
-  --nav-text-muted: rgba(255, 255, 255, 0.4);
+
   --s-text: #1A1A1A;
+  --s-text-strong: #000000;
   --s-text-secondary: #5F5E5A;
   --s-text-tertiary: #888780;
   --s-text-muted: #B4B2A9;
+
+  /* The sidebar stays dark in both themes — it's the brand frame. Pin
+     every nav-* token to its dark-mode value so even when a `scout-light`
+     wrapper is present, the sidebar reads identically to dark mode.
+     Only the content area picks up the light surface. */
+  --nav-surface: #0E0E11;
+  --nav-border: rgba(255, 255, 255, 0.06);
+  /* Light theme — sidebar stays dark, so mirror the dark-mode dimming
+     so the active row pops here too. See the :root block for rationale. */
+  --nav-text: rgba(237, 234, 224, 0.6);
+  --nav-text-hover: #ffffff;
+  --nav-text-muted: rgba(255, 255, 255, 0.45);
+
   --s-success: #1D9E75;
   --s-success-bg: #E1F5EE;
   --s-success-text: #085041;
   --s-danger: #A32D2D;
   --s-danger-bg: #FCEBEB;
   --s-danger-text: #501313;
-  --s-radius-sm: 6px;
-  --s-radius-md: 8px;
-  --s-radius-lg: 12px;
-  --s-radius-xl: 16px;
-  --s-font: var(--font-hanken), -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
-  --s-font-brand: var(--font-marker), "Permanent Marker", cursive;
-  --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  --s-warning: #B27A00;
+  --s-warning-bg: #FBEFD3;
+  --s-warning-text: #5D3F00;
+
+  /* shadcn HSL for the light surface */
+  --background: 60 6% 98%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 45 92% 79%;
+  --primary-foreground: 240 7% 9%;
+  --secondary: 60 5% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 60 5% 96%;
+  --muted-foreground: 48 7% 36%;
+  --accent: 60 4% 94%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 57% 41%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 0% / 0.08;
+  --input: 0 0% 0% / 0.08;
+  --ring: 45 92% 79%;
 }
 
 .dark {
-  /* Dark mode — no dark design exists yet; these are reasonable defaults
-     that maintain visual coherence. Activate by adding class="dark" to
-     <html>. The app does not switch automatically in Phase 1. */
-  --background: 222 47% 11%;
-  --foreground: 210 20% 98%;
-  --card: 222 47% 14%;
-  --card-foreground: 210 20% 98%;
-  --popover: 222 47% 14%;
-  --popover-foreground: 210 20% 98%;
-  --primary: 210 71% 60%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 222 47% 18%;
-  --secondary-foreground: 210 20% 98%;
-  --muted: 222 47% 18%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 222 47% 20%;
-  --accent-foreground: 210 20% 98%;
-  --destructive: 0 63% 55%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 222 47% 22%;
-  --input: 222 47% 22%;
-  --ring: 210 71% 60%;
+  /* Legacy class kept as alias of :root since dark is now the default.
+     Adding `class="dark"` to a wrapper is a no-op — same tokens apply. */
+}
+
+/* =============================================================================
+   Local contrast overrides — `.on-light-surface` / `.on-dark-surface`
+   =============================================================================
+   When a single element (card, banner, badge) sits on a background whose
+   color doesn't match the ambient theme, wrap it in one of these classes
+   to flip the text tokens locally — without changing the surrounding
+   theme.
+
+   Use case: a selected-state card paints itself in `--scout-accent-50`
+   (pale yellow). In dark mode, text inside that card needs to be dark
+   to be legible — but everywhere else on the page is still dark theme.
+   Adding `className="on-light-surface"` flips --s-text* to dark just
+   for that subtree.
+
+   Same shape as the global `.scout-light` class, just scoped to one
+   element. Stack with theme-wide light/dark however you like.
+*/
+.on-light-surface {
+  --s-text: #1A1A1A;
+  --s-text-strong: #000000;
+  --s-text-secondary: rgba(19, 19, 22, 0.65);
+  --s-text-tertiary: rgba(19, 19, 22, 0.5);
+  --s-text-muted: rgba(19, 19, 22, 0.32);
+}
+.on-dark-surface {
+  --s-text: #EDEAE0;
+  --s-text-strong: #FFFFFF;
+  --s-text-secondary: rgba(237, 234, 224, 0.65);
+  --s-text-tertiary: rgba(237, 234, 224, 0.45);
+  --s-text-muted: rgba(237, 234, 224, 0.3);
 }
 
 @layer base {
@@ -182,6 +340,19 @@ button {
   top: 0;
   height: 100vh;
   color: var(--nav-text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Instance switcher block under the brand mark. Spans the full sidebar
+   width; the InstanceSwitcher button inside truncates its label. */
+.s-sidebar-instance {
+  margin: 0 0 18px;
+  padding: 0 2px;
+}
+.s-sidebar-instance > button {
+  width: 100%;
+  justify-content: space-between;
 }
 
 .s-brand {
@@ -193,13 +364,37 @@ button {
 .s-brand-mark {
   display: none;
 }
+.s-brand-stack {
+  display: flex;
+  flex-direction: column;
+  /* width tuned so the tagline below sits inside the same horizontal
+     footprint as the wordmark; the tagline picks up this width because
+     it's a block element with letter-spacing — wider would push it
+     past the logo, narrower wraps it. */
+  width: max-content;
+}
 .s-brand-name {
   font-family: var(--s-font-brand);
   font-size: 26px;
   font-weight: 400;
   letter-spacing: 0.02em;
-  color: var(--scout-accent);
+  color: #ffffff;
   line-height: 1;
+  display: block;
+}
+.s-brand-tagline {
+  /* Eyebrow voice: mono uppercase tracked, in kinetic yellow. Sized so
+     "RECOVER LOST REVENUE" lands at roughly the same width as the
+     "GroLabs" wordmark above it. Tuned by eye — the exact width
+     depends on the rendered Permanent Marker glyphs. */
+  font-family: var(--s-font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--scout-accent);
+  margin-top: 5px;
+  white-space: nowrap;
+  display: block;
 }
 
 .s-nav-section {
@@ -218,7 +413,15 @@ button {
   gap: 10px;
   padding: 8px 10px;
   border-radius: var(--s-radius-md);
-  font-size: 13px;
+  /* Match the section-trigger typography so leaf items (Dashboard, List,
+     Rubric, Benchmarks, Style) read consistently with their section
+     headers (CONVERSION, CATALOG, …). All nav rows now use the same
+     uppercase, letter-spaced small-caps style — the active row is still
+     distinguished by --s-text-strong + yellow icon. */
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
   color: var(--nav-text);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -229,20 +432,48 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--nav-text-hover);
 }
-.s-nav-item.active {
-  background: rgba(212, 175, 55, 0.12);
-  color: var(--scout-accent);
-  font-weight: 500;
+/* Active row: yellow icon, logo-white text.
+   The icon picks up the yellow from the inline `color="#fae194"` prop
+   passed to Lucide in Sidebar.tsx — that bypasses every CSS cascade
+   issue we ran into. The label here renders in --s-text-strong so the
+   active row reads "lit up but not loud". Background stays transparent
+   either way: no row highlight, ever. */
+.s-nav-item.active,
+.s-nav-item.active:hover,
+.s-nav-item.active:focus,
+.s-nav-item.active:focus-visible,
+.s-nav-item.active:active {
+  background: transparent !important;
+  color: var(--s-text-strong);
+  outline: none;
+  box-shadow: none;
+}
+.s-nav-item:focus,
+.s-nav-item:focus-visible,
+.s-nav-item:active {
+  outline: none;
+  box-shadow: none;
 }
 .s-nav-icon {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  opacity: 0.8;
-}
-.s-nav-item.active .s-nav-icon {
   opacity: 1;
-  color: var(--scout-accent);
+  color: inherit;
+}
+/* The active item's icon recolors to kinetic yellow. Belt-and-suspenders
+   to make sure the rule lands regardless of how Lucide renders the SVG
+   (raw <ItemIcon className> vs <Icon wrapper>):
+     • set `color` so currentColor resolves to yellow
+     • set `stroke` directly so any inline stroke attribute is overridden
+     • match both the .s-nav-icon class AND the direct-child svg, since
+       raw Lucide imports render as <svg class="lucide … s-nav-icon">
+     • !important removes any doubt about cascade specificity. */
+.s-nav-item.active .s-nav-icon,
+.s-nav-item.active svg,
+.s-nav-item.active svg * {
+  color: var(--scout-accent) !important;
+  stroke: var(--scout-accent) !important;
 }
 .s-nav-badge {
   margin-left: auto;
@@ -295,6 +526,16 @@ button {
 }
 .s-nav-section-trigger:hover .s-nav-chevron {
   opacity: 0.8;
+}
+
+/* Children of a collapsible section read on a subtly lighter background
+   than the sidebar itself, so the parent/child hierarchy is visible at
+   a glance without indentation alone carrying the weight. */
+.s-nav-collapsible-inner {
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: var(--s-radius-md);
+  padding: 4px 4px 4px 16px;
+  margin: 2px 0 6px;
 }
 
 .s-nav-collapsible {
@@ -650,7 +891,8 @@ button {
   top: -7px;
   left: 10px;
   padding: 0 6px;
-  background: #ffffff;
+  /* Match the field surface so the label "notch" reads as a cutout. */
+  background: var(--s-surface);
   font-size: 10px;
   color: var(--s-text-tertiary);
   text-transform: uppercase;
@@ -674,8 +916,12 @@ button {
 .s-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: #ffffff;
-  border: 1px solid var(--s-border);
+  background: var(--s-surface);
+  /* Border picks up the same muted tone as field-hint copy
+     (--s-text-tertiary) so an empty input still reads as a tangible
+     surface — not invisible. The earlier "empty = transparent border"
+     rule made fields disappear; this matches the hint-tone instead. */
+  border: 1px solid var(--s-text-tertiary);
   border-radius: var(--s-radius-md);
   font-size: 14px;
   font-weight: 400;
@@ -687,10 +933,22 @@ button {
 .s-input:disabled,
 .s-select:disabled,
 .s-textarea:disabled {
-  background: #ffffff;
+  background: var(--s-surface-alt);
   color: var(--s-text-tertiary);
   cursor: not-allowed;
   opacity: 0.7;
+}
+/* Read-only (not disabled) surfaces: the field can't be edited, but the
+   content must read at full contrast — muting it for "read-only" makes the
+   text hard to read for no benefit. Keep canvas background + full text color;
+   only the cursor signals non-editability. */
+.s-readonly .s-input:disabled,
+.s-readonly .s-select:disabled,
+.s-readonly .s-textarea:disabled {
+  background: var(--s-surface);
+  color: var(--s-text);
+  cursor: default;
+  opacity: 1;
 }
 .s-input::placeholder,
 .s-select::placeholder,
@@ -711,8 +969,66 @@ button {
 .s-select:focus,
 .s-textarea:focus {
   border-color: var(--scout-accent);
-  box-shadow: 0 0 0 3px var(--scout-accent-50);
+  box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
+
+/* ── Universal focus ring ────────────────────────────────────────────────
+   Every focusable input/select/textarea — regardless of class — gets the
+   kinetic yellow border + soft glow on focus. Standardizes the affordance
+   across .s-input, shadcn primitives, and any one-off inline-styled input
+   (pricing margin number boxes, etc.). Removes the browser-default blue
+   outline. Components that want a different focus color (e.g. error-state
+   red) can override with higher specificity. */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--scout-accent);
+  box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
+}
+
+/* Content text inside ALL form controls is semi-bold (600) — whether
+   you type into an input, pick from a dropdown, type in a textarea, or
+   enter a number. The placeholder stays at the normal weight so the
+   empty + filled states stay visually distinct.
+   The selector list covers every input type explicitly so we never
+   miss one (number, email, url, etc. — some browsers reset font-weight
+   on specific types). */
+.s-input,
+.s-select,
+.s-textarea,
+input.s-input,
+textarea.s-textarea,
+select.s-select,
+input[type="text"].s-input,
+input[type="search"].s-input,
+input[type="email"].s-input,
+input[type="number"].s-input,
+input[type="url"].s-input,
+input[type="tel"].s-input,
+input[type="password"].s-input,
+input[type="date"].s-input {
+  font-weight: 600;
+}
+/* Selected options inside a native <select> dropdown also render at 600. */
+.s-select option {
+  font-weight: 600;
+}
+.s-input::placeholder,
+.s-textarea::placeholder {
+  font-weight: 400;
+}
+
+/* The earlier "empty = transparent border / background" rule was
+   removed per design feedback — empty inputs should still read as
+   tangible surfaces. The border color above (--s-text-tertiary)
+   matches the field-hint copy so empty fields look like a tangible
+   tray instead of disappearing. */
+
+/* The old in-input `?` hint-icon pattern was replaced by the focus-driven
+   yellow card in the AgentPanel — see <FieldHintProvider> +
+   <FieldHintCard>. The .s-hint-icon CSS that lived here was removed
+   along with the <HintIcon> component usages. */
 .s-textarea {
   padding: 12px;
   min-height: 90px;
@@ -1033,7 +1349,11 @@ button {
   font-weight: 500;
   border-radius: var(--s-radius-md);
   cursor: pointer;
-  border: 0.5px solid transparent;
+  /* Default secondary border. A naked `.s-btn` (no -primary / -ghost /
+     -danger modifier) needs to read as a clickable button, not a text
+     label. Modifiers below override where they supply their own
+     border-color (primary fills yellow, danger uses red bg, etc.). */
+  border: 0.5px solid var(--s-border-strong);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
   display: inline-flex;
   align-items: center;
@@ -1042,6 +1362,9 @@ button {
   color: var(--s-text);
   background: transparent;
   text-decoration: none;
+}
+.s-btn:hover {
+  background: var(--s-surface-alt);
 }
 .s-btn:disabled {
   opacity: 0.5;
@@ -1057,12 +1380,19 @@ button {
 }
 .s-btn-primary {
   background: var(--scout-accent);
-  color: #fff;
+  /* Dark text on yellow — the kinetic yellow accent (#fae194) has
+     poor contrast with white, so the action color uses #131316. */
+  color: var(--scout-accent-on);
   border-color: var(--scout-accent);
+  font-weight: 600;
 }
 .s-btn-primary:hover {
   background: var(--scout-accent-hover);
   border-color: var(--scout-accent-hover);
+  transform: translateY(-1px);
+}
+.s-btn-primary:active {
+  transform: translateY(0);
 }
 .s-btn-ghost {
   background: transparent;
@@ -1157,10 +1487,16 @@ button {
 .s-tab:hover {
   color: var(--s-text);
 }
+/* Active tab: yellow underline + a contrast bump on the label.
+   The text color itself is NOT yellow — only the underline carries
+   the accent. The label switches from secondary to strong so the
+   active tab reads as "more present" against the background:
+     dark theme  →  inactive: muted bone   active: pure white
+     light theme →  inactive: gray         active: pure black */
 .s-tab.active {
-  color: var(--scout-accent-800);
+  color: var(--s-text-strong);
   border-bottom-color: var(--scout-accent);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* =============================================================================
@@ -1469,7 +1805,7 @@ button {
   width: 100%;
   height: 32px;
   padding: 0 10px 0 30px;
-  background: #ffffff;
+  background: var(--s-surface);
   border: 0.5px solid var(--s-border);
   border-radius: var(--s-radius-md);
   font-size: 12px;
@@ -2285,4 +2621,227 @@ button {
 }
 .pricing-provider-card[data-inactive="true"] {
   opacity: 0.55;
+}
+
+/* =============================================================================
+   Blog editor + reading surface
+   =============================================================================
+   Styles for Tiptap-generated content. Shared between the admin editor
+   (`.tiptap-blog`) and the public reading page (`.prose` inside the article
+   wrapper). Tiptap-specific data attributes are styled here because they
+   don't come from @tailwindcss/typography.
+*/
+
+/* Placeholder ghost text — shown only on the first empty paragraph */
+.tiptap-blog .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--s-text-tertiary, hsl(var(--muted-foreground)));
+  pointer-events: none;
+  height: 0;
+}
+
+/* Task list — checkboxes inline with the list item label */
+.tiptap-blog ul[data-type="taskList"],
+.prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.tiptap-blog ul[data-type="taskList"] li,
+.prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.tiptap-blog ul[data-type="taskList"] li > label,
+.prose ul[data-type="taskList"] li > label {
+  margin-top: 0.25rem;
+  user-select: none;
+}
+.tiptap-blog ul[data-type="taskList"] li > div,
+.prose ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.tiptap-blog ul[data-type="taskList"] li[data-checked="true"] > div,
+.prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+/* Tables — visible borders inside editor + reading surface */
+.tiptap-blog table,
+.prose table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+}
+.tiptap-blog th,
+.tiptap-blog td,
+.prose th,
+.prose td {
+  border: 1px solid var(--s-border, hsl(var(--border)));
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+.tiptap-blog th,
+.prose th {
+  background: var(--s-surface-muted, hsl(var(--muted) / 0.4));
+  font-weight: 600;
+  text-align: left;
+}
+/* Tiptap selected cell highlight */
+.tiptap-blog .selectedCell {
+  background: hsl(var(--accent) / 0.35);
+}
+
+/* Highlight mark — yellow marker */
+.tiptap-blog mark,
+.prose mark {
+  background: #fff3a3;
+  padding: 0 0.15em;
+  border-radius: 2px;
+}
+
+/* Horizontal rule — subtle */
+.tiptap-blog hr,
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--s-border, hsl(var(--border)));
+  margin: 2rem 0;
+}
+
+/* Code block — dark background + syntax theme (subset of hljs default) */
+.tiptap-blog pre,
+.prose pre {
+  background: #1a1a1a;
+  color: #f4f4f4;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+}
+.tiptap-blog pre code,
+.prose pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+.hljs-keyword,
+.hljs-tag,
+.hljs-built_in { color: #ff7ab2; }
+.hljs-string,
+.hljs-title.class_ { color: #b8e986; }
+.hljs-number,
+.hljs-literal { color: #ffb86c; }
+.hljs-comment { color: #888; font-style: italic; }
+.hljs-attr,
+.hljs-name { color: #82c4ff; }
+.hljs-variable,
+.hljs-title.function_ { color: #f6c177; }
+
+/* Text alignment classes from @tiptap/extension-text-align */
+.tiptap-blog [style*="text-align: center"],
+.prose [style*="text-align: center"] { text-align: center; }
+.tiptap-blog [style*="text-align: right"],
+.prose [style*="text-align: right"] { text-align: right; }
+.tiptap-blog [style*="text-align: justify"],
+.prose [style*="text-align: justify"] { text-align: justify; }
+
+/* YouTube embed — responsive 16:9 */
+.tiptap-blog [data-youtube-video],
+.prose [data-youtube-video] {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 1.5rem 0;
+}
+.tiptap-blog [data-youtube-video] iframe,
+.prose [data-youtube-video] iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 6px;
+}
+
+/* =============================================================================
+   Blog editor — image alignment + captions
+   =============================================================================
+   Custom <figure> wrapping for the FigureImage Tiptap extension.
+   Shared between editor (.tiptap-blog) and reading article (.prose).
+*/
+
+.tiptap-blog figure,
+.prose figure {
+  margin: 1.5rem 0;
+}
+.tiptap-blog figure figcaption,
+.prose figure figcaption {
+  font-size: 0.875em;
+  color: var(--blog-muted, hsl(var(--muted-foreground)));
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Alignment variants. Float wraps surrounding paragraphs; full breaks out. */
+.tiptap-blog figure.img-align-center,
+.prose figure.img-align-center {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+}
+.tiptap-blog figure.img-align-center img,
+.prose figure.img-align-center img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tiptap-blog figure.img-align-left,
+.prose figure.img-align-left {
+  float: left;
+  max-width: 45%;
+  margin-right: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.tiptap-blog figure.img-align-right,
+.prose figure.img-align-right {
+  float: right;
+  max-width: 45%;
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+/* Full width — breaks out of the prose max-width to fill the column.
+   Useful for hero shots, screenshots that need legibility, diagrams. */
+.tiptap-blog figure.img-align-full,
+.prose figure.img-align-full {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+.tiptap-blog figure.img-align-full img,
+.prose figure.img-align-full img {
+  width: 100%;
+  display: block;
+}
+
+/* Image selected in editor — subtle ring. */
+.tiptap-blog figure.ProseMirror-selectednode {
+  outline: 2px solid var(--blog-primary, hsl(var(--ring)));
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* Clear floats after a section break or paragraph that contains a left/right
+   figure. Don't apply to the floated figure itself. */
+.prose p::after,
+.tiptap-blog p::after {
+  content: "";
+  display: table;
+  clear: both;
 }

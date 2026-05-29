@@ -15,33 +15,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LocaleSwitcher } from "./LocaleSwitcher";
-import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 import { cn } from "@/lib/utils";
 
 /**
  * GroLabs topbar.
  *
- * Rebuilt on shadcn primitives:
- *   - shadcn Input for the search box (visual/disabled in Phase 1)
- *   - shadcn DropdownMenu for the user avatar menu
- *   - lucide-react icons (Search, LogOut)
+ * Layout (left → right):
+ *   [Search]                                [Locale][Theme][Avatar]
  *
- * Visual outcome is identical to the previous version:
- *   right-aligned search box + initials avatar that opens a sign-out menu.
- *
- * TODO (follow-up): replace useRouter with @/i18n/routing once all
- * redirect calls are migrated to locale-aware navigation.
+ * The instance switcher used to live on the left here; it moved into
+ * the sidebar (top, below the logo) so the topbar now has one
+ * obvious left-side affordance — the search — and the right cluster
+ * carries account/preferences. The instances/currentInstanceId props
+ * were removed since the switcher is no longer rendered here.
  */
 export function TopBar({
   initials,
   userEmail,
-  instances,
-  currentInstanceId,
 }: {
   initials: string;
   userEmail: string;
-  instances: InstanceListItem[];
-  currentInstanceId: number | null;
 }) {
   const t = useTranslations("topbar");
   const [open, setOpen] = useState(false);
@@ -55,7 +49,16 @@ export function TopBar({
   }
 
   return (
-    <div style={{ position: "relative", padding: "14px 28px 0" }}>
+    <div
+      style={{
+        position: "relative",
+        padding: "12px 28px",
+        // App-shell band — fixed dark tone in both themes, like the
+        // sidebar. Reads as part of the chrome, not the content.
+        background: "var(--gl-header-bg-fixed)",
+        borderBottom: "1px solid var(--gl-header-border-fixed)",
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -64,33 +67,31 @@ export function TopBar({
           justifyContent: "space-between",
         }}
       >
-        {/* Instance switcher — left side, where the agent panel never lives */}
-        <InstanceSwitcher
-          instances={instances}
-          currentInstanceId={currentInstanceId}
-        />
-
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-
-        {/* Search — visual only in Phase 1, ⌘K palette deferred */}
-        <div className="s-search">
+        {/* Search — left-aligned, takes the slot the instance switcher
+            used to occupy. White pill in both themes (--gl-search-bg-fixed).
+            Visual-only in Phase 1 (⌘K palette deferred). */}
+        <div className="s-search" style={{ maxWidth: 420, flex: "1 1 280px" }}>
           <Search
             className="s-search-icon"
             size={13}
             strokeWidth={1.5}
+            style={{ color: "var(--gl-search-placeholder-fixed)" }}
           />
           <Input
             type="text"
             placeholder={t("searchPlaceholder")}
             disabled
-            // Override shadcn Input styles to match the existing s-search input
+            style={{
+              background: "var(--gl-search-bg-fixed)",
+              color: "var(--gl-search-text-fixed)",
+              borderColor: "transparent",
+            }}
             className={cn(
-              "h-8 pl-8 pr-8 text-xs",
-              "bg-[var(--s-surface-alt)] border-transparent",
-              "focus-visible:bg-[var(--s-surface)] focus-visible:border-[var(--s-border-strong)]",
+              "h-8 pl-8 pr-8 text-xs font-semibold",
               "focus-visible:ring-0 focus-visible:ring-offset-0",
               "disabled:opacity-100 disabled:cursor-default",
               "rounded-[var(--s-radius-md)]",
+              "placeholder:text-[color:var(--gl-search-placeholder-fixed)] placeholder:font-normal",
             )}
           />
           <kbd
@@ -101,10 +102,10 @@ export function TopBar({
               transform: "translateY(-50%)",
               fontSize: 10,
               padding: "2px 5px",
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
+              background: "rgba(0,0,0,0.06)",
+              border: "0.5px solid rgba(0,0,0,0.08)",
               borderRadius: 4,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-search-placeholder-fixed)",
               fontFamily: "inherit",
               pointerEvents: "none",
             }}
@@ -113,51 +114,53 @@ export function TopBar({
           </kbd>
         </div>
 
-        <LocaleSwitcher />
+        {/* Right cluster: locale + theme + avatar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LocaleSwitcher />
+          <ThemeSwitcher />
 
-        {/* User avatar → DropdownMenu */}
-        <DropdownMenu open={open} onOpenChange={setOpen}>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="s-user"
-              title={userEmail}
-              aria-label={t("userMenu", { email: userEmail })}
-            >
-              {initials}
-            </button>
-          </DropdownMenuTrigger>
+          <DropdownMenu open={open} onOpenChange={setOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="s-user"
+                title={userEmail}
+                aria-label={t("userMenu", { email: userEmail })}
+              >
+                {initials}
+              </button>
+            </DropdownMenuTrigger>
 
-          <DropdownMenuContent
-            align="end"
-            sideOffset={8}
-            className="w-52"
-            style={{
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-            }}
-          >
-            <DropdownMenuLabel
-              className="text-[11px] font-normal break-all"
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              className="w-52"
               style={{
-                color: "var(--s-text-tertiary)",
-                fontFamily: "var(--s-font-mono)",
+                background: "var(--s-surface)",
+                border: "0.5px solid var(--s-border)",
+                borderRadius: "var(--s-radius-md)",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
               }}
             >
-              {userEmail}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={signOut}
-              className="cursor-pointer text-[13px] gap-2"
-              style={{ color: "var(--s-text-secondary)" }}
-            >
-              <LogOut size={13} strokeWidth={1.5} />
-              {t("signOut")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuLabel
+                className="text-[11px] font-normal break-all"
+                style={{
+                  color: "var(--s-text-tertiary)",
+                  fontFamily: "var(--s-font-mono)",
+                }}
+              >
+                {userEmail}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={signOut}
+                className="cursor-pointer text-[13px] gap-2"
+                style={{ color: "var(--s-text-secondary)" }}
+              >
+                <LogOut size={13} strokeWidth={1.5} />
+                {t("signOut")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

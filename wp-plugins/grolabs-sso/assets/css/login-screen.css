@@ -1,0 +1,524 @@
+/* GroLabs SSO — login screen styles */
+
+:root {
+  --gl-primary: #1a73e8;
+  --gl-text: #1f1f1f;
+  --gl-text-muted: #5f6368;
+  --gl-border: #dadce0;
+  --gl-background: #ffffff;
+  --gl-divider: #dadce0;
+  --gl-warning-bg: #fef3cd;
+  --gl-warning-border: #f9e0a0;
+  --gl-warning-text: #856404;
+  --gl-radius: 8px;
+  --gl-radius-lg: 12px;
+  --gl-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+.gl-login-root {
+  max-width: 400px;
+  min-width: 320px;
+  width: 100%;
+  margin: 0 auto;
+  font-family: var(--gl-font);
+  color: var(--gl-text);
+  box-sizing: border-box;
+}
+
+.gl-login-root *,
+.gl-login-root *::before,
+.gl-login-root *::after {
+  box-sizing: border-box;
+}
+
+/* In-app browser rescue banner */
+.gl-inapp-banner {
+  padding: 14px 16px;
+  background: var(--gl-warning-bg);
+  border: 1px solid var(--gl-warning-border);
+  border-radius: var(--gl-radius);
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gl-warning-text);
+}
+
+.gl-inapp-banner__title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.gl-inapp-banner__body {
+  margin-bottom: 12px;
+}
+
+.gl-inapp-banner__button {
+  width: 100%;
+  height: 40px;
+  background: var(--gl-primary);
+  color: #fff;
+  border: 0;
+  border-radius: var(--gl-radius);
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gl-inapp-banner__continue {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 10px;
+  padding: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  text-decoration: underline;
+  color: var(--gl-warning-text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Tier A — primary providers (full-width buttons) */
+.gl-tier-a {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.gl-button-a {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius);
+  background: #fff;
+  color: var(--gl-text);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.gl-button-a:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gl-button-a:focus-visible {
+  outline: 2px solid var(--gl-primary);
+  outline-offset: 2px;
+}
+
+.gl-button-a:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gl-button-a__logo {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.gl-button-a__label {
+  flex: 1;
+  text-align: center;
+  margin-left: -22px;
+  pointer-events: none;
+}
+
+.gl-button-a__pill {
+  position: absolute;
+  right: 12px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--gl-text-muted);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* Tier A provider-specific brand fills */
+.gl-button-a[data-provider="facebook"] {
+  background: #1877f2;
+  color: #fff;
+  border-color: #1877f2;
+}
+
+.gl-button-a[data-provider="apple"] {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.gl-button-a[data-provider="facebook"] .gl-button-a__pill,
+.gl-button-a[data-provider="apple"] .gl-button-a__pill {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Tier B — secondary providers (icon-only) */
+.gl-tier-b {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.gl-button-b {
+  flex: 1;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+  color: var(--gl-text);
+}
+
+.gl-button-b:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gl-button-b:focus-visible {
+  outline: 2px solid var(--gl-primary);
+  outline-offset: 2px;
+}
+
+.gl-button-b__logo {
+  width: 24px;
+  height: 24px;
+}
+
+/* Tier B logo brand colors (icon-only buttons keep white background) */
+.gl-button-b[data-provider="facebook"]   { color: #1877f2; }
+.gl-button-b[data-provider="apple"]      { color: #000; }
+.gl-button-b[data-provider="linkedin"]   { color: #0a66c2; }
+.gl-button-b[data-provider="discord"]    { color: #5865f2; }
+.gl-button-b[data-provider="twitch"]     { color: #9146ff; }
+.gl-button-b[data-provider="github"]     { color: #000; }
+.gl-button-b[data-provider="tiktok"]     { color: #000; }
+.gl-button-b[data-provider="x"]          { color: #000; }
+
+/* Tier C — "More" dropdown */
+.gl-tier-c {
+  margin-bottom: 32px;
+}
+
+.gl-tier-c__trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius);
+  background: #fff;
+  color: var(--gl-text-muted);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.gl-tier-c__trigger:hover {
+  background: #f8f9fa;
+}
+
+.gl-tier-c__trigger:focus-visible {
+  outline: 2px solid var(--gl-primary);
+  outline-offset: 2px;
+}
+
+.gl-tier-c__previews {
+  display: flex;
+  gap: 6px;
+  margin-right: 10px;
+}
+
+.gl-tier-c__previews svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.gl-tier-c__count {
+  margin-right: 10px;
+  font-size: 13px;
+  color: var(--gl-text-muted);
+}
+
+.gl-tier-c__label {
+  flex: 1;
+  text-align: left;
+}
+
+.gl-tier-c__chevron {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+.gl-tier-c.is-open .gl-tier-c__chevron {
+  transform: rotate(180deg);
+}
+
+.gl-tier-c__list {
+  margin-top: 8px;
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: none;
+}
+
+.gl-tier-c.is-open .gl-tier-c__list {
+  display: block;
+}
+
+.gl-tier-c__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--gl-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.gl-tier-c__item + .gl-tier-c__item {
+  border-top: 1px solid var(--gl-border);
+}
+
+.gl-tier-c__item:hover {
+  background: #f8f9fa;
+}
+
+.gl-tier-c__item svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Divider */
+.gl-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gl-text-muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.gl-divider::before,
+.gl-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gl-divider);
+}
+
+/* Tier D — email/password (fixed-height container) */
+.gl-tier-d {
+  min-height: 52px;
+  transition: min-height 0.2s ease;
+}
+
+.gl-tier-d.is-expanded {
+  min-height: 232px;
+}
+
+.gl-tier-d__toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius);
+  background: #fff;
+  color: var(--gl-text);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.gl-tier-d__toggle:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gl-tier-d__toggle:focus-visible {
+  outline: 2px solid var(--gl-primary);
+  outline-offset: 2px;
+}
+
+.gl-tier-d__toggle svg {
+  width: 22px;
+  height: 22px;
+  margin-right: 12px;
+  color: #9aa0a6;
+  flex-shrink: 0;
+}
+
+.gl-tier-d__toggle-label {
+  flex: 1;
+  text-align: center;
+  margin-left: -34px;
+  pointer-events: none;
+}
+
+.gl-tier-d.is-expanded .gl-tier-d__toggle {
+  display: none;
+}
+
+.gl-tier-d__form {
+  display: none;
+}
+
+.gl-tier-d.is-expanded .gl-tier-d__form {
+  display: block;
+}
+
+.gl-tier-d__input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius);
+  font-size: 15px;
+  font-family: inherit;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.gl-tier-d__input:focus {
+  outline: none;
+  border-color: var(--gl-primary);
+  box-shadow: 0 0 0 1px var(--gl-primary);
+}
+
+.gl-tier-d__submit {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--gl-primary);
+  border-radius: var(--gl-radius);
+  background: var(--gl-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gl-tier-d__submit:hover {
+  background: #1765cc;
+}
+
+.gl-tier-d__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gl-tier-d__links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.gl-tier-d__links a {
+  color: var(--gl-primary);
+  text-decoration: none;
+}
+
+.gl-tier-d__links a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile keyboard handling */
+body.gl-keyboard-visible {
+  padding-bottom: 300px;
+  transition: padding-bottom 0.3s ease;
+}
+
+/* Loading spinner replaces logo */
+@keyframes gl-spin {
+  to { transform: rotate(360deg); }
+}
+
+.gl-button-a.is-loading .gl-button-a__logo,
+.gl-button-b.is-loading .gl-button-b__logo {
+  visibility: hidden;
+}
+
+.gl-button-a.is-loading,
+.gl-button-b.is-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.gl-button-a.is-loading::after,
+.gl-button-b.is-loading::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: gl-spin 0.6s linear infinite;
+}
+
+.gl-button-a.is-loading::after {
+  left: 27px;
+  margin-left: 0;
+}
+
+/* Inline error message */
+.gl-error {
+  background: #fce8e6;
+  border: 1px solid #f4c7c3;
+  color: #c5221f;
+  padding: 10px 14px;
+  border-radius: var(--gl-radius);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* Toast (used in demo + as a fallback notice) */
+.gl-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f1f1f;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  max-width: 90vw;
+  font-family: var(--gl-font);
+}

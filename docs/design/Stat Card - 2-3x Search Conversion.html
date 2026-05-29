@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stat card · 2–3× search conversion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --scout-accent: #fae194;
+    --gold-dark: #A88C00;
+    --s-bg: #131316;
+    --s-bg-deeper: #0E0E11;
+    --s-surface: #1c1d24;
+    --s-border: rgba(255,255,255,0.08);
+    --s-text: #EDEAE0;
+    --s-text-strong: #FFFFFF;
+    --s-text-secondary: rgba(237,234,224,0.6);
+    --s-text-tertiary: rgba(237,234,224,0.4);
+    --s-text-muted: rgba(237,234,224,0.28);
+    --s-font: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+    --s-font-brand: "Permanent Marker", cursive;
+    --s-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--s-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    font-family: var(--s-font);
+  }
+
+  /* The card */
+  .stat-card {
+    background: var(--s-bg-deeper);
+    border: 1px solid var(--s-border);
+    border-radius: 14px;
+    padding: 40px 44px;
+    max-width: 720px;
+    width: 100%;
+  }
+
+  /* Big stat — Permanent Marker, bone-white (matches reference) */
+  .stat-card-figure {
+    font-family: var(--s-font-brand);
+    font-size: 56px;
+    color: var(--s-text);
+    line-height: 1;
+    letter-spacing: 0.005em;
+    margin-bottom: 22px;
+  }
+
+  /* Eyebrow — mono uppercase tracked, kinetic yellow */
+  .stat-card-eyebrow {
+    font-family: var(--s-font-mono);
+    font-size: 13px;
+    color: var(--scout-accent);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    margin-bottom: 22px;
+  }
+
+  /*
+    Body — two clauses, two treatments:
+    · Clause 1 ("Users who search…they don't—") stays WHITE.
+    · Clause 2 ("if they find what they want.") gets a HAND-DRAWN
+      highlighter-marker background. The yellow shape is an inline SVG
+      data URL whose rectangle runs through an feTurbulence +
+      feDisplacementMap filter — the noise displaces the rectangle's
+      edges so the highlight ends up with organic, irregular edges that
+      read like a real marker swipe, not a clean CSS box.
+  */
+  .stat-card-body {
+    font-family: var(--s-font);
+    font-size: 22px;
+    line-height: 1.5;
+    margin-bottom: 26px;
+    color: var(--s-text-strong);   /* clause 1: WHITE */
+  }
+  .stat-card-body .hl {
+    /* Hand-drawn highlighter — SVG background-image */
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'><defs><filter id='r' x='-5%25' y='-25%25' width='110%25' height='150%25'><feTurbulence type='fractalNoise' baseFrequency='0.045 0.13' numOctaves='2' seed='4'/><feDisplacementMap in='SourceGraphic' scale='5'/></filter></defs><rect x='3' y='6' width='194' height='28' fill='%23fae194' filter='url(%23r)' opacity='0.95'/></svg>");
+    background-repeat: no-repeat;
+    background-size: 100% 110%;
+    background-position: center 52%;
+
+    color: #000000;                /* clause 2: BLACK on yellow */
+    padding: 2px 10px 3px 10px;
+    font-weight: 500;
+
+    /* Box-decoration-break so multi-line wraps each get their own
+       hand-drawn highlight, instead of one block spanning the break. */
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* Footer — small mono caps, muted */
+  .stat-card-footer {
+    font-family: var(--s-font-mono);
+    font-size: 11px;
+    color: var(--s-text-tertiary);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="stat-card">
+    <div class="stat-card-figure">2&ndash;3&times;</div>
+
+    <div class="stat-card-eyebrow">
+      Search conversion uplift with catalog &amp; search optimization
+    </div>
+
+    <p class="stat-card-body">
+      Users who search convert 2&ndash;3&times; more often than those who don't&mdash;<span class="hl">if they find what they want.</span>
+    </p>
+
+    <div class="stat-card-footer">
+      Industry benchmark &mdash; mid-market e-commerce.
+    </div>
+  </div>
+</body>
+</html>

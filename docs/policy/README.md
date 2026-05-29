@@ -1,3 +1,8 @@
+<!-- 2026-05-29: re-tick to force Vercel to redeploy main HEAD as
+     production. An earlier manual promote-to-prod of an unrelated
+     rubric branch (ef651e8) pinned production behind PRs #158
+     (legal pages) and #159 (stat card), causing /legal/* to 404 on
+     grolabs.ai's footer links. No content change. -->
 # GroLabs — Policy documents
 
 Authoritative specs for feature surfaces. Read the relevant policy doc
@@ -41,6 +46,21 @@ rather than working around it.
   on `instance_member` enforces a matching active `tenant_member`
   row. Backfills 3 (tenant, user) pairs from existing instance
   memberships. Owner: Tuncho.
+- **blog.md** — Multi-tenant blog surface (admin at `/content/posts`,
+  public at `/blog/[slug]`). Single `post` table; markdown in v1,
+  Tiptap JSONB in v2. Public reading anonymous via RLS on
+  `status='published'`. Documents v1 (shipped, PR #121), v2/v3
+  roadmap, and the AI + brand-system backlog (Tiptap AI Toolkit,
+  per-instance brand_system, image upload pipeline with
+  brand-aware transforms). Owner: Tuncho.
+- **prospectos.md** — Internet-wide ecommerce diagnostic. Takes a
+  URL, scores the storefront against a DB-driven rubric (catalog
+  + per-vertical synonyms/queries/expected attributes), computes
+  annual revenue uplift, surfaces fix recommendations. Two-service
+  architecture (Scout orchestrator + ASE static-HTML primitives).
+  Public anonymous API for the landing-page widget, gated by per-IP
+  rate-limit RPC. Playwright probe is feature-flagged (deployment
+  caveats inside). Owner: Tuncho.
 
 ## Conventions
 

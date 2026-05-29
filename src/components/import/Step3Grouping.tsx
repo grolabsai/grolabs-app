@@ -184,7 +184,7 @@ export function Step3Grouping({
     }
 
     // Wipe any previous run, then mark grouping in progress. APPEND adds
-    // each category's bases as soon as its GLPIM call returns, so the user
+    // each category's bases as soon as its ASE call returns, so the user
     // sees results stream in instead of waiting for the whole batch.
     dispatch({ type: "SET_PRODUCT_BASES", bases: [] });
     dispatch({ type: "SET_GROUPING", on: true });
@@ -198,7 +198,7 @@ export function Step3Grouping({
     startTransition(async () => {
       let totalBasesAdded = 0;
       let totalVariantsAdded = 0;
-      // One GLPIM call per category (the agent expects all products to be in
+      // One ASE call per category (the agent expects all products to be in
       // the same category for the vocabulary to match).
       for (const categoryId of selectedCategoryIds) {
         const rowsForCat = state.categoryAssignments.filter((a) => a.categoryId === categoryId);
@@ -259,7 +259,7 @@ export function Step3Grouping({
               attributeId: av.attribute_id,
               attributeCode: av.attribute_code,
               attributeName: av.attribute_code,
-              // GLPIM returns attribute data_type implicitly via which value field is set
+              // ASE returns attribute data_type implicitly via which value field is set
               dataType: av.unit_code ? "quantity" : av.value_id !== null && av.value_id !== undefined ? "list" : "text",
               valueId: av.value_id ?? null,
               valueText: av.value_text ?? null,

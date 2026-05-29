@@ -24,6 +24,15 @@ const PROBE_ICON: Record<ProbeType, typeof Search> = {
   category: LayoutList,
 };
 
+// Identity hue per probe type — backed by --s-probe-* style-guide tokens.
+const PROBE_COLOR: Record<ProbeType, string> = {
+  pdp: "var(--s-probe-pdp)",
+  category: "var(--s-probe-category)",
+  homepage: "var(--s-probe-homepage)",
+  site_wide: "var(--s-probe-site-wide)",
+  search: "var(--s-probe-search)",
+};
+
 // Display order for probe-type groups inside a stage.
 const PROBE_ORDER: ProbeType[] = [
   "pdp",
@@ -221,6 +230,7 @@ export function CheckList({
                   icon={PROBE_ICON[probe] ?? Search}
                   label={t(`probeType.${probe}`)}
                   count={t("nav.checksCount", { n: count })}
+                  accentColor={PROBE_COLOR[probe]}
                   onClick={() =>
                     setView((v) => ({ ...v, probe }))
                   }
@@ -300,11 +310,13 @@ function GroupRow({
   icon,
   label,
   count,
+  accentColor,
   onClick,
 }: {
   icon: typeof Search;
   label: string;
   count: string;
+  accentColor?: string;
   onClick: () => void;
 }) {
   return (
@@ -312,11 +324,12 @@ function GroupRow({
       type="button"
       onClick={onClick}
       style={{
+        position: "relative",
         width: "100%",
         display: "flex",
         alignItems: "center",
         gap: 10,
-        padding: "10px 12px",
+        padding: accentColor ? "10px 12px 10px 15px" : "10px 12px",
         borderRadius: "var(--s-radius-md)",
         border: "none",
         background: "transparent",
@@ -329,7 +342,10 @@ function GroupRow({
       }
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
-      <Icon icon={icon} size={15} />
+      {accentColor && <AccentBar color={accentColor} />}
+      <span style={{ color: accentColor ?? "var(--s-text)", display: "flex" }}>
+        <Icon icon={icon} size={15} />
+      </span>
       <span
         style={{
           flex: 1,
@@ -368,16 +384,18 @@ function CheckRow({
   onClick: () => void;
 }) {
   const ProbeIcon = PROBE_ICON[check.probe_type] ?? Search;
+  const accent = PROBE_COLOR[check.probe_type] ?? "var(--s-text)";
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
+        position: "relative",
         width: "100%",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 8,
-        padding: "7px 12px",
+        padding: "7px 12px 7px 15px",
         borderRadius: "var(--s-radius-md)",
         border: "none",
         background: selected ? "var(--s-surface-hover)" : "transparent",
@@ -387,7 +405,10 @@ function CheckRow({
         opacity: check.is_active ? 1 : 0.5,
       }}
     >
-      <Icon icon={ProbeIcon} size={14} />
+      <AccentBar color={accent} />
+      <span style={{ color: accent, display: "flex", marginTop: 1 }}>
+        <Icon icon={ProbeIcon} size={14} />
+      </span>
       <div
         style={{
           flex: 1,
@@ -439,6 +460,23 @@ function CheckRow({
         </span>
       )}
     </button>
+  );
+}
+
+function AccentBar({ color }: { color: string }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: 4,
+        top: 6,
+        bottom: 6,
+        width: 3,
+        borderRadius: 2,
+        background: color,
+      }}
+    />
   );
 }
 

@@ -135,6 +135,15 @@ svg {
   --s-warning-bg: rgba(245, 158, 11, 0.12);
   --s-warning-text: #fbbf24;
 
+  /* Probe-type identity hues — a muted categorical palette used to color-code
+     diagnostic check types (rubric). Mid-tone + moderate saturation so each
+     hue reads on the dark canvas AND the light styleguide without flipping. */
+  --s-probe-pdp: #E5B567;       /* amber  */
+  --s-probe-category: #5FB6A6;  /* teal   */
+  --s-probe-homepage: #A98EDA;  /* violet */
+  --s-probe-site-wide: #6E9BD6; /* blue   */
+  --s-probe-search: #D98AA6;    /* rose   */
+
   /* Radii (unchanged) */
   --s-radius-sm: 6px;
   --s-radius-md: 8px;
@@ -928,6 +937,18 @@ button {
   color: var(--s-text-tertiary);
   cursor: not-allowed;
   opacity: 0.7;
+}
+/* Read-only (not disabled) surfaces: the field can't be edited, but the
+   content must read at full contrast — muting it for "read-only" makes the
+   text hard to read for no benefit. Keep canvas background + full text color;
+   only the cursor signals non-editability. */
+.s-readonly .s-input:disabled,
+.s-readonly .s-select:disabled,
+.s-readonly .s-textarea:disabled {
+  background: var(--s-surface);
+  color: var(--s-text);
+  cursor: default;
+  opacity: 1;
 }
 .s-input::placeholder,
 .s-select::placeholder,

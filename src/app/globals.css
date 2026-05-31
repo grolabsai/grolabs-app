@@ -987,6 +987,31 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
+/* ── Autofill repaint ────────────────────────────────────────────────────
+   Chrome/Safari paint a pale fill over autofilled inputs (the lavender-blue
+   email box), overriding the dark canvas. The browser's autofill background
+   can't be set directly, so cover it with an inset box-shadow in the canvas
+   color and restore the text color. The long transition defers the yellow
+   flash. --s-surface resolves per theme, so this is correct in light + dark. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+.s-input:-webkit-autofill,
+.s-select:-webkit-autofill,
+.s-textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--s-text);
+  -webkit-box-shadow: inset 0 0 0 1000px var(--s-surface);
+  caret-color: var(--s-text);
+  transition: background-color 9999s ease-in-out 0s;
+}
+input:-webkit-autofill:focus,
+.s-input:-webkit-autofill:focus,
+.s-select:-webkit-autofill:focus,
+.s-textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: inset 0 0 0 1000px var(--s-surface),
+    0 0 0 3px rgba(250, 225, 148, 0.18);
+  border-color: var(--rre-accent);
+}
+
 /* Content text inside ALL form controls is semi-bold (600) — whether
    you type into an input, pick from a dropdown, type in a textarea, or
    enter a number. The placeholder stays at the normal weight so the

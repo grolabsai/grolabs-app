@@ -51,30 +51,30 @@ Status legend: **active** (conforms, no change needed) · **needs-reshape** (con
 ### 4. `backlog.md`
 - **Covers:** Five parked commitments (pricing parity, pet-shop schema cleanup, WC reconciliation, consent drafting, SSO consolidation) with triggers.
 - **Status:** active.
-- **Issues:** None substantive. "Pet-shop-specific schema cleanup" entry is the operational arm of Article 1. References folder `scout-wordpress-social-login/` (Scout naming — rename pass).
+- **Issues:** None substantive. "Pet-shop-specific schema cleanup" entry is the operational arm of Article 1. References folder `scout-wordpress-social-login/` (RRE naming — rename pass).
 - **Action:** keep.
 
 ### 5. `policy/README.md`
 - **Covers:** Index + conventions for `docs/policy/`.
-- **Status:** active (Scout naming, 4 occurrences).
+- **Status:** active (RRE naming, 4 occurrences).
 - **Issues:** No article conflict. Points at "CLAUDE.md section 18" — still accurate. The `tenant-model` entry already says "GroLabs → instance 0" (mixed naming, acceptable in transition).
-- **Action:** keep; Scout→GroLabs in rename pass.
+- **Action:** keep; RRE→GroLabs in rename pass.
 
 ### 6. `policy/ga4-integration.md`
 - **Covers:** Read-only GA4 v1 — hybrid storage, 5 daily tables + alert table, OAuth, polling, alert pipeline, `/dashboard/traffic`.
-- **Status:** active (Scout naming, 9 occurrences).
+- **Status:** active (RRE naming, 9 occurrences).
 - **Issues:** Conforms to Article 7 (RLS modeled), Article 4 spirit (read-only, Google owns consent). Cross-doc: references the existing `/dashboard` "no-results analytics (Algolia-sourced)" — see Algolia-vs-Meilisearch inconsistency in Appendix B.
-- **Action:** keep; Scout→GroLabs in rename pass.
+- **Action:** keep; RRE→GroLabs in rename pass.
 
 ### 7. `policy/instance-management.md`
 - **Covers:** `instance_member.is_current`, topbar instance switcher, create-instance flow; fixes `.maybeSingle()` ambiguity.
-- **Status:** active (Scout naming, 4 occurrences).
+- **Status:** active (RRE naming, 4 occurrences).
 - **Issues:** Conforms to Article 7. Minor tension with **Article 3**: instance creation captures only a name → slug, never a **domain** (Article 3 makes domain the tenant primary key). `tenant-model.md` carries the tenant layer separately, so this is a deferred gap, not a contradiction within this doc's stated v1 scope.
 - **Action:** keep; note the Article 3 domain-capture gap as deferred.
 
 ### 8. `policy/search-foundations.md`
 - **Covers:** Search Stages 0 & 1 — Meilisearch Cloud, token endpoint, indexing pipeline, WP plugin v0.1, two-button variant cards.
-- **Status:** **conflicts** (Scout naming, 70 occurrences — highest in repo, incl. code identifiers).
+- **Status:** **conflicts** (RRE naming, 70 occurrences — highest in repo, incl. code identifiers).
 - **Issues — Article 1 (industry-agnostic core):**
   - §3 index **defaults applied at index creation**: `Synonyms (pet-domain Spanish): comida ↔ alimento ↔ kibble, perro ↔ can, gato ↔ felino`.
   - §3/§4 searchable & filterable attributes hardcode `scout_attributes.species`, `scout_attributes.breed_compatibility`, `scout_attributes.lifestage`, `scout_attributes.medical_conditions` as first-class core index fields.
@@ -85,31 +85,31 @@ Status legend: **active** (conforms, no change needed) · **needs-reshape** (con
 
 ### 9. `policy/tenant-membership.md`
 - **Covers:** `tenant_member` table, two-layer membership model, role taxonomy, enforcement trigger, backfill, RLS.
-- **Status:** active — conforms (self-labelled "Draft (awaiting approval)"; 3 Scout occurrences, also uses "GroLabs" for tenant 1).
+- **Status:** active — conforms (self-labelled "Draft (awaiting approval)"; 3 RRE occurrences, also uses "GroLabs" for tenant 1).
 - **Issues:** Strong fit with Article 7 (modeled, RLS tight, no app enforcement) and Article 3 (two-layer/collaborator model = the "user granted access to multiple tenants without merging" mechanism). Same deferred Article 3 domain-identity gap as `tenant-model.md`.
 - **Action:** keep (note draft status — not yet ratified).
 
 ### 10. `policy/tenant-model.md`
 - **Covers:** `tenant` table, `instance.tenant_id`, `kind = template_owner|customer`, deprecation of `instance.kind`, GroLabs/Wazú seed.
-- **Status:** active — conforms with one gap (self-labelled "Draft (awaiting approval)"; 5 Scout occurrences).
+- **Status:** active — conforms with one gap (self-labelled "Draft (awaiting approval)"; 5 RRE occurrences).
 - **Issues:** Directly supports Article 1 (template ownership at the tenant level, not vertical schema) and enables Article 3's "create tenant + first instance" signup shape. **Gap vs Article 3:** Article 3 says "Tenant identity uses **domain** as the primary key — two installs from the same domain join the existing tenant." `tenant-model.md` keys tenants on `slug` (`grolabs`, `wazu`) with no domain column. This is an unmodeled constitutional requirement, not a contradiction of what the doc does ship.
 - **Action:** keep; flag the domain-as-tenant-identity gap for a future policy doc (or amend Article 3's trigger-to-revisit).
 
 ### 11. `policy/wc-import.md`
-- **Covers:** One-way WC→Scout pull, `woocommerce_id` mapping, `wc_raw` JSONB preservation, idempotent re-runs.
-- **Status:** active (Scout naming, 27 occurrences).
+- **Covers:** One-way WC→RRE pull, `woocommerce_id` mapping, `wc_raw` JSONB preservation, idempotent re-runs.
+- **Status:** active (RRE naming, 27 occurrences).
 - **Issues:** Strong conformance with **Article 8** (entity-to-entity mapping via `woocommerce_id`, never inferred from names/SKUs; non-destructive; variations preserved raw) and Article 2 (separate pull namespace). Minor Article 1 surface: non-goals casually list "lifestage, species, breed" — framed as deferred template/enrichment work, acceptable.
-- **Action:** keep; Scout→GroLabs in rename pass.
+- **Action:** keep; RRE→GroLabs in rename pass.
 
 ### 12. `design/dashboard.md`
 - **Covers:** Design brief for the multi-section dashboard cockpit (Traffic/Search/Catalog/Pricing/Sync), to paste into a fresh design conversation.
-- **Status:** **conflicts** + stale (Scout naming, 6 occurrences; pre-constitution).
-- **Issues — Article 1:** opening definition handed to the designer — *"Scout is a multi-tenant admin app for **solopreneur-run pet supply ecommerce stores** in Latin America"* — bakes the pet vertical into the product definition. Article 1 forbids vertical assumptions in documentation; vision §1 says industry-agnostic, WooCommerce-first, pet = Wazú test tenant only. Also names `scout.gro.gt`.
-- **Action:** **reshape** — rewrite the "What Scout is" framing as industry-agnostic GroLabs with Wazú named only as the example tenant. Keep the layout/interaction content (which is vertical-neutral and useful).
+- **Status:** **conflicts** + stale (RRE naming, 6 occurrences; pre-constitution).
+- **Issues — Article 1:** opening definition handed to the designer — *"RRE is a multi-tenant admin app for **solopreneur-run pet supply ecommerce stores** in Latin America"* — bakes the pet vertical into the product definition. Article 1 forbids vertical assumptions in documentation; vision §1 says industry-agnostic, WooCommerce-first, pet = Wazú test tenant only. Also names `scout.gro.gt`.
+- **Action:** **reshape** — rewrite the "What RRE is" framing as industry-agnostic GroLabs with Wazú named only as the example tenant. Keep the layout/interaction content (which is vertical-neutral and useful).
 
 ### 13. `design/pricing/README.md`
 - **Covers:** Handoff to build the pricing module as a **WordPress/WooCommerce plugin** (PHP + React SPA in wp-admin + `wp_pricing_*` MySQL tables + `/wp-json/pricing/v1/` REST API).
-- **Status:** **conflicts (severe, multi-article)** + stale (pre-constitution; 0 Scout/GroLabs references — fully external framing).
+- **Status:** **conflicts (severe, multi-article)** + stale (pre-constitution; 0 RRE/GroLabs references — fully external framing).
 - **Issues:**
   - **Article 9:** "Pricing engine is GroLabs-native… WooCommerce receives the structured result and displays final prices." This doc makes WordPress the *home* of the pricing engine (custom WP tables, WP-Cron batch processing, WP REST API). Direct inversion of the constitutional rule.
   - **Article 2:** Pricing is a **core** module (one codebase, one Supabase schema — module-map Modules 5/6). This builds it as a physically separate WP plugin with its own MySQL tables. Direct conflict.
@@ -118,47 +118,47 @@ Status legend: **active** (conforms, no change needed) · **needs-reshape** (con
 
 ### 14. `design/pricing/DATA_MODEL.md`
 - **Covers:** Pricing data model (Provider, Brand, PriceList, ProductVariant, MAPRule, PriceBatch…) — the schema behind the #13 WP-plugin handoff.
-- **Status:** **conflicts** (same root cause as #13; 0 Scout/GroLabs references).
-- **Issues:** UUID-keyed standalone tables with **no `instance_id` multi-tenancy boundary and no RLS** (contradicts the Scout/GroLabs tenancy convention — CLAUDE.md §2, Article 7 RLS modeling). Pet-specific examples (Royal Canin, Hill's, "Distribuidora Pet Supplies S.A.") — Article 1. The *domain model* is salvageable and overlaps the pricing-parity backlog scope; the *table architecture* is superseded.
+- **Status:** **conflicts** (same root cause as #13; 0 RRE/GroLabs references).
+- **Issues:** UUID-keyed standalone tables with **no `instance_id` multi-tenancy boundary and no RLS** (contradicts the RRE/GroLabs tenancy convention — CLAUDE.md §2, Article 7 RLS modeling). Pet-specific examples (Royal Canin, Hill's, "Distribuidora Pet Supplies S.A.") — Article 1. The *domain model* is salvageable and overlaps the pricing-parity backlog scope; the *table architecture* is superseded.
 - **Action:** **supersede with #13** — preserve the conceptual model as input to the pricing-parity Discussion; retire the standalone-schema framing. Mark `Superseded` alongside #13.
 
 ### 15. `state/README.md`
 - **Covers:** Purpose + update protocol for `docs/state/` (modules/schema/in-flight), context-handoff guidance.
-- **Status:** active (Scout naming, 4 occurrences).
+- **Status:** active (RRE naming, 4 occurrences).
 - **Issues:** Operational meta-doc; no article conflict. Aligns with Article 10 ("re-query the live DB rather than transcribing… the live DB is the source of truth").
-- **Action:** keep; Scout→GroLabs in rename pass.
+- **Action:** keep; RRE→GroLabs in rename pass.
 
 ### 16. `state/in-flight.md`
 - **Covers:** Snapshot of open PRs, branches, known debt, open architectural decisions.
-- **Status:** **stale** (Generated 2026-04-30; Scout naming).
+- **Status:** **stale** (Generated 2026-04-30; RRE naming).
 - **Issues:** Open-PR table (#17/#22/#23/#24) and branch list predate everything in `git log` (foundation-docs commit `0bf0cda`, tenant PRs #79–#82). Predates the constitution entirely. Debt list overlaps CLAUDE.md §17 but is now partially resolved (tenant layer landed). Not an article conflict — a freshness failure of the doc's own update protocol.
 - **Action:** **regenerate** (separate task; out of scope for this read-only pass). Flag overlap with CLAUDE.md §17 for dedup.
 
 ### 17. `state/modules.md`
 - **Covers:** Per-module current state (routes, actions, gaps) @ HEAD `b43157a`.
-- **Status:** **stale** (Generated 2026-04-30; Scout naming, 2 occurrences).
+- **Status:** **stale** (Generated 2026-04-30; RRE naming, 2 occurrences).
 - **Issues:** Describes products/variants CRUD as in-flight PR #24 and catalog images as not-yet-done; `git log` shows catalog/images (#80) and later work merged. No tenant-switcher/instance-management state. Structurally sound; content lags main.
 - **Action:** **regenerate** (separate task).
 
 ### 18. `state/schema.md`
 - **Covers:** Live table-by-table schema snapshot @ 2026-04-30.
-- **Status:** **stale** (Scout naming, 3 occurrences).
-- **Issues:** Missing the entire **tenant layer** — no `tenant` table, no `tenant_member`, no `instance_member.is_current` — all of which `git log` shows merged (PRs #81/#82) and which `tenant-model.md`/`tenant-membership.md` specify. Doc correctly states "the DB wins" (Article 10-aligned) but is now an incomplete snapshot. Flags the Scout-named DB object `scout_schema_version` and sequence `tenant_tenant_id_seq` — relevant to the rename pass (rename touches DB identifiers, not just prose).
+- **Status:** **stale** (RRE naming, 3 occurrences).
+- **Issues:** Missing the entire **tenant layer** — no `tenant` table, no `tenant_member`, no `instance_member.is_current` — all of which `git log` shows merged (PRs #81/#82) and which `tenant-model.md`/`tenant-membership.md` specify. Doc correctly states "the DB wins" (Article 10-aligned) but is now an incomplete snapshot. Flags the RRE-named DB object `scout_schema_version` and sequence `tenant_tenant_id_seq` — relevant to the rename pass (rename touches DB identifiers, not just prose).
 - **Action:** **regenerate from live DB** (separate task).
 
 ### 19. `funnel/spec.md`
 - **Covers:** Funnel Flow Map production spec — visual language, highlight rules, revenue formulas, validation, embedded schema/seed/TS.
-- **Status:** needs-reshape (Scout naming minimal, 1 occurrence; doc self-flags the schema block as historical).
-- **Issues:** Embedded PostgreSQL schema uses standalone `instances` (text PK, `tenant_id text`), **no `instance_id` tenancy, no RLS** — contradicts the reconciled live funnel schema (`schema.md` shows `funnel_*` with `instance_id` + RLS) and the Scout multi-tenancy convention. The doc's own top note says this block is superseded by `supabase/migrations/20260430000001_funnel_schema.sql`, so it is self-aware — but a superseded schema sitting inline in `docs/` is an Article 10 hazard (a future reader could treat it as authoritative). **Positive:** funnel templates are jewelry/clothing/electronics — a correct, industry-agnostic Article 1 example (contrast with the pet-coded docs).
+- **Status:** needs-reshape (RRE naming minimal, 1 occurrence; doc self-flags the schema block as historical).
+- **Issues:** Embedded PostgreSQL schema uses standalone `instances` (text PK, `tenant_id text`), **no `instance_id` tenancy, no RLS** — contradicts the reconciled live funnel schema (`schema.md` shows `funnel_*` with `instance_id` + RLS) and the RRE multi-tenancy convention. The doc's own top note says this block is superseded by `supabase/migrations/20260430000001_funnel_schema.sql`, so it is self-aware — but a superseded schema sitting inline in `docs/` is an Article 10 hazard (a future reader could treat it as authoritative). **Positive:** funnel templates are jewelry/clothing/electronics — a correct, industry-agnostic Article 1 example (contrast with the pet-coded docs).
 - **Action:** **reshape** — excise or clearly quarantine the stale SQL/TS schema block; keep the canonical product rules (visual language, formulas, validation).
 
 ---
 
-## Appendix A — Scout→GroLabs naming references (for the future rename pass)
+## Appendix A — RRE→GroLabs naming references (for the future rename pass)
 
 Per the session naming decision, nothing below is changed yet. Occurrence counts (case-insensitive, includes code/DB/plugin identifiers):
 
-| File | "scout" count | Notes |
+| File | legacy-name count | Notes |
 |---|---|---|
 | `policy/search-foundations.md` | 70 | Highest. Includes **identifiers**: `scout-production` (Meili project), `scout_attributes` (index fields), `scout-search.php`, `scout_search_*` WP options, `src/lib/search/` |
 | `policy/wc-import.md` | 27 | Mostly prose + `src/lib/import/woocommerce/` |
@@ -183,11 +183,11 @@ Per the session naming decision, nothing below is changed yet. Occurrence counts
 6. **Module count.** `module-map.md` heading "17 modules" vs 18 defined modules.
 7. **Table-name convention.** `module-map.md` plural (`tenants`/`users`/`instances`) vs schema/CLAUDE/tenant-* docs singular.
 8. **State docs vs reality.** `state/{in-flight,modules,schema}.md` generated 2026-04-30 @ `b43157a`; main has since merged the tenant layer and foundation docs — the state docs predate the constitution itself.
-9. **Product name.** Repo/code/CLAUDE.md/most `docs/` say "Scout"; `vision/constitution/module-map/backlog` say "GroLabs". Known in-progress rename (session decision: new docs = GroLabs).
+9. **Product name.** Repo/code/CLAUDE.md/most `docs/` say "RRE"; `vision/constitution/module-map/backlog` say "GroLabs". Known in-progress rename (session decision: new docs = GroLabs).
 
 ## Appendix C — Note on CLAUDE.md (out of scope, flagged)
 
-`CLAUDE.md` (repo root, not under `docs/`, so not graded here) is entirely "Scout"-named and its §18 indexes the policy docs. It will need to be part of the same coordinated rename and re-pointed once vision/constitution/module-map are reconciled. Raised so it is not lost; no action this pass.
+`CLAUDE.md` (repo root, not under `docs/`, so not graded here) is entirely "RRE"-named and its §18 indexes the policy docs. It will need to be part of the same coordinated rename and re-pointed once vision/constitution/module-map are reconciled. Raised so it is not lost; no action this pass.
 
 ---
 

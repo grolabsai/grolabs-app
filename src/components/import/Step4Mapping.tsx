@@ -7,7 +7,7 @@ import { Lock, Sparkles, X } from "lucide-react";
 import { useWizard } from "@/components/import/WizardContext";
 import { Icon } from "@/components/ui/icon";
 import { autoMapColumns } from "@/lib/import/step4-automap";
-import type { ColumnMapping, ScoutFieldId } from "@/lib/import/types";
+import type { ColumnMapping, RreFieldId } from "@/lib/import/types";
 
 /**
  * Two-column drag-and-drop column mapper.
@@ -29,7 +29,7 @@ import type { ColumnMapping, ScoutFieldId } from "@/lib/import/types";
 
 const FIELD_GROUPS: Array<{
   group: "base" | "variant";
-  fields: Array<{ id: ScoutFieldId; required?: boolean }>;
+  fields: Array<{ id: RreFieldId; required?: boolean }>;
 }> = [
   {
     group: "base",
@@ -80,24 +80,24 @@ export function Step4Mapping() {
       if (idx === undefined) continue;
       dispatch({
         type: "SET_COLUMN_MAPPING_FIELD",
-        field: field as ScoutFieldId,
+        field: field as RreFieldId,
         mapping: { kind: "column", columnIndex: idx },
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file?.fileName]);
 
-  const [dropTarget, setDropTarget] = useState<ScoutFieldId | null>(null);
+  const [dropTarget, setDropTarget] = useState<RreFieldId | null>(null);
 
   if (!file) return null;
 
-  function setMapping(field: ScoutFieldId, mapping: ColumnMapping[ScoutFieldId]) {
+  function setMapping(field: RreFieldId, mapping: ColumnMapping[RreFieldId]) {
     dispatch({ type: "SET_COLUMN_MAPPING_FIELD", field, mapping });
   }
 
   // Build (column-index → bound GroLabs field) so each right-side row can
   // show its pairing without scanning the mapping object every render.
-  const fieldByColumn = new Map<number, ScoutFieldId>();
+  const fieldByColumn = new Map<number, RreFieldId>();
   for (const f of ALL_FIELDS) {
     const m = state.columnMapping[f.id];
     if (m.kind === "column") fieldByColumn.set(m.columnIndex, f.id);
@@ -120,7 +120,7 @@ export function Step4Mapping() {
     e.dataTransfer.effectAllowed = "move";
   }
 
-  function handleDrop(e: React.DragEvent, field: ScoutFieldId) {
+  function handleDrop(e: React.DragEvent, field: RreFieldId) {
     e.preventDefault();
     setDropTarget(null);
     const raw = e.dataTransfer.getData(DRAG_MIME);
@@ -161,7 +161,7 @@ export function Step4Mapping() {
         >
           {/* LEFT: GroLabs fields */}
           <div>
-            <ColumnHeader title={t("scoutFieldsTitle")} subtitle={t("scoutFieldsSubtitle")} />
+            <ColumnHeader title={t("rreFieldsTitle")} subtitle={t("rreFieldsSubtitle")} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <FieldRow
                 title={t("field.productName")}
@@ -337,12 +337,12 @@ function FieldRow({
   const accent = locked
     ? "var(--s-border)"
     : isDropTarget
-      ? "var(--scout-accent)"
+      ? "var(--rre-accent)"
       : hasBinding
         ? "var(--s-border)"
         : "var(--s-border)";
   const bg = isDropTarget
-    ? "var(--scout-accent-50)"
+    ? "var(--rre-accent-50)"
     : locked
       ? "var(--s-surface-alt)"
       : "white";
@@ -395,7 +395,7 @@ function FieldRow({
         <div
           style={{
             fontSize: 11,
-            color: "var(--scout-accent-800)",
+            color: "var(--rre-accent-800)",
             fontFamily: "ui-monospace, monospace",
           }}
         >
@@ -464,7 +464,7 @@ function ColumnRow({
         {isAuto ? (
           <span
             title=""
-            style={{ display: "inline-flex", color: "var(--scout-accent-800)", marginLeft: 2 }}
+            style={{ display: "inline-flex", color: "var(--rre-accent-800)", marginLeft: 2 }}
           >
             <Icon icon={Sparkles} size={11} />
           </span>
@@ -505,7 +505,7 @@ function ColumnRow({
         <div
           style={{
             fontSize: 11,
-            color: "var(--scout-accent-800)",
+            color: "var(--rre-accent-800)",
             fontFamily: "ui-monospace, monospace",
           }}
         >

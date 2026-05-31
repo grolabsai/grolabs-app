@@ -97,8 +97,8 @@ export function Step1Upload() {
           onDrop={onDrop}
           onClick={onPick}
           style={{
-            border: `2px dashed ${dragOver ? "var(--scout-accent)" : "var(--s-border-strong)"}`,
-            background: dragOver ? "var(--scout-accent-50)" : "var(--s-surface-alt)",
+            border: `2px dashed ${dragOver ? "var(--rre-accent)" : "var(--s-border-strong)"}`,
+            background: dragOver ? "var(--rre-accent-50)" : "var(--s-surface-alt)",
             padding: 48,
             borderRadius: "var(--s-radius-lg)",
             textAlign: "center",

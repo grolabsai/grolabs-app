@@ -444,7 +444,7 @@ function TabButton({
         padding: "8px 14px",
         background: "none",
         border: "none",
-        borderBottom: active ? "2px solid var(--scout-accent)" : "2px solid transparent",
+        borderBottom: active ? "2px solid var(--rre-accent)" : "2px solid transparent",
         color: active ? "var(--s-text)" : "var(--s-text-tertiary)",
         fontWeight: active ? 600 : 400,
         fontSize: 13,

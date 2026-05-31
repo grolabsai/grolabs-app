@@ -126,8 +126,8 @@ export function AttributeList({
                 borderRadius: 999,
                 border: "1px solid",
                 cursor: "pointer",
-                background: filter === f ? "var(--scout-accent)" : "transparent",
-                borderColor: filter === f ? "var(--scout-accent)" : "var(--s-border)",
+                background: filter === f ? "var(--rre-accent)" : "transparent",
+                borderColor: filter === f ? "var(--rre-accent)" : "var(--s-border)",
                 color: filter === f ? "#fff" : "var(--s-text-secondary)",
                 fontFamily: "var(--s-font)",
               }}
@@ -147,8 +147,8 @@ export function AttributeList({
               padding: "8px 10px",
               margin: "4px 0",
               borderRadius: "var(--s-radius-md)",
-              background: "var(--scout-accent-50)",
-              borderLeft: "3px solid var(--scout-accent)",
+              background: "var(--rre-accent-50)",
+              borderLeft: "3px solid var(--rre-accent)",
               fontSize: 12,
               fontWeight: 500,
               color: "var(--s-text)",
@@ -174,7 +174,7 @@ export function AttributeList({
                   type="button"
                   style={{
                     fontSize: 12,
-                    color: "var(--scout-accent)",
+                    color: "var(--rre-accent)",
                     background: "none",
                     border: "none",
                     cursor: "pointer",

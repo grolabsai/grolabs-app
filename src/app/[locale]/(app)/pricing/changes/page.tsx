@@ -249,7 +249,7 @@ export default async function PricingChangesPage() {
                       <Link
                         href={`/pricing/changes/${b.price_batch_id}`}
                         style={{
-                          color: "var(--scout-accent-800)",
+                          color: "var(--rre-accent-800)",
                           fontWeight: 500,
                           textDecoration: "none",
                         }}

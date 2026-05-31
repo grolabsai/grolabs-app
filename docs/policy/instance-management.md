@@ -22,7 +22,7 @@ The current `.maybeSingle()` ambiguity (multiple `is_active=true` memberships ca
 - Per-instance role management beyond owner (separate)
 - Renaming or deleting instances (separate; for now, owner gets a fixed slug)
 - Seeding from template categories/attributes (separate; v1 instances start empty per CLAUDE.md §17 known debt)
-- URL-based instance routing (`/scout/[instance_id]/...` — explicitly rejected; instance is resolved server-side from `is_current` membership)
+- URL-based instance routing (`/rre/[instance_id]/...` — explicitly rejected; instance is resolved server-side from `is_current` membership)
 
 ## 2. Architectural decisions (locked)
 

@@ -311,7 +311,7 @@ export function CategoryAttributeSection({
           onClick={() => setShowAddPopover((v) => !v)}
           style={{
             fontSize: 12,
-            color: "var(--scout-accent)",
+            color: "var(--rre-accent)",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -403,7 +403,7 @@ export function CategoryAttributeSection({
                 href="/catalog/attributes?mode=create"
                 style={{
                   fontSize: 12,
-                  color: "var(--scout-accent)",
+                  color: "var(--rre-accent)",
                   textDecoration: "none",
                   display: "block",
                   padding: "6px 4px",
@@ -523,8 +523,8 @@ function AttrRow({
           borderRadius: 999,
           border: "1px solid",
           cursor: "pointer",
-          background: isVariantAxis ? "var(--scout-accent)" : "transparent",
-          borderColor: isVariantAxis ? "var(--scout-accent)" : "var(--s-border)",
+          background: isVariantAxis ? "var(--rre-accent)" : "transparent",
+          borderColor: isVariantAxis ? "var(--rre-accent)" : "var(--s-border)",
           color: isVariantAxis ? "#fff" : "var(--s-text-secondary)",
           fontFamily: "var(--s-font)",
           flexShrink: 0,

@@ -133,7 +133,7 @@ function Lightbox({
           )}
           <span
             style={{
-              color: "var(--scout-accent)",
+              color: "var(--rre-accent)",
               fontFamily: "var(--s-font-mono)",
               fontSize: 18,
               fontWeight: 600,

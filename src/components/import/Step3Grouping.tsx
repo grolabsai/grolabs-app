@@ -365,19 +365,19 @@ export function Step3Grouping({
               padding: "12px 16px",
               borderRadius: "var(--s-radius-md)",
               background: state.grouping
-                ? "var(--scout-accent-50)"
+                ? "var(--rre-accent-50)"
                 : unaccountedRows.length > 0
                   ? "var(--s-warning-bg)"
                   : "var(--s-success-bg)",
               border: `0.5px solid ${
                 state.grouping
-                  ? "var(--scout-accent)"
+                  ? "var(--rre-accent)"
                   : unaccountedRows.length > 0
                     ? "var(--s-warning)"
                     : "var(--s-success)"
               }`,
               color: state.grouping
-                ? "var(--scout-accent-800)"
+                ? "var(--rre-accent-800)"
                 : unaccountedRows.length > 0
                   ? "var(--s-warning-text)"
                   : "var(--s-success-text)",
@@ -396,7 +396,7 @@ export function Step3Grouping({
                     width: 10,
                     height: 10,
                     borderRadius: "50%",
-                    border: "2px solid var(--scout-accent)",
+                    border: "2px solid var(--rre-accent)",
                     borderTopColor: "transparent",
                     animation: "spin 0.8s linear infinite",
                   }}
@@ -709,7 +709,7 @@ export function Step3Grouping({
                                   <td
                                     key={`ax-${attr.attribute_id}`}
                                     style={{
-                                      background: "var(--scout-accent-50)",
+                                      background: "var(--rre-accent-50)",
                                       padding: 4,
                                     }}
                                   >
@@ -800,7 +800,7 @@ function ColumnHeader({
     <th
       style={
         variant === "axis"
-          ? { background: "var(--scout-accent-50)", color: "var(--scout-accent-800)", whiteSpace: "nowrap" }
+          ? { background: "var(--rre-accent-50)", color: "var(--rre-accent-800)", whiteSpace: "nowrap" }
           : { whiteSpace: "nowrap" }
       }
       title={`${attribute.attribute_name} · ${attribute.data_type}`}
@@ -834,7 +834,7 @@ function CatPill({ label, active, onClick }: { label: string; active: boolean; o
         fontSize: 12,
         fontWeight: 500,
         border: "0.5px solid var(--s-border)",
-        background: active ? "var(--scout-accent)" : "white",
+        background: active ? "var(--rre-accent)" : "white",
         color: active ? "white" : "var(--s-text)",
         cursor: "pointer",
       }}

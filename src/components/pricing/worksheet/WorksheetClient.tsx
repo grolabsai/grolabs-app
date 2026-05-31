@@ -179,10 +179,10 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
             padding: "12px 16px",
             marginBottom: 16,
             background: "#E6F1FB",
-            borderLeft: "3px solid var(--scout-accent)",
+            borderLeft: "3px solid var(--rre-accent)",
             borderRadius: "var(--s-radius-md)",
             fontSize: 13,
-            color: "var(--scout-accent-800)",
+            color: "var(--rre-accent-800)",
           }}
         >
           <Icon icon={Sparkle} size={16} strokeWidth={2} />

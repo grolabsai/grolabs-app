@@ -199,7 +199,7 @@ export default async function PageDetailPage({
                 fontSize: 10,
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
-                color: "var(--scout-accent)",
+                color: "var(--rre-accent)",
                 marginRight: 8,
               }}
             >
@@ -383,7 +383,7 @@ export default async function PageDetailPage({
                       href={`/prospects/runs/${s.run_id}` as never}
                       style={{
                         fontSize: 11,
-                        color: "var(--scout-accent)",
+                        color: "var(--rre-accent)",
                         textDecoration: "none",
                       }}
                     >
@@ -428,7 +428,7 @@ function ScoreCard({
           fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: accent ? "var(--scout-accent)" : "var(--s-text-tertiary)",
+          color: accent ? "var(--rre-accent)" : "var(--s-text-tertiary)",
           marginBottom: 6,
         }}
       >

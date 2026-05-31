@@ -1,5 +1,5 @@
 /**
- * Pure projector from GroLabs catalog rows → ScoutSearchDocument.
+ * Pure projector from GroLabs catalog rows → RreSearchDocument.
  *
  * Per docs/policy/search-foundations.md §4 (document schema) and §9 (Stage 1
  * enrichment scope). Per the locked PR #68 contract:
@@ -12,10 +12,10 @@
  */
 
 import type {
-  ScoutSearchDocument,
-  ScoutSearchVariant,
+  RreSearchDocument,
+  RreSearchVariant,
   VariationSummary,
-  ScoutAttributes,
+  RreAttributes,
 } from "./types";
 
 // ── Source row shapes ────────────────────────────────────────────────────
@@ -288,13 +288,13 @@ function matchWcVariation(
 function buildVariantAttributes(
   v: SourceVariantRow,
   wcRaw: WcRawShape | null,
-  scoutAttrs: SourceVariantAttribute[]
+  rreAttrs: SourceVariantAttribute[]
 ): Record<string, string> {
   // 1. GroLabs-native rows. Always preferred when present.
-  const scoutForVariant = scoutAttrs.filter((a) => a.variant_id === v.variant_id);
-  if (scoutForVariant.length > 0) {
+  const rreForVariant = rreAttrs.filter((a) => a.variant_id === v.variant_id);
+  if (rreForVariant.length > 0) {
     const out: Record<string, string> = {};
-    for (const a of scoutForVariant) {
+    for (const a of rreForVariant) {
       const value = displayValueForVariantAttribute(a);
       if (value === null) continue;
       out[`pa_${a.attribute_code}`] = value;
@@ -354,7 +354,7 @@ function displayValueForVariantAttribute(a: SourceVariantAttribute): string | nu
 function projectVariant(
   v: SourceVariantRow,
   wcRaw: WcRawShape | null,
-  scoutAttrs: SourceVariantAttribute[],
+  rreAttrs: SourceVariantAttribute[],
   /** product_media rows for this product (mixed product- and variant-
    * scoped). projectVariant filters to variant_id === v.variant_id. */
   media: SourceMediaRow[],
@@ -362,7 +362,7 @@ function projectVariant(
    * has no variant-scoped media of its own. Pass null when the parent
    * has no media either; projectVariant returns null in that case. */
   parentPrimary: string | null
-): ScoutSearchVariant {
+): RreSearchVariant {
   const wc = matchWcVariation(v, wcRaw?.variations);
   const pricing = variantPricing(v);
 
@@ -400,13 +400,13 @@ function projectVariant(
 
   // variation_id MUST be the WC variation post ID — the storefront plugin
   // builds add-to-cart URLs against it. Variants without a WC id are
-  // filtered upstream of this projector (see buildScoutSearchDocument);
+  // filtered upstream of this projector (see buildRreSearchDocument);
   // the `?? v.variant_id` is a defensive fallback only and should never
   // hit in practice.
   return {
     variation_id: v.woocommerce_id ?? v.variant_id,
     sku: v.sku ?? null,
-    attributes: buildVariantAttributes(v, wcRaw, scoutAttrs),
+    attributes: buildVariantAttributes(v, wcRaw, rreAttrs),
     price: pricing.price ?? num(wc?.regular_price ?? wc?.price ?? null),
     sale_price: pricing.sale ?? num(wc?.sale_price ?? null),
     in_stock: inStock,
@@ -419,7 +419,7 @@ function projectVariant(
 
 function computeVariationSummary(
   product: SourceProductRow,
-  variants: ScoutSearchVariant[]
+  variants: RreSearchVariant[]
 ): VariationSummary {
   const wcType = product.wc_raw?.type;
   const purchasable = variants.filter((v) => v.in_stock);
@@ -481,7 +481,7 @@ function computeVariationSummary(
 
 function matchDefaultByAttributes(
   wcRaw: WcRawShape | null,
-  variants: ScoutSearchVariant[]
+  variants: RreSearchVariant[]
 ): number | null {
   const defaults = wcRaw?.default_attributes;
   if (!defaults || defaults.length === 0) return null;
@@ -500,7 +500,7 @@ function matchDefaultByAttributes(
 
 // ── Top-level builder ────────────────────────────────────────────────────
 
-/** Sentinel returned by buildScoutSearchDocument when the product has no
+/** Sentinel returned by buildRreSearchDocument when the product has no
  * woocommerce_id (parent not yet pushed) or — for variable products — no
  * variants with a woocommerce_id after filtering. The indexer treats this
  * as "not ready to index" and routes through removeProduct so the index
@@ -512,9 +512,9 @@ export class NotIndexableError extends Error {
   }
 }
 
-export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearchDocument {
+export function buildRreSearchDocument(input: BuildDocumentInput): RreSearchDocument {
   const { product, variants: variantRows, categoryLinks, media } = input;
-  const scoutAttrs = input.variantAttributes ?? [];
+  const rreAttrs = input.variantAttributes ?? [];
 
   // Hard gate: the doc is keyed on woocommerce_id for the storefront
   // plugin. Without one, indexing is a no-op (worse: a stale doc that
@@ -560,7 +560,7 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
     (m) => m.product_id === product.product_id,
   );
   const variants = indexableVariantRows.map((v) =>
-    projectVariant(v, product.wc_raw, scoutAttrs, productScopedAllMedia, primary),
+    projectVariant(v, product.wc_raw, rreAttrs, productScopedAllMedia, primary),
   );
 
   const summary = computeVariationSummary(product, variants);
@@ -596,7 +596,7 @@ export function buildScoutSearchDocument(input: BuildDocumentInput): ScoutSearch
   const description = stripHtml(product.long_description);
   const shortDescription = stripHtml(product.short_description);
 
-  const scout_attributes: ScoutAttributes = {
+  const scout_attributes: RreAttributes = {
     species: [],
     lifestage: detectLifestage(product.product_name, description, shortDescription),
     breed_compatibility: [],

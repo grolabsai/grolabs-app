@@ -149,7 +149,7 @@ Mechanical cleanup, not a Discussion-worthy item. But it must happen before any 
 
 **Scope of work:**
 
-Add per-query personalization on top of the existing Meilisearch index by passing a `personalize.userContext` string on every search. The user context is built server-side in Scout from behavioral signals (search history, filter selections, clicks, add-to-cart, current cart) and declarative profile data, then sent to a reranker (Cohere Rerank 3.5 or similar).
+Add per-query personalization on top of the existing Meilisearch index by passing a `personalize.userContext` string on every search. The user context is built server-side in RRE from behavioral signals (search history, filter selections, clicks, add-to-cart, current cart) and declarative profile data, then sent to a reranker (Cohere Rerank 3.5 or similar).
 
 Two phases:
 

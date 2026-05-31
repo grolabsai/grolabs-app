@@ -20,24 +20,24 @@ import {
 export const metadata = { title: "Estilo — GroLabs" };
 
 /**
- * Scout — design system styleguide.
+ * RRE — design system styleguide.
  *
  * Engineered Luxury palette (matches grolabs-landing). Every component
  * is rendered twice: once in the default DARK theme and once inside a
- * `.scout-light` wrapper that flips the tokens to LIGHT. Side-by-side
+ * `.rre-light` wrapper that flips the tokens to LIGHT. Side-by-side
  * so the design can be assessed without clicking through pages.
  *
- * The .scout-light class overrides all --s-* + shadcn HSL variables.
+ * The .rre-light class overrides all --s-* + shadcn HSL variables.
  * Everything below uses tokens (no hardcoded colors); add a swatch
  * here first, then anywhere else.
  */
 
 const ACCENT: { label: string; token: string; hex: string }[] = [
-  { label: "Accent (yellow)", token: "--scout-accent", hex: "#fae194" },
-  { label: "Accent hover", token: "--scout-accent-hover", hex: "#fcebab" },
-  { label: "Accent 50", token: "--scout-accent-50", hex: "#fff8e0" },
-  { label: "Accent 100", token: "--scout-accent-100", hex: "#fdeec4" },
-  { label: "Accent 600 (alias)", token: "--scout-accent-600", hex: "= kinetic yellow" },
+  { label: "Accent (yellow)", token: "--rre-accent", hex: "#fae194" },
+  { label: "Accent hover", token: "--rre-accent-hover", hex: "#fcebab" },
+  { label: "Accent 50", token: "--rre-accent-50", hex: "#fff8e0" },
+  { label: "Accent 100", token: "--rre-accent-100", hex: "#fdeec4" },
+  { label: "Accent 600 (alias)", token: "--rre-accent-600", hex: "= kinetic yellow" },
 ];
 
 const SURFACES_DARK = [
@@ -126,7 +126,7 @@ export default function StyleguidePage() {
                     style={{
                       width: 48,
                       height: 48,
-                      background: "var(--scout-accent)",
+                      background: "var(--rre-accent)",
                       borderRadius: `var(${r.token})`,
                       margin: "0 auto 6px",
                     }}
@@ -165,7 +165,7 @@ export default function StyleguidePage() {
       <TierHeading
         tag="RRE"
         title="Revenue Recovery Engine"
-        body="The admin app (previously called Scout). Patterns below are the ones shown on every internal screen — forms, tables, nav, sidebar."
+        body="The admin app (RRE). Patterns below are the ones shown on every internal screen — forms, tables, nav, sidebar."
       />
 
       <Pair title="RRE · Buttons">
@@ -248,7 +248,7 @@ function PrefixLegend() {
       <PrefixCell
         tag="RRE"
         label="Revenue Recovery Engine"
-        body="Admin app (was Scout). Forms, tables, nav, sidebar."
+        body="Admin app (RRE). Forms, tables, nav, sidebar."
       />
     </div>
   );
@@ -264,8 +264,8 @@ function PrefixCell({ tag, label, body }: { tag: string; label: string; body: st
             alignItems: "center",
             justifyContent: "center",
             padding: "2px 7px",
-            background: "var(--scout-accent)",
-            color: "var(--scout-accent-on)",
+            background: "var(--rre-accent)",
+            color: "var(--rre-accent-on)",
             borderRadius: 4,
             fontFamily: "var(--s-font-mono)",
             fontSize: 11,
@@ -302,8 +302,8 @@ function TierHeading({
             alignItems: "center",
             justifyContent: "center",
             padding: "3px 9px",
-            background: "var(--scout-accent)",
-            color: "var(--scout-accent-on)",
+            background: "var(--rre-accent)",
+            color: "var(--rre-accent-on)",
             borderRadius: 4,
             fontFamily: "var(--s-font-mono)",
             fontSize: 11,
@@ -372,8 +372,8 @@ function LpCtaDemo() {
       </div>
       <button
         style={{
-          background: "var(--scout-accent)",
-          color: "var(--scout-accent-on)",
+          background: "var(--rre-accent)",
+          color: "var(--rre-accent-on)",
           border: "none",
           borderRadius: 999,
           padding: "12px 28px",
@@ -420,7 +420,7 @@ function TabsDemo() {
               color: i === 0 ? "var(--s-text-strong)" : "var(--s-text-secondary)",
               borderBottom:
                 i === 0
-                  ? "2px solid var(--scout-accent)"
+                  ? "2px solid var(--rre-accent)"
                   : "2px solid transparent",
               cursor: "pointer",
               marginBottom: -1,
@@ -445,7 +445,7 @@ function Header() {
           fontSize: 11,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: "var(--scout-accent)",
+          color: "var(--rre-accent)",
           marginBottom: 8,
         }}
       >
@@ -461,7 +461,7 @@ function Header() {
           margin: 0,
         }}
       >
-        Scout design system
+        RRE design system
       </h1>
       <p
         style={{
@@ -473,7 +473,7 @@ function Header() {
         }}
       >
         Every component is shown twice — on the left in the default dark
-        Engineered Luxury theme, on the right inside a <code style={codeStyle}>.scout-light</code>{" "}
+        Engineered Luxury theme, on the right inside a <code style={codeStyle}>.rre-light</code>{" "}
         wrapper that flips the tokens to light. Anything not yet tokenized
         will look identical in both columns &mdash; that&rsquo;s a bug, not a feature.
       </p>
@@ -506,7 +506,7 @@ function Pair({ title, children }: { title: string; children: React.ReactNode })
           <PaneLabel>Dark</PaneLabel>
           {dark}
         </div>
-        <div className="scout-light" style={paneLightStyle}>
+        <div className="rre-light" style={paneLightStyle}>
           <PaneLabel light>Light</PaneLabel>
           {light}
         </div>
@@ -540,7 +540,7 @@ function PaneLabel({ light, children }: { light?: boolean; children: React.React
         fontSize: 10,
         letterSpacing: "0.18em",
         textTransform: "uppercase",
-        color: light ? "#888" : "var(--scout-accent)",
+        color: light ? "#888" : "var(--rre-accent)",
         marginBottom: 14,
       }}
     >
@@ -583,7 +583,7 @@ function TypeRamp() {
         fontSize={42}
         textTransform="uppercase"
       >
-        GroLabs Scout
+        GroLabs RRE
       </RampRow>
       <RampRow
         label="H1 / Page title — Hanken Grotesk 600"
@@ -624,7 +624,7 @@ function TypeRamp() {
         fontSize={11}
         textTransform="uppercase"
         letterSpacing="0.18em"
-        color="var(--scout-accent)"
+        color="var(--rre-accent)"
       >
         Eyebrow label
       </RampRow>
@@ -924,7 +924,7 @@ function SelectsDemo() {
               }}
             >
               {i === 0 && (
-                <Icon icon={Check} size={12} style={{ color: "var(--scout-accent)" }} />
+                <Icon icon={Check} size={12} style={{ color: "var(--rre-accent)" }} />
               )}
               <span style={{ marginLeft: i === 0 ? 0 : 20 }}>{o}</span>
             </div>
@@ -964,7 +964,7 @@ function ChecksDemo() {
             width: 38,
             height: 22,
             borderRadius: 999,
-            background: "var(--scout-accent)",
+            background: "var(--rre-accent)",
             position: "relative",
             border: "none",
             cursor: "pointer",
@@ -1009,7 +1009,7 @@ function CardsDemo() {
           borderColor: "rgba(250,225,148,0.3)",
         }}
       >
-        <div style={{ ...labelInlineStyle, marginBottom: 6, color: "var(--scout-accent)" }}>
+        <div style={{ ...labelInlineStyle, marginBottom: 6, color: "var(--rre-accent)" }}>
           Highlighted
         </div>
         <div style={{ color: "var(--s-text)", fontSize: 13 }}>
@@ -1115,7 +1115,7 @@ function Badge({
     },
     accent: {
       bg: "rgba(250,225,148,0.12)",
-      color: "var(--scout-accent)",
+      color: "var(--rre-accent)",
       border: "rgba(250,225,148,0.3)",
     },
   };
@@ -1179,7 +1179,7 @@ function Banner({
 }) {
   const palettes = {
     success: { bg: "var(--s-success-bg)", color: "var(--s-success-text)" },
-    info: { bg: "rgba(250,225,148,0.12)", color: "var(--scout-accent)" },
+    info: { bg: "rgba(250,225,148,0.12)", color: "var(--rre-accent)" },
     warning: { bg: "var(--s-warning-bg)", color: "var(--s-warning-text)" },
     danger: { bg: "var(--s-danger-bg)", color: "var(--s-danger-text)" },
   };
@@ -1261,7 +1261,7 @@ function NavDemo() {
             icon={it.icon}
             size={14}
             style={{
-              color: it.active ? "var(--scout-accent)" : "#FFFFFF",
+              color: it.active ? "var(--rre-accent)" : "#FFFFFF",
             }}
           />
           {it.label}
@@ -1280,7 +1280,7 @@ function HeadingDemo() {
           fontSize: 11,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: "var(--scout-accent)",
+          color: "var(--rre-accent)",
           marginBottom: 8,
         }}
       >
@@ -1378,7 +1378,7 @@ const labelInlineStyle: React.CSSProperties = {
 
 const codeStyle: React.CSSProperties = {
   background: "rgba(250,225,148,0.12)",
-  color: "var(--scout-accent)",
+  color: "var(--rre-accent)",
   padding: "1px 6px",
   borderRadius: 4,
   fontFamily: "var(--s-font-mono)",

@@ -151,7 +151,7 @@ export function Note({ children }: { children: React.ReactNode }) {
         padding: "12px 14px",
         background: "var(--s-surface)",
         border: "0.5px solid var(--s-border)",
-        borderLeft: "2px solid var(--scout-accent)",
+        borderLeft: "2px solid var(--rre-accent)",
         borderRadius: "var(--s-radius-md)",
         fontSize: 13,
         color: "var(--s-text-secondary)",

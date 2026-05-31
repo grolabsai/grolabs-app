@@ -54,7 +54,7 @@ The Meilisearch demo uses **editable generic personas** (toggle "Thriller & Crim
 1. Enable the experimental flag + configure a reranker (Cohere or Jina) on the Meilisearch index.
 2. Derive a `userContext` string **at query time** from cheap signals already available:
    - Current cart contents (species, life stage, brands)
-   - Recent search/click history from this session (Scout already logs searches via the request-log panel — PR #108/109)
+   - Recent search/click history from this session (RRE already logs searches via the request-log panel — PR #108/109)
    - Profile fields the user explicitly set (pet species, weight, etc.)
 3. Concatenate into a templated sentence: *"User shops for [species], [life stage], prefers brands [X, Y], price-sensitive."*
 4. Pass on every `/search` call.
@@ -80,7 +80,7 @@ Two categories: **what the user does** (behavioral) and **what the user is** (de
 
 | Signal | Where it lives today | Effort to capture |
 |---|---|---|
-| Search queries | Scout request-log (PR #108/109) | None — already captured |
+| Search queries | RRE request-log (PR #108/109) | None — already captured |
 | Filter selections (price range, brand chip, category) | Search params, already in request payload | None — parse from existing logs |
 | Result clicks | WP plugin doesn't track yet | Medium — `POST /api/search-events` endpoint + plugin instrumentation |
 | Add-to-cart from search | WC hook `woocommerce_add_to_cart` | Medium — plugin sends event |
@@ -88,7 +88,7 @@ Two categories: **what the user does** (behavioral) and **what the user is** (de
 | Past orders | WC database | Larger — needs a sync, not just an event |
 | Time-on-page / scroll depth | Nowhere | High — usually not worth it |
 
-The first four are the meaningful ones. Search + filters are already captured; click and add-to-cart need a small WP plugin addition that POSTs `{user_id_or_session, product_id, event_type, timestamp}` back to Scout.
+The first four are the meaningful ones. Search + filters are already captured; click and add-to-cart need a small WP plugin addition that POSTs `{user_id_or_session, product_id, event_type, timestamp}` back to RRE.
 
 ### Declarative signals
 
@@ -99,7 +99,7 @@ The first four are the meaningful ones. Search + filters are already captured; c
 
 This is the pattern that makes Option A worth doing over a static cart-only context. Recipe:
 
-1. **Capture clicks with product context.** When a click event lands, look up the clicked product's attribute values (color=black, brand=Keychron, price_band=mid) — Scout already has these in `product_attribute_value`. Store the attribute *values*, not just the product ID.
+1. **Capture clicks with product context.** When a click event lands, look up the clicked product's attribute values (color=black, brand=Keychron, price_band=mid) — RRE already has these in `product_attribute_value`. Store the attribute *values*, not just the product ID.
 
 2. **Aggregate per session (or per user).** Keep a rolling window — last N events, or last X minutes. A simple `search_event` table keyed by `(instance_id, session_id, user_id_nullable)` with a JSONB `attributes` column is enough; no profile table required.
 
@@ -107,13 +107,13 @@ This is the pattern that makes Option A worth doing over a static cart-only cont
 
 4. **Inject into `userContext` at query time.** Compose a sentence from detected signals: *"User has shown interest in black products and the Keychron brand. Current cart contains [items]. Pet species: dog, life stage: senior."*
 
-The inference runs server-side in Scout in a few ms — it's aggregation over a small recent-events table, no LLM needed for the "learn black is preferred" step. The LLM only matters if we want to *summarize* a long history into a paragraph, which we don't need for Option A.
+The inference runs server-side in RRE in a few ms — it's aggregation over a small recent-events table, no LLM needed for the "learn black is preferred" step. The LLM only matters if we want to *summarize* a long history into a paragraph, which we don't need for Option A.
 
 ## 6. Build order when we pick this up
 
-1. **Add the events table + endpoint in Scout.** `search_event(instance_id, session_id, user_id, event_type, product_id, attributes_snapshot, created_at)`. RLS by `instance_id`. Rolling cleanup job (drop events older than 30 days).
-2. **Add click + add-to-cart tracking in the WP plugin.** Two new event types POSTed to Scout. Reuse the auth path already in place for search.
-3. **Build a `buildUserContext(sessionId, userId, cart)` helper in Scout** that reads recent events, detects repeated attribute values above threshold, returns the templated string. Pure logic, no external dependencies, easy to unit-test.
+1. **Add the events table + endpoint in RRE.** `search_event(instance_id, session_id, user_id, event_type, product_id, attributes_snapshot, created_at)`. RLS by `instance_id`. Rolling cleanup job (drop events older than 30 days).
+2. **Add click + add-to-cart tracking in the WP plugin.** Two new event types POSTed to RRE. Reuse the auth path already in place for search.
+3. **Build a `buildUserContext(sessionId, userId, cart)` helper in RRE** that reads recent events, detects repeated attribute values above threshold, returns the templated string. Pure logic, no external dependencies, easy to unit-test.
 4. **Pass the string into Meilisearch** on every search.
 5. **A/B against an empty `userContext`** to measure lift before investing in Option B.
 

@@ -56,7 +56,7 @@ export default function TextImportPage() {
             padding: "8px 20px",
             fontSize: 13,
             fontWeight: 600,
-            background: "var(--scout-accent)",
+            background: "var(--rre-accent)",
             color: "#fff",
             border: "none",
             borderRadius: 6,

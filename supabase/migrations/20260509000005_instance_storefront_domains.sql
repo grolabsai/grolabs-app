@@ -14,4 +14,4 @@ alter table public.instance
   add column storefront_domains text[] not null default '{}'::text[];
 
 comment on column public.instance.storefront_domains is
-  'Bare hostnames authorized to call Scout search APIs for this instance. Validated against request Origin header. Per docs/policy/search-foundations.md.';
+  'Bare hostnames authorized to call RRE search APIs for this instance. Validated against request Origin header. Per docs/policy/search-foundations.md.';

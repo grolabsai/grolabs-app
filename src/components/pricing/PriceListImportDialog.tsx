@@ -262,10 +262,10 @@ export function PriceListImportDialog({
               onDrop={onDrop}
               style={{
                 border: `2px dashed ${
-                  dragOver ? "var(--scout-accent)" : "var(--s-border-strong)"
+                  dragOver ? "var(--rre-accent)" : "var(--s-border-strong)"
                 }`,
                 background: dragOver
-                  ? "var(--scout-accent-50)"
+                  ? "var(--rre-accent-50)"
                   : "var(--s-surface-alt)",
                 padding: 40,
                 borderRadius: "var(--s-radius-lg)",

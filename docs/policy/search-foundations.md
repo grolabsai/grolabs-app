@@ -2,9 +2,9 @@ GroLabs Search Foundations — Stages 0 & 1
 
 > **Editor's note:** Reshaped 2026-05-17 to conform to Constitution Articles 1 and 12. Previous version contained pet-specific assumptions baked into core search defaults.
 >
-> **2026-05-20 addendum:** Analytics scaffolding shipped ahead of the formal Stage 4. See §16 — the WP plugin now posts both click and conversion events to Meilisearch `/events` directly (CTR + conversion rate visible in the Meilisearch Cloud dashboard), and a self-contained block bench at `src/components/analytics/` surfaces what `query_log` and Meilisearch `GET /stats` can derive. Remaining Stage 4 scope is Scout-owned event persistence (for retention beyond Meilisearch's 7-day Build-tier window) and metrics Meilisearch exposes only in its dashboard UI.
+> **2026-05-20 addendum:** Analytics scaffolding shipped ahead of the formal Stage 4. See §16 — the WP plugin now posts both click and conversion events to Meilisearch `/events` directly (CTR + conversion rate visible in the Meilisearch Cloud dashboard), and a self-contained block bench at `src/components/analytics/` surfaces what `query_log` and Meilisearch `GET /stats` can derive. Remaining Stage 4 scope is RRE-owned event persistence (for retention beyond Meilisearch's 7-day Build-tier window) and metrics Meilisearch exposes only in its dashboard UI.
 >
-> **2026-05-20 addendum (facets + in-Scout emulator):** Faceted refinement is being proven inside Scout *before* widening the WP plugin contract. See §17 for the facets evaluation plan, the search-proxy contract change, and the three-tab restructure of `/configuration/search` (Configuration / Analytics / Emulator). The emulator uses the same Meilisearch client path the public proxy uses — same documents, same filter pinning — so behaviour parity is mechanical, not aspirational. The public `/api/v1/search` contract gains `facets[]` + `facet_stats` in the response now so the plugin can adopt at its own cadence.
+> **2026-05-20 addendum (facets + in-RRE emulator):** Faceted refinement is being proven inside RRE *before* widening the WP plugin contract. See §17 for the facets evaluation plan, the search-proxy contract change, and the three-tab restructure of `/configuration/search` (Configuration / Analytics / Emulator). The emulator uses the same Meilisearch client path the public proxy uses — same documents, same filter pinning — so behaviour parity is mechanical, not aspirational. The public `/api/v1/search` contract gains `facets[]` + `facet_stats` in the response now so the plugin can adopt at its own cadence.
 
 Status: Active policy Owner: Tuncho Scope: Stages 0 and 1 of the GroLabs search roadmap. Foundations and basic search live on Wazú. Audience: Claude Code (primary), future GroLabs contributors (secondary)
 This document is the authoritative spec for the foundational search infrastructure. Read this before writing any code, viewing the file tree, or proposing implementation details. Stop at the two checkpoints marked APPROVAL REQUIRED and wait for explicit approval before proceeding.
@@ -27,7 +27,7 @@ Explicit non-goals for Stage 0+1
 
 * No instant-results dropdown widget (Stage 2).
 * No webhooks (Stage 3 — polling is sufficient).
-* ~~No click/conversion event tracking (Stage 4).~~ **Superseded** — Stage 4 shipped in plugin v0.3.0 (clicks) and v0.5.0 (conversions). See `search-events.md` for the canonical flow. The token endpoint at `/api/v1/events/token` mints short-lived Meilisearch tenant tokens that the storefront uses to POST events directly to Meilisearch's analytics API. Scout itself does NOT persist events — they live exclusively in Meilisearch Cloud's analytics dashboard. A code session looking at Scout's DB and not finding an `events` table is correct; that's by design.
+* ~~No click/conversion event tracking (Stage 4).~~ **Superseded** — Stage 4 shipped in plugin v0.3.0 (clicks) and v0.5.0 (conversions). See `search-events.md` for the canonical flow. The token endpoint at `/api/v1/events/token` mints short-lived Meilisearch tenant tokens that the storefront uses to POST events directly to Meilisearch's analytics API. RRE itself does NOT persist events — they live exclusively in Meilisearch Cloud's analytics dashboard. A code session looking at RRE's DB and not finding an `events` table is correct; that's by design.
 * No merchant-facing search configuration UI beyond connection status (Stage 5).
 * No natural-language search (Stage 6).
 * No agent insights surfaced to merchants (Stage 7).
@@ -130,7 +130,7 @@ Request: `{ instance_id, query, limit, offset, filters, sort, facets? }`. Respon
 * `facets: Record<string, Record<string, number>>` — value → count per facet name. Counts respect any active `filters`, i.e. they're restrictive (Meilisearch default). Disjunctive facet behaviour (Algolia-style "all values, counts respect remaining filters") is explicitly out of scope for this iteration — it costs N+1 queries and isn't needed until merchants have UIs that benefit from it.
 * `facet_stats: Record<string, { min: number, max: number }>` — emitted only for numeric facets where Meilisearch returned stats (today: `price`).
 
-Facet *labels* are not translated by the proxy. Per CLAUDE.md §5, data labels come from the DB, never from Scout-side i18n. The proxy returns raw facet values (brand names, category IDs); the consumer renders.
+Facet *labels* are not translated by the proxy. Per CLAUDE.md §5, data labels come from the DB, never from RRE-side i18n. The proxy returns raw facet values (brand names, category IDs); the consumer renders.
 
 **`matched_variation` shape.** When non-null, `matched_variation` is a **full variant object** matching the exact shape of entries in `document.variants[]`: `variation_id`, `sku`, `attributes` (Record<string,string> with slug keys per §4), `price`, `sale_price`, `in_stock`, `stock_quantity`, `image_url`. Not just a `variation_id` reference — the whole object, so the plugin can render a card without a second lookup. `null` for `simple` products and for `variable_multi` products with no in-stock variation found.
 Variant selection logic
@@ -233,9 +233,9 @@ These open questions have been resolved through Tuncho's approval:
 
 This section is an honest changelog, not new policy. It records work that landed after the original spec was written so future readers don't assume Stage 4 is empty.
 
-**2026-05-09 — `queryUid` capture (Scout side).** `searchInstance` sends `Meili-Include-Metadata: true` on every search; `/api/v1/search` forwards `metadata.queryUid` / `requestUid` / `indexUid` to the storefront in the response body. See `src/lib/search/meilisearch-client.ts` and `src/app/api/v1/search/route.ts`.
+**2026-05-09 — `queryUid` capture (RRE side).** `searchInstance` sends `Meili-Include-Metadata: true` on every search; `/api/v1/search` forwards `metadata.queryUid` / `requestUid` / `indexUid` to the storefront in the response body. See `src/lib/search/meilisearch-client.ts` and `src/app/api/v1/search/route.ts`.
 
-**2026-05-09 — events token endpoint.** `POST /api/v1/events/token` mints a short-lived Meilisearch tenant token (CORS-gated to registered storefront domains, rate-limited) so the WP plugin can POST events directly to Meilisearch `/events` without involving Scout on the hot path. See `src/app/api/v1/events/token/route.ts`.
+**2026-05-09 — events token endpoint.** `POST /api/v1/events/token` mints a short-lived Meilisearch tenant token (CORS-gated to registered storefront domains, rate-limited) so the WP plugin can POST events directly to Meilisearch `/events` without involving RRE on the hot path. See `src/app/api/v1/events/token/route.ts`.
 
 **2026-05-09 (plugin) — click + conversion events.** The WP plugin uses the events token to post both `click` and `conversion` events to Meilisearch. Confirmed live by the Cloud dashboard's non-zero CTR + conversion rate on 2026-05-20. Conversion is one-per-`queryUid` (Meilisearch's hard constraint).
 
@@ -243,22 +243,22 @@ This section is an honest changelog, not new policy. It records work that landed
 
 | Block | Source |
 |---|---|
-| SearchVolume, NoResultRate, Latency, TopQueries, TopNoResultQueries, StorefrontBreakdown | `query_log` (Scout, RLS-scoped to instance members) |
+| SearchVolume, NoResultRate, Latency, TopQueries, TopNoResultQueries, StorefrontBreakdown | `query_log` (RRE, RLS-scoped to instance members) |
 | IndexHealth, IndexSize, FieldDistribution | Meilisearch `GET /stats` |
 
 **Known gaps that need a future Stage 4 doc to formalize:**
 
 * Meilisearch exposes no read API for aggregated analytics (CTR, conversion rate, average click position, top queries from its side, geo). These stay Cloud-dashboard-only unless we own them.
-* No Scout-side event store yet. If we need history beyond Meilisearch's 7-day Build-tier retention or breakdowns by `instance_id` / WC product type / funnel stage, the WP plugin needs to double-post to a new Scout endpoint that persists to Supabase. The wiring is in place: `queryUid` already crosses the Scout↔storefront boundary, so we only need the ingest endpoint and a target table.
+* No RRE-side event store yet. If we need history beyond Meilisearch's 7-day Build-tier retention or breakdowns by `instance_id` / WC product type / funnel stage, the WP plugin needs to double-post to a new RRE endpoint that persists to Supabase. The wiring is in place: `queryUid` already crosses the RRE↔storefront boundary, so we only need the ingest endpoint and a target table.
 * No Stage 4 policy doc exists yet (`search-events.md` is still referenced as future work in §14). Spec it out before building the event store.
 
-17. Facets + in-Scout emulator (added 2026-05-20)
+17. Facets + in-RRE emulator (added 2026-05-20)
 
-The decision recorded here: **prove faceted search inside Scout before broadening the WP plugin's UI to render facets.** The proxy gains the facets contract now (§7 amendment) so the plugin can adopt at its own cadence, but the first consumer is a staff-only emulator on `/configuration/search` that exercises the exact same Meilisearch path the storefront will hit.
+The decision recorded here: **prove faceted search inside RRE before broadening the WP plugin's UI to render facets.** The proxy gains the facets contract now (§7 amendment) so the plugin can adopt at its own cadence, but the first consumer is a staff-only emulator on `/configuration/search` that exercises the exact same Meilisearch path the storefront will hit.
 
 ### Why an emulator first
 
-Storefront facet UIs are deceptively expensive — they bring in disjunctive-facet semantics, range sliders, filter-state serialization, and a plugin-side cache invalidation story. Building the merchant-facing surface inside Scout first means:
+Storefront facet UIs are deceptively expensive — they bring in disjunctive-facet semantics, range sliders, filter-state serialization, and a plugin-side cache invalidation story. Building the merchant-facing surface inside RRE first means:
 
 * The facets/filters contract gets a real consumer immediately, with stack traces and instant iteration, instead of waiting for a plugin release cycle.
 * We see Meilisearch's `facetDistribution` / `facetStats` shape against real merchant data, not a fixture, before promising it to a third-party plugin.

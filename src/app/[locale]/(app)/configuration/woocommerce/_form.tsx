@@ -211,7 +211,7 @@ export function WooCommerceForm({
                   fontSize: 12,
                   background: "transparent",
                   border: "none",
-                  color: "var(--scout-accent)",
+                  color: "var(--rre-accent)",
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -242,7 +242,7 @@ export function WooCommerceForm({
                 fontSize: 12,
                 background: "transparent",
                 border: "none",
-                color: "var(--scout-accent)",
+                color: "var(--rre-accent)",
                 cursor: "pointer",
                 padding: 0,
               }}
@@ -308,7 +308,7 @@ export function WooCommerceForm({
       {/* Field-mapping detection ─────────────────────────────────────────
        *  Probes the connected WC site to figure out where brand / barcode /
        *  cost are stored, so a follow-up "Set as write target" UI can let
-       *  the user pick where Scout pushes data back. Read-only — no WC
+       *  the user pick where RRE pushes data back. Read-only — no WC
        *  data is modified by this button. */}
       <DetectFieldSinksSection
         canRun={hasConsumerSecret && !!initialValues.siteUrl.trim()}

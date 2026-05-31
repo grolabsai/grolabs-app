@@ -419,7 +419,7 @@ export async function syncProductsToWordPress(
 
   for (const p of products) {
     const projection = mapProductToWooCommerce(p, {
-      categoryIdByScoutId: categorySync.idMap,
+      categoryIdByRreId: categorySync.idMap,
     });
     if (projection.variations.length === 0) {
       productResults.push({

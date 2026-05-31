@@ -5,7 +5,7 @@
  *
  * Stage 0 (this PR) only needs types for the meilisearch_client module's
  * public surface and the token endpoint's request/response. The full
- * ScoutSearchDocument shape lands with Stage 1's document builder.
+ * RreSearchDocument shape lands with Stage 1's document builder.
  */
 
 /** Naming convention: per-instance Meilisearch index for instance N is `inst_N`. */
@@ -43,13 +43,13 @@ export type MeilisearchHealth = {
 //
 // Per docs/policy/search-foundations.md §4.
 
-/** A single variant inside `ScoutSearchDocument.variants[]`.
+/** A single variant inside `RreSearchDocument.variants[]`.
  *
  * `attributes` keys MUST be slugs (e.g. `pa_size`, not `Tamaño`). Per the
  * locked contract in PR #68 (plugin v0.2 consumer): keys come from the WC
  * taxonomy slug; values stay as the human-readable option label.
  */
-export type ScoutSearchVariant = {
+export type RreSearchVariant = {
   variation_id: number;
   sku: string | null;
   attributes: Record<string, string>;
@@ -71,7 +71,7 @@ export type VariationSummary = {
   in_stock_summary: { any_in_stock: boolean; all_in_stock: boolean };
 };
 
-export type ScoutAttributes = {
+export type RreAttributes = {
   species: string[];
   lifestage: string[];
   breed_compatibility: string[];
@@ -84,7 +84,7 @@ export type ScoutAttributes = {
 };
 
 /** The full document indexed in Meilisearch. Per §4. */
-export type ScoutSearchDocument = {
+export type RreSearchDocument = {
   id: number;
   instance_id: number;
   woocommerce_id: number | null;
@@ -102,7 +102,7 @@ export type ScoutSearchDocument = {
   tags: string[];
   brand: string | null;
 
-  scout_attributes: ScoutAttributes;
+  scout_attributes: RreAttributes;
   /** Dynamic per-attribute block — value array per `product_attribute.attribute_code`
    * for list-type attributes marked `is_filterable = true`. Drives the
    * dynamic facet rail in the emulator and (when the WP plugin opts in)
@@ -110,7 +110,7 @@ export type ScoutSearchDocument = {
    * are a follow-up. See document-builder.ts for the projection rules. */
   attributes: Record<string, string[]>;
   variation_summary: VariationSummary;
-  variants: ScoutSearchVariant[];
+  variants: RreSearchVariant[];
 
   price: number | null;
   sale_price: number | null;
@@ -144,10 +144,10 @@ export type SearchRequest = {
 
 /** Per the PR #68 contract: matched_variation is a full variant object,
  * not a reference. Same shape as `document.variants[]` entries. */
-export type MatchedVariation = ScoutSearchVariant;
+export type MatchedVariation = RreSearchVariant;
 
 export type SearchHit = {
-  document: ScoutSearchDocument;
+  document: RreSearchDocument;
   matched_variation: MatchedVariation | null;
   _score?: number;
 };

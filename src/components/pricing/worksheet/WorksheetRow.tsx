@@ -228,7 +228,7 @@ export function WorksheetRow({
                 border: "none",
                 background: "transparent",
                 color: item.manual_override
-                  ? "var(--scout-accent)"
+                  ? "var(--rre-accent)"
                   : "var(--s-border-strong)",
                 borderRadius: "var(--s-radius-sm)",
                 cursor: item.manual_override ? "pointer" : "default",
@@ -290,7 +290,7 @@ function CellInput({
         padding: "4px 6px",
         fontFamily: "var(--s-font-mono)",
         fontSize: 12,
-        border: "1px solid var(--scout-accent)",
+        border: "1px solid var(--rre-accent)",
         borderRadius: "var(--s-radius-sm)",
         background: "var(--s-surface)",
         color: "var(--s-text)",

@@ -24,16 +24,16 @@ No `components.json` found. shadcn is not installed.
 
 ## Design Tokens
 
-File: `downloads/src/app/globals.css`. Custom CSS-var system, prefix `--s-*` / `--scout-*`, ported verbatim from a sibling app called GroLabs (prefix renamed `bl-` → `s-`). No `.dark` block exists.
+File: `downloads/src/app/globals.css`. Custom CSS-var system, prefix `--s-*` / `--rre-*`, ported verbatim from a sibling app called GroLabs (prefix renamed `bl-` → `s-`). No `.dark` block exists.
 
 ```css
 :root {
-  --scout-accent: #378ADD;
-  --scout-accent-hover: #185FA5;
-  --scout-accent-50: #E6F1FB;
-  --scout-accent-100: #B5D4F4;
-  --scout-accent-600: #185FA5;
-  --scout-accent-800: #0C447C;
+  --rre-accent: #378ADD;
+  --rre-accent-hover: #185FA5;
+  --rre-accent-50: #E6F1FB;
+  --rre-accent-100: #B5D4F4;
+  --rre-accent-600: #185FA5;
+  --rre-accent-800: #0C447C;
   --s-bg: #FAFAF9;
   --s-surface: #FFFFFF;
   --s-surface-alt: #F5F5F4;
@@ -118,7 +118,7 @@ supabase migration new <name>
 
 ## Environment Variables
 
-From `downloads/scout-admin/.env.example`:
+From `downloads/grolabs-rre/.env.example`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`

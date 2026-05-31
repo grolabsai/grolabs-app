@@ -1,8 +1,8 @@
 -- ============================================================================
--- Scout Phase 1 — Initial schema
+-- RRE Phase 1 — Initial schema
 -- ============================================================================
 --
--- Purpose: Create the complete Scout catalog management database structure,
+-- Purpose: Create the complete RRE catalog management database structure,
 -- designed to support multi-tenancy, multi-language content (via translation
 -- tables), copy-on-signup templates, and eventual integrations with Medusa,
 -- WooCommerce, Shopify, and Algolia.
@@ -47,7 +47,7 @@ CREATE TABLE tenant (
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE tenant IS 'Each row is one Scout customer workspace. All tenant-scoped tables FK to this.';
+COMMENT ON TABLE tenant IS 'Each row is one RRE customer workspace. All tenant-scoped tables FK to this.';
 COMMENT ON COLUMN tenant.integrations_config IS 'JSON holding Algolia, Medusa, WooCommerce, Shopify API credentials per tenant.';
 COMMENT ON COLUMN tenant.primary_locale IS 'BCP 47 format. Base table values are authored in this locale.';
 COMMENT ON COLUMN tenant.supported_locales IS 'Array of BCP 47 codes the tenant has enabled. Must include primary_locale.';
@@ -925,7 +925,7 @@ CREATE TABLE IF NOT EXISTS scout_schema_version (
 );
 
 INSERT INTO scout_schema_version (version, description) VALUES
-  ('20260422000001', 'Initial Scout Phase 1 schema: multi-tenant catalog with translation tables');
+  ('20260422000001', 'Initial RRE Phase 1 schema: multi-tenant catalog with translation tables');
 
 -- ============================================================================
 -- DONE

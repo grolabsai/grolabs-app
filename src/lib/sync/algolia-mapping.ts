@@ -82,7 +82,7 @@ export type AlgoliaRecord = {
 
 export type FieldMappingRow = {
   /** Path into the GroLabs data (informational, displayed in the modal). */
-  scoutField: string;
+  rreField: string;
   /** Algolia attribute name. */
   algoliaField: string;
   required: boolean;
@@ -94,24 +94,24 @@ export type FieldMappingRow = {
  * — the actual projection lives in `mapVariantToAlgolia` below.
  */
 export const ALGOLIA_FIELD_MAPPINGS: FieldMappingRow[] = [
-  { scoutField: "product_variant.sku", algoliaField: "objectID", required: true, note: "Identificador único en Algolia. Se usa el SKU de cada variante." },
-  { scoutField: "product.product_name + variant.variant_name", algoliaField: "name", required: false, note: "Nombre completo del producto + variante." },
-  { scoutField: "product.short_description", algoliaField: "short_description", required: false, note: "Descripción corta para tarjetas de búsqueda." },
-  { scoutField: "product.long_description", algoliaField: "description", required: false, note: "Descripción completa." },
-  { scoutField: "product.product_id", algoliaField: "product_id", required: false, note: "ID interno; útil para distinct/groupBy en Algolia." },
-  { scoutField: "product.slug", algoliaField: "slug", required: false, note: "Slug del producto base." },
-  { scoutField: "product.brand.brand_name", algoliaField: "brand", required: false, note: "Marca." },
-  { scoutField: "product_category_link.category.category_name", algoliaField: "categories", required: false, note: "Array con todas las categorías asociadas." },
-  { scoutField: "product_category_link.category (is_primary)", algoliaField: "primary_category", required: false, note: "Categoría marcada como principal." },
-  { scoutField: "product_variant.barcode", algoliaField: "barcode", required: false, note: "Código de barras (UPC/EAN)." },
-  { scoutField: "product_variant.weight_grams", algoliaField: "weight_grams", required: false, note: "Peso en gramos para filtros numéricos." },
-  { scoutField: "product_pricing.list_price (retail)", algoliaField: "price", required: false, note: "Precio de lista del canal retail." },
-  { scoutField: "product_pricing.cost_price (retail)", algoliaField: "cost_price", required: false, note: "Costo del canal retail." },
-  { scoutField: "product_pricing.currency", algoliaField: "currency", required: false, note: "Código de moneda (GTQ por defecto)." },
-  { scoutField: "product_media.image_url (is_primary)", algoliaField: "image", required: false, note: "URL de la imagen principal." },
-  { scoutField: "product_media.image_url[]", algoliaField: "images", required: false, note: "Array de todas las URLs de imágenes ordenadas." },
-  { scoutField: "product_variant.is_active && product.is_active", algoliaField: "in_stock", required: false, note: "Booleano derivado: producto activo y variante activa." },
-  { scoutField: "product_variant.is_active", algoliaField: "is_active", required: false, note: "Estado activo de la variante." },
+  { rreField: "product_variant.sku", algoliaField: "objectID", required: true, note: "Identificador único en Algolia. Se usa el SKU de cada variante." },
+  { rreField: "product.product_name + variant.variant_name", algoliaField: "name", required: false, note: "Nombre completo del producto + variante." },
+  { rreField: "product.short_description", algoliaField: "short_description", required: false, note: "Descripción corta para tarjetas de búsqueda." },
+  { rreField: "product.long_description", algoliaField: "description", required: false, note: "Descripción completa." },
+  { rreField: "product.product_id", algoliaField: "product_id", required: false, note: "ID interno; útil para distinct/groupBy en Algolia." },
+  { rreField: "product.slug", algoliaField: "slug", required: false, note: "Slug del producto base." },
+  { rreField: "product.brand.brand_name", algoliaField: "brand", required: false, note: "Marca." },
+  { rreField: "product_category_link.category.category_name", algoliaField: "categories", required: false, note: "Array con todas las categorías asociadas." },
+  { rreField: "product_category_link.category (is_primary)", algoliaField: "primary_category", required: false, note: "Categoría marcada como principal." },
+  { rreField: "product_variant.barcode", algoliaField: "barcode", required: false, note: "Código de barras (UPC/EAN)." },
+  { rreField: "product_variant.weight_grams", algoliaField: "weight_grams", required: false, note: "Peso en gramos para filtros numéricos." },
+  { rreField: "product_pricing.list_price (retail)", algoliaField: "price", required: false, note: "Precio de lista del canal retail." },
+  { rreField: "product_pricing.cost_price (retail)", algoliaField: "cost_price", required: false, note: "Costo del canal retail." },
+  { rreField: "product_pricing.currency", algoliaField: "currency", required: false, note: "Código de moneda (GTQ por defecto)." },
+  { rreField: "product_media.image_url (is_primary)", algoliaField: "image", required: false, note: "URL de la imagen principal." },
+  { rreField: "product_media.image_url[]", algoliaField: "images", required: false, note: "Array de todas las URLs de imágenes ordenadas." },
+  { rreField: "product_variant.is_active && product.is_active", algoliaField: "in_stock", required: false, note: "Booleano derivado: producto activo y variante activa." },
+  { rreField: "product_variant.is_active", algoliaField: "is_active", required: false, note: "Estado activo de la variante." },
 ];
 
 /**

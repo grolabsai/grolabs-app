@@ -22,7 +22,7 @@ import {
   waitForTaskCompletion,
 } from "./meilisearch-client";
 import {
-  buildScoutSearchDocument,
+  buildRreSearchDocument,
   NotIndexableError,
   type SourceProductRow,
   type SourceVariantRow,
@@ -31,7 +31,7 @@ import {
   type SourceVariantAttribute,
   type SourceProductAttribute,
 } from "./document-builder";
-import { indexUidFor, type ScoutSearchDocument } from "./types";
+import { indexUidFor, type RreSearchDocument } from "./types";
 import {
   startBackendOperation,
   completeBackendOperation,
@@ -289,7 +289,7 @@ export async function indexProduct(
 ): Promise<IndexResult> {
   const startedAtMs = Date.now();
   let product: SourceProductRow | undefined;
-  let docs: ScoutSearchDocument[];
+  let docs: RreSearchDocument[];
   try {
     const sources = await fetchSources(instanceId, [productId]);
     product = sources.products[0];
@@ -310,7 +310,7 @@ export async function indexProduct(
       return { ok: true, skipped: true, skipReason: "product-not-found" };
     }
     docs = [
-      buildScoutSearchDocument({
+      buildRreSearchDocument({
         product,
         variants: sources.variants.filter((v) => v.product_id === productId),
         variantAttributes: sources.variantAttributes,
@@ -532,11 +532,11 @@ export async function indexAllForInstance(
       continue;
     }
 
-    const docs: ScoutSearchDocument[] = [];
+    const docs: RreSearchDocument[] = [];
     const builtIds: number[] = [];
     for (const product of sources.products) {
       try {
-        const doc = buildScoutSearchDocument({
+        const doc = buildRreSearchDocument({
           product,
           variants: sources.variants.filter((v) => v.product_id === product.product_id),
           variantAttributes: sources.variantAttributes,

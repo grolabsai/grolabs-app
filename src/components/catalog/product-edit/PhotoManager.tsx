@@ -223,9 +223,9 @@ function PhotoTile({
     setAltDraft(incomingAlt);
   }
 
-  const ringColor = photo.isPrimary ? "var(--scout-accent)" : "var(--s-border)";
+  const ringColor = photo.isPrimary ? "var(--rre-accent)" : "var(--s-border)";
   const ringWidth = photo.isPrimary ? 2 : 0.5;
-  const boxShadow = photo.isPrimary ? "0 0 0 3px var(--scout-accent-50)" : "none";
+  const boxShadow = photo.isPrimary ? "0 0 0 3px var(--rre-accent-50)" : "none";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -403,7 +403,7 @@ function PhotoTile({
               position: "absolute",
               bottom: 6,
               left: 6,
-              background: "var(--scout-accent)",
+              background: "var(--rre-accent)",
               color: "white",
               fontSize: 9,
               fontWeight: 600,

@@ -81,8 +81,8 @@ export function BrandList({
               padding: "8px 10px",
               margin: "4px 0",
               borderRadius: "var(--s-radius-md)",
-              background: "var(--scout-accent-50)",
-              borderLeft: "3px solid var(--scout-accent)",
+              background: "var(--rre-accent-50)",
+              borderLeft: "3px solid var(--rre-accent)",
               fontSize: 12,
               fontWeight: 500,
               color: "var(--s-text)",
@@ -108,7 +108,7 @@ export function BrandList({
                   type="button"
                   style={{
                     fontSize: 12,
-                    color: "var(--scout-accent)",
+                    color: "var(--rre-accent)",
                     background: "none",
                     border: "none",
                     cursor: "pointer",

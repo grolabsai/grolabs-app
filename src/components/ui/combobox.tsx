@@ -277,8 +277,8 @@ export function Combobox({
                     padding: "8px 12px",
                     fontSize: 13,
                     textAlign: "left",
-                    background: isSelected ? "var(--scout-accent-50)" : "transparent",
-                    color: isSelected ? "var(--scout-accent-800)" : "var(--s-text)",
+                    background: isSelected ? "var(--rre-accent-50)" : "transparent",
+                    color: isSelected ? "var(--rre-accent-800)" : "var(--s-text)",
                     border: "none",
                     cursor: "pointer",
                   }}
@@ -316,7 +316,7 @@ export function Combobox({
                 fontSize: 13,
                 textAlign: "left",
                 background: "transparent",
-                color: "var(--scout-accent-800, var(--scout-accent))",
+                color: "var(--rre-accent-800, var(--rre-accent))",
                 border: "none",
                 borderTop:
                   filtered.length > 0

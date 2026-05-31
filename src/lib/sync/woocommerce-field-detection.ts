@@ -1,7 +1,7 @@
 /**
  * Detect where the connected WooCommerce site stores each "first-class"
  * concept — brand, barcode, cost — and report a structured map back so the
- * user can pick where Scout should READ from and WRITE to.
+ * user can pick where RRE should READ from and WRITE to.
  *
  * Why this exists: WC stores the same concept in many possible places
  * depending on which plugins/themes are installed. Brand is the canonical

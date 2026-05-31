@@ -159,7 +159,7 @@ export function WorksheetHeader({
                 color: "var(--s-text)",
                 width: "100%",
                 background: "transparent",
-                border: "1px solid var(--scout-accent)",
+                border: "1px solid var(--rre-accent)",
                 borderRadius: "var(--s-radius-md)",
                 padding: "4px 8px",
                 marginBottom: 6,

@@ -262,7 +262,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                           href={`/pricing/changes/${r.price_batch_id}`}
                           style={{
                             fontSize: 12,
-                            color: "var(--scout-accent-800)",
+                            color: "var(--rre-accent-800)",
                             textDecoration: "none",
                           }}
                         >

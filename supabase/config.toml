@@ -1,4 +1,4 @@
-# Scout — Supabase CLI configuration
+# RRE — Supabase CLI configuration
 # Run `supabase start` to launch a local instance for development
 
 project_id = "scout"

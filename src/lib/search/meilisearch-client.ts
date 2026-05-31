@@ -4,7 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   indexUidFor,
   type MeilisearchHealth,
-  type ScoutSearchDocument,
+  type RreSearchDocument,
 } from "./types";
 
 /**
@@ -290,7 +290,7 @@ export type TaskRef = { taskUid: number };
  */
 export async function upsertDocuments(
   instanceId: number,
-  documents: ScoutSearchDocument[]
+  documents: RreSearchDocument[]
 ): Promise<TaskRef> {
   if (documents.length === 0) return { taskUid: -1 };
   const client = getClient();
@@ -432,7 +432,7 @@ export async function getServerStats(
  * public response. */
 export type RawSearchResult = {
   hits: Array<
-    ScoutSearchDocument & {
+    RreSearchDocument & {
       _matchesPosition?: Record<string, unknown>;
       /** Document with `<em>…</em>` wrapping every matched query term per
        * attribute. Only present when callers ask for highlighting (the

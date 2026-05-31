@@ -229,7 +229,7 @@ export type SiteSignals = {
 
 /**
  * Call ASE's static-HTML PDP signal extractor. Returns raw extracted
- * signals — Scout scores them against the diagnostic_check rubric.
+ * signals — RRE scores them against the diagnostic_check rubric.
  */
 export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
   const url = `${ensureBaseUrl()}/tools/pdp-signals`;

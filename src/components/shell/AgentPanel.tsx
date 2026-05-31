@@ -123,7 +123,7 @@ export function AgentPanel() {
                 height: 18,
                 padding: "0 5px",
                 borderRadius: 9,
-                background: "var(--scout-accent)",
+                background: "var(--rre-accent)",
                 color: "#18181b",
                 fontSize: 10,
                 fontWeight: 600,
@@ -413,9 +413,9 @@ function paletteFor(kind: AgentMessage["kind"]) {
     case "thinking":
       return {
         icon: Loader2,
-        accent: "var(--scout-accent)",
+        accent: "var(--rre-accent)",
         border: "var(--s-border)",
-        titleColor: "var(--scout-accent-800)",
+        titleColor: "var(--rre-accent-800)",
       };
     case "success":
       return {

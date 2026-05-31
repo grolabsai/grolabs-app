@@ -28,7 +28,7 @@ function English() {
     >
       <P>
         This Privacy Policy explains what information GroLabs collects when you
-        use our diagnostic platform (Scout) or our public free-audit widget,
+        use our diagnostic platform or our public free-audit widget,
         how we use it, who else processes it on our behalf, and the choices
         you have. We try to keep this short and concrete rather than legally
         defensive — if anything is unclear, write us.
@@ -44,7 +44,7 @@ function English() {
 
       <H2>1. Who we are</H2>
       <P>
-        GroLabs (&ldquo;we,&rdquo; &ldquo;us&rdquo;) operates the Scout admin
+        GroLabs (&ldquo;we,&rdquo; &ldquo;us&rdquo;) operates the admin
         application at <code>app.grolabs.ai</code> and the public marketing
         site at <code>grolabs.ai</code>. We are the data controller for the
         personal data described below.
@@ -210,7 +210,7 @@ function English() {
         Privacy questions and requests:{" "}
         <a
           href="mailto:privacy@grolabs.ai"
-          style={{ color: "var(--scout-accent)" }}
+          style={{ color: "var(--rre-accent)" }}
         >
           privacy@grolabs.ai
         </a>
@@ -230,7 +230,7 @@ function Spanish() {
     >
       <P>
         Esta Política de Privacidad explica qué información recolecta GroLabs
-        cuando usás nuestra plataforma de diagnóstico (Scout) o nuestro
+        cuando usás nuestra plataforma de diagnóstico o nuestro
         widget público de auditoría gratuita, cómo la usamos, quién más la
         procesa por nuestra cuenta y qué opciones tenés. Tratamos de ser
         cortos y concretos en vez de legalistas — si algo no queda claro,
@@ -248,7 +248,7 @@ function Spanish() {
       <H2>1. Quiénes somos</H2>
       <P>
         GroLabs (&ldquo;nosotros&rdquo;) opera la aplicación de
-        administración Scout en <code>app.grolabs.ai</code> y el sitio
+        administración en <code>app.grolabs.ai</code> y el sitio
         público de marketing en <code>grolabs.ai</code>. Somos el responsable
         del tratamiento de los datos personales descriptos abajo.
       </P>
@@ -428,7 +428,7 @@ function Spanish() {
         Consultas y pedidos sobre privacidad:{" "}
         <a
           href="mailto:privacy@grolabs.ai"
-          style={{ color: "var(--scout-accent)" }}
+          style={{ color: "var(--rre-accent)" }}
         >
           privacy@grolabs.ai
         </a>

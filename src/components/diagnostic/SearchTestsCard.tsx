@@ -27,7 +27,7 @@ export type SearchTestEntryGroup = {
 };
 
 const VARIANT_COLORS: Record<string, string> = {
-  canonical: "var(--scout-accent)",
+  canonical: "var(--rre-accent)",
   typo: "#facc15",
   synonym: "#60a5fa",
   plural: "#a78bfa",

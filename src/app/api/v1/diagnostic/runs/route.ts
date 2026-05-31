@@ -18,7 +18,7 @@ export const runtime = "nodejs";
  * function; this route just calls it and refuses on false.
  *
  * Used by the landing-page diagnostic widget and any third-party caller.
- * The Scout admin UI continues to call the runner directly via server
+ * The RRE admin UI continues to call the runner directly via server
  * action (startDiagnostic), not through this route.
  */
 

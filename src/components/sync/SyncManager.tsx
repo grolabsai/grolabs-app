@@ -326,8 +326,8 @@ export function SyncManager({
             display: "flex",
             gap: 12,
             padding: 16,
-            background: "var(--scout-accent-50)",
-            border: "0.5px solid var(--scout-accent-100)",
+            background: "var(--rre-accent-50)",
+            border: "0.5px solid var(--rre-accent-100)",
             borderRadius: "var(--s-radius-md)",
             marginBottom: 16,
             alignItems: "center",
@@ -338,7 +338,7 @@ export function SyncManager({
             style={{
               fontSize: 13,
               fontWeight: 500,
-              color: "var(--scout-accent-800)",
+              color: "var(--rre-accent-800)",
               marginRight: 4,
             }}
           >
@@ -650,7 +650,7 @@ function ConfigStrip({
         style={{
           marginLeft: "auto",
           fontSize: 12,
-          color: "var(--scout-accent)",
+          color: "var(--rre-accent)",
           textDecoration: "none",
           fontWeight: 500,
         }}
@@ -680,7 +680,7 @@ function Chip({
         fontSize: 12,
         fontWeight: 500,
         border: "0.5px solid var(--s-border)",
-        background: active ? "var(--scout-accent)" : "white",
+        background: active ? "var(--rre-accent)" : "white",
         color: active ? "white" : "var(--s-text)",
         cursor: "pointer",
       }}
@@ -765,7 +765,7 @@ function FieldMappingTable({
   rows,
 }: {
   rows: ReadonlyArray<{
-    scoutField: string;
+    rreField: string;
     [k: string]: string | boolean | number | undefined;
     required: boolean;
     note: string;
@@ -788,7 +788,7 @@ function FieldMappingTable({
             }}
           >
             <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
-              <code style={{ fontFamily: "var(--s-font-mono)", fontSize: 11 }}>{r.scoutField}</code>
+              <code style={{ fontFamily: "var(--s-font-mono)", fontSize: 11 }}>{r.rreField}</code>
               {r.required ? (
                 <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span>
               ) : null}

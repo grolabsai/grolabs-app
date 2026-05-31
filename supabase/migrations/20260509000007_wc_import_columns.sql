@@ -1,12 +1,12 @@
 -- WooCommerce import (v1) — schema additions per docs/policy/wc-import.md.
 --
--- One-way pull from WC into Scout's catalog tables. Idempotency key is
+-- One-way pull from WC into RRE's catalog tables. Idempotency key is
 -- (instance_id, woocommerce_id). Variations are NOT exploded into
 -- product_variant rows in v1 — the raw WC payload (including the
 -- variations array) lands in product.wc_raw for a future restructure
 -- process to consume.
 --
--- Scout's product/variant/pricing model is variant-centric (sku, price,
+-- RRE's product/variant/pricing model is variant-centric (sku, price,
 -- stock live on product_variant + product_pricing). To preserve mapped
 -- fields without creating shadow variant rows, we add the obvious
 -- columns directly on product. The future wc-import-variants process
@@ -40,7 +40,7 @@ alter table product add column if not exists sale_price numeric;
 alter table product add column if not exists cost numeric;
 alter table product add column if not exists stock_quantity integer;
 
--- product_type_id is NOT NULL in normal Scout flows, but WC has no
+-- product_type_id is NOT NULL in normal RRE flows, but WC has no
 -- analog — imports leave it null, enrichment populates later.
 alter table product alter column product_type_id drop not null;
 
@@ -50,7 +50,7 @@ create unique index if not exists uq_product_woocommerce_id
 comment on column product.woocommerce_id is
   'Stable identity for WC import (docs/policy/wc-import.md). NULL for non-imported rows.';
 comment on column product.wc_raw is
-  'Lossless preservation of unmapped WC fields. Includes variations[] array on variable products and any meta_data Scout has no column for.';
+  'Lossless preservation of unmapped WC fields. Includes variations[] array on variable products and any meta_data RRE has no column for.';
 comment on column product.sku is
   'WC-imported SKU. Lives on product (not product_variant) until wc-import-variants restructure runs.';
 comment on column product.price is

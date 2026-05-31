@@ -577,7 +577,7 @@ export function ProductEditor({
 
           <div
             style={{
-              background: "var(--scout-accent-50)",
+              background: "var(--rre-accent-50)",
               borderRadius: "var(--s-radius-lg)",
               padding: "16px 18px",
             }}
@@ -588,7 +588,7 @@ export function ProductEditor({
                 alignItems: "center",
                 gap: 8,
                 marginBottom: 12,
-                color: "var(--scout-accent-800)",
+                color: "var(--rre-accent-800)",
                 fontSize: 13,
                 fontWeight: 500,
               }}
@@ -914,12 +914,12 @@ function SummaryRow({
         fontSize: 12,
       }}
     >
-      <span style={{ color: "var(--scout-accent-800)", opacity: 0.85 }}>
+      <span style={{ color: "var(--rre-accent-800)", opacity: 0.85 }}>
         {label}
       </span>
       <span
         style={{
-          color: "var(--scout-accent-800)",
+          color: "var(--rre-accent-800)",
           fontWeight: 500,
           fontVariantNumeric: "tabular-nums",
           fontFamily: mono ? "var(--s-font-mono)" : undefined,

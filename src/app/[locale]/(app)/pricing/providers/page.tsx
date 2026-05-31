@@ -183,8 +183,8 @@ export default async function PricingProvidersPage() {
                       fontSize: 11,
                       padding: "2px 8px",
                       borderRadius: 4,
-                      background: "var(--scout-accent-50)",
-                      color: "var(--scout-accent-800)",
+                      background: "var(--rre-accent-50)",
+                      color: "var(--rre-accent-800)",
                       fontWeight: 500,
                     }}
                   >

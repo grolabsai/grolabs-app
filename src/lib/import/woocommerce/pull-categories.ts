@@ -96,7 +96,7 @@ export async function pullCategories(
   // Phase 2: resolve parent_category_id + level
   if (allRows.length > 0) {
     const wcIds = allRows.map((r) => r.woocommerce_id);
-    const { data: scoutRows, error: lookupErr } = await supabase
+    const { data: rreRows, error: lookupErr } = await supabase
       .from("category")
       .select("category_id, woocommerce_id")
       .eq("instance_id", instanceId)
@@ -105,28 +105,28 @@ export async function pullCategories(
     if (lookupErr) {
       errors.push({ message: `Parent lookup failed: ${lookupErr.message}` });
     } else {
-      const scoutIdByWcId = new Map<number, number>(
-        (scoutRows ?? []).map((r) => [Number(r.woocommerce_id), Number(r.category_id)]),
+      const rreIdByWcId = new Map<number, number>(
+        (rreRows ?? []).map((r) => [Number(r.woocommerce_id), Number(r.category_id)]),
       );
       const levels = computeCategoryLevels(allRows);
 
       for (const row of allRows) {
-        const scoutId = scoutIdByWcId.get(row.woocommerce_id);
-        if (!scoutId) continue;
-        const parentScoutId =
+        const rreId = rreIdByWcId.get(row.woocommerce_id);
+        if (!rreId) continue;
+        const parentRreId =
           row.parent_woocommerce_id != null
-            ? (scoutIdByWcId.get(row.parent_woocommerce_id) ?? null)
+            ? (rreIdByWcId.get(row.parent_woocommerce_id) ?? null)
             : null;
         const level = levels.get(row.woocommerce_id) ?? 0;
 
         const { error: updErr } = await supabase
           .from("category")
           .update({
-            parent_category_id: parentScoutId,
+            parent_category_id: parentRreId,
             level,
           })
           .eq("instance_id", instanceId)
-          .eq("category_id", scoutId);
+          .eq("category_id", rreId);
 
         if (updErr) {
           errors.push({

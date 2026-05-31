@@ -399,7 +399,7 @@ function ProspectLogoBig({
 
 function PageTypeBadge({ type }: { type: string }) {
   const palette: Record<string, { bg: string; color: string }> = {
-    homepage: { bg: "rgba(250,225,148,0.12)", color: "var(--scout-accent)" },
+    homepage: { bg: "rgba(250,225,148,0.12)", color: "var(--rre-accent)" },
     pdp: { bg: "var(--s-surface-alt)", color: "var(--s-text-secondary)" },
     category: { bg: "var(--s-surface-alt)", color: "var(--s-text-secondary)" },
   };

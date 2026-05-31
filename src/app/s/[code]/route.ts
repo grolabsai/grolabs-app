@@ -32,7 +32,7 @@ export async function GET(
     instanceId =
       (instanceRow?.instance_id as number | undefined) ?? null;
   }
-  // Fallback: instance 0 (template) so previews of the Scout admin URL
+  // Fallback: instance 0 (template) so previews of the RRE admin URL
   // still work for testing.
   if (instanceId === null) instanceId = 0;
 

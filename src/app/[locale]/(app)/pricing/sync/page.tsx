@@ -66,7 +66,7 @@ export default async function PricingSyncPage() {
             alignItems: "center",
             gap: 6,
             padding: "8px 16px",
-            background: "var(--scout-accent)",
+            background: "var(--rre-accent)",
             color: "white",
             fontSize: 14,
             fontWeight: 500,
@@ -157,7 +157,7 @@ export default async function PricingSyncPage() {
                       <Link
                         href={`/pricing/changes/${b.price_batch_id}`}
                         style={{
-                          color: "var(--scout-accent-800)",
+                          color: "var(--rre-accent-800)",
                           fontWeight: 500,
                           textDecoration: "none",
                         }}
@@ -293,7 +293,7 @@ function HistoryRow({ row }: { row: SyncHistoryRow }) {
           <Link
             href={`/pricing/changes/${row.price_batch_id}`}
             style={{
-              color: "var(--scout-accent-800)",
+              color: "var(--rre-accent-800)",
               textDecoration: "none",
             }}
           >

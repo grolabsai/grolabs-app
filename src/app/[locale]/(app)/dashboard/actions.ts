@@ -50,7 +50,7 @@ export async function addSynonym(
   });
   if (!adminKey) return { ok: false, error: "Admin key not found" };
 
-  const objectID = `scout_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const objectID = `rre_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
   const url = `https://${algolia.app_id}.algolia.net/1/indexes/${encodeURIComponent(algolia.primary_index)}/synonyms/${objectID}?forwardToReplicas=true`;
 
   try {

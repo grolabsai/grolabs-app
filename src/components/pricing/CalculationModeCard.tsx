@@ -240,9 +240,9 @@ function ModeOption({
       className={checked ? "on-light-surface" : undefined}
       style={{
         textAlign: "left",
-        background: checked ? "var(--scout-accent-50)" : "var(--s-surface)",
+        background: checked ? "var(--rre-accent-50)" : "var(--s-surface)",
         border: `2px solid ${
-          checked ? "var(--scout-accent)" : "var(--s-border)"
+          checked ? "var(--rre-accent)" : "var(--s-border)"
         }`,
         borderRadius: "var(--s-radius-md)",
         padding: 16,
@@ -294,8 +294,8 @@ function RadioDot({ checked }: { checked: boolean }) {
         width: 14,
         height: 14,
         borderRadius: "50%",
-        border: `2px solid ${checked ? "var(--scout-accent)" : "var(--s-border-strong)"}`,
-        background: checked ? "var(--scout-accent)" : "transparent",
+        border: `2px solid ${checked ? "var(--rre-accent)" : "var(--s-border-strong)"}`,
+        background: checked ? "var(--rre-accent)" : "transparent",
         boxShadow: checked
           ? "inset 0 0 0 3px var(--s-surface)"
           : "none",

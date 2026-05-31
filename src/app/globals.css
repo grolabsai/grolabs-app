@@ -13,12 +13,12 @@ svg {
    GroLabs Admin — design system
    =============================================================================
    Derived directly from the GroLabs Admin design system (see the design file
-   for origin). Prefix renamed from `bl-` → `s-` and `bloom-` → `scout-`;
+   for origin). Prefix renamed from `bl-` → `s-` and `bloom-` → `rre-`;
    tokens and values preserved verbatim so the two apps can share a visual
    language (D22: dedicated GroLabs admin, shared design language with GroLabs).
 
    Scope of this file:
-   - Tokens: GroLabs --s-* and --scout-* vars (source of truth)
+   - Tokens: GroLabs --s-* and --rre-* vars (source of truth)
    - shadcn HSL vars: mapped 1:1 to the same colors so shadcn components
      render in GroLabs's visual identity automatically
    - App shell (nav, main, topbar)
@@ -36,7 +36,7 @@ svg {
   /* =========================================================================
      GroLabs Admin — design tokens
      Engineered Luxury palette (matches grolabs-landing). Defaults to DARK
-     because that's the brand look. The `.scout-light` modifier flips
+     because that's the brand look. The `.rre-light` modifier flips
      everything to light values — used by the /styleguide split view and
      anywhere we want a light surface inside an otherwise dark app.
      ========================================================================= */
@@ -45,23 +45,23 @@ svg {
      Engineered Luxury — accent (kinetic yellow). #fae194 single source.
      Replaces the old #d4af37 kinetic gold across the app.
      ----------------------------------------------------------------------- */
-  --scout-accent: #fae194;
-  --scout-accent-hover: #fcebab;
-  --scout-accent-50: #fff8e0;
-  --scout-accent-100: #fdeec4;
+  --rre-accent: #fae194;
+  --rre-accent-hover: #fcebab;
+  --rre-accent-50: #fff8e0;
+  --rre-accent-100: #fdeec4;
   /* The "-600" and "-800" tokens used to be the older kinetic gold
      (#d4af37 / #8a6f24). Aliased to the kinetic yellow so every
      legacy usage immediately picks up the new accent — we no longer
      ship the gold tone anywhere. Don't reintroduce hardcoded gold
      hexes; if a stronger yellow is ever needed, derive a new token
      here instead of re-adding the old values. */
-  --scout-accent-600: var(--scout-accent);
-  --scout-accent-800: var(--scout-accent);
-  --scout-accent-on: #131316;            /* text/icon on yellow surfaces */
+  --rre-accent-600: var(--rre-accent);
+  --rre-accent-800: var(--rre-accent);
+  --rre-accent-on: #131316;            /* text/icon on yellow surfaces */
 
   /* ── GL fixed tokens — never theme-flipped ─────────────────────────────
      Properties that must look identical in light AND dark mode. The
-     `.scout-light` override deliberately does NOT redefine these. Use
+     `.rre-light` override deliberately does NOT redefine these. Use
      these tokens (not --s-bg / --s-text) when a surface needs to stay
      visually constant regardless of theme — e.g. the yellow field-hint
      card in the AgentPanel, kinetic-yellow CTAs on the landing page,
@@ -183,11 +183,11 @@ svg {
 }
 
 /* -----------------------------------------------------------------------------
-   Light-mode override — opt-in via `.scout-light` on any container.
+   Light-mode override — opt-in via `.rre-light` on any container.
    Used by the /styleguide split view and by future light surfaces. The
    sidebar stays dark either way (nav-surface tokens are not overridden).
    --------------------------------------------------------------------------- */
-.scout-light {
+.rre-light {
   --s-bg: #FAFAF9;
   --s-bg-deeper: #F2F2F0;
   --s-surface: #FFFFFF;
@@ -205,7 +205,7 @@ svg {
   --s-text-muted: #B4B2A9;
 
   /* The sidebar stays dark in both themes — it's the brand frame. Pin
-     every nav-* token to its dark-mode value so even when a `scout-light`
+     every nav-* token to its dark-mode value so even when a `rre-light`
      wrapper is present, the sidebar reads identically to dark mode.
      Only the content area picks up the light surface. */
   --nav-surface: #0E0E11;
@@ -261,13 +261,13 @@ svg {
    to flip the text tokens locally — without changing the surrounding
    theme.
 
-   Use case: a selected-state card paints itself in `--scout-accent-50`
+   Use case: a selected-state card paints itself in `--rre-accent-50`
    (pale yellow). In dark mode, text inside that card needs to be dark
    to be legible — but everywhere else on the page is still dark theme.
    Adding `className="on-light-surface"` flips --s-text* to dark just
    for that subtree.
 
-   Same shape as the global `.scout-light` class, just scoped to one
+   Same shape as the global `.rre-light` class, just scoped to one
    element. Stack with theme-wide light/dark however you like.
 */
 .on-light-surface {
@@ -391,7 +391,7 @@ button {
   font-size: 8.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--scout-accent);
+  color: var(--rre-accent);
   margin-top: 5px;
   white-space: nowrap;
   display: block;
@@ -472,8 +472,8 @@ button {
 .s-nav-item.active .s-nav-icon,
 .s-nav-item.active svg,
 .s-nav-item.active svg * {
-  color: var(--scout-accent) !important;
-  stroke: var(--scout-accent) !important;
+  color: var(--rre-accent) !important;
+  stroke: var(--rre-accent) !important;
 }
 .s-nav-badge {
   margin-left: auto;
@@ -600,7 +600,7 @@ button {
   cursor: pointer;
 }
 .s-breadcrumb a:hover {
-  color: var(--scout-accent);
+  color: var(--rre-accent);
 }
 .s-breadcrumb-sep {
   color: var(--s-text-muted);
@@ -657,18 +657,18 @@ button {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--scout-accent-50);
+  background: var(--rre-accent-50);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 500;
-  color: var(--scout-accent-800);
+  color: var(--rre-accent-800);
   cursor: pointer;
   border: none;
 }
 .s-user:hover {
-  background: var(--scout-accent-100);
+  background: var(--rre-accent-100);
 }
 
 /* Title row */
@@ -718,8 +718,8 @@ button {
   line-height: 1.4;
 }
 .s-tag-accent {
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-800);
+  background: var(--rre-accent-50);
+  color: var(--rre-accent-800);
 }
 .s-tag-success {
   background: var(--s-success-bg);
@@ -747,8 +747,8 @@ button {
   margin-bottom: 20px;
 }
 .s-strip.info {
-  background: var(--scout-accent-50);
-  border-left: 3px solid var(--scout-accent);
+  background: var(--rre-accent-50);
+  border-left: 3px solid var(--rre-accent);
 }
 .s-strip.success {
   background: var(--s-success-bg);
@@ -762,13 +762,13 @@ button {
   font-weight: 500;
   font-size: 13px;
 }
-.s-strip.info .s-strip-title { color: var(--scout-accent-800); }
+.s-strip.info .s-strip-title { color: var(--rre-accent-800); }
 .s-strip.success .s-strip-title { color: var(--s-success-text); }
 .s-strip-text {
   font-size: 12px;
   flex: 1;
 }
-.s-strip.info .s-strip-text { color: var(--scout-accent-800); }
+.s-strip.info .s-strip-text { color: var(--rre-accent-800); }
 .s-strip.success .s-strip-text { color: var(--s-success-text); }
 .s-strip.warning .s-strip-text { color: var(--s-text-secondary); }
 .s-strip-cta {
@@ -781,7 +781,7 @@ button {
   color: inherit;
   padding: 0;
 }
-.s-strip.info .s-strip-cta { color: var(--scout-accent); }
+.s-strip.info .s-strip-cta { color: var(--rre-accent); }
 .s-strip-cta:hover {
   text-decoration: underline;
 }
@@ -845,7 +845,7 @@ button {
   display: inline-block;
   width: 2px;
   height: 14px;
-  background: var(--scout-accent);
+  background: var(--rre-accent);
   border-radius: 1px;
   flex-shrink: 0;
 }
@@ -864,7 +864,7 @@ button {
 }
 .s-card-link {
   font-size: 12px;
-  color: var(--scout-accent);
+  color: var(--rre-accent);
   cursor: pointer;
   font-weight: 500;
   background: none;
@@ -968,7 +968,7 @@ button {
 .s-input:focus,
 .s-select:focus,
 .s-textarea:focus {
-  border-color: var(--scout-accent);
+  border-color: var(--rre-accent);
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
@@ -983,7 +983,7 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--scout-accent);
+  border-color: var(--rre-accent);
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
@@ -1070,9 +1070,9 @@ input[type="date"].s-input {
   color: var(--s-text);
 }
 .s-filter.active {
-  background: var(--scout-accent-50);
-  border-color: var(--scout-accent);
-  color: var(--scout-accent-800);
+  background: var(--rre-accent-50);
+  border-color: var(--rre-accent);
+  color: var(--rre-accent-800);
   font-weight: 500;
 }
 .s-filter-count {
@@ -1125,8 +1125,8 @@ input[type="date"].s-input {
   border: 0.5px solid var(--s-border);
 }
 .s-toggle.on {
-  background: var(--scout-accent);
-  border-color: var(--scout-accent);
+  background: var(--rre-accent);
+  border-color: var(--rre-accent);
 }
 .s-toggle::after {
   content: "";
@@ -1304,7 +1304,7 @@ input[type="date"].s-input {
 }
 .s-dot.success { background: var(--s-success); }
 .s-dot.neutral { background: var(--s-text-muted); }
-.s-dot.accent { background: var(--scout-accent); }
+.s-dot.accent { background: var(--rre-accent); }
 
 /* Product thumbnail cell */
 .s-prod-cell {
@@ -1379,16 +1379,16 @@ input[type="date"].s-input {
   background: var(--s-surface-alt);
 }
 .s-btn-primary {
-  background: var(--scout-accent);
+  background: var(--rre-accent);
   /* Dark text on yellow — the kinetic yellow accent (#fae194) has
      poor contrast with white, so the action color uses #131316. */
-  color: var(--scout-accent-on);
-  border-color: var(--scout-accent);
+  color: var(--rre-accent-on);
+  border-color: var(--rre-accent);
   font-weight: 600;
 }
 .s-btn-primary:hover {
-  background: var(--scout-accent-hover);
-  border-color: var(--scout-accent-hover);
+  background: var(--rre-accent-hover);
+  border-color: var(--rre-accent-hover);
   transform: translateY(-1px);
 }
 .s-btn-primary:active {
@@ -1457,8 +1457,8 @@ input[type="date"].s-input {
   color: var(--s-text);
 }
 .s-page-btn.active {
-  background: var(--scout-accent);
-  border-color: var(--scout-accent);
+  background: var(--rre-accent);
+  border-color: var(--rre-accent);
   color: #fff;
 }
 
@@ -1495,7 +1495,7 @@ input[type="date"].s-input {
      light theme →  inactive: gray         active: pure black */
 .s-tab.active {
   color: var(--s-text-strong);
-  border-bottom-color: var(--scout-accent);
+  border-bottom-color: var(--rre-accent);
   font-weight: 600;
 }
 
@@ -1599,7 +1599,7 @@ input[type="date"].s-input {
   color: var(--s-success-text);
 }
 .text-accent {
-  color: var(--scout-accent-800);
+  color: var(--rre-accent-800);
 }
 .text-right {
   text-align: right;
@@ -1791,9 +1791,9 @@ input[type="date"].s-input {
   color: var(--s-text);
 }
 .s-pill.active {
-  background: var(--scout-accent-50);
-  border-color: var(--scout-accent);
-  color: var(--scout-accent-800);
+  background: var(--rre-accent-50);
+  border-color: var(--rre-accent);
+  color: var(--rre-accent-800);
   font-weight: 500;
 }
 
@@ -1815,8 +1815,8 @@ input[type="date"].s-input {
   box-sizing: border-box;
 }
 .s-aside-search input:focus {
-  border-color: var(--scout-accent);
-  box-shadow: 0 0 0 3px var(--scout-accent-50);
+  border-color: var(--rre-accent);
+  box-shadow: 0 0 0 3px var(--rre-accent-50);
 }
 .s-aside-search-icon {
   position: absolute;
@@ -1858,7 +1858,7 @@ input[type="date"].s-input {
   background: var(--s-surface-hover);
 }
 .s-tree-l1.expanded {
-  color: var(--scout-accent-600);
+  color: var(--rre-accent-600);
 }
 .s-tree-caret {
   width: 12px;
@@ -1869,7 +1869,7 @@ input[type="date"].s-input {
 }
 .s-tree-l1.expanded .s-tree-caret {
   transform: rotate(90deg);
-  color: var(--scout-accent-600);
+  color: var(--rre-accent-600);
 }
 .s-tree-icon {
   width: 14px;
@@ -1878,7 +1878,7 @@ input[type="date"].s-input {
   flex-shrink: 0;
 }
 .s-tree-l1.expanded .s-tree-icon {
-  color: var(--scout-accent);
+  color: var(--rre-accent);
 }
 .s-tree-count {
   margin-left: auto;
@@ -1908,15 +1908,15 @@ input[type="date"].s-input {
   color: var(--s-text);
 }
 .s-tree-l2.selected {
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-800);
+  background: var(--rre-accent-50);
+  color: var(--rre-accent-800);
   font-weight: 500;
 }
 .s-tree-l2 .s-tree-icon {
   color: var(--s-text-muted);
 }
 .s-tree-l2.selected .s-tree-icon {
-  color: var(--scout-accent-600);
+  color: var(--rre-accent-600);
 }
 
 /* =============================================================================
@@ -1964,8 +1964,8 @@ input[type="date"].s-input {
   width: 30px;
   height: 30px;
   border-radius: var(--s-radius-md);
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-600);
+  background: var(--rre-accent-50);
+  color: var(--rre-accent-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2029,7 +2029,7 @@ input[type="date"].s-input {
   color: var(--s-text);
 }
 .s-def-row-value a {
-  color: var(--scout-accent-600);
+  color: var(--rre-accent-600);
   text-decoration: none;
 }
 .s-def-row-value a:hover {
@@ -2111,8 +2111,8 @@ input[type="date"].s-input {
   background: #CECBF6;
 }
 .s-type-glyph.num {
-  color: var(--scout-accent-600);
-  background: var(--scout-accent-50);
+  color: var(--rre-accent-600);
+  background: var(--rre-accent-50);
 }
 .s-type-glyph.text-t {
   color: var(--s-text-secondary);
@@ -2159,7 +2159,7 @@ input[type="date"].s-input {
   font-weight: 500;
 }
 .s-attr-name a:hover {
-  color: var(--scout-accent-600);
+  color: var(--rre-accent-600);
   text-decoration: underline;
 }
 
@@ -2195,9 +2195,9 @@ input[type="date"].s-input {
   text-decoration: none;
 }
 .s-opt:hover {
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-800);
-  border-color: var(--scout-accent);
+  background: var(--rre-accent-50);
+  color: var(--rre-accent-800);
+  border-color: var(--rre-accent);
 }
 
 /* Per-species two-column block */
@@ -2235,8 +2235,8 @@ input[type="date"].s-input {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--scout-accent-100);
-  color: var(--scout-accent-800);
+  background: var(--rre-accent-100);
+  color: var(--rre-accent-800);
 }
 
 /* Compact products table for the in-category list */
@@ -2319,9 +2319,9 @@ input[type="date"].s-input {
 }
 
 .s-axis-chip.selected {
-  background: var(--scout-accent-50);
-  border-color: var(--scout-accent);
-  color: var(--scout-accent-600);
+  background: var(--rre-accent-50);
+  border-color: var(--rre-accent);
+  color: var(--rre-accent-600);
   font-weight: 500;
 }
 
@@ -2331,8 +2331,8 @@ input[type="date"].s-input {
 }
 
 .s-axis-chip.add:hover {
-  color: var(--scout-accent);
-  border-color: var(--scout-accent);
+  color: var(--rre-accent);
+  border-color: var(--rre-accent);
 }
 
 .s-axis-icon {
@@ -2353,8 +2353,8 @@ input[type="date"].s-input {
   gap: 4px;
   padding: 4px 8px;
   border-radius: 99px;
-  border: 1px solid var(--scout-accent);
-  background: var(--scout-accent-50);
+  border: 1px solid var(--rre-accent);
+  background: var(--rre-accent-50);
 }
 
 .s-variant-note {
@@ -2373,7 +2373,7 @@ input[type="date"].s-input {
 }
 
 .s-variant-note:focus {
-  border-color: var(--scout-accent);
+  border-color: var(--rre-accent);
 }
 
 .s-variant-note::placeholder {
@@ -2429,7 +2429,7 @@ input[type="date"].s-input {
 }
 
 .s-import-card:hover {
-  border-color: var(--scout-accent);
+  border-color: var(--rre-accent);
 }
 
 .s-import-card.disabled {
@@ -2495,7 +2495,7 @@ input[type="date"].s-input {
 /* ============================================================================
  * Pricing module — sub-navigation tabs and dashboard atoms.
  * Matches the design tokens in docs/design/pricing/ but uses GroLabs's existing
- * --s-* / --scout-accent-* variables rather than introducing parallel tokens.
+ * --s-* / --rre-accent-* variables rather than introducing parallel tokens.
  * ============================================================================ */
 
 .pricing-tab {
@@ -2512,8 +2512,8 @@ input[type="date"].s-input {
   background: var(--s-surface-alt);
 }
 .pricing-tab.active {
-  color: var(--scout-accent);
-  border-bottom-color: var(--scout-accent);
+  color: var(--rre-accent);
+  border-bottom-color: var(--rre-accent);
 }
 
 .pricing-stat-card {
@@ -2556,7 +2556,7 @@ input[type="date"].s-input {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .pricing-batch-card:hover {
-  border-color: var(--scout-accent);
+  border-color: var(--rre-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
@@ -2576,8 +2576,8 @@ input[type="date"].s-input {
   color: var(--s-success-text);
 }
 .pricing-status-pill.synced {
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-800);
+  background: var(--rre-accent-50);
+  color: var(--rre-accent-800);
 }
 
 .pricing-brand-chip {
@@ -2598,9 +2598,9 @@ input[type="date"].s-input {
   color: var(--s-text);
 }
 .pricing-brand-chip[data-active="true"] {
-  background: var(--scout-accent-50);
-  color: var(--scout-accent-800);
-  border-color: var(--scout-accent);
+  background: var(--rre-accent-50);
+  color: var(--rre-accent-800);
+  border-color: var(--rre-accent);
 }
 
 .pricing-provider-card {
@@ -2616,7 +2616,7 @@ input[type="date"].s-input {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .pricing-provider-card:hover {
-  border-color: var(--scout-accent);
+  border-color: var(--rre-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 .pricing-provider-card[data-inactive="true"] {

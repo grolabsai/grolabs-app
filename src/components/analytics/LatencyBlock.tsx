@@ -6,7 +6,7 @@ import { MetricCard, BigValue } from "./MetricCard";
 import { analyticsLatency, type LatencyResult } from "@/lib/actions/search-analytics";
 
 /** p50 + p95 latency for both Meilisearch (`processing_time_ms`) and the
- * full Scout handler (`total_handler_ms`) over the last N days. */
+ * full RRE handler (`total_handler_ms`) over the last N days. */
 export function LatencyBlock({
   instanceId,
   days = 7,

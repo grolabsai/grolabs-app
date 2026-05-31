@@ -69,7 +69,7 @@ export function StatCard({
         style={{
           fontFamily: "var(--s-font-mono)",
           fontSize: 13,
-          color: "var(--scout-accent)",
+          color: "var(--rre-accent)",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           lineHeight: 1.4,

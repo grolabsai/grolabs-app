@@ -5,7 +5,7 @@ Owner: Tuncho
 Date: 2026-05-28
 Audience: Claude Code (future implementer), GroLabs contributors scoping the event pipeline.
 
-> **Why this doc exists.** We confirmed that Scout already acts as a *search proxy* between the
+> **Why this doc exists.** We confirmed that RRE already acts as a *search proxy* between the
 > WooCommerce storefront and Meilisearch, and we're about to layer richer event recording on top
 > (journeys, cart value, revenue findings). Being in the request path is an opportunity — but it
 > also puts us in the blast radius of storefront traffic. This captures the discussion so we can
@@ -22,7 +22,7 @@ Audience: Claude Code (future implementer), GroLabs contributors scoping the eve
 
 ## 1. What's actually deployed today (verified)
 
-- **Scout is a full query proxy, not just a token broker.** The WP plugin POSTs every search to
+- **RRE is a full query proxy, not just a token broker.** The WP plugin POSTs every search to
   `POST /api/v1/search` ([src/app/api/v1/search/route.ts](../../src/app/api/v1/search/route.ts)),
   which validates instance + origin, calls Meilisearch with the master-key client, runs the variant
   matcher, returns results to WP, and **logs every query to `query_log`** with `total_hits`,
@@ -33,7 +33,7 @@ Audience: Claude Code (future implementer), GroLabs contributors scoping the eve
   `search_rate_limit_check` RPC ([src/lib/search/rate-limit.ts](../../src/lib/search/rate-limit.ts)).
   It **fails open** on infrastructure error (serves the request if the limiter is unreachable).
 - **Events today** dual-write from the plugin to both Meilisearch (authoritative, trains relevance)
-  and Scout's `analytics_event` table (local mirror). Per `docs/policy/search-events.md` they are
+  and RRE's `analytics_event` table (local mirror). Per `docs/policy/search-events.md` they are
   **best-effort, loss-acceptable, no retries** — which was fine when they only fed relevance.
 
 ### Implication: the proxy auto-scales, but Postgres is the real ceiling
@@ -187,6 +187,6 @@ of how that question lands.
 - `docs/policy/search-foundations.md` — the proxy contract (§7), rate-limit RPC (§6).
 - `docs/policy/search-events.md` — current event flow. **This pipeline amends it:** §4
   (best-effort/loss-acceptable no longer holds once events feed revenue), and §6 ("no aggregation
-  API on Scout" — we *will* roll up on our side). Do not amend that doc without explicit sign-off.
+  API on RRE" — we *will* roll up on our side). Do not amend that doc without explicit sign-off.
 - `docs/policy/ga4-integration.md` — the poll-then-anomaly model the scheduled drainer + rule
   evaluation mirrors.

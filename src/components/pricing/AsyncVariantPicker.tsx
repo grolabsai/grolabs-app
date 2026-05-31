@@ -94,11 +94,11 @@ export function AsyncVariantPicker({
             alignItems: "center",
             gap: 6,
             padding: "6px 10px",
-            background: "var(--scout-accent-50)",
-            border: "1px solid var(--scout-accent)",
+            background: "var(--rre-accent-50)",
+            border: "1px solid var(--rre-accent)",
             borderRadius: "var(--s-radius-md)",
             fontSize: 13,
-            color: "var(--scout-accent-800)",
+            color: "var(--rre-accent-800)",
           }}
         >
           <span style={{ flex: 1 }}>{valueLabel}</span>
@@ -112,7 +112,7 @@ export function AsyncVariantPicker({
               border: "none",
               background: "transparent",
               cursor: "pointer",
-              color: "var(--scout-accent-800)",
+              color: "var(--rre-accent-800)",
               padding: 2,
             }}
           >

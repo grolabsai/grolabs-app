@@ -539,8 +539,8 @@ function ConfidencePill({
           borderRadius: 999,
           fontSize: 11,
           fontWeight: 500,
-          background: "var(--scout-accent-50)",
-          color: "var(--scout-accent-800)",
+          background: "var(--rre-accent-50)",
+          color: "var(--rre-accent-800)",
         }}
       >
         Manual

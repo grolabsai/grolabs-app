@@ -47,7 +47,7 @@ export default async function TrafficDashboardPage() {
         <p style={{ fontSize: 14, color: "var(--s-text-secondary)" }}>
           Google Analytics no está conectado para esta instancia.
         </p>
-        <Link href="/configuration/ga4" style={{ color: "var(--scout-accent)" }}>
+        <Link href="/configuration/ga4" style={{ color: "var(--rre-accent)" }}>
           Conectar Google Analytics →
         </Link>
       </div>

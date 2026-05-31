@@ -1,5 +1,5 @@
 /**
- * Shared facets contract for the search proxy and the in-Scout emulator.
+ * Shared facets contract for the search proxy and the in-RRE emulator.
  *
  * Per docs/policy/search-foundations.md §7 (facets amendment) + §17. The
  * allowlist + filter builder live here so the public `/api/v1/search` and
@@ -86,7 +86,7 @@ export function sanitizeFacets(requested: unknown): string[] {
 
 /** A single filter clause built from the emulator's facet UI. Keep this
  * shape narrow — the public proxy still accepts a raw `filters` string for
- * advanced callers; this is only for the in-Scout facet rail. */
+ * advanced callers; this is only for the in-RRE facet rail. */
 export type FacetFilter =
   | { kind: "in"; attribute: string; values: string[] }
   | { kind: "in_numeric"; attribute: string; values: number[] }

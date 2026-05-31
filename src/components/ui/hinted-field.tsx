@@ -17,7 +17,7 @@ import { Icon } from "@/components/ui/icon";
  *   3. A small ⓘ icon at the end of the field signals "there's a hint
  *      available." Tapping the icon opens it (focus also opens it).
  *
- * Any new form field in Scout should reach for HintedInput / HintedSelect.
+ * Any new form field in RRE should reach for HintedInput / HintedSelect.
  * The bare <input className="s-input" placeholder="..."> pattern is
  * forbidden — it visually reads as a "label inside" but is invisible
  * to assistive tech and clashes with the agent panel's role.

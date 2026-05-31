@@ -857,14 +857,14 @@ export function NewProductForm({
           {variants.length > 0 ? (
             <div
               style={{
-                background: "var(--scout-accent-50)",
+                background: "var(--rre-accent-50)",
                 borderRadius: "var(--s-radius-lg)",
                 padding: "16px 18px",
               }}
             >
               <div
                 style={{
-                  color: "var(--scout-accent-800)",
+                  color: "var(--rre-accent-800)",
                   fontSize: 13,
                   fontWeight: 500,
                   marginBottom: 12,
@@ -1002,8 +1002,8 @@ function ToggleField({
         width: 36,
         height: 20,
         borderRadius: 999,
-        border: `0.5px solid ${checked ? "var(--scout-accent)" : "var(--s-border)"}`,
-        background: checked ? "var(--scout-accent)" : "var(--s-surface-hover)",
+        border: `0.5px solid ${checked ? "var(--rre-accent)" : "var(--s-border)"}`,
+        background: checked ? "var(--rre-accent)" : "var(--s-surface-hover)",
         cursor: "pointer",
         padding: 0,
         transition: "background 0.15s, border-color 0.15s",
@@ -1265,8 +1265,8 @@ function AxisGenerator({
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "2px 8px",
-                  background: "var(--scout-accent-50)",
-                  color: "var(--scout-accent-800)",
+                  background: "var(--rre-accent-50)",
+                  color: "var(--rre-accent-800)",
                   borderRadius: 999,
                   fontSize: 12,
                   fontWeight: 500,
@@ -1865,10 +1865,10 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
         fontSize: 12,
       }}
     >
-      <span style={{ color: "var(--scout-accent-800)", opacity: 0.85 }}>{label}</span>
+      <span style={{ color: "var(--rre-accent-800)", opacity: 0.85 }}>{label}</span>
       <span
         style={{
-          color: "var(--scout-accent-800)",
+          color: "var(--rre-accent-800)",
           fontWeight: 500,
           fontVariantNumeric: "tabular-nums",
         }}

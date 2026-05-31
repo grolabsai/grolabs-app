@@ -9,7 +9,7 @@ Four repos make up GroLabs, cloned locally under `/Users/sasu/code/`:
 
 | Repo | Path | Role |
 |---|---|---|
-| `scout` (grolabs-core) | `/Users/sasu/code/scout` | Main application |
+| `grolabs-rre` (grolabs-core) | `/Users/sasu/code/grolabs-rre` | Main application |
 | `grolabs-wordpress-ga4` | `/Users/sasu/code/grolabs-wordpress-ga4` | GA4 plugin |
 | `grolabs-wordpress-login` | `/Users/sasu/code/grolabs-wordpress-login` | Login plugin |
 | `grolabs-wordpress-search` | `/Users/sasu/code/grolabs-wordpress-search` | Search plugin |
@@ -65,7 +65,7 @@ A dedicated vault aggregates docs from all four repos via symbolic links:
 /Users/sasu/code/grolabs-obsidian-vault/
 ├── README.md              ← vault index
 ├── Core/
-│   └── docs   → /Users/sasu/code/scout/docs
+│   └── docs   → /Users/sasu/code/grolabs-rre/docs
 └── Plugins/
     ├── GA4/
     │   ├── readme.txt → grolabs-wordpress-ga4/readme.txt

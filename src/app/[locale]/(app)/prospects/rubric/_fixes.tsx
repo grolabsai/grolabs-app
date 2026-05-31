@@ -231,7 +231,7 @@ function FixRow({
           onClick={() => setExpanded(true)}
           style={{
             fontSize: 11,
-            color: "var(--scout-accent)",
+            color: "var(--rre-accent)",
             background: "none",
             border: "none",
             cursor: "pointer",

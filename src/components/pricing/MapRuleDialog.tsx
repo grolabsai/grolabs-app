@@ -472,9 +472,9 @@ function RadioRow({
           height: 14,
           borderRadius: "50%",
           border: `2px solid ${
-            checked ? "var(--scout-accent)" : "var(--s-border-strong)"
+            checked ? "var(--rre-accent)" : "var(--s-border-strong)"
           }`,
-          background: checked ? "var(--scout-accent)" : "transparent",
+          background: checked ? "var(--rre-accent)" : "transparent",
           boxShadow: checked ? "inset 0 0 0 3px var(--s-surface)" : "none",
         }}
       />

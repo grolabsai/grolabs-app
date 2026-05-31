@@ -40,17 +40,17 @@ export function Step5Review({ categories: _categories }: { categories: Category[
     <div>
       <div className="s-card">
         <p className="s-card-label">{t("title")}</p>
-        <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 8px" }}>
+        <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 8px" }}>
           {t("summary", { bases: state.productBases.length, variants: totalVariants })}
         </p>
         {errors.length > 0 ? (
           <div
             style={{
               padding: "12px 16px",
-              borderRadius: "var(--s-radius-md)",
-              background: "var(--s-danger-bg)",
-              border: "0.5px solid var(--s-danger)",
-              color: "var(--s-danger-text)",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-danger-bg)",
+              border: "0.5px solid var(--gl-danger)",
+              color: "var(--gl-danger-text)",
               marginTop: 12,
               fontSize: 12,
             }}
@@ -88,7 +88,7 @@ export function Step5Review({ categories: _categories }: { categories: Category[
               <Icon icon={open ? ChevronDown : ChevronRight} size={14} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 500 }}>{base.baseName}</div>
-                <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 2 }}>
                   {base.categoryName} · {base.variants.length}{" "}
                   {base.variants.length === 1 ? t("variantOne") : t("variantMany")}
                 </div>
@@ -192,7 +192,7 @@ export function Step5Review({ categories: _categories }: { categories: Category[
                               }
                               style={{
                                 ...cellInput(),
-                                borderColor: v.listPrice.trim() ? undefined : "var(--s-danger)",
+                                borderColor: v.listPrice.trim() ? undefined : "var(--gl-danger)",
                               }}
                             />
                           </td>
@@ -266,8 +266,8 @@ function cellInput(): React.CSSProperties {
     height: 28,
     padding: "0 6px",
     fontSize: 12,
-    border: "0.5px solid var(--s-border)",
-    borderRadius: "var(--s-radius-sm)",
+    border: "0.5px solid var(--gl-border)",
+    borderRadius: "var(--gl-radius-sm)",
     background: "white",
     outline: "none",
   };

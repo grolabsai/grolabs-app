@@ -73,10 +73,10 @@ export default async function ProspectVocabularyPage({
 
   return (
     <div className="s-content">
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
         <Link
           href={`/prospects/${prospect.prospect_id}` as never}
-          style={{ color: "var(--s-text-tertiary)" }}
+          style={{ color: "var(--gl-text-tertiary)" }}
         >
           ← {prospect.display_name ?? prospect.url}
         </Link>

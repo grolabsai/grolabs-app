@@ -36,13 +36,13 @@ const STAGE_ICON: Record<string, typeof Search> = {
   returns: Undo2,
 };
 
-// Identity hue per probe type — backed by --s-probe-* style-guide tokens.
+// Identity hue per probe type — backed by --gl-probe-* style-guide tokens.
 const PROBE_COLOR: Record<ProbeType, string> = {
-  pdp: "var(--s-probe-pdp)",
-  category: "var(--s-probe-category)",
-  homepage: "var(--s-probe-homepage)",
-  site_wide: "var(--s-probe-site-wide)",
-  search: "var(--s-probe-search)",
+  pdp: "var(--gl-probe-pdp)",
+  category: "var(--gl-probe-category)",
+  homepage: "var(--gl-probe-homepage)",
+  site_wide: "var(--gl-probe-site-wide)",
+  search: "var(--gl-probe-search)",
 };
 
 // Display order for probe-type groups inside a stage.
@@ -144,8 +144,8 @@ export function CheckList({
   return (
     <div
       style={{
-        borderRight: "0.5px solid var(--s-border)",
-        background: "var(--s-surface-alt)",
+        borderRight: "0.5px solid var(--gl-border)",
+        background: "var(--gl-surface-alt)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -160,7 +160,7 @@ export function CheckList({
             marginBottom: 10,
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--s-text)" }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--gl-text)" }}>
             {t("listTitle")}
           </span>
           <button
@@ -189,12 +189,12 @@ export function CheckList({
             style={{
               padding: "8px 10px",
               margin: "4px 8px",
-              borderRadius: "var(--s-radius-md)",
-              background: "var(--rre-accent-50)",
-              borderLeft: "3px solid var(--rre-accent)",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-accent-50)",
+              borderLeft: "3px solid var(--gl-accent)",
               fontSize: 12,
               fontWeight: 500,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {t("form.createTitle")}
@@ -321,15 +321,15 @@ function BranchRow({
         gap: 8,
         padding: "9px 12px",
         paddingLeft: INDENT_BASE + depth * INDENT_STEP,
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         border: "none",
         background: "transparent",
         cursor: "pointer",
         textAlign: "left",
-        fontFamily: "var(--s-font)",
+        fontFamily: "var(--gl-font)",
       }}
       onMouseEnter={(e) =>
-        (e.currentTarget.style.background = "var(--s-surface-hover)")
+        (e.currentTarget.style.background = "var(--gl-surface-hover)")
       }
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
@@ -337,14 +337,14 @@ function BranchRow({
       <span
         style={{
           display: "flex",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           transition: "transform 0.12s ease",
           transform: open ? "rotate(90deg)" : "none",
         }}
       >
         <Icon icon={ChevronRight} size={13} />
       </span>
-      <span style={{ display: "flex", color: iconColor ?? "var(--s-text)" }}>
+      <span style={{ display: "flex", color: iconColor ?? "var(--gl-text)" }}>
         <Icon icon={icon} size={15} />
       </span>
       <span
@@ -353,7 +353,7 @@ function BranchRow({
           minWidth: 0,
           fontSize: 13,
           fontWeight: depth === 0 ? 600 : 500,
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -361,7 +361,7 @@ function BranchRow({
       >
         {label}
       </span>
-      <span style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+      <span style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
         {count}
       </span>
     </button>
@@ -388,7 +388,7 @@ function CheckRow({
   onClick: () => void;
 }) {
   const ProbeIcon = PROBE_ICON[check.probe_type] ?? Search;
-  const accent = accentColor ?? PROBE_COLOR[check.probe_type] ?? "var(--s-text)";
+  const accent = accentColor ?? PROBE_COLOR[check.probe_type] ?? "var(--gl-text)";
   return (
     <button
       type="button"
@@ -402,12 +402,12 @@ function CheckRow({
         padding: "7px 12px",
         // align the check icon under the parent group's icon
         paddingLeft: INDENT_BASE + depth * INDENT_STEP + 21,
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         border: "none",
-        background: selected ? "var(--s-surface-hover)" : "transparent",
+        background: selected ? "var(--gl-surface-hover)" : "transparent",
         cursor: "pointer",
         textAlign: "left",
-        fontFamily: "var(--s-font)",
+        fontFamily: "var(--gl-font)",
         opacity: check.is_active ? 1 : 0.5,
       }}
     >
@@ -427,7 +427,7 @@ function CheckRow({
         <span
           style={{
             fontSize: 12.5,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             fontWeight: 500,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -439,8 +439,8 @@ function CheckRow({
         <span
           style={{
             fontSize: 10.5,
-            color: "var(--s-text-tertiary)",
-            fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
+            color: "var(--gl-text-tertiary)",
+            fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -454,9 +454,9 @@ function CheckRow({
           title={templateLabel}
           style={{
             fontSize: 9,
-            color: "var(--s-text-tertiary)",
-            background: "var(--s-surface)",
-            border: "0.5px solid var(--s-border)",
+            color: "var(--gl-text-tertiary)",
+            background: "var(--gl-surface)",
+            border: "0.5px solid var(--gl-border)",
             padding: "1px 5px",
             borderRadius: 3,
             flexShrink: 0,
@@ -498,7 +498,7 @@ function EmptyNote({
         padding: "10px 14px",
         paddingLeft: INDENT_BASE + depth * INDENT_STEP + 8,
         fontSize: 11.5,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         fontStyle: "italic",
       }}
     >

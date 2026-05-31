@@ -8,7 +8,7 @@ import { Icon } from "@/components/ui/icon";
  * Dark/light theme toggle for the topbar.
  *
  * The app defaults to dark (the Engineered Luxury palette). Adding a
- * `.rre-light` class to <html> flips every --s-* and shadcn HSL var
+ * `.gl-light` class to <html> flips every --gl-* and shadcn HSL var
  * to the light variant defined in globals.css. We persist the user's
  * pick in localStorage under `rre-theme` and re-apply on mount.
  *
@@ -32,9 +32,9 @@ function applyTheme(theme: "dark" | "light") {
   if (typeof document === "undefined") return;
   const html = document.documentElement;
   if (theme === "light") {
-    html.classList.add("rre-light");
+    html.classList.add("gl-light");
   } else {
-    html.classList.remove("rre-light");
+    html.classList.remove("gl-light");
   }
 }
 
@@ -83,20 +83,20 @@ export function ThemeSwitcher() {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
-        background: "var(--s-surface)",
-        color: "var(--s-text-secondary)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
+        background: "var(--gl-surface)",
+        color: "var(--gl-text-secondary)",
         cursor: "pointer",
         transition: "color 0.15s, border-color 0.15s",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.color = "var(--rre-accent)";
-        e.currentTarget.style.borderColor = "var(--s-border-strong)";
+        e.currentTarget.style.color = "var(--gl-accent)";
+        e.currentTarget.style.borderColor = "var(--gl-border-strong)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.color = "var(--s-text-secondary)";
-        e.currentTarget.style.borderColor = "var(--s-border)";
+        e.currentTarget.style.color = "var(--gl-text-secondary)";
+        e.currentTarget.style.borderColor = "var(--gl-border)";
       }}
     >
       <Icon icon={showSun ? Sun : Moon} size={14} strokeWidth={1.5} />

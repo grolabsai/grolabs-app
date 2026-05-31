@@ -32,7 +32,7 @@ export default async function PricingLayout({
             style={{
               fontSize: 28,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginBottom: 4,
             }}
           >
@@ -41,7 +41,7 @@ export default async function PricingLayout({
           <p
             style={{
               fontSize: 14,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("subtitle")}

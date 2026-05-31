@@ -29,7 +29,7 @@ export default async function FunnelIndexPage() {
     // operator knows seed/RLS is wrong, instead of a silent redirect loop.
     return (
       <div className="s-content">
-        <p style={{ color: "var(--s-text-tertiary)", fontSize: 13 }}>
+        <p style={{ color: "var(--gl-text-tertiary)", fontSize: 13 }}>
           No funnel instances visible. Verify the funnel seed migration
           ran and that you&apos;re an active member of an instance.
         </p>

@@ -144,10 +144,10 @@ export function Step4Mapping() {
     <div>
       <div className="s-card">
         <p className="s-card-label">{t("title")}</p>
-        <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 4px" }}>
+        <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 4px" }}>
           {t("subtitle")}
         </p>
-        <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", margin: "0 0 16px" }}>
           {t("autoHint")}
         </p>
 
@@ -299,11 +299,11 @@ function ColumnHeader({ title, subtitle }: { title: string; subtitle: string }) 
       style={{
         paddingBottom: 8,
         marginBottom: 12,
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       <div style={{ fontSize: 12, fontWeight: 600 }}>{title}</div>
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 2 }}>
         {subtitle}
       </div>
     </div>
@@ -335,16 +335,16 @@ function FieldRow({
 }) {
   const hasBinding = boundColumnLabel !== null;
   const accent = locked
-    ? "var(--s-border)"
+    ? "var(--gl-border)"
     : isDropTarget
-      ? "var(--rre-accent)"
+      ? "var(--gl-accent)"
       : hasBinding
-        ? "var(--s-border)"
-        : "var(--s-border)";
+        ? "var(--gl-border)"
+        : "var(--gl-border)";
   const bg = isDropTarget
-    ? "var(--rre-accent-50)"
+    ? "var(--gl-accent-50)"
     : locked
-      ? "var(--s-surface-alt)"
+      ? "var(--gl-surface-alt)"
       : "white";
   return (
     <div
@@ -354,7 +354,7 @@ function FieldRow({
       style={{
         padding: "10px 12px",
         border: `1px ${locked ? "solid" : "dashed"} ${accent}`,
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         background: bg,
         display: "flex",
         flexDirection: "column",
@@ -365,10 +365,10 @@ function FieldRow({
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           {title}
-          {required ? <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span> : null}
+          {required ? <span style={{ color: "var(--gl-danger)", marginLeft: 4 }}>*</span> : null}
         </span>
         {locked ? (
-          <span title={lockHint} style={{ display: "inline-flex", color: "var(--s-text-tertiary)" }}>
+          <span title={lockHint} style={{ display: "inline-flex", color: "var(--gl-text-tertiary)" }}>
             <Icon icon={Lock} size={11} />
           </span>
         ) : null}
@@ -382,7 +382,7 @@ function FieldRow({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               padding: 0,
               display: "inline-flex",
             }}
@@ -395,7 +395,7 @@ function FieldRow({
         <div
           style={{
             fontSize: 11,
-            color: "var(--rre-accent-800)",
+            color: "var(--gl-accent-800)",
             fontFamily: "ui-monospace, monospace",
           }}
         >
@@ -405,7 +405,7 @@ function FieldRow({
         <div
           style={{
             fontSize: 11,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             fontStyle: "italic",
           }}
         >
@@ -441,9 +441,9 @@ function ColumnRow({
       onDragStart={onDragStart}
       style={{
         padding: "10px 12px",
-        border: `1px solid ${locked ? "var(--s-border)" : "var(--s-border)"}`,
-        borderRadius: "var(--s-radius-md)",
-        background: locked ? "var(--s-surface-alt)" : "white",
+        border: `1px solid ${locked ? "var(--gl-border)" : "var(--gl-border)"}`,
+        borderRadius: "var(--gl-radius-md)",
+        background: locked ? "var(--gl-surface-alt)" : "white",
         cursor: draggable ? "grab" : "not-allowed",
         opacity: hasBinding && !locked ? 0.92 : 1,
         display: "flex",
@@ -457,14 +457,14 @@ function ColumnRow({
           {name}
         </span>
         {locked ? (
-          <span style={{ display: "inline-flex", color: "var(--s-text-tertiary)" }}>
+          <span style={{ display: "inline-flex", color: "var(--gl-text-tertiary)" }}>
             <Icon icon={Lock} size={11} />
           </span>
         ) : null}
         {isAuto ? (
           <span
             title=""
-            style={{ display: "inline-flex", color: "var(--rre-accent-800)", marginLeft: 2 }}
+            style={{ display: "inline-flex", color: "var(--gl-accent-800)", marginLeft: 2 }}
           >
             <Icon icon={Sparkles} size={11} />
           </span>
@@ -479,7 +479,7 @@ function ColumnRow({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               padding: 0,
               display: "inline-flex",
             }}
@@ -492,7 +492,7 @@ function ColumnRow({
         <div
           style={{
             fontSize: 11,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -505,7 +505,7 @@ function ColumnRow({
         <div
           style={{
             fontSize: 11,
-            color: "var(--rre-accent-800)",
+            color: "var(--gl-accent-800)",
             fontFamily: "ui-monospace, monospace",
           }}
         >

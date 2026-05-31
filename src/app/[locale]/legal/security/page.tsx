@@ -110,7 +110,7 @@ function English() {
         We pick sub-processors with strong security postures: Supabase
         (SOC 2 Type II), Vercel (SOC 2 Type II), Google Cloud, AWS,
         Browserless, Railway. The full list and what each receives is in
-        our <Link href="/legal/privacy" style={{ color: "var(--rre-accent)" }}>Privacy Policy</Link>.
+        our <Link href="/legal/privacy" style={{ color: "var(--gl-accent)" }}>Privacy Policy</Link>.
         Each is bound by a Data Processing Agreement.
       </P>
 
@@ -179,7 +179,7 @@ function English() {
         email{" "}
         <a
           href="mailto:security@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           security@grolabs.ai
         </a>{" "}
@@ -202,7 +202,7 @@ function English() {
         Security questions:{" "}
         <a
           href="mailto:security@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           security@grolabs.ai
         </a>
@@ -308,7 +308,7 @@ function Spanish() {
         Supabase (SOC 2 Tipo II), Vercel (SOC 2 Tipo II), Google Cloud,
         AWS, Browserless, Railway. La lista completa y qué recibe cada uno
         está en nuestra{" "}
-        <Link href="/legal/privacy" style={{ color: "var(--rre-accent)" }}>
+        <Link href="/legal/privacy" style={{ color: "var(--gl-accent)" }}>
           Política de Privacidad
         </Link>
         . Cada uno está sujeto a un Acuerdo de Procesamiento de Datos.
@@ -385,7 +385,7 @@ function Spanish() {
         favor enviá un email a{" "}
         <a
           href="mailto:security@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           security@grolabs.ai
         </a>{" "}
@@ -417,7 +417,7 @@ function Spanish() {
         Consultas de seguridad:{" "}
         <a
           href="mailto:security@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           security@grolabs.ai
         </a>

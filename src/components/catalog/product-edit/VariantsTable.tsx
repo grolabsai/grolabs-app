@@ -196,7 +196,7 @@ export function VariantsTable({
           </tbody>
         </table>
       </div>
-      <div style={{ padding: "10px 16px", borderTop: "0.5px solid var(--s-border)" }}>
+      <div style={{ padding: "10px 16px", borderTop: "0.5px solid var(--gl-border)" }}>
         <button
           type="button"
           className="s-btn s-btn-ghost"
@@ -355,12 +355,12 @@ function VariantRow({
             alignItems: "center",
             gap: 4,
             background: "transparent",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-sm)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-sm)",
             padding: "3px 8px",
             cursor: "pointer",
             fontSize: 11,
-            color: photoCount > 0 ? "var(--s-text)" : "var(--s-text-muted)",
+            color: photoCount > 0 ? "var(--gl-text)" : "var(--gl-text-muted)",
             fontVariantNumeric: "tabular-nums",
           }}
         >
@@ -374,7 +374,7 @@ function VariantRow({
             <button
               type="button"
               className="s-btn s-btn-ghost"
-              style={{ color: "var(--s-danger)", fontSize: 11, padding: "4px 8px" }}
+              style={{ color: "var(--gl-danger)", fontSize: 11, padding: "4px 8px" }}
               onClick={handleDelete}
             >
               {t("confirm")}
@@ -398,7 +398,7 @@ function VariantRow({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              color: "var(--s-text-muted)",
+              color: "var(--gl-text-muted)",
               padding: 4,
               display: "flex",
               alignItems: "center",
@@ -412,7 +412,7 @@ function VariantRow({
     </tr>
     {photosOpen ? (
       <tr>
-        <td colSpan={10} style={{ padding: 0, background: "var(--s-surface-alt)" }}>
+        <td colSpan={10} style={{ padding: 0, background: "var(--gl-surface-alt)" }}>
           <VariantPhotosPanel
             variantName={variant.variant_name ?? variant.sku ?? `#${variant.variant_id}`}
             photos={photos}
@@ -501,12 +501,12 @@ function VariantPhotosPanel({
   };
 
   return (
-    <div style={{ padding: 16, borderTop: "0.5px solid var(--s-border)" }}>
+    <div style={{ padding: 16, borderTop: "0.5px solid var(--gl-border)" }}>
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--gl-text)" }}>
           {t("photosTitle", { name: variantName })}
         </div>
-        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 2 }}>
           {t("photosSub")}
         </div>
       </div>
@@ -575,7 +575,7 @@ function DraftVariantRow({
   }
 
   return (
-    <tr style={{ background: "var(--s-surface-alt, #fafbfc)" }}>
+    <tr style={{ background: "var(--gl-surface-alt, #fafbfc)" }}>
       <td>
         <input
           ref={firstInputRef}
@@ -660,7 +660,7 @@ function DraftVariantRow({
         />
       </td>
       <td className="text-center">
-        <span style={{ color: "var(--s-text-muted)", fontSize: 11 }}>—</span>
+        <span style={{ color: "var(--gl-text-muted)", fontSize: 11 }}>—</span>
       </td>
       <td>
         <button
@@ -840,9 +840,9 @@ function CellInput({
         minHeight: 30,
         borderRadius: 4,
         border: "1px solid transparent",
-        fontFamily: monospace ? "var(--s-font-mono)" : "inherit",
+        fontFamily: monospace ? "var(--gl-font-mono)" : "inherit",
         fontSize: 12,
-        color: display ? "var(--s-text)" : "var(--s-text-muted)",
+        color: display ? "var(--gl-text)" : "var(--gl-text-muted)",
       }}
     >
       {display || ""}

@@ -180,7 +180,7 @@ function English() {
         Questions about these Terms:{" "}
         <a
           href="mailto:legal@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           legal@grolabs.ai
         </a>
@@ -363,7 +363,7 @@ function Spanish() {
         Consultas sobre estos Términos:{" "}
         <a
           href="mailto:legal@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           legal@grolabs.ai
         </a>

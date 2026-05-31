@@ -369,7 +369,7 @@ export function MapRuleDialog({
                 checked={isActive}
                 onCheckedChange={setIsActive}
               />
-              <span style={{ fontSize: 13, color: "var(--s-text-secondary)" }}>
+              <span style={{ fontSize: 13, color: "var(--gl-text-secondary)" }}>
                 {isActive ? t("active") : t("inactive")}
               </span>
             </div>
@@ -401,10 +401,10 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 12px",
   fontSize: 14,
-  border: "1px solid var(--s-border-strong)",
-  borderRadius: "var(--s-radius-md)",
-  background: "var(--s-surface)",
-  color: "var(--s-text)",
+  border: "1px solid var(--gl-border-strong)",
+  borderRadius: "var(--gl-radius-md)",
+  background: "var(--gl-surface)",
+  color: "var(--gl-text)",
 };
 
 function Field({
@@ -422,7 +422,7 @@ function Field({
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         {label}
@@ -435,7 +435,7 @@ function Field({
 
 function Hint({ text }: { text: string }) {
   return (
-    <span style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>{text}</span>
+    <span style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>{text}</span>
   );
 }
 
@@ -461,7 +461,7 @@ function RadioRow({
         border: "none",
         cursor: "pointer",
         fontSize: 13,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
       }}
     >
       <span
@@ -472,10 +472,10 @@ function RadioRow({
           height: 14,
           borderRadius: "50%",
           border: `2px solid ${
-            checked ? "var(--rre-accent)" : "var(--s-border-strong)"
+            checked ? "var(--gl-accent)" : "var(--gl-border-strong)"
           }`,
-          background: checked ? "var(--rre-accent)" : "transparent",
-          boxShadow: checked ? "inset 0 0 0 3px var(--s-surface)" : "none",
+          background: checked ? "var(--gl-accent)" : "transparent",
+          boxShadow: checked ? "inset 0 0 0 3px var(--gl-surface)" : "none",
         }}
       />
       {label}
@@ -499,7 +499,7 @@ function PriceInput({
           top: "50%",
           transform: "translateY(-50%)",
           fontSize: 13,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           pointerEvents: "none",
         }}
       >

@@ -79,8 +79,8 @@ export default async function VocabularyPage() {
     <div className="s-content">
       <div className="s-title-row" style={{ marginBottom: 16 }}>
         <div className="s-title-inner">
-          <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
-            <Link href="/prospects/rubric" style={{ color: "var(--s-text-tertiary)" }}>
+          <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
+            <Link href="/prospects/rubric" style={{ color: "var(--gl-text-tertiary)" }}>
               ← {t("backToRubric")}
             </Link>
           </div>

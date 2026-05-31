@@ -76,8 +76,8 @@ export function AttributeList({
   return (
     <div
       style={{
-        borderRight: "0.5px solid var(--s-border)",
-        background: "var(--s-surface-alt)",
+        borderRight: "0.5px solid var(--gl-border)",
+        background: "var(--gl-surface-alt)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -93,7 +93,7 @@ export function AttributeList({
             marginBottom: 10,
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--s-text)" }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--gl-text)" }}>
             {t("title")}
           </span>
           <button
@@ -126,10 +126,10 @@ export function AttributeList({
                 borderRadius: 999,
                 border: "1px solid",
                 cursor: "pointer",
-                background: filter === f ? "var(--rre-accent)" : "transparent",
-                borderColor: filter === f ? "var(--rre-accent)" : "var(--s-border)",
-                color: filter === f ? "#fff" : "var(--s-text-secondary)",
-                fontFamily: "var(--s-font)",
+                background: filter === f ? "var(--gl-accent)" : "transparent",
+                borderColor: filter === f ? "var(--gl-accent)" : "var(--gl-border)",
+                color: filter === f ? "#fff" : "var(--gl-text-secondary)",
+                fontFamily: "var(--gl-font)",
               }}
               onClick={() => setFilter(f)}
             >
@@ -146,12 +146,12 @@ export function AttributeList({
             style={{
               padding: "8px 10px",
               margin: "4px 0",
-              borderRadius: "var(--s-radius-md)",
-              background: "var(--rre-accent-50)",
-              borderLeft: "3px solid var(--rre-accent)",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-accent-50)",
+              borderLeft: "3px solid var(--gl-accent)",
               fontSize: 12,
               fontWeight: 500,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {t("form.createTitle")}
@@ -163,7 +163,7 @@ export function AttributeList({
             style={{
               padding: "24px 12px",
               textAlign: "center",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontSize: 12,
             }}
           >
@@ -174,11 +174,11 @@ export function AttributeList({
                   type="button"
                   style={{
                     fontSize: 12,
-                    color: "var(--rre-accent)",
+                    color: "var(--gl-accent)",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    fontFamily: "var(--s-font)",
+                    fontFamily: "var(--gl-font)",
                   }}
                   onClick={() => router.push("?mode=create")}
                 >
@@ -197,7 +197,7 @@ export function AttributeList({
                 fontWeight: 600,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 padding: "8px 12px 4px",
               }}
             >
@@ -216,15 +216,15 @@ export function AttributeList({
                     alignItems: "center",
                     gap: 8,
                     padding: "7px 10px",
-                    borderRadius: "var(--s-radius-md)",
+                    borderRadius: "var(--gl-radius-md)",
                     border: "none",
                     background:
                       selectedId === attr.attribute_id
-                        ? "var(--s-surface-hover)"
+                        ? "var(--gl-surface-hover)"
                         : "transparent",
                     cursor: "pointer",
                     textAlign: "left",
-                    fontFamily: "var(--s-font)",
+                    fontFamily: "var(--gl-font)",
                   }}
                 >
                   <AttributeTypeGlyph
@@ -236,7 +236,7 @@ export function AttributeList({
                     style={{
                       flex: 1,
                       fontSize: 13,
-                      color: "var(--s-text)",
+                      color: "var(--gl-text)",
                       fontWeight: 500,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
@@ -249,9 +249,9 @@ export function AttributeList({
                     <span
                       style={{
                         fontSize: 10,
-                        color: "var(--s-text-tertiary)",
-                        background: "var(--s-surface)",
-                        border: "0.5px solid var(--s-border)",
+                        color: "var(--gl-text-tertiary)",
+                        background: "var(--gl-surface)",
+                        border: "0.5px solid var(--gl-border)",
                         padding: "1px 5px",
                         borderRadius: 3,
                         flexShrink: 0,
@@ -265,8 +265,8 @@ export function AttributeList({
                     <span
                       style={{
                         fontSize: 10,
-                        color: "var(--s-text-tertiary)",
-                        border: "0.5px solid var(--s-border)",
+                        color: "var(--gl-text-tertiary)",
+                        border: "0.5px solid var(--gl-border)",
                         padding: "1px 5px",
                         borderRadius: 3,
                         flexShrink: 0,

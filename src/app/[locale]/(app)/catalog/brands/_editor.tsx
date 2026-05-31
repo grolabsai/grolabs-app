@@ -117,7 +117,7 @@ export function BrandEditor({
           padding: 40,
         }}
       >
-        <p style={{ color: "var(--s-text-tertiary)", fontSize: 13 }}>
+        <p style={{ color: "var(--gl-text-tertiary)", fontSize: 13 }}>
           {t("empty.selectPrompt")}
         </p>
       </div>
@@ -129,7 +129,7 @@ export function BrandEditor({
 
   return (
     <div style={{ padding: "24px 28px", overflowY: "auto", height: "100%" }}>
-      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px", color: "var(--s-text)" }}>
+      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px", color: "var(--gl-text)" }}>
         {isEdit ? t("form.editTitle") : t("form.createTitle")}
       </h2>
 
@@ -155,7 +155,7 @@ export function BrandEditor({
           placeholder={t("form.fields.manufacturerPlaceholder")}
           onChange={(e) => setField("manufacturer", e.target.value)}
         />
-        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
+        <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
           {t("form.fields.manufacturerDesc")}
         </div>
       </div>
@@ -180,7 +180,7 @@ export function BrandEditor({
           gap: 12,
           marginTop: 24,
           paddingTop: 16,
-          borderTop: "0.5px solid var(--s-border)",
+          borderTop: "0.5px solid var(--gl-border)",
         }}
       >
         <button
@@ -192,10 +192,10 @@ export function BrandEditor({
           {isPending ? t("actions.saving") : t("actions.save")}
         </button>
         {saved && (
-          <span style={{ fontSize: 12, color: "var(--s-success)" }}>{t("actions.saved")}</span>
+          <span style={{ fontSize: 12, color: "var(--gl-success)" }}>{t("actions.saved")}</span>
         )}
         {error && (
-          <span style={{ fontSize: 12, color: "var(--s-danger)" }}>{error}</span>
+          <span style={{ fontSize: 12, color: "var(--gl-danger)" }}>{error}</span>
         )}
         {isEdit && brand && (
           <button
@@ -205,13 +205,13 @@ export function BrandEditor({
             style={{
               marginLeft: "auto",
               fontSize: 12,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
               background: "none",
-              border: "0.5px solid var(--s-danger)",
-              borderRadius: "var(--s-radius-md)",
+              border: "0.5px solid var(--gl-danger)",
+              borderRadius: "var(--gl-radius-md)",
               padding: "5px 10px",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
           >
             {t("actions.delete")}
@@ -236,10 +236,10 @@ function SectionHeader({
         fontWeight: 600,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         marginBottom: 12,
         paddingBottom: 6,
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         ...style,
       }}
     >
@@ -265,14 +265,14 @@ function MetaRow({
         alignItems: "center",
         padding: "6px 0",
         fontSize: 12,
-        borderBottom: "0.5px dashed var(--s-border)",
+        borderBottom: "0.5px dashed var(--gl-border)",
       }}
     >
-      <span style={{ color: "var(--s-text-tertiary)" }}>{label}</span>
+      <span style={{ color: "var(--gl-text-tertiary)" }}>{label}</span>
       <span
         style={{
-          color: "var(--s-text)",
-          fontFamily: mono ? "var(--s-font-mono, ui-monospace, monospace)" : undefined,
+          color: "var(--gl-text)",
+          fontFamily: mono ? "var(--gl-font-mono, ui-monospace, monospace)" : undefined,
           fontVariantNumeric: "tabular-nums",
         }}
       >

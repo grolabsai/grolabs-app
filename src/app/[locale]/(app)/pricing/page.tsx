@@ -142,7 +142,7 @@ export default async function PricingOverviewPage() {
             style={{
               fontSize: 18,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {tBatches("sectionTitle")}
@@ -171,7 +171,7 @@ export default async function PricingOverviewPage() {
                     style={{
                       fontSize: 15,
                       fontWeight: 600,
-                      color: "var(--s-text)",
+                      color: "var(--gl-text)",
                     }}
                   >
                     {batch.name}
@@ -187,7 +187,7 @@ export default async function PricingOverviewPage() {
                     display: "flex",
                     gap: 16,
                     fontSize: 13,
-                    color: "var(--s-text-tertiary)",
+                    color: "var(--gl-text-tertiary)",
                     marginBottom: 12,
                   }}
                 >
@@ -201,7 +201,7 @@ export default async function PricingOverviewPage() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 4,
-                        color: "var(--s-danger)",
+                        color: "var(--gl-danger)",
                       }}
                     >
                       <Icon icon={AlertTriangle} size={14} strokeWidth={2} />
@@ -215,9 +215,9 @@ export default async function PricingOverviewPage() {
                     alignItems: "center",
                     gap: 8,
                     paddingTop: 12,
-                    borderTop: "1px solid var(--s-border)",
+                    borderTop: "1px solid var(--gl-border)",
                     fontSize: 12,
-                    color: "var(--s-text-muted)",
+                    color: "var(--gl-text-muted)",
                   }}
                 >
                   <Icon icon={User} size={14} strokeWidth={2} />
@@ -248,7 +248,7 @@ export default async function PricingOverviewPage() {
             style={{
               fontSize: 18,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {tActivity("sectionTitle")}
@@ -257,7 +257,7 @@ export default async function PricingOverviewPage() {
         <p
           style={{
             fontSize: 14,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             padding: "32px 0",
             textAlign: "center",
           }}
@@ -300,7 +300,7 @@ function EmptyBatches({
         style={{
           fontSize: 16,
           fontWeight: 600,
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           marginBottom: 8,
         }}
       >
@@ -309,7 +309,7 @@ function EmptyBatches({
       <div
         style={{
           fontSize: 14,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 20,
         }}
       >

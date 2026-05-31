@@ -44,10 +44,10 @@ export default async function TrafficDashboardPage() {
         <h1 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>
           Traffic dashboard
         </h1>
-        <p style={{ fontSize: 14, color: "var(--s-text-secondary)" }}>
+        <p style={{ fontSize: 14, color: "var(--gl-text-secondary)" }}>
           Google Analytics no está conectado para esta instancia.
         </p>
-        <Link href="/configuration/ga4" style={{ color: "var(--rre-accent)" }}>
+        <Link href="/configuration/ga4" style={{ color: "var(--gl-accent)" }}>
           Conectar Google Analytics →
         </Link>
       </div>
@@ -77,7 +77,7 @@ export default async function TrafficDashboardPage() {
   return (
     <div className="s-page-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <h1 style={{ fontSize: 18, fontWeight: 600 }}>Traffic dashboard (data wiring)</h1>
-      <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+      <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
         Property: {cfg?.property_id ?? ""} · Last pull:{" "}
         {cfg?.last_pull_at ? new Date(cfg.last_pull_at).toLocaleString() : ""}
       </p>
@@ -99,14 +99,14 @@ export default async function TrafficDashboardPage() {
               key={tile.metric}
               style={{
                 padding: 12,
-                border: "0.5px solid var(--s-border)",
+                border: "0.5px solid var(--gl-border)",
                 borderRadius: 6,
                 minWidth: 200,
                 background:
-                  tile.status === "firing" ? "var(--s-danger-bg)" : undefined,
+                  tile.status === "firing" ? "var(--gl-danger-bg)" : undefined,
               }}
             >
-              <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+              <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
                 {tile.metric}
               </div>
               <div style={{ fontSize: 24, fontWeight: 600 }}>
@@ -114,7 +114,7 @@ export default async function TrafficDashboardPage() {
                   ? `${(tile.current * 100).toFixed(1)}%`
                   : tile.current.toFixed(0)}
               </div>
-              <div style={{ fontSize: 11, color: "var(--s-text-secondary)" }}>
+              <div style={{ fontSize: 11, color: "var(--gl-text-secondary)" }}>
                 Δ {tile.delta.toFixed(1)}
                 {tile.metric === "engagement_rate" ? "pp" : "%"} vs baseline{" "}
                 {tile.metric === "engagement_rate"
@@ -127,8 +127,8 @@ export default async function TrafficDashboardPage() {
                   marginTop: 4,
                   color:
                     tile.status === "firing"
-                      ? "var(--s-danger-text)"
-                      : "var(--s-success-text)",
+                      ? "var(--gl-danger-text)"
+                      : "var(--gl-success-text)",
                 }}
               >
                 {tile.status}
@@ -168,7 +168,7 @@ export default async function TrafficDashboardPage() {
             ))}
             {timeseries.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ color: "var(--s-text-tertiary)" }}>
+                <td colSpan={4} style={{ color: "var(--gl-text-tertiary)" }}>
                   no data yet
                 </td>
               </tr>
@@ -273,7 +273,7 @@ export default async function TrafficDashboardPage() {
           Active alerts ({alerts.length})
         </h2>
         {alerts.length === 0 ? (
-          <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+          <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
             No hay alertas activas
           </p>
         ) : (
@@ -283,7 +283,7 @@ export default async function TrafficDashboardPage() {
                 key={a.alert_id}
                 style={{
                   padding: 8,
-                  border: "0.5px solid var(--s-border)",
+                  border: "0.5px solid var(--gl-border)",
                   borderRadius: 6,
                   marginBottom: 8,
                 }}
@@ -293,12 +293,12 @@ export default async function TrafficDashboardPage() {
                   {a.dimension_key ? ` · ${a.dimension_key}` : null} ·{" "}
                   {a.status}
                 </div>
-                <div style={{ color: "var(--s-text-secondary)" }}>
+                <div style={{ color: "var(--gl-text-secondary)" }}>
                   observed {Number(a.observed_value).toFixed(2)} vs baseline{" "}
                   {Number(a.baseline_value).toFixed(2)} · Δ{" "}
                   {Number(a.delta_pct).toFixed(1)}%
                 </div>
-                <div style={{ color: "var(--s-text-tertiary)" }}>
+                <div style={{ color: "var(--gl-text-tertiary)" }}>
                   fired {new Date(a.fired_at).toLocaleString()}
                 </div>
               </li>

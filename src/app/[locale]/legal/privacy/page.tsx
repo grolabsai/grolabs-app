@@ -210,7 +210,7 @@ function English() {
         Privacy questions and requests:{" "}
         <a
           href="mailto:privacy@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           privacy@grolabs.ai
         </a>
@@ -428,7 +428,7 @@ function Spanish() {
         Consultas y pedidos sobre privacidad:{" "}
         <a
           href="mailto:privacy@grolabs.ai"
-          style={{ color: "var(--rre-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           privacy@grolabs.ai
         </a>

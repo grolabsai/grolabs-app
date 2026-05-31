@@ -27,7 +27,7 @@ export function PricingTabs() {
       style={{
         display: "flex",
         gap: 4,
-        borderBottom: "1px solid var(--s-border)",
+        borderBottom: "1px solid var(--gl-border)",
         marginBottom: 32,
       }}
     >

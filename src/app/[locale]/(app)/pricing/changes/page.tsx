@@ -59,13 +59,13 @@ export default async function PricingChangesPage() {
               style={{
                 fontSize: 16,
                 fontWeight: 600,
-                color: "var(--s-text)",
+                color: "var(--gl-text)",
                 marginBottom: 4,
               }}
             >
               {t("pendingLists.title")}
             </h2>
-            <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+            <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
               {t("pendingLists.subtitle")}
             </p>
           </div>
@@ -78,7 +78,7 @@ export default async function PricingChangesPage() {
               padding: "32px 0",
               textAlign: "center",
               fontSize: 13,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("pendingLists.empty")}
@@ -86,8 +86,8 @@ export default async function PricingChangesPage() {
         ) : (
           <div
             style={{
-              border: "1px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              border: "1px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               overflow: "hidden",
             }}
           >
@@ -101,8 +101,8 @@ export default async function PricingChangesPage() {
               <thead>
                 <tr
                   style={{
-                    background: "var(--s-surface-alt)",
-                    borderBottom: "1px solid var(--s-border)",
+                    background: "var(--gl-surface-alt)",
+                    borderBottom: "1px solid var(--gl-border)",
                   }}
                 >
                   <Th>{t("pendingLists.cols.provider")}</Th>
@@ -117,34 +117,34 @@ export default async function PricingChangesPage() {
                 {lists.map((l) => (
                   <tr
                     key={l.price_list_id}
-                    style={{ borderBottom: "1px solid var(--s-border)" }}
+                    style={{ borderBottom: "1px solid var(--gl-border)" }}
                   >
                     <Td>
-                      <span style={{ fontWeight: 500, color: "var(--s-text)" }}>
+                      <span style={{ fontWeight: 500, color: "var(--gl-text)" }}>
                         {l.provider_name}
                       </span>
                     </Td>
                     <Td>
-                      <span style={{ color: "var(--s-text-secondary)" }}>
+                      <span style={{ color: "var(--gl-text-secondary)" }}>
                         {l.file_name ?? ""}
                       </span>
                     </Td>
                     <Td>
-                      <span style={{ color: "var(--s-text-secondary)" }}>
+                      <span style={{ color: "var(--gl-text-secondary)" }}>
                         {formatRelative(l.import_date)}
                       </span>
                     </Td>
                     <Td>
-                      <span style={{ color: "var(--s-text-secondary)" }}>
+                      <span style={{ color: "var(--gl-text-secondary)" }}>
                         {l.effective_date ?? ""}
                       </span>
                     </Td>
                     <Td align="right">
                       <span
                         style={{
-                          fontFamily: "var(--s-font-mono)",
+                          fontFamily: "var(--gl-font-mono)",
                           fontSize: 12,
-                          color: "var(--s-text)",
+                          color: "var(--gl-text)",
                         }}
                       >
                         {l.item_count}
@@ -168,13 +168,13 @@ export default async function PricingChangesPage() {
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginBottom: 4,
             }}
           >
             {t("batches.title")}
           </h2>
-          <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+          <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
             {t("batches.subtitle")}
           </p>
         </header>
@@ -191,7 +191,7 @@ export default async function PricingChangesPage() {
               style={{
                 fontSize: 16,
                 fontWeight: 600,
-                color: "var(--s-text)",
+                color: "var(--gl-text)",
                 marginTop: 12,
                 marginBottom: 6,
               }}
@@ -201,7 +201,7 @@ export default async function PricingChangesPage() {
             <p
               style={{
                 fontSize: 13,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 maxWidth: 480,
                 margin: "0 auto",
               }}
@@ -212,8 +212,8 @@ export default async function PricingChangesPage() {
         ) : (
           <div
             style={{
-              border: "1px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              border: "1px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               overflow: "hidden",
             }}
           >
@@ -227,8 +227,8 @@ export default async function PricingChangesPage() {
               <thead>
                 <tr
                   style={{
-                    background: "var(--s-surface-alt)",
-                    borderBottom: "1px solid var(--s-border)",
+                    background: "var(--gl-surface-alt)",
+                    borderBottom: "1px solid var(--gl-border)",
                   }}
                 >
                   <Th>{t("batches.cols.name")}</Th>
@@ -243,13 +243,13 @@ export default async function PricingChangesPage() {
                 {batches.map((b) => (
                   <tr
                     key={b.price_batch_id}
-                    style={{ borderBottom: "1px solid var(--s-border)" }}
+                    style={{ borderBottom: "1px solid var(--gl-border)" }}
                   >
                     <Td>
                       <Link
                         href={`/pricing/changes/${b.price_batch_id}`}
                         style={{
-                          color: "var(--rre-accent-800)",
+                          color: "var(--gl-accent-800)",
                           fontWeight: 500,
                           textDecoration: "none",
                         }}
@@ -279,7 +279,7 @@ export default async function PricingChangesPage() {
                       <span
                         style={{
                           fontSize: 12,
-                          color: "var(--s-text-tertiary)",
+                          color: "var(--gl-text-tertiary)",
                         }}
                       >
                         {formatRelative(b.updated_at)}
@@ -316,7 +316,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {children}
@@ -353,16 +353,16 @@ function Mono({
 }) {
   const c =
     color === "muted"
-      ? "var(--s-text-tertiary)"
+      ? "var(--gl-text-tertiary)"
       : color === "warn"
         ? "#B45309"
         : color === "critical"
-          ? "var(--s-danger)"
-          : "var(--s-text)";
+          ? "var(--gl-danger)"
+          : "var(--gl-text)";
   return (
     <span
       style={{
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         fontSize: 12,
         color: c,
       }}

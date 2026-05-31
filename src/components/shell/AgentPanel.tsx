@@ -87,7 +87,7 @@ export function AgentPanel() {
           style={{
             flex: 1,
             background: "#ffffff",
-            border: "1px solid var(--s-border)",
+            border: "1px solid var(--gl-border)",
             borderRadius: 14,
             boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
             display: "flex",
@@ -106,7 +106,7 @@ export function AgentPanel() {
               fontWeight: 500,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               writingMode: "vertical-rl",
               transform: "rotate(180deg)",
             }}
@@ -123,7 +123,7 @@ export function AgentPanel() {
                 height: 18,
                 padding: "0 5px",
                 borderRadius: 9,
-                background: "var(--rre-accent)",
+                background: "var(--gl-accent)",
                 color: "#18181b",
                 fontSize: 10,
                 fontWeight: 600,
@@ -154,7 +154,7 @@ export function AgentPanel() {
       style={{
         flex: 1,
         background: "#ffffff",
-        border: "1px solid var(--s-border)",
+        border: "1px solid var(--gl-border)",
         borderRadius: 14,
         boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
         display: "flex",
@@ -170,7 +170,7 @@ export function AgentPanel() {
           alignItems: "center",
           gap: 8,
           padding: "12px 14px",
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
           flexShrink: 0,
         }}
       >
@@ -179,7 +179,7 @@ export function AgentPanel() {
             width: 7,
             height: 7,
             borderRadius: "50%",
-            background: "var(--s-success)",
+            background: "var(--gl-success)",
             flexShrink: 0,
           }}
         />
@@ -188,7 +188,7 @@ export function AgentPanel() {
             flex: 1,
             fontSize: 11,
             fontWeight: 500,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
           }}
@@ -204,7 +204,7 @@ export function AgentPanel() {
               border: "none",
               cursor: "pointer",
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               padding: "2px 6px",
             }}
           >
@@ -218,11 +218,11 @@ export function AgentPanel() {
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             fontSize: 16,
             lineHeight: 1,
             padding: "2px 4px",
-            fontFamily: "var(--s-font)",
+            fontFamily: "var(--gl-font)",
           }}
           title={t("collapseTitle")}
         >
@@ -250,16 +250,16 @@ export function AgentPanel() {
         {!fieldHint && messages.length === 0 ? (
           <div
             style={{
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              background: "var(--gl-surface)",
+              border: "0.5px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               padding: "12px 14px",
             }}
           >
-            <div style={{ fontSize: 12, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
               {t("noActivity")}
             </div>
-            <div style={{ fontSize: 11, color: "var(--s-text-muted)" }}>{t("hint")}</div>
+            <div style={{ fontSize: 11, color: "var(--gl-text-muted)" }}>{t("hint")}</div>
           </div>
         ) : (
           messages.map((m) => <Bubble key={m.id} message={m} />)
@@ -269,7 +269,7 @@ export function AgentPanel() {
       {/* Footer */}
       <div
         style={{
-          borderTop: "0.5px solid var(--s-border)",
+          borderTop: "0.5px solid var(--gl-border)",
           padding: "10px 12px",
           flexShrink: 0,
           display: "flex",
@@ -308,7 +308,7 @@ function FieldHintCard({ hint }: { hint: { label: string; body: string } }) {
       style={{
         background: "#fae194", // GL always-yellow — not theme-aware
         color: "#131316", // dark text on yellow for contrast in both themes
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         padding: "14px 16px",
         boxShadow: "0 6px 24px rgba(250, 225, 148, 0.18)",
       }}
@@ -357,10 +357,10 @@ function Bubble({ message }: { message: AgentMessage }) {
   return (
     <div
       style={{
-        background: "var(--s-surface)",
+        background: "var(--gl-surface)",
         border: `0.5px solid ${palette.border}`,
         borderLeft: `2px solid ${palette.accent}`,
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         padding: "10px 12px",
         fontSize: 12,
         lineHeight: 1.45,
@@ -373,13 +373,13 @@ function Bubble({ message }: { message: AgentMessage }) {
           style={{
             marginLeft: "auto",
             fontSize: 10,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {formatTime(message.timestamp)}
         </span>
       </div>
-      <div style={{ color: "var(--s-text)", whiteSpace: "pre-wrap" }}>{message.body}</div>
+      <div style={{ color: "var(--gl-text)", whiteSpace: "pre-wrap" }}>{message.body}</div>
       {message.raw !== undefined ? (
         <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
           <button
@@ -391,10 +391,10 @@ function Bubble({ message }: { message: AgentMessage }) {
               alignItems: "center",
               gap: 4,
               fontSize: 11,
-              color: "var(--s-text-secondary)",
+              color: "var(--gl-text-secondary)",
               background: "transparent",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-sm)",
+              border: "0.5px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-sm)",
               padding: "3px 8px",
               cursor: "pointer",
             }}
@@ -413,38 +413,38 @@ function paletteFor(kind: AgentMessage["kind"]) {
     case "thinking":
       return {
         icon: Loader2,
-        accent: "var(--rre-accent)",
-        border: "var(--s-border)",
-        titleColor: "var(--rre-accent-800)",
+        accent: "var(--gl-accent)",
+        border: "var(--gl-border)",
+        titleColor: "var(--gl-accent-800)",
       };
     case "success":
       return {
         icon: CheckCircle2,
-        accent: "var(--s-success)",
-        border: "var(--s-border)",
-        titleColor: "var(--s-success-text)",
+        accent: "var(--gl-success)",
+        border: "var(--gl-border)",
+        titleColor: "var(--gl-success-text)",
       };
     case "warning":
       return {
         icon: AlertTriangle,
-        accent: "var(--s-warning)",
-        border: "var(--s-border)",
-        titleColor: "var(--s-warning-text)",
+        accent: "var(--gl-warning)",
+        border: "var(--gl-border)",
+        titleColor: "var(--gl-warning-text)",
       };
     case "error":
       return {
         icon: XCircle,
-        accent: "var(--s-danger)",
-        border: "var(--s-border)",
-        titleColor: "var(--s-danger-text)",
+        accent: "var(--gl-danger)",
+        border: "var(--gl-border)",
+        titleColor: "var(--gl-danger-text)",
       };
     case "info":
     default:
       return {
         icon: Info,
-        accent: "var(--s-text-tertiary)",
-        border: "var(--s-border)",
-        titleColor: "var(--s-text)",
+        accent: "var(--gl-text-tertiary)",
+        border: "var(--gl-border)",
+        titleColor: "var(--gl-text)",
       };
   }
 }

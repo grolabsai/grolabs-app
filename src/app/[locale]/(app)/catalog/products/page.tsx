@@ -185,7 +185,7 @@ export default async function ProductsPage({
           gap: 12,
           marginBottom: 20,
           paddingBottom: 14,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div className="s-breadcrumb">
@@ -347,12 +347,12 @@ export default async function ProductsPage({
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td style={{ color: "var(--s-text-secondary)", fontSize: 12 }}>
+                      <td style={{ color: "var(--gl-text-secondary)", fontSize: 12 }}>
                         {p.brand?.brand_name ?? ""}
                       </td>
                       <td
                         className="text-center tabular"
-                        style={{ fontSize: 12, color: "var(--s-text-secondary)" }}
+                        style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}
                       >
                         {variants.length}
                       </td>
@@ -371,7 +371,7 @@ export default async function ProductsPage({
                       <td className="text-center">
                         <SyncDot status={deriveStatusFor(p, "woocommerce")} />
                       </td>
-                      <td style={{ fontSize: 12, color: "var(--s-text-muted)" }}>
+                      <td style={{ fontSize: 12, color: "var(--gl-text-muted)" }}>
                         {formatRelative(p.updated_at)}
                       </td>
                     </tr>
@@ -440,7 +440,7 @@ function ProductThumb({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
       aria-label={initialsFromName(productName)}
     >
@@ -453,9 +453,9 @@ function ProductThumb({
 
 function SyncDot({ status }: { status: "synced" | "pending" | "never" }) {
   const colors = {
-    synced: "var(--s-success)",
-    pending: "var(--s-warning)",
-    never: "var(--s-text-muted)",
+    synced: "var(--gl-success)",
+    pending: "var(--gl-warning)",
+    never: "var(--gl-text-muted)",
   } as const;
   const titles = {
     synced: "Sincronizado",

@@ -90,13 +90,13 @@ export function MaxPriceChangeCard({ initial }: { initial: PricingConfig }) {
           style={{
             fontSize: 16,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             marginBottom: 4,
           }}
         >
           {t("title")}
         </h2>
-        <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+        <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
           {t("subtitle")}
         </p>
       </header>
@@ -110,7 +110,7 @@ export function MaxPriceChangeCard({ initial }: { initial: PricingConfig }) {
         }}
       >
         <Switch checked={enabled} onCheckedChange={setEnabled} />
-        <span style={{ fontSize: 14, color: "var(--s-text)" }}>
+        <span style={{ fontSize: 14, color: "var(--gl-text)" }}>
           {t("toggle")}
         </span>
       </div>
@@ -139,8 +139,8 @@ export function MaxPriceChangeCard({ initial }: { initial: PricingConfig }) {
 
         <div
           style={{
-            background: "var(--s-surface-alt)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-surface-alt)",
+            borderRadius: "var(--gl-radius-md)",
             padding: 14,
           }}
         >
@@ -150,7 +150,7 @@ export function MaxPriceChangeCard({ initial }: { initial: PricingConfig }) {
               fontWeight: 500,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               marginBottom: 10,
             }}
           >
@@ -205,8 +205,8 @@ function ExampleRow({
     >
       <span
         style={{
-          fontFamily: "var(--s-font-mono)",
-          color: "var(--s-text)",
+          fontFamily: "var(--gl-font-mono)",
+          color: "var(--gl-text)",
         }}
       >
         Q {current.toFixed(2)} → Q {newPrice.toFixed(2)} ({sign}
@@ -218,8 +218,8 @@ function ExampleRow({
           fontWeight: 500,
           padding: "2px 8px",
           borderRadius: 999,
-          background: triggers ? "#FFF7ED" : "var(--s-success-bg)",
-          color: triggers ? "#B45309" : "var(--s-success-text)",
+          background: triggers ? "#FFF7ED" : "var(--gl-success-bg)",
+          color: triggers ? "#B45309" : "var(--gl-success-text)",
         }}
       >
         {triggers ? t("badges.warning") : t("badges.ok")}
@@ -243,14 +243,14 @@ function Field({
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         {label}
       </span>
       {children}
       {hint ? (
-        <span style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+        <span style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
           {hint}
         </span>
       ) : null}
@@ -281,10 +281,10 @@ function PercentInput({
           width: "100%",
           padding: "8px 28px 8px 12px",
           fontSize: 14,
-          border: "1px solid var(--s-border-strong)",
-          borderRadius: "var(--s-radius-md)",
-          background: "var(--s-surface)",
-          color: "var(--s-text)",
+          border: "1px solid var(--gl-border-strong)",
+          borderRadius: "var(--gl-radius-md)",
+          background: "var(--gl-surface)",
+          color: "var(--gl-text)",
         }}
       />
       <span
@@ -294,7 +294,7 @@ function PercentInput({
           top: "50%",
           transform: "translateY(-50%)",
           fontSize: 13,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           pointerEvents: "none",
         }}
       >

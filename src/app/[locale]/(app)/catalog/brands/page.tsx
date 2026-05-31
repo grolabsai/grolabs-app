@@ -69,9 +69,9 @@ export default async function BrandsPage({
           display: "grid",
           gridTemplateColumns: "280px 1fr",
           minHeight: "calc(100vh - 220px)",
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
         }}
       >

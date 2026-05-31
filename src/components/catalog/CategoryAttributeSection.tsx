@@ -222,7 +222,7 @@ export function CategoryAttributeSection({
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               marginBottom: 6,
             }}
           >
@@ -232,7 +232,7 @@ export function CategoryAttributeSection({
             style={{
               background: "#f5f3ee",
               border: "0.5px solid #e0dccf",
-              borderRadius: "var(--s-radius-md)",
+              borderRadius: "var(--gl-radius-md)",
               overflow: "hidden",
             }}
           >
@@ -264,22 +264,22 @@ export function CategoryAttributeSection({
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             marginBottom: 6,
           }}
         >
           {t("own.label", { categoryName })}
         </div>
         {ownLinks.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--s-text-tertiary)", padding: "4px 0" }}>
+          <div style={{ fontSize: 12, color: "var(--gl-text-tertiary)", padding: "4px 0" }}>
             {t("own.empty")}
           </div>
         ) : (
           <div
             style={{
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              background: "var(--gl-surface)",
+              border: "0.5px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               overflow: "hidden",
             }}
           >
@@ -311,12 +311,12 @@ export function CategoryAttributeSection({
           onClick={() => setShowAddPopover((v) => !v)}
           style={{
             fontSize: 12,
-            color: "var(--rre-accent)",
+            color: "var(--gl-accent)",
             background: "none",
             border: "none",
             cursor: "pointer",
             padding: 0,
-            fontFamily: "var(--s-font)",
+            fontFamily: "var(--gl-font)",
           }}
         >
           {t("addButton")}
@@ -330,9 +330,9 @@ export function CategoryAttributeSection({
               left: 0,
               zIndex: 50,
               width: 280,
-              background: "var(--s-surface)",
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              background: "var(--gl-surface)",
+              border: "0.5px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
               marginTop: 4,
             }}
@@ -354,7 +354,7 @@ export function CategoryAttributeSection({
                   style={{
                     padding: "8px 12px",
                     fontSize: 12,
-                    color: "var(--s-text-tertiary)",
+                    color: "var(--gl-text-tertiary)",
                   }}
                 >
                   {t("addPopover.empty")}
@@ -375,18 +375,18 @@ export function CategoryAttributeSection({
                       background: "transparent",
                       cursor: "pointer",
                       textAlign: "left",
-                      fontFamily: "var(--s-font)",
+                      fontFamily: "var(--gl-font)",
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.background =
-                        "var(--s-surface-alt)";
+                        "var(--gl-surface-alt)";
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLElement).style.background = "transparent";
                     }}
                   >
                     <AttributeTypeGlyph dataType={attr.data_type} size={18} />
-                    <span style={{ fontSize: 12, color: "var(--s-text)" }}>
+                    <span style={{ fontSize: 12, color: "var(--gl-text)" }}>
                       {attr.attribute_name}
                     </span>
                   </button>
@@ -395,7 +395,7 @@ export function CategoryAttributeSection({
             </div>
             <div
               style={{
-                borderTop: "0.5px solid var(--s-border)",
+                borderTop: "0.5px solid var(--gl-border)",
                 padding: "4px 8px 8px",
               }}
             >
@@ -403,7 +403,7 @@ export function CategoryAttributeSection({
                 href="/catalog/attributes?mode=create"
                 style={{
                   fontSize: 12,
-                  color: "var(--rre-accent)",
+                  color: "var(--gl-accent)",
                   textDecoration: "none",
                   display: "block",
                   padding: "6px 4px",
@@ -422,13 +422,13 @@ export function CategoryAttributeSection({
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             display: "block",
             marginBottom: 4,
           }}
         >
           {t("note.label")}{" "}
-          <span style={{ fontWeight: 400, color: "var(--s-text-tertiary)" }}>
+          <span style={{ fontWeight: 400, color: "var(--gl-text-tertiary)" }}>
             {t("note.optional")}
           </span>
         </label>
@@ -454,7 +454,7 @@ export function CategoryAttributeSection({
             {savingNote ? t("saving") : t("save")}
           </button>
           {noteSaved && (
-            <span style={{ fontSize: 12, color: "var(--s-success)" }}>{t("saved")}</span>
+            <span style={{ fontSize: 12, color: "var(--gl-success)" }}>{t("saved")}</span>
           )}
         </div>
       </div>
@@ -497,17 +497,17 @@ function AttrRow({
         alignItems: "center",
         gap: 8,
         padding: "8px 12px",
-        borderBottom: isLast ? "none" : "0.5px solid var(--s-border)",
+        borderBottom: isLast ? "none" : "0.5px solid var(--gl-border)",
       }}
     >
       <AttributeTypeGlyph dataType={link.data_type} isMultivalue={link.is_multivalue} size={20} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--s-text)" }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--gl-text)" }}>
           {link.attribute_name}
         </div>
         {!isOwn && (
-          <div style={{ fontSize: 10, color: "var(--s-text-tertiary)", marginTop: 1 }}>
+          <div style={{ fontSize: 10, color: "var(--gl-text-tertiary)", marginTop: 1 }}>
             {t("inherited.badge", { parentName: link.from_category_name })}
           </div>
         )}
@@ -523,10 +523,10 @@ function AttrRow({
           borderRadius: 999,
           border: "1px solid",
           cursor: "pointer",
-          background: isVariantAxis ? "var(--rre-accent)" : "transparent",
-          borderColor: isVariantAxis ? "var(--rre-accent)" : "var(--s-border)",
-          color: isVariantAxis ? "#fff" : "var(--s-text-secondary)",
-          fontFamily: "var(--s-font)",
+          background: isVariantAxis ? "var(--gl-accent)" : "transparent",
+          borderColor: isVariantAxis ? "var(--gl-accent)" : "var(--gl-border)",
+          color: isVariantAxis ? "#fff" : "var(--gl-text-secondary)",
+          fontFamily: "var(--gl-font)",
           flexShrink: 0,
           whiteSpace: "nowrap",
         }}
@@ -544,10 +544,10 @@ function AttrRow({
           borderRadius: 999,
           border: "1px solid",
           cursor: "pointer",
-          background: isRequired ? "var(--s-text-secondary)" : "transparent",
-          borderColor: isRequired ? "var(--s-text-secondary)" : "var(--s-border)",
-          color: isRequired ? "#fff" : "var(--s-text-tertiary)",
-          fontFamily: "var(--s-font)",
+          background: isRequired ? "var(--gl-text-secondary)" : "transparent",
+          borderColor: isRequired ? "var(--gl-text-secondary)" : "var(--gl-border)",
+          color: isRequired ? "#fff" : "var(--gl-text-tertiary)",
+          fontFamily: "var(--gl-font)",
           flexShrink: 0,
           whiteSpace: "nowrap",
         }}
@@ -563,13 +563,13 @@ function AttrRow({
           title={t("actions.remove")}
           style={{
             fontSize: 14,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             background: "none",
             border: "none",
             cursor: "pointer",
             padding: "2px 4px",
             lineHeight: 1,
-            fontFamily: "var(--s-font)",
+            fontFamily: "var(--gl-font)",
             flexShrink: 0,
           }}
         >
@@ -584,13 +584,13 @@ function AttrRow({
             onClick={() => setOpenKebab(openKebab === link.attribute_id ? null : link.attribute_id)}
             style={{
               fontSize: 14,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               background: "none",
               border: "none",
               cursor: "pointer",
               padding: "2px 6px",
               lineHeight: 1,
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
             title="Opciones"
           >
@@ -603,9 +603,9 @@ function AttrRow({
                 right: 0,
                 top: "100%",
                 zIndex: 40,
-                background: "var(--s-surface)",
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-md)",
+                background: "var(--gl-surface)",
+                border: "0.5px solid var(--gl-border)",
+                borderRadius: "var(--gl-radius-md)",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                 minWidth: 160,
                 padding: "4px 0",
@@ -624,7 +624,7 @@ function AttrRow({
                 <button
                   type="button"
                   onClick={onExclude}
-                  style={{ ...kebabItemStyle, color: "var(--s-danger)" }}
+                  style={{ ...kebabItemStyle, color: "var(--gl-danger)" }}
                 >
                   {t("actions.exclude")}
                 </button>
@@ -642,9 +642,9 @@ const kebabItemStyle: React.CSSProperties = {
   textAlign: "left",
   padding: "6px 14px",
   fontSize: 12,
-  color: "var(--s-text)",
+  color: "var(--gl-text)",
   background: "none",
   border: "none",
   cursor: "pointer",
-  fontFamily: "var(--s-font)",
+  fontFamily: "var(--gl-font)",
 };

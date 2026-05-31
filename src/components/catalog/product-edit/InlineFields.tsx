@@ -135,13 +135,13 @@ export function InlineText({
         minHeight: 36,
         borderRadius: 6,
         border: "1px solid transparent",
-        fontFamily: monospace ? "var(--s-font-mono)" : "inherit",
+        fontFamily: monospace ? "var(--gl-font-mono)" : "inherit",
         fontSize: 13,
         // Content weight matches the s-input it swaps into on edit, so
         // display ↔ edit feels seamless. Empty placeholder text stays
         // at the normal weight to read as a hint.
         fontWeight: optimistic ? 600 : 400,
-        color: optimistic ? "var(--s-text)" : "var(--s-text-muted)",
+        color: optimistic ? "var(--gl-text)" : "var(--gl-text-muted)",
         fontStyle: optimistic ? "normal" : "italic",
       }}
       aria-label={ariaLabel}
@@ -247,7 +247,7 @@ export function InlineTextarea({
         border: "1px solid transparent",
         fontSize: 13,
         fontWeight: previewLine ? 600 : 400,
-        color: previewLine ? "var(--s-text)" : "var(--s-text-muted)",
+        color: previewLine ? "var(--gl-text)" : "var(--gl-text-muted)",
         fontStyle: previewLine ? "normal" : "italic",
         whiteSpace: "nowrap",
         overflow: "hidden",

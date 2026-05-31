@@ -106,12 +106,12 @@ export default async function ProspectsPage() {
       {prospects.length === 0 ? (
         <div
           style={{
-            background: "var(--s-surface)",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-lg)",
+            background: "var(--gl-surface)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-lg)",
             padding: 32,
             textAlign: "center",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             fontSize: 13,
           }}
         >
@@ -120,28 +120,28 @@ export default async function ProspectsPage() {
       ) : (
         <div
           style={{
-            background: "var(--s-surface)",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-lg)",
+            background: "var(--gl-surface)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-lg)",
             overflow: "hidden",
           }}
         >
           <div
             style={{
               padding: "10px 16px",
-              borderBottom: "0.5px solid var(--s-border)",
+              borderBottom: "0.5px solid var(--gl-border)",
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("prospectsTitle")} ({prospects.length})
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "var(--s-surface-alt)" }}>
+              <tr style={{ background: "var(--gl-surface-alt)" }}>
                 <Th>{t("table.url")}</Th>
                 <Th>{t("table.contact")}</Th>
                 <Th>{t("table.platform")}</Th>
@@ -159,13 +159,13 @@ export default async function ProspectsPage() {
                 return (
                   <tr
                     key={p.prospect_id}
-                    style={{ borderTop: "1px solid var(--s-border)" }}
+                    style={{ borderTop: "1px solid var(--gl-border)" }}
                   >
                     <Td>
                       <Link
                         href={`/prospects/${p.prospect_id}` as never}
                         style={{
-                          color: "var(--s-text)",
+                          color: "var(--gl-text)",
                           textDecoration: "none",
                           display: "flex",
                           alignItems: "center",
@@ -181,8 +181,8 @@ export default async function ProspectsPage() {
                             <div
                               style={{
                                 fontSize: 11,
-                                color: "var(--s-text-tertiary)",
-                                fontFamily: "var(--s-font-mono)",
+                                color: "var(--gl-text-tertiary)",
+                                fontFamily: "var(--gl-font-mono)",
                               }}
                             >
                               {p.url}
@@ -199,7 +199,7 @@ export default async function ProspectsPage() {
                             <div
                               style={{
                                 fontSize: 11,
-                                color: "var(--s-text-tertiary)",
+                                color: "var(--gl-text-tertiary)",
                               }}
                             >
                               {p.contact_position}
@@ -207,7 +207,7 @@ export default async function ProspectsPage() {
                           )}
                         </div>
                       ) : p.contact_email ? (
-                        <span style={{ color: "var(--s-text-tertiary)" }}>
+                        <span style={{ color: "var(--gl-text-tertiary)" }}>
                           {p.contact_email}
                         </span>
                       ) : (
@@ -220,8 +220,8 @@ export default async function ProspectsPage() {
                         <div
                           style={{
                             fontSize: 10,
-                            color: "var(--s-text-tertiary)",
-                            fontFamily: "var(--s-font-mono)",
+                            color: "var(--gl-text-tertiary)",
+                            fontFamily: "var(--gl-font-mono)",
                           }}
                         >
                           {p.engine_detected}
@@ -275,8 +275,8 @@ function ProspectLogo({
           width: 32,
           height: 32,
           borderRadius: 6,
-          background: "var(--s-surface-alt)",
-          border: "0.5px solid var(--s-border)",
+          background: "var(--gl-surface-alt)",
+          border: "0.5px solid var(--gl-border)",
           flexShrink: 0,
         }}
       />
@@ -295,7 +295,7 @@ function ProspectLogo({
         objectFit: "contain",
         background: "#ffffff",
         borderRadius: 6,
-        border: "0.5px solid var(--s-border)",
+        border: "0.5px solid var(--gl-border)",
         flexShrink: 0,
         padding: 2,
       }}
@@ -313,8 +313,8 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
-        borderBottom: "0.5px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       {children}
@@ -328,9 +328,9 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
       style={{
         padding: "10px 14px",
         fontSize: 13,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         fontFamily: mono
-          ? "var(--s-font-mono, ui-monospace, monospace)"
+          ? "var(--gl-font-mono, ui-monospace, monospace)"
           : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
         verticalAlign: "top",

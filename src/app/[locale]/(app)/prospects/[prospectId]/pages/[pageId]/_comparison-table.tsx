@@ -41,14 +41,14 @@ export function ComparisonTable({
   return (
     <div
       style={{
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
         overflow: "hidden",
       }}
     >
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "var(--s-surface-alt)" }}>
+          <tr style={{ background: "var(--gl-surface-alt)" }}>
             <Th>{t("compareTable.check")}</Th>
             <Th>
               {previousAt ? <LocalTime iso={previousAt} /> : t("compareTable.previous")}
@@ -76,21 +76,21 @@ function Row({ row }: { row: ComparisonRow }) {
   const sign = (n: number) => (n > 0 ? `+${n}` : String(n));
   const color =
     delta == null
-      ? "var(--s-text-tertiary)"
+      ? "var(--gl-text-tertiary)"
       : delta > 0
-        ? "var(--s-success)"
+        ? "var(--gl-success)"
         : delta < 0
-          ? "var(--s-danger)"
-          : "var(--s-text-secondary)";
+          ? "var(--gl-danger)"
+          : "var(--gl-text-secondary)";
   return (
-    <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+    <tr style={{ borderTop: "1px solid var(--gl-border)" }}>
       <td style={{ padding: "8px 12px", fontSize: 12 }}>
         <div style={{ fontWeight: 500 }}>{row.check_name}</div>
         <div
           style={{
             fontSize: 10,
-            color: "var(--s-text-tertiary)",
-            fontFamily: "var(--s-font-mono)",
+            color: "var(--gl-text-tertiary)",
+            fontFamily: "var(--gl-font-mono)",
           }}
         >
           {row.check_code}
@@ -116,7 +116,7 @@ function Row({ row }: { row: ComparisonRow }) {
         style={{
           ...cellStyle(),
           color,
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -142,13 +142,13 @@ function ScoreCell({
   if (!cell) return null;
 
   const color: Record<string, string> = {
-    pass: "var(--s-success)",
-    partial: "var(--s-warning-text)",
-    fail: "var(--s-danger)",
-    na: "var(--s-text-tertiary)",
-    error: "var(--s-danger)",
+    pass: "var(--gl-success)",
+    partial: "var(--gl-warning-text)",
+    fail: "var(--gl-danger)",
+    na: "var(--gl-text-tertiary)",
+    error: "var(--gl-danger)",
   };
-  const statusColor = color[cell.status] ?? "var(--s-text-tertiary)";
+  const statusColor = color[cell.status] ?? "var(--gl-text-tertiary)";
   const hasDetail =
     cell.notes != null ||
     (cell.evidence != null && Object.keys(cell.evidence).length > 0) ||
@@ -179,7 +179,7 @@ function ScoreCell({
       </span>
       <span
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -191,7 +191,7 @@ function ScoreCell({
           style={{
             marginLeft: "auto",
             fontSize: 10,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             lineHeight: 1,
           }}
         >
@@ -312,7 +312,7 @@ function cellStyle(): React.CSSProperties {
   return {
     padding: "8px 12px",
     fontSize: 12,
-    color: "var(--s-text)",
+    color: "var(--gl-text)",
   };
 }
 
@@ -326,8 +326,8 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
-        borderBottom: "0.5px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       {children}

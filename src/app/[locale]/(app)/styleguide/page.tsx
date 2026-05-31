@@ -24,63 +24,63 @@ export const metadata = { title: "Estilo — GroLabs" };
  *
  * Engineered Luxury palette (matches grolabs-landing). Every component
  * is rendered twice: once in the default DARK theme and once inside a
- * `.rre-light` wrapper that flips the tokens to LIGHT. Side-by-side
+ * `.gl-light` wrapper that flips the tokens to LIGHT. Side-by-side
  * so the design can be assessed without clicking through pages.
  *
- * The .rre-light class overrides all --s-* + shadcn HSL variables.
+ * The .gl-light class overrides all --gl-* + shadcn HSL variables.
  * Everything below uses tokens (no hardcoded colors); add a swatch
  * here first, then anywhere else.
  */
 
 const ACCENT: { label: string; token: string; hex: string }[] = [
-  { label: "Accent (yellow)", token: "--rre-accent", hex: "#fae194" },
-  { label: "Accent hover", token: "--rre-accent-hover", hex: "#fcebab" },
-  { label: "Accent 50", token: "--rre-accent-50", hex: "#fff8e0" },
-  { label: "Accent 100", token: "--rre-accent-100", hex: "#fdeec4" },
-  { label: "Accent 600 (alias)", token: "--rre-accent-600", hex: "= kinetic yellow" },
+  { label: "Accent (yellow)", token: "--gl-accent", hex: "#fae194" },
+  { label: "Accent hover", token: "--gl-accent-hover", hex: "#fcebab" },
+  { label: "Accent 50", token: "--gl-accent-50", hex: "#fff8e0" },
+  { label: "Accent 100", token: "--gl-accent-100", hex: "#fdeec4" },
+  { label: "Accent 600 (alias)", token: "--gl-accent-600", hex: "= kinetic yellow" },
 ];
 
 const SURFACES_DARK = [
-  { label: "Canvas (bg)", token: "--s-bg", hex: "#131316" },
-  { label: "Canvas deeper", token: "--s-bg-deeper", hex: "#0E0E11" },
-  { label: "Surface", token: "--s-surface", hex: "#1c1d24" },
-  { label: "Surface alt", token: "--s-surface-alt", hex: "#16171c" },
-  { label: "Surface hover", token: "--s-surface-hover", hex: "#22232a" },
+  { label: "Canvas (bg)", token: "--gl-bg", hex: "#131316" },
+  { label: "Canvas deeper", token: "--gl-bg-deeper", hex: "#0E0E11" },
+  { label: "Surface", token: "--gl-surface", hex: "#1c1d24" },
+  { label: "Surface alt", token: "--gl-surface-alt", hex: "#16171c" },
+  { label: "Surface hover", token: "--gl-surface-hover", hex: "#22232a" },
 ];
 const SURFACES_LIGHT = [
-  { label: "Canvas (bg)", token: "--s-bg", hex: "#FAFAF9" },
-  { label: "Canvas deeper", token: "--s-bg-deeper", hex: "#F2F2F0" },
-  { label: "Surface", token: "--s-surface", hex: "#FFFFFF" },
-  { label: "Surface alt", token: "--s-surface-alt", hex: "#F7F7F6" },
-  { label: "Surface hover", token: "--s-surface-hover", hex: "#EFEFEE" },
+  { label: "Canvas (bg)", token: "--gl-bg", hex: "#FAFAF9" },
+  { label: "Canvas deeper", token: "--gl-bg-deeper", hex: "#F2F2F0" },
+  { label: "Surface", token: "--gl-surface", hex: "#FFFFFF" },
+  { label: "Surface alt", token: "--gl-surface-alt", hex: "#F7F7F6" },
+  { label: "Surface hover", token: "--gl-surface-hover", hex: "#EFEFEE" },
 ];
 
 const TEXT_DARK = [
-  { label: "Text strong", token: "--s-text-strong", hex: "#FFFFFF" },
-  { label: "Text (bone)", token: "--s-text", hex: "#EDEAE0" },
-  { label: "Text secondary", token: "--s-text-secondary", hex: "rgba(237,234,224,.6)" },
-  { label: "Text tertiary", token: "--s-text-tertiary", hex: "rgba(237,234,224,.4)" },
-  { label: "Text muted", token: "--s-text-muted", hex: "rgba(237,234,224,.28)" },
+  { label: "Text strong", token: "--gl-text-strong", hex: "#FFFFFF" },
+  { label: "Text (bone)", token: "--gl-text", hex: "#EDEAE0" },
+  { label: "Text secondary", token: "--gl-text-secondary", hex: "rgba(237,234,224,.6)" },
+  { label: "Text tertiary", token: "--gl-text-tertiary", hex: "rgba(237,234,224,.4)" },
+  { label: "Text muted", token: "--gl-text-muted", hex: "rgba(237,234,224,.28)" },
 ];
 const TEXT_LIGHT = [
-  { label: "Text strong", token: "--s-text-strong", hex: "#000000" },
-  { label: "Text", token: "--s-text", hex: "#1A1A1A" },
-  { label: "Text secondary", token: "--s-text-secondary", hex: "#5F5E5A" },
-  { label: "Text tertiary", token: "--s-text-tertiary", hex: "#888780" },
-  { label: "Text muted", token: "--s-text-muted", hex: "#B4B2A9" },
+  { label: "Text strong", token: "--gl-text-strong", hex: "#000000" },
+  { label: "Text", token: "--gl-text", hex: "#1A1A1A" },
+  { label: "Text secondary", token: "--gl-text-secondary", hex: "#5F5E5A" },
+  { label: "Text tertiary", token: "--gl-text-tertiary", hex: "#888780" },
+  { label: "Text muted", token: "--gl-text-muted", hex: "#B4B2A9" },
 ];
 
 const SEMANTIC = [
-  { label: "Success", token: "--s-success" },
-  { label: "Danger", token: "--s-danger" },
-  { label: "Warning", token: "--s-warning" },
+  { label: "Success", token: "--gl-success" },
+  { label: "Danger", token: "--gl-danger" },
+  { label: "Warning", token: "--gl-warning" },
 ];
 
 const RADII = [
-  { label: "sm", token: "--s-radius-sm", px: "6px" },
-  { label: "md", token: "--s-radius-md", px: "8px" },
-  { label: "lg", token: "--s-radius-lg", px: "12px" },
-  { label: "xl", token: "--s-radius-xl", px: "16px" },
+  { label: "sm", token: "--gl-radius-sm", px: "6px" },
+  { label: "md", token: "--gl-radius-md", px: "8px" },
+  { label: "lg", token: "--gl-radius-lg", px: "12px" },
+  { label: "xl", token: "--gl-radius-xl", px: "16px" },
 ];
 
 export default function StyleguidePage() {
@@ -126,7 +126,7 @@ export default function StyleguidePage() {
                     style={{
                       width: 48,
                       height: 48,
-                      background: "var(--rre-accent)",
+                      background: "var(--gl-accent)",
                       borderRadius: `var(${r.token})`,
                       margin: "0 auto 6px",
                     }}
@@ -225,9 +225,9 @@ function PrefixLegend() {
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "1px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "1px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         padding: 18,
         marginBottom: 32,
         display: "grid",
@@ -264,10 +264,10 @@ function PrefixCell({ tag, label, body }: { tag: string; label: string; body: st
             alignItems: "center",
             justifyContent: "center",
             padding: "2px 7px",
-            background: "var(--rre-accent)",
-            color: "var(--rre-accent-on)",
+            background: "var(--gl-accent)",
+            color: "var(--gl-accent-on)",
             borderRadius: 4,
-            fontFamily: "var(--s-font-mono)",
+            fontFamily: "var(--gl-font-mono)",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.04em",
@@ -275,9 +275,9 @@ function PrefixCell({ tag, label, body }: { tag: string; label: string; body: st
         >
           {tag}
         </span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--s-text)" }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gl-text)" }}>{label}</span>
       </div>
-      <div style={{ fontSize: 12, color: "var(--s-text-secondary)", lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12, color: "var(--gl-text-secondary)", lineHeight: 1.5 }}>
         {body}
       </div>
     </div>
@@ -294,7 +294,7 @@ function TierHeading({
   body: string;
 }) {
   return (
-    <div style={{ margin: "40px 0 24px", paddingBottom: 14, borderBottom: "1px solid var(--s-border)" }}>
+    <div style={{ margin: "40px 0 24px", paddingBottom: 14, borderBottom: "1px solid var(--gl-border)" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
         <span
           style={{
@@ -302,10 +302,10 @@ function TierHeading({
             alignItems: "center",
             justifyContent: "center",
             padding: "3px 9px",
-            background: "var(--rre-accent)",
-            color: "var(--rre-accent-on)",
+            background: "var(--gl-accent)",
+            color: "var(--gl-accent-on)",
             borderRadius: 4,
-            fontFamily: "var(--s-font-mono)",
+            fontFamily: "var(--gl-font-mono)",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.06em",
@@ -315,9 +315,9 @@ function TierHeading({
         </span>
         <h2
           style={{
-            fontFamily: "var(--s-font-brand)",
+            fontFamily: "var(--gl-font-brand)",
             fontSize: 26,
-            color: "var(--s-text-strong)",
+            color: "var(--gl-text-strong)",
             textTransform: "uppercase",
             letterSpacing: "0.02em",
             margin: 0,
@@ -326,7 +326,7 @@ function TierHeading({
           {title}
         </h2>
       </div>
-      <p style={{ color: "var(--s-text-secondary)", fontSize: 13, margin: 0, lineHeight: 1.6, maxWidth: 720 }}>
+      <p style={{ color: "var(--gl-text-secondary)", fontSize: 13, margin: 0, lineHeight: 1.6, maxWidth: 720 }}>
         {body}
       </p>
     </div>
@@ -337,9 +337,9 @@ function StatCardDemo() {
   return (
     <div
       style={{
-        background: "var(--s-bg)",
+        background: "var(--gl-bg)",
         padding: 32,
-        borderRadius: "var(--s-radius-lg)",
+        borderRadius: "var(--gl-radius-lg)",
         display: "flex",
         justifyContent: "center",
       }}
@@ -360,9 +360,9 @@ function LpCtaDemo() {
     <div>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 10,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           marginBottom: 10,
@@ -372,21 +372,21 @@ function LpCtaDemo() {
       </div>
       <button
         style={{
-          background: "var(--rre-accent)",
-          color: "var(--rre-accent-on)",
+          background: "var(--gl-accent)",
+          color: "var(--gl-accent-on)",
           border: "none",
           borderRadius: 999,
           padding: "12px 28px",
           fontSize: 15,
           fontWeight: 600,
-          fontFamily: "var(--s-font)",
+          fontFamily: "var(--gl-font)",
           cursor: "pointer",
           boxShadow: "0 6px 24px rgba(250,225,148,0.25)",
         }}
       >
         Book a free 15-minute call →
       </button>
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 14 }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 14 }}>
         Lives in <code style={codeStyle}>grolabs-landing</code> — Astro page,
         not used in the admin.
       </div>
@@ -399,9 +399,9 @@ function TabsDemo() {
     <div>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 10,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           marginBottom: 10,
@@ -409,7 +409,7 @@ function TabsDemo() {
       >
         Tab strip — active underline in kinetic yellow
       </div>
-      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--s-border)" }}>
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--gl-border)" }}>
         {["All", "Draft", "Scheduled", "Published"].map((label, i) => (
           <div
             key={label}
@@ -417,10 +417,10 @@ function TabsDemo() {
               padding: "8px 14px",
               fontSize: 13,
               fontWeight: i === 0 ? 500 : 400,
-              color: i === 0 ? "var(--s-text-strong)" : "var(--s-text-secondary)",
+              color: i === 0 ? "var(--gl-text-strong)" : "var(--gl-text-secondary)",
               borderBottom:
                 i === 0
-                  ? "2px solid var(--rre-accent)"
+                  ? "2px solid var(--gl-accent)"
                   : "2px solid transparent",
               cursor: "pointer",
               marginBottom: -1,
@@ -441,11 +441,11 @@ function Header() {
     <div style={{ marginBottom: 32 }}>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 11,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: "var(--rre-accent)",
+          color: "var(--gl-accent)",
           marginBottom: 8,
         }}
       >
@@ -453,9 +453,9 @@ function Header() {
       </div>
       <h1
         style={{
-          fontFamily: "var(--s-font-brand)",
+          fontFamily: "var(--gl-font-brand)",
           fontSize: 36,
-          color: "var(--s-text-strong)",
+          color: "var(--gl-text-strong)",
           textTransform: "uppercase",
           letterSpacing: "0.01em",
           margin: 0,
@@ -465,7 +465,7 @@ function Header() {
       </h1>
       <p
         style={{
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
           fontSize: 14,
           margin: "8px 0 0",
           maxWidth: 720,
@@ -473,7 +473,7 @@ function Header() {
         }}
       >
         Every component is shown twice — on the left in the default dark
-        Engineered Luxury theme, on the right inside a <code style={codeStyle}>.rre-light</code>{" "}
+        Engineered Luxury theme, on the right inside a <code style={codeStyle}>.gl-light</code>{" "}
         wrapper that flips the tokens to light. Anything not yet tokenized
         will look identical in both columns &mdash; that&rsquo;s a bug, not a feature.
       </p>
@@ -506,7 +506,7 @@ function Pair({ title, children }: { title: string; children: React.ReactNode })
           <PaneLabel>Dark</PaneLabel>
           {dark}
         </div>
-        <div className="rre-light" style={paneLightStyle}>
+        <div className="gl-light" style={paneLightStyle}>
           <PaneLabel light>Light</PaneLabel>
           {light}
         </div>
@@ -519,9 +519,9 @@ function SectionTitle({ title }: { title: string }) {
   return (
     <h2
       style={{
-        fontFamily: "var(--s-font-brand)",
+        fontFamily: "var(--gl-font-brand)",
         fontSize: 18,
-        color: "var(--s-text-strong)",
+        color: "var(--gl-text-strong)",
         textTransform: "uppercase",
         letterSpacing: "0.04em",
         margin: "0 0 14px",
@@ -536,11 +536,11 @@ function PaneLabel({ light, children }: { light?: boolean; children: React.React
   return (
     <div
       style={{
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         fontSize: 10,
         letterSpacing: "0.18em",
         textTransform: "uppercase",
-        color: light ? "#888" : "var(--rre-accent)",
+        color: light ? "#888" : "var(--gl-accent)",
         marginBottom: 14,
       }}
     >
@@ -550,16 +550,16 @@ function PaneLabel({ light, children }: { light?: boolean; children: React.React
 }
 
 const sectionBodyStyle: React.CSSProperties = {
-  background: "var(--s-surface)",
-  border: "1px solid var(--s-border)",
-  borderRadius: "var(--s-radius-lg)",
+  background: "var(--gl-surface)",
+  border: "1px solid var(--gl-border)",
+  borderRadius: "var(--gl-radius-lg)",
   padding: 20,
 };
 
 const paneDarkStyle: React.CSSProperties = {
   background: "#131316",
   border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: "var(--s-radius-lg)",
+  borderRadius: "var(--gl-radius-lg)",
   padding: 20,
   color: "#EDEAE0",
 };
@@ -567,7 +567,7 @@ const paneDarkStyle: React.CSSProperties = {
 const paneLightStyle: React.CSSProperties = {
   background: "#FAFAF9",
   border: "1px solid rgba(0,0,0,0.08)",
-  borderRadius: "var(--s-radius-lg)",
+  borderRadius: "var(--gl-radius-lg)",
   padding: 20,
   color: "#1A1A1A",
 };
@@ -579,7 +579,7 @@ function TypeRamp() {
     <div style={{ display: "grid", gap: 16 }}>
       <RampRow
         label="Brand mark — Permanent Marker"
-        fontFamily="var(--s-font-brand)"
+        fontFamily="var(--gl-font-brand)"
         fontSize={42}
         textTransform="uppercase"
       >
@@ -587,7 +587,7 @@ function TypeRamp() {
       </RampRow>
       <RampRow
         label="H1 / Page title — Hanken Grotesk 600"
-        fontFamily="var(--s-font)"
+        fontFamily="var(--gl-font)"
         fontSize={28}
         fontWeight={600}
       >
@@ -595,7 +595,7 @@ function TypeRamp() {
       </RampRow>
       <RampRow
         label="H2 / Section heading — Permanent Marker uppercase"
-        fontFamily="var(--s-font-brand)"
+        fontFamily="var(--gl-font-brand)"
         fontSize={22}
         textTransform="uppercase"
       >
@@ -603,7 +603,7 @@ function TypeRamp() {
       </RampRow>
       <RampRow
         label="H3 / Card title — Hanken Grotesk 600"
-        fontFamily="var(--s-font)"
+        fontFamily="var(--gl-font)"
         fontSize={16}
         fontWeight={600}
       >
@@ -611,7 +611,7 @@ function TypeRamp() {
       </RampRow>
       <RampRow
         label="Body — Hanken Grotesk 400"
-        fontFamily="var(--s-font)"
+        fontFamily="var(--gl-font)"
         fontSize={14}
       >
         A long paragraph of body copy that uses Hanken Grotesk at 14px. It sets
@@ -620,19 +620,19 @@ function TypeRamp() {
       </RampRow>
       <RampRow
         label="Eyebrow / label — mono uppercase tracked"
-        fontFamily="var(--s-font-mono)"
+        fontFamily="var(--gl-font-mono)"
         fontSize={11}
         textTransform="uppercase"
         letterSpacing="0.18em"
-        color="var(--rre-accent)"
+        color="var(--gl-accent)"
       >
         Eyebrow label
       </RampRow>
       <RampRow
         label="Caption — Hanken Grotesk 400 muted"
-        fontFamily="var(--s-font)"
+        fontFamily="var(--gl-font)"
         fontSize={12}
-        color="var(--s-text-secondary)"
+        color="var(--gl-text-secondary)"
       >
         Caption / helper text
       </RampRow>
@@ -652,17 +652,17 @@ function RampRow({
     <div>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 10,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 4,
         }}
       >
         {label}
       </div>
-      <div style={{ color: "var(--s-text)", ...style }}>{children}</div>
+      <div style={{ color: "var(--gl-text)", ...style }}>{children}</div>
     </div>
   );
 }
@@ -684,9 +684,9 @@ function PaletteGrid({
         <div
           key={s.token}
           style={{
-            background: "var(--s-surface)",
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-surface)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             padding: 12,
             display: "flex",
             flexDirection: "column",
@@ -698,12 +698,12 @@ function PaletteGrid({
               width: "100%",
               height: 56,
               background: `var(${s.token})`,
-              border: "1px solid var(--s-border)",
-              borderRadius: "var(--s-radius-sm)",
+              border: "1px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-sm)",
             }}
           />
           <div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--gl-text)" }}>
               {s.label}
             </div>
             <div style={tokenStyle}>{s.token}</div>
@@ -744,8 +744,8 @@ function ButtonsDemo() {
         <button
           className="s-btn"
           style={{
-            borderColor: "var(--s-danger)",
-            color: "var(--s-danger)",
+            borderColor: "var(--gl-danger)",
+            color: "var(--gl-danger)",
           }}
         >
           <Icon icon={Trash2} size={14} />
@@ -812,7 +812,7 @@ function InputsDemo() {
               position: "absolute",
               top: 12,
               left: 12,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               pointerEvents: "none",
             }}
           />
@@ -854,9 +854,9 @@ function InputsDemo() {
           type="text"
           defaultValue="bad@input"
           placeholder=" "
-          style={{ borderColor: "var(--s-danger)" }}
+          style={{ borderColor: "var(--gl-danger)" }}
         />
-        <div style={{ fontSize: 11, color: "var(--s-danger-text)", marginTop: 6 }}>
+        <div style={{ fontSize: 11, color: "var(--gl-danger-text)", marginTop: 6 }}>
           That doesn&rsquo;t look like a valid email.
         </div>
       </div>
@@ -883,25 +883,25 @@ function SelectsDemo() {
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            background: "var(--s-surface)",
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-surface)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             padding: "8px 12px",
             minWidth: 200,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             fontSize: 14,
             marginTop: 10,
           }}
         >
           <span style={{ flex: 1 }}>Pet retail</span>
-          <Icon icon={ChevronDown} size={14} style={{ color: "var(--s-text-tertiary)" }} />
+          <Icon icon={ChevronDown} size={14} style={{ color: "var(--gl-text-tertiary)" }} />
         </div>
         <div
           style={{
             marginTop: 6,
-            background: "var(--s-surface)",
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-surface)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             padding: 6,
             width: 240,
             boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
@@ -912,8 +912,8 @@ function SelectsDemo() {
               key={o}
               style={{
                 padding: "8px 10px",
-                borderRadius: "var(--s-radius-sm)",
-                color: "var(--s-text)",
+                borderRadius: "var(--gl-radius-sm)",
+                color: "var(--gl-text)",
                 fontSize: 13,
                 cursor: "pointer",
                 background:
@@ -924,7 +924,7 @@ function SelectsDemo() {
               }}
             >
               {i === 0 && (
-                <Icon icon={Check} size={12} style={{ color: "var(--rre-accent)" }} />
+                <Icon icon={Check} size={12} style={{ color: "var(--gl-accent)" }} />
               )}
               <span style={{ marginLeft: i === 0 ? 0 : 20 }}>{o}</span>
             </div>
@@ -940,19 +940,19 @@ function ChecksDemo() {
     <div style={{ display: "grid", gap: 16 }}>
       <Row>
         <Label>Checkbox</Label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--gl-text)" }}>
           <input type="checkbox" defaultChecked /> Active
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--gl-text)" }}>
           <input type="checkbox" /> Inactive
         </label>
       </Row>
       <Row>
         <Label>Radio</Label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--gl-text)" }}>
           <input type="radio" name="r1" defaultChecked /> Option A
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--s-text)" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--gl-text)" }}>
           <input type="radio" name="r1" /> Option B
         </label>
       </Row>
@@ -964,7 +964,7 @@ function ChecksDemo() {
             width: 38,
             height: 22,
             borderRadius: 999,
-            background: "var(--rre-accent)",
+            background: "var(--gl-accent)",
             position: "relative",
             border: "none",
             cursor: "pointer",
@@ -992,13 +992,13 @@ function CardsDemo() {
     <div style={{ display: "grid", gap: 12 }}>
       <div style={cardStyle}>
         <div style={{ ...labelInlineStyle, marginBottom: 6 }}>Surface — default</div>
-        <div style={{ color: "var(--s-text)", fontSize: 13 }}>
+        <div style={{ color: "var(--gl-text)", fontSize: 13 }}>
           The default card surface. Most content lives here.
         </div>
       </div>
-      <div style={{ ...cardStyle, background: "var(--s-surface-alt)" }}>
+      <div style={{ ...cardStyle, background: "var(--gl-surface-alt)" }}>
         <div style={{ ...labelInlineStyle, marginBottom: 6 }}>Surface alt</div>
-        <div style={{ color: "var(--s-text)", fontSize: 13 }}>
+        <div style={{ color: "var(--gl-text)", fontSize: 13 }}>
           Slightly recessed — used inside cards for table headers and side rails.
         </div>
       </div>
@@ -1009,10 +1009,10 @@ function CardsDemo() {
           borderColor: "rgba(250,225,148,0.3)",
         }}
       >
-        <div style={{ ...labelInlineStyle, marginBottom: 6, color: "var(--rre-accent)" }}>
+        <div style={{ ...labelInlineStyle, marginBottom: 6, color: "var(--gl-accent)" }}>
           Highlighted
         </div>
-        <div style={{ color: "var(--s-text)", fontSize: 13 }}>
+        <div style={{ color: "var(--gl-text)", fontSize: 13 }}>
           Yellow-tinted card for the headline takeaway (uplift estimates, etc.).
         </div>
       </div>
@@ -1024,15 +1024,15 @@ function TableDemo() {
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "1px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
+        background: "var(--gl-surface)",
+        border: "1px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
         overflow: "hidden",
       }}
     >
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "var(--s-surface-alt)" }}>
+          <tr style={{ background: "var(--gl-surface-alt)" }}>
             <Th>Site</Th>
             <Th>Status</Th>
             <Th>Score</Th>
@@ -1040,26 +1040,26 @@ function TableDemo() {
           </tr>
         </thead>
         <tbody>
-          <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+          <tr style={{ borderTop: "1px solid var(--gl-border)" }}>
             <Td>wazu.com</Td>
             <Td>
-              <span style={{ color: "var(--s-success-text)" }}>completed</span>
+              <span style={{ color: "var(--gl-success-text)" }}>completed</span>
             </Td>
             <Td mono>72</Td>
             <Td mono>$48,200</Td>
           </tr>
-          <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+          <tr style={{ borderTop: "1px solid var(--gl-border)" }}>
             <Td>acmepets.com</Td>
             <Td>
-              <span style={{ color: "var(--s-text-tertiary)" }}>running</span>
+              <span style={{ color: "var(--gl-text-tertiary)" }}>running</span>
             </Td>
             <Td mono>—</Td>
             <Td mono>—</Td>
           </tr>
-          <tr style={{ borderTop: "1px solid var(--s-border)" }}>
+          <tr style={{ borderTop: "1px solid var(--gl-border)" }}>
             <Td>fashionco.com</Td>
             <Td>
-              <span style={{ color: "var(--s-danger-text)" }}>failed</span>
+              <span style={{ color: "var(--gl-danger-text)" }}>failed</span>
             </Td>
             <Td mono>—</Td>
             <Td mono>—</Td>
@@ -1094,28 +1094,28 @@ function Badge({
 }) {
   const palettes = {
     default: {
-      bg: "var(--s-surface-alt)",
-      color: "var(--s-text-secondary)",
-      border: "var(--s-border)",
+      bg: "var(--gl-surface-alt)",
+      color: "var(--gl-text-secondary)",
+      border: "var(--gl-border)",
     },
     success: {
-      bg: "var(--s-success-bg)",
-      color: "var(--s-success-text)",
+      bg: "var(--gl-success-bg)",
+      color: "var(--gl-success-text)",
       border: "transparent",
     },
     warning: {
-      bg: "var(--s-warning-bg)",
-      color: "var(--s-warning-text)",
+      bg: "var(--gl-warning-bg)",
+      color: "var(--gl-warning-text)",
       border: "transparent",
     },
     danger: {
-      bg: "var(--s-danger-bg)",
-      color: "var(--s-danger-text)",
+      bg: "var(--gl-danger-bg)",
+      color: "var(--gl-danger-text)",
       border: "transparent",
     },
     accent: {
       bg: "rgba(250,225,148,0.12)",
-      color: "var(--rre-accent)",
+      color: "var(--gl-accent)",
       border: "rgba(250,225,148,0.3)",
     },
   };
@@ -1132,7 +1132,7 @@ function Badge({
         fontWeight: 500,
         letterSpacing: "0.02em",
         textTransform: small ? "none" : undefined,
-        fontFamily: small ? "var(--s-font-mono)" : "var(--s-font)",
+        fontFamily: small ? "var(--gl-font-mono)" : "var(--gl-font)",
       }}
     >
       {label}
@@ -1178,10 +1178,10 @@ function Banner({
   text: string;
 }) {
   const palettes = {
-    success: { bg: "var(--s-success-bg)", color: "var(--s-success-text)" },
-    info: { bg: "rgba(250,225,148,0.12)", color: "var(--rre-accent)" },
-    warning: { bg: "var(--s-warning-bg)", color: "var(--s-warning-text)" },
-    danger: { bg: "var(--s-danger-bg)", color: "var(--s-danger-text)" },
+    success: { bg: "var(--gl-success-bg)", color: "var(--gl-success-text)" },
+    info: { bg: "rgba(250,225,148,0.12)", color: "var(--gl-accent)" },
+    warning: { bg: "var(--gl-warning-bg)", color: "var(--gl-warning-text)" },
+    danger: { bg: "var(--gl-danger-bg)", color: "var(--gl-danger-text)" },
   };
   const p = palettes[tone];
   return (
@@ -1191,14 +1191,14 @@ function Banner({
         gap: 12,
         padding: "12px 14px",
         background: p.bg,
-        borderRadius: "var(--s-radius-md)",
-        border: "1px solid var(--s-border)",
+        borderRadius: "var(--gl-radius-md)",
+        border: "1px solid var(--gl-border)",
       }}
     >
       <Icon icon={icon} size={16} style={{ color: p.color, flexShrink: 0, marginTop: 2 }} />
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: p.color }}>{title}</div>
-        <div style={{ fontSize: 12, color: "var(--s-text-secondary)", marginTop: 2 }}>
+        <div style={{ fontSize: 12, color: "var(--gl-text-secondary)", marginTop: 2 }}>
           {text}
         </div>
       </div>
@@ -1216,16 +1216,16 @@ function NavDemo() {
   return (
     <div
       style={{
-        background: "var(--nav-surface, #131316)",
-        border: "1px solid var(--nav-border, rgba(255,255,255,0.06))",
-        borderRadius: "var(--s-radius-md)",
+        background: "var(--gl-nav-surface, #131316)",
+        border: "1px solid var(--gl-nav-border, rgba(255,255,255,0.06))",
+        borderRadius: "var(--gl-radius-md)",
         padding: 12,
         width: 220,
       }}
     >
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 10,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
@@ -1246,7 +1246,7 @@ function NavDemo() {
             alignItems: "center",
             gap: 10,
             padding: "8px 10px",
-            borderRadius: "var(--s-radius-md)",
+            borderRadius: "var(--gl-radius-md)",
             background: it.active ? "rgba(250,225,148,0.10)" : "transparent",
             /* Every item reads in the logo-white tone. Active state is
                signaled by the yellow icon + tinted background. */
@@ -1261,7 +1261,7 @@ function NavDemo() {
             icon={it.icon}
             size={14}
             style={{
-              color: it.active ? "var(--rre-accent)" : "#FFFFFF",
+              color: it.active ? "var(--gl-accent)" : "#FFFFFF",
             }}
           />
           {it.label}
@@ -1276,11 +1276,11 @@ function HeadingDemo() {
     <div>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 11,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: "var(--rre-accent)",
+          color: "var(--gl-accent)",
           marginBottom: 8,
         }}
       >
@@ -1288,9 +1288,9 @@ function HeadingDemo() {
       </div>
       <h2
         style={{
-          fontFamily: "var(--s-font-brand)",
+          fontFamily: "var(--gl-font-brand)",
           fontSize: 28,
-          color: "var(--s-text-strong)",
+          color: "var(--gl-text-strong)",
           textTransform: "uppercase",
           letterSpacing: "0.01em",
           margin: "0 0 10px",
@@ -1298,7 +1298,7 @@ function HeadingDemo() {
       >
         Revenue leaks
       </h2>
-      <p style={{ color: "var(--s-text-secondary)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+      <p style={{ color: "var(--gl-text-secondary)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
         Revenue leakage is the gap between the revenue a business has earned and the
         revenue it actually captures, caused by preventable friction.
       </p>
@@ -1330,7 +1330,7 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {children}
@@ -1344,8 +1344,8 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
       style={{
         padding: "10px 12px",
         fontSize: 12,
-        color: "var(--s-text)",
-        fontFamily: mono ? "var(--s-font-mono)" : undefined,
+        color: "var(--gl-text)",
+        fontFamily: mono ? "var(--gl-font-mono)" : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
       }}
     >
@@ -1355,46 +1355,46 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
 }
 
 const tokenStyle: React.CSSProperties = {
-  fontFamily: "var(--s-font-mono)",
+  fontFamily: "var(--gl-font-mono)",
   fontSize: 10,
-  color: "var(--s-text-tertiary)",
+  color: "var(--gl-text-tertiary)",
 };
 
 const hexStyle: React.CSSProperties = {
-  fontFamily: "var(--s-font-mono)",
+  fontFamily: "var(--gl-font-mono)",
   fontSize: 10,
-  color: "var(--s-text-muted)",
+  color: "var(--gl-text-muted)",
   marginTop: 2,
 };
 
 const labelInlineStyle: React.CSSProperties = {
-  fontFamily: "var(--s-font-mono)",
+  fontFamily: "var(--gl-font-mono)",
   fontSize: 10,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "var(--s-text-tertiary)",
+  color: "var(--gl-text-tertiary)",
   fontWeight: 600,
 };
 
 const codeStyle: React.CSSProperties = {
   background: "rgba(250,225,148,0.12)",
-  color: "var(--rre-accent)",
+  color: "var(--gl-accent)",
   padding: "1px 6px",
   borderRadius: 4,
-  fontFamily: "var(--s-font-mono)",
+  fontFamily: "var(--gl-font-mono)",
   fontSize: 12,
 };
 
 const cardStyle: React.CSSProperties = {
-  background: "var(--s-surface)",
-  border: "1px solid var(--s-border)",
-  borderRadius: "var(--s-radius-md)",
+  background: "var(--gl-surface)",
+  border: "1px solid var(--gl-border)",
+  borderRadius: "var(--gl-radius-md)",
   padding: 14,
 };
 
 const radiiCardStyle: React.CSSProperties = {
-  background: "var(--s-surface)",
-  border: "1px solid var(--s-border)",
-  borderRadius: "var(--s-radius-lg)",
+  background: "var(--gl-surface)",
+  border: "1px solid var(--gl-border)",
+  borderRadius: "var(--gl-radius-lg)",
   padding: 14,
 };

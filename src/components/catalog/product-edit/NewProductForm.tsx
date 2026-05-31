@@ -736,7 +736,7 @@ export function NewProductForm({
           <div className="s-card">
             <div style={{ marginBottom: 12 }}>
               <h2 style={{ fontSize: 15, fontWeight: 500, margin: 0 }}>{t("sections.variants")}</h2>
-              <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "2px 0 0" }}>
+              <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "2px 0 0" }}>
                 {t("variantsHelp")}
               </p>
             </div>
@@ -782,7 +782,7 @@ export function NewProductForm({
             ) : (
               <div>
                 {variants.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "var(--s-text-tertiary)", textAlign: "center", padding: "20px 0" }}>
+                  <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)", textAlign: "center", padding: "20px 0" }}>
                     {t("manualEmpty")}
                   </p>
                 ) : null}
@@ -814,7 +814,7 @@ export function NewProductForm({
           {descriptiveAttributes.length > 0 ? (
             <div className="s-card">
               <p className="s-card-label">{t("sections.attributes")}</p>
-              <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 14px" }}>
+              <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 14px" }}>
                 {t("attributes.subhead")}
               </p>
               <ProductAttributesGrid
@@ -829,7 +829,7 @@ export function NewProductForm({
           {/* ── Fotos del producto (Phase 2) ── */}
           <div className="s-card">
             <p className="s-card-label">{t("sections.photos")}</p>
-            <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 14px" }}>
+            <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 14px" }}>
               {t("photos.subhead")}
             </p>
             <PhotoManager
@@ -847,7 +847,7 @@ export function NewProductForm({
         <div className="s-col-stack">
           <div className="s-card">
             <p className="s-card-label">{t("sidebar.guideTitle")}</p>
-            <div style={{ fontSize: 12, lineHeight: 1.6, color: "var(--s-text-secondary)" }}>
+            <div style={{ fontSize: 12, lineHeight: 1.6, color: "var(--gl-text-secondary)" }}>
               <p style={{ margin: "0 0 10px" }}>{t("sidebar.guide1")}</p>
               <p style={{ margin: "0 0 10px" }}>{t("sidebar.guide2")}</p>
               <p style={{ margin: 0 }}>{t("sidebar.guide3")}</p>
@@ -857,14 +857,14 @@ export function NewProductForm({
           {variants.length > 0 ? (
             <div
               style={{
-                background: "var(--rre-accent-50)",
-                borderRadius: "var(--s-radius-lg)",
+                background: "var(--gl-accent-50)",
+                borderRadius: "var(--gl-radius-lg)",
                 padding: "16px 18px",
               }}
             >
               <div
                 style={{
-                  color: "var(--rre-accent-800)",
+                  color: "var(--gl-accent-800)",
                   fontSize: 13,
                   fontWeight: 500,
                   marginBottom: 12,
@@ -928,18 +928,18 @@ function FieldWrap({
           fontWeight: 500,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           lineHeight: 1,
         }}
       >
         {label}
         {required ? (
-          <span style={{ color: "var(--s-danger)", marginLeft: 2 }}>*</span>
+          <span style={{ color: "var(--gl-danger)", marginLeft: 2 }}>*</span>
         ) : null}
       </label>
       {children}
       {error ? (
-        <p style={{ fontSize: 11, color: "var(--s-danger-text)", marginTop: 4 }}>{error}</p>
+        <p style={{ fontSize: 11, color: "var(--gl-danger-text)", marginTop: 4 }}>{error}</p>
       ) : null}
     </div>
   );
@@ -974,11 +974,11 @@ function TextInput({
         padding: "10px 12px",
         fontSize: monospace ? 12 : 15,
         fontWeight: 500,
-        fontFamily: monospace ? "var(--s-font-mono)" : "inherit",
-        border: `0.5px solid ${invalid ? "var(--s-danger)" : "var(--s-border)"}`,
-        borderRadius: "var(--s-radius-md)",
+        fontFamily: monospace ? "var(--gl-font-mono)" : "inherit",
+        border: `0.5px solid ${invalid ? "var(--gl-danger)" : "var(--gl-border)"}`,
+        borderRadius: "var(--gl-radius-md)",
         background: "white",
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         outline: "none",
       }}
     />
@@ -1002,8 +1002,8 @@ function ToggleField({
         width: 36,
         height: 20,
         borderRadius: 999,
-        border: `0.5px solid ${checked ? "var(--rre-accent)" : "var(--s-border)"}`,
-        background: checked ? "var(--rre-accent)" : "var(--s-surface-hover)",
+        border: `0.5px solid ${checked ? "var(--gl-accent)" : "var(--gl-border)"}`,
+        background: checked ? "var(--gl-accent)" : "var(--gl-surface-hover)",
         cursor: "pointer",
         padding: 0,
         transition: "background 0.15s, border-color 0.15s",
@@ -1049,8 +1049,8 @@ function Collapsible({
   return (
     <div
       style={{
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
         background: "white",
         marginBottom: 14,
       }}
@@ -1071,7 +1071,7 @@ function Collapsible({
             style={{
               fontSize: 11,
               fontWeight: 500,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               marginBottom: 2,
@@ -1082,7 +1082,7 @@ function Collapsible({
           <div
             style={{
               fontSize: 13,
-              color: "var(--s-text-secondary)",
+              color: "var(--gl-text-secondary)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -1095,7 +1095,7 @@ function Collapsible({
           style={{
             transition: "transform 0.2s",
             transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           <Icon icon={ChevronDown} size={14} />
@@ -1112,10 +1112,10 @@ function Collapsible({
               minHeight: 90,
               padding: 12,
               fontSize: 13,
-              border: "0.5px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              border: "0.5px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               background: "white",
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               outline: "none",
               resize: "vertical",
               fontFamily: "inherit",
@@ -1170,8 +1170,8 @@ function AxisGenerator({
     <div
       style={{
         padding: 14,
-        background: "var(--s-surface-alt)",
-        borderRadius: "var(--s-radius-md)",
+        background: "var(--gl-surface-alt)",
+        borderRadius: "var(--gl-radius-md)",
       }}
     >
       <div style={{ marginBottom: axisDrafts.length > 0 ? 16 : 0 }}>
@@ -1179,7 +1179,7 @@ function AxisGenerator({
           style={{
             fontSize: 11,
             fontWeight: 500,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             textTransform: "uppercase",
             letterSpacing: "0.06em",
             marginBottom: 8,
@@ -1188,7 +1188,7 @@ function AxisGenerator({
           {t("axes.available")}
         </div>
         {available.length === 0 ? (
-          <p style={{ fontSize: 12, color: "var(--s-text-tertiary)", margin: 0 }}>
+          <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)", margin: 0 }}>
             {axisAttributes.length === 0 ? t("axes.none") : t("axes.allAdded")}
           </p>
         ) : (
@@ -1204,10 +1204,10 @@ function AxisGenerator({
                   gap: 4,
                   padding: "6px 12px",
                   fontSize: 12,
-                  border: "0.5px solid var(--s-border)",
-                  borderRadius: "var(--s-radius-md)",
+                  border: "0.5px solid var(--gl-border)",
+                  borderRadius: "var(--gl-radius-md)",
                   background: "white",
-                  color: "var(--s-text)",
+                  color: "var(--gl-text)",
                   cursor: "pointer",
                 }}
               >
@@ -1241,15 +1241,15 @@ function AxisGenerator({
             marginTop: 12,
             padding: 12,
             background: "white",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
           }}
         >
           <div
             style={{
               fontSize: 11,
               fontWeight: 500,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               marginBottom: 8,
@@ -1265,8 +1265,8 @@ function AxisGenerator({
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "2px 8px",
-                  background: "var(--rre-accent-50)",
-                  color: "var(--rre-accent-800)",
+                  background: "var(--gl-accent-50)",
+                  color: "var(--gl-accent-800)",
                   borderRadius: 999,
                   fontSize: 12,
                   fontWeight: 500,
@@ -1281,8 +1281,8 @@ function AxisGenerator({
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "2px 8px",
-                  background: "var(--s-surface-alt)",
-                  color: "var(--s-text-secondary)",
+                  background: "var(--gl-surface-alt)",
+                  color: "var(--gl-text-secondary)",
                   borderRadius: 999,
                   fontSize: 12,
                   fontWeight: 500,
@@ -1337,7 +1337,7 @@ function AxisRow({
       style={{
         marginBottom: isLast ? 0 : 16,
         paddingBottom: isLast ? 0 : 16,
-        borderBottom: isLast ? "none" : "0.5px solid var(--s-border)",
+        borderBottom: isLast ? "none" : "0.5px solid var(--gl-border)",
       }}
     >
       <div
@@ -1354,7 +1354,7 @@ function AxisRow({
             style={{
               marginLeft: 8,
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
             }}
@@ -1374,8 +1374,8 @@ function AxisRow({
             height: 28,
             border: "none",
             background: "transparent",
-            color: "var(--s-text-tertiary)",
-            borderRadius: "var(--s-radius-sm)",
+            color: "var(--gl-text-tertiary)",
+            borderRadius: "var(--gl-radius-sm)",
             cursor: "pointer",
           }}
         >
@@ -1398,8 +1398,8 @@ function AxisRow({
               flexShrink: 0,
               border: "none",
               background: "transparent",
-              color: "var(--s-text-tertiary)",
-              borderRadius: "var(--s-radius-sm)",
+              color: "var(--gl-text-tertiary)",
+              borderRadius: "var(--gl-radius-sm)",
               cursor: "pointer",
             }}
           >
@@ -1420,8 +1420,8 @@ function AxisRow({
                   height: 36,
                   padding: "0 10px",
                   fontSize: 13,
-                  border: "0.5px solid var(--s-border)",
-                  borderRadius: "var(--s-radius-md)",
+                  border: "0.5px solid var(--gl-border)",
+                  borderRadius: "var(--gl-radius-md)",
                   background: "white",
                   outline: "none",
                 }}
@@ -1451,8 +1451,8 @@ function AxisRow({
                   height: 36,
                   padding: "0 10px",
                   fontSize: 13,
-                  border: "0.5px solid var(--s-border)",
-                  borderRadius: "var(--s-radius-md)",
+                  border: "0.5px solid var(--gl-border)",
+                  borderRadius: "var(--gl-radius-md)",
                   background: "white",
                   outline: "none",
                 }}
@@ -1467,8 +1467,8 @@ function AxisRow({
                   height: 36,
                   padding: "0 10px",
                   fontSize: 13,
-                  border: "0.5px solid var(--s-border)",
-                  borderRadius: "var(--s-radius-md)",
+                  border: "0.5px solid var(--gl-border)",
+                  borderRadius: "var(--gl-radius-md)",
                   background: "white",
                   outline: "none",
                 }}
@@ -1496,8 +1496,8 @@ function AxisRow({
                 height: 36,
                 padding: "0 10px",
                 fontSize: 13,
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-md)",
+                border: "0.5px solid var(--gl-border)",
+                borderRadius: "var(--gl-radius-md)",
                 background: "white",
                 outline: "none",
               }}
@@ -1517,10 +1517,10 @@ function AxisRow({
           gap: 6,
           padding: "6px 12px",
           fontSize: 12,
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
           background: "white",
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           cursor: "pointer",
         }}
       >
@@ -1563,7 +1563,7 @@ function VariantsEditTable({
             key={v.key}
             style={{
               borderBottom:
-                idx < variants.length - 1 ? "0.5px solid var(--s-border)" : "none",
+                idx < variants.length - 1 ? "0.5px solid var(--gl-border)" : "none",
             }}
           >
             <Td>
@@ -1637,8 +1637,8 @@ function VariantsEditTable({
                   height: 28,
                   border: "none",
                   background: "transparent",
-                  color: "var(--s-text-tertiary)",
-                  borderRadius: "var(--s-radius-sm)",
+                  color: "var(--gl-text-tertiary)",
+                  borderRadius: "var(--gl-radius-sm)",
                   cursor: "pointer",
                 }}
               >
@@ -1664,12 +1664,12 @@ function Th({
       style={{
         textAlign: align,
         fontWeight: 500,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         fontSize: 10,
         textTransform: "uppercase",
         letterSpacing: "0.06em",
         padding: 12,
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         background: "white",
       }}
     >
@@ -1696,13 +1696,13 @@ function cellInputStyle(variant?: "mono" | "number"): React.CSSProperties {
     height: 32,
     padding: "0 8px",
     fontSize: 13,
-    fontFamily: variant === "mono" ? "var(--s-font-mono)" : "inherit",
+    fontFamily: variant === "mono" ? "var(--gl-font-mono)" : "inherit",
     fontVariantNumeric: variant === "number" ? "tabular-nums" : undefined,
     textAlign: variant === "number" ? "right" : "left",
-    border: "0.5px solid var(--s-border)",
-    borderRadius: "var(--s-radius-sm)",
+    border: "0.5px solid var(--gl-border)",
+    borderRadius: "var(--gl-radius-sm)",
     background: "white",
-    color: "var(--s-text)",
+    color: "var(--gl-text)",
     outline: "none",
   };
 }
@@ -1736,7 +1736,7 @@ function ProductAttributesGrid({
               alignItems: "start",
               padding: "10px 0",
               borderBottom:
-                idx < attributes.length - 1 ? "0.5px solid var(--s-border)" : "none",
+                idx < attributes.length - 1 ? "0.5px solid var(--gl-border)" : "none",
             }}
           >
             <label
@@ -1744,13 +1744,13 @@ function ProductAttributesGrid({
               style={{
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--s-text-secondary)",
+                color: "var(--gl-text-secondary)",
                 paddingTop: 10,
               }}
             >
               {a.attribute_name}
               {a.required ? (
-                <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span>
+                <span style={{ color: "var(--gl-danger)", marginLeft: 4 }}>*</span>
               ) : null}
             </label>
             <div>
@@ -1762,7 +1762,7 @@ function ProductAttributesGrid({
                 invalid={!!err}
               />
               {err ? (
-                <p style={{ fontSize: 11, color: "var(--s-danger-text)", marginTop: 4 }}>{err}</p>
+                <p style={{ fontSize: 11, color: "var(--gl-danger-text)", marginTop: 4 }}>{err}</p>
               ) : null}
             </div>
           </div>
@@ -1799,10 +1799,10 @@ function AttributeControl({
           height: 36,
           padding: "0 10px",
           fontSize: 13,
-          border: `0.5px solid ${invalid ? "var(--s-danger)" : "var(--s-border)"}`,
-          borderRadius: "var(--s-radius-md)",
+          border: `0.5px solid ${invalid ? "var(--gl-danger)" : "var(--gl-border)"}`,
+          borderRadius: "var(--gl-radius-md)",
           background: "white",
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           outline: "none",
         }}
       >
@@ -1821,7 +1821,7 @@ function AttributeControl({
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8 }}>
         <ToggleField checked={v} onChange={(b) => onChange(b)} />
-        <span style={{ fontSize: 13, color: "var(--s-text-secondary)" }}>
+        <span style={{ fontSize: 13, color: "var(--gl-text-secondary)" }}>
           {v ? t("attributes.yes") : t("attributes.no")}
         </span>
       </div>
@@ -1843,10 +1843,10 @@ function AttributeControl({
         height: 36,
         padding: "0 10px",
         fontSize: 13,
-        border: `0.5px solid ${invalid ? "var(--s-danger)" : "var(--s-border)"}`,
-        borderRadius: "var(--s-radius-md)",
+        border: `0.5px solid ${invalid ? "var(--gl-danger)" : "var(--gl-border)"}`,
+        borderRadius: "var(--gl-radius-md)",
         background: "white",
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         outline: "none",
       }}
     />
@@ -1865,10 +1865,10 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
         fontSize: 12,
       }}
     >
-      <span style={{ color: "var(--rre-accent-800)", opacity: 0.85 }}>{label}</span>
+      <span style={{ color: "var(--gl-accent-800)", opacity: 0.85 }}>{label}</span>
       <span
         style={{
-          color: "var(--rre-accent-800)",
+          color: "var(--gl-accent-800)",
           fontWeight: 500,
           fontVariantNumeric: "tabular-nums",
         }}

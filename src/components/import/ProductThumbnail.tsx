@@ -43,14 +43,14 @@ export function ProductThumbnail({
         style={{
           width: 40,
           height: 40,
-          borderRadius: "var(--s-radius-sm)",
-          background: "var(--s-surface-alt)",
-          border: "0.5px solid var(--s-border)",
+          borderRadius: "var(--gl-radius-sm)",
+          background: "var(--gl-surface-alt)",
+          border: "0.5px solid var(--gl-border)",
           overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
         }}
       >
         {showImage ? (
@@ -78,8 +78,8 @@ export function ProductThumbnail({
             width: 240,
             height: 240,
             background: "white",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
             overflow: "hidden",
             zIndex: 50,
@@ -93,7 +93,7 @@ export function ProductThumbnail({
             src={url}
             alt={alt}
             referrerPolicy="no-referrer"
-            style={{ width: "100%", height: "100%", objectFit: "contain", background: "var(--s-surface-alt)" }}
+            style={{ width: "100%", height: "100%", objectFit: "contain", background: "var(--gl-surface-alt)" }}
           />
         </div>
       ) : null}

@@ -146,13 +146,13 @@ export function CategoryMarginsCard({
           style={{
             fontSize: 16,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             marginBottom: 4,
           }}
         >
           {t(`title.${mode}`)}
         </h2>
-        <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+        <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
           {t(`subtitle.${mode}`)}
         </p>
       </header>
@@ -166,11 +166,11 @@ export function CategoryMarginsCard({
           gap: 12,
           padding: "10px 14px",
           marginBottom: 16,
-          background: "var(--s-surface-alt)",
-          border: "1px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          background: "var(--gl-surface-alt)",
+          border: "1px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
           fontSize: 12,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         <span>
@@ -178,14 +178,14 @@ export function CategoryMarginsCard({
         </span>
         <span
           style={{
-            fontFamily: "var(--s-font-mono)",
-            color: "var(--s-text-tertiary)",
+            fontFamily: "var(--gl-font-mono)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t(`formula.${mode}`)}
         </span>
         <span style={{ flex: 1 }} />
-        <span style={{ color: "var(--s-text-tertiary)" }}>
+        <span style={{ color: "var(--gl-text-tertiary)" }}>
           {t("inheritedCount", { count: inheritedCount })}
           {usingDefaultsCount > 0 ? (
             <>
@@ -202,7 +202,7 @@ export function CategoryMarginsCard({
             padding: "32px 0",
             textAlign: "center",
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("empty")}
@@ -210,8 +210,8 @@ export function CategoryMarginsCard({
       ) : (
         <div
           style={{
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             overflow: "hidden",
           }}
         >
@@ -225,8 +225,8 @@ export function CategoryMarginsCard({
             <thead>
               <tr
                 style={{
-                  background: "var(--s-surface-alt)",
-                  borderBottom: "1px solid var(--s-border)",
+                  background: "var(--gl-surface-alt)",
+                  borderBottom: "1px solid var(--gl-border)",
                 }}
               >
                 <Th>{t("columns.category")}</Th>
@@ -243,7 +243,7 @@ export function CategoryMarginsCard({
                   <tr
                     key={row.category_id}
                     style={{
-                      borderBottom: "1px solid var(--s-border)",
+                      borderBottom: "1px solid var(--gl-border)",
                     }}
                   >
                     <Td>
@@ -312,13 +312,13 @@ function CategoryName({ name, depth }: { name: string; depth: number }) {
         style={{
           // 16 px per level so deep trees still fit within the column.
           paddingLeft: depth * 16,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           fontSize: 13,
         }}
       >
         {depth > 0 ? "↳" : ""}
       </span>
-      <span style={{ color: "var(--s-text)" }}>{name}</span>
+      <span style={{ color: "var(--gl-text)" }}>{name}</span>
     </div>
   );
 }
@@ -341,9 +341,9 @@ function PctCell({
       <div
         style={{
           fontSize: 13,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           fontStyle: "italic",
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
         }}
       >
         {resolved.toFixed(1)}%
@@ -377,10 +377,10 @@ function PctCell({
           padding: "6px 28px 6px 8px",
           fontSize: 13,
           height: "auto",
-          border: "1px solid var(--s-border-strong)",
-          borderRadius: "var(--s-radius-md)",
-          background: "var(--s-surface)",
-          color: "var(--s-text)",
+          border: "1px solid var(--gl-border-strong)",
+          borderRadius: "var(--gl-radius-md)",
+          background: "var(--gl-surface)",
+          color: "var(--gl-text)",
         }}
       />
       <span
@@ -390,7 +390,7 @@ function PctCell({
           top: "50%",
           transform: "translateY(-50%)",
           fontSize: 12,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           pointerEvents: "none",
         }}
       >
@@ -416,7 +416,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {children}

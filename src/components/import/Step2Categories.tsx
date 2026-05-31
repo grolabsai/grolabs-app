@@ -247,7 +247,7 @@ export function Step2Categories({
       {/* Brand */}
       <div className="s-card">
         <p className="s-card-label">{t("brandTitle")}</p>
-        <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 12px" }}>
+        <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 12px" }}>
           {t("brandHint")}
         </p>
         <div style={{ maxWidth: 400 }}>
@@ -311,7 +311,7 @@ export function Step2Categories({
             gap: 8,
             marginTop: 14,
             fontSize: 13,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
           }}
         >
           <input
@@ -321,7 +321,7 @@ export function Step2Categories({
           />
           {t("llmExtractionLabel")}
         </label>
-        <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 6, marginLeft: 22 }}>
+        <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 6, marginLeft: 22 }}>
           {t("llmExtractionHint")}
         </p>
       </div>
@@ -329,7 +329,7 @@ export function Step2Categories({
       {/* Candidate categories + analyze */}
       <div className="s-card">
         <p className="s-card-label">{t("analysisTitle")}</p>
-        <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 12px" }}>
+        <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 12px" }}>
           {t("analysisHint")}
         </p>
 
@@ -338,14 +338,14 @@ export function Step2Categories({
             style={{
               fontSize: 11,
               fontWeight: 500,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               marginBottom: 6,
             }}
           >
             {t("candidatesLabel")}
-            <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span>
+            <span style={{ color: "var(--gl-danger)", marginLeft: 4 }}>*</span>
           </div>
           <TreeMultiSelectCombobox
             placeholder={t("candidatesPlaceholder")}
@@ -365,7 +365,7 @@ export function Step2Categories({
             <p
               style={{
                 fontSize: 11,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 marginTop: 6,
               }}
             >
@@ -398,7 +398,7 @@ export function Step2Categories({
       {/* Assignment table */}
       {state.categoriesAnalyzed && state.categoryAssignments.length > 0 ? (
         <div className="s-card" style={{ padding: 0 }}>
-          <div style={{ padding: "12px 20px", fontSize: 13, fontWeight: 500, borderBottom: "0.5px solid var(--s-border)" }}>
+          <div style={{ padding: "12px 20px", fontSize: 13, fontWeight: 500, borderBottom: "0.5px solid var(--gl-border)" }}>
             {t("tableTitle")}
           </div>
           <div style={{ overflow: "auto", maxHeight: 500 }}>
@@ -423,7 +423,7 @@ export function Step2Categories({
                     <td>
                       <div style={{ fontSize: 12 }}>{a.suggestedCategoryName ?? ""}</div>
                       {a.reasoning ? (
-                        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 2 }}>
                           {a.reasoning}
                         </div>
                       ) : null}
@@ -495,14 +495,14 @@ function ColumnPicker({
         style={{
           fontSize: 11,
           fontWeight: 500,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           marginBottom: 6,
         }}
       >
         {label}
-        {required ? <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span> : null}
+        {required ? <span style={{ color: "var(--gl-danger)", marginLeft: 4 }}>*</span> : null}
       </div>
       <Combobox
         placeholder=""
@@ -539,8 +539,8 @@ function ConfidencePill({
           borderRadius: 999,
           fontSize: 11,
           fontWeight: 500,
-          background: "var(--rre-accent-50)",
-          color: "var(--rre-accent-800)",
+          background: "var(--gl-accent-50)",
+          color: "var(--gl-accent-800)",
         }}
       >
         Manual
@@ -548,9 +548,9 @@ function ConfidencePill({
     );
   }
   const colorMap = {
-    high: { bg: "var(--s-success-bg)", color: "var(--s-success-text)", label: "✓" },
-    medium: { bg: "var(--s-warning-bg)", color: "var(--s-warning-text)", label: "⏱" },
-    low: { bg: "var(--s-danger-bg)", color: "var(--s-danger-text)", label: "✗" },
+    high: { bg: "var(--gl-success-bg)", color: "var(--gl-success-text)", label: "✓" },
+    medium: { bg: "var(--gl-warning-bg)", color: "var(--gl-warning-text)", label: "⏱" },
+    low: { bg: "var(--gl-danger-bg)", color: "var(--gl-danger-text)", label: "✗" },
   } as const;
   const m = colorMap[tier];
   return (

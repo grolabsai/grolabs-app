@@ -166,7 +166,7 @@ export function CheckEditor({
           padding: 40,
         }}
       >
-        <p style={{ color: "var(--s-text-tertiary)", fontSize: 13 }}>
+        <p style={{ color: "var(--gl-text-tertiary)", fontSize: 13 }}>
           {t("empty.selectPrompt")}
         </p>
       </div>
@@ -192,14 +192,14 @@ export function CheckEditor({
           marginBottom: 20,
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--s-text)" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--gl-text)" }}>
           {isEdit ? t("form.editTitle") : t("form.createTitle")}
         </h2>
         {isReadOnly && (
           <span
             style={{
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontStyle: "italic",
             }}
           >
@@ -227,7 +227,7 @@ export function CheckEditor({
           value={form.check_code}
           onChange={(e) => setField("check_code", e.target.value)}
           disabled={isReadOnly}
-          style={{ fontFamily: "var(--s-font-mono, ui-monospace, monospace)" }}
+          style={{ fontFamily: "var(--gl-font-mono, ui-monospace, monospace)" }}
         />
       </Field>
 
@@ -332,7 +332,7 @@ export function CheckEditor({
           placeholder="search_users × Δ CR × AOV"
           onChange={(e) => setField("revenue_lever", e.target.value)}
           disabled={isReadOnly}
-          style={{ fontFamily: "var(--s-font-mono, ui-monospace, monospace)" }}
+          style={{ fontFamily: "var(--gl-font-mono, ui-monospace, monospace)" }}
         />
       </Field>
 
@@ -354,7 +354,7 @@ export function CheckEditor({
             alignItems: "center",
             gap: 8,
             fontSize: 12,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             cursor: isReadOnly ? "not-allowed" : "pointer",
           }}
         >
@@ -375,7 +375,7 @@ export function CheckEditor({
           gap: 12,
           marginTop: 24,
           paddingTop: 16,
-          borderTop: "0.5px solid var(--s-border)",
+          borderTop: "0.5px solid var(--gl-border)",
         }}
       >
         <button
@@ -387,12 +387,12 @@ export function CheckEditor({
           {isPending ? t("actions.saving") : t("actions.save")}
         </button>
         {saved && (
-          <span style={{ fontSize: 12, color: "var(--s-success)" }}>
+          <span style={{ fontSize: 12, color: "var(--gl-success)" }}>
             {t("actions.saved")}
           </span>
         )}
         {error && (
-          <span style={{ fontSize: 12, color: "var(--s-danger)" }}>{error}</span>
+          <span style={{ fontSize: 12, color: "var(--gl-danger)" }}>{error}</span>
         )}
         {isEdit && check && !isReadOnly && (
           <button
@@ -402,13 +402,13 @@ export function CheckEditor({
             style={{
               marginLeft: "auto",
               fontSize: 12,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
               background: "none",
-              border: "0.5px solid var(--s-danger)",
-              borderRadius: "var(--s-radius-md)",
+              border: "0.5px solid var(--gl-danger)",
+              borderRadius: "var(--gl-radius-md)",
               padding: "5px 10px",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
           >
             {t("actions.delete")}
@@ -450,14 +450,14 @@ function Field({
     <div className="s-field">
       <label className="s-field-label">
         {label}
-        {required && <span style={{ color: "var(--s-danger)" }}> *</span>}
+        {required && <span style={{ color: "var(--gl-danger)" }}> *</span>}
       </label>
       {children}
       {hint && (
         <div
           style={{
             fontSize: 11,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             marginTop: 4,
             paddingLeft: 2,
           }}
@@ -483,10 +483,10 @@ function SectionHeader({
         fontWeight: 600,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         marginBottom: 12,
         paddingBottom: 6,
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         ...style,
       }}
     >

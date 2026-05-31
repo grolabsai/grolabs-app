@@ -13,12 +13,12 @@ svg {
    GroLabs Admin — design system
    =============================================================================
    Derived directly from the GroLabs Admin design system (see the design file
-   for origin). Prefix renamed from `bl-` → `s-` and `bloom-` → `rre-`;
+   for origin). All shared tokens use the unified `--gl-*` (GroLabs) prefix;
    tokens and values preserved verbatim so the two apps can share a visual
    language (D22: dedicated GroLabs admin, shared design language with GroLabs).
 
    Scope of this file:
-   - Tokens: GroLabs --s-* and --rre-* vars (source of truth)
+   - Tokens: GroLabs --gl-* vars (source of truth)
    - shadcn HSL vars: mapped 1:1 to the same colors so shadcn components
      render in GroLabs's visual identity automatically
    - App shell (nav, main, topbar)
@@ -36,7 +36,7 @@ svg {
   /* =========================================================================
      GroLabs Admin — design tokens
      Engineered Luxury palette (matches grolabs-landing). Defaults to DARK
-     because that's the brand look. The `.rre-light` modifier flips
+     because that's the brand look. The `.gl-light` modifier flips
      everything to light values — used by the /styleguide split view and
      anywhere we want a light surface inside an otherwise dark app.
      ========================================================================= */
@@ -45,24 +45,33 @@ svg {
      Engineered Luxury — accent (kinetic yellow). #fae194 single source.
      Replaces the old #d4af37 kinetic gold across the app.
      ----------------------------------------------------------------------- */
-  --rre-accent: #fae194;
-  --rre-accent-hover: #fcebab;
-  --rre-accent-50: #fff8e0;
-  --rre-accent-100: #fdeec4;
+  --gl-accent: #fae194;
+  --gl-accent-hover: #fcebab;
+  --gl-accent-50: #fff8e0;
+  --gl-accent-100: #fdeec4;
   /* The "-600" and "-800" tokens used to be the older kinetic gold
      (#d4af37 / #8a6f24). Aliased to the kinetic yellow so every
      legacy usage immediately picks up the new accent — we no longer
      ship the gold tone anywhere. Don't reintroduce hardcoded gold
      hexes; if a stronger yellow is ever needed, derive a new token
      here instead of re-adding the old values. */
-  --rre-accent-600: var(--rre-accent);
-  --rre-accent-800: var(--rre-accent);
-  --rre-accent-on: #131316;            /* text/icon on yellow surfaces */
+  --gl-accent-600: var(--gl-accent);
+  --gl-accent-800: var(--gl-accent);
+  --gl-accent-on: #131316;            /* text/icon on yellow surfaces */
+
+  /* On-light accent ramp — darker golds for accent text/borders sitting on
+     a WHITE/light fill, where pale #fae194 is nearly invisible. Same value
+     in both themes (these describe "accent on a light surface", which is the
+     same problem regardless of the app theme). Use for accent-colored text,
+     icons, and borders that land on light backgrounds. */
+  --gl-accent-on-light: #a17914;         /* accent text/border on white */
+  --gl-accent-on-light-soft: #b8901a;    /* softer variant */
+  --gl-accent-on-light-strong: #8a6516;  /* strongest variant */
 
   /* ── GL fixed tokens — never theme-flipped ─────────────────────────────
      Properties that must look identical in light AND dark mode. The
-     `.rre-light` override deliberately does NOT redefine these. Use
-     these tokens (not --s-bg / --s-text) when a surface needs to stay
+     `.gl-light` override deliberately does NOT redefine these. Use
+     these tokens (not --gl-bg / --gl-text) when a surface needs to stay
      visually constant regardless of theme — e.g. the yellow field-hint
      card in the AgentPanel, kinetic-yellow CTAs on the landing page,
      the app shell (sidebar + topbar). */
@@ -89,72 +98,72 @@ svg {
      Surface alt        #1a1a1f   (between canvas and surface)
      Surface hover      #22232a
      ----------------------------------------------------------------------- */
-  --s-bg: #131316;
-  --s-bg-deeper: #0E0E11;
-  --s-surface: #1c1d24;
+  --gl-bg: #131316;
+  --gl-bg-deeper: #0E0E11;
+  --gl-surface: #1c1d24;
   /* Information surfaces always sit on the canvas — never on a darker
      gray tinted box. surface-alt is kept as an alias for back-compat
      with old code (cards, hover states, disabled fields) but resolves
      to the same value as surface so nothing nests as a darker fill. */
-  --s-surface-alt: #1c1d24;
-  --s-surface-hover: #22232a;
-  --s-border: rgba(255, 255, 255, 0.08);
-  --s-border-strong: rgba(255, 255, 255, 0.16);
+  --gl-surface-alt: #1c1d24;
+  --gl-surface-hover: #22232a;
+  --gl-border: rgba(255, 255, 255, 0.08);
+  --gl-border-strong: rgba(255, 255, 255, 0.16);
 
   /* Text — bone white rather than pure #FFF, per landing's design.
      Pure white is reserved for headlines + strong accents. */
-  --s-text: #EDEAE0;
-  --s-text-strong: #FFFFFF;
-  --s-text-secondary: rgba(237, 234, 224, 0.6);
-  --s-text-tertiary: rgba(237, 234, 224, 0.4);
-  --s-text-muted: rgba(237, 234, 224, 0.28);
+  --gl-text: #EDEAE0;
+  --gl-text-strong: #FFFFFF;
+  --gl-text-secondary: rgba(237, 234, 224, 0.6);
+  --gl-text-tertiary: rgba(237, 234, 224, 0.4);
+  --gl-text-muted: rgba(237, 234, 224, 0.28);
 
   /* Sidebar / nav — every menu item reads in the same logo-white tone.
      Active state is communicated by the icon color (yellow) + a soft
      yellow-tinted background, not by varying the text weight. Section
      headers + version footer still use a muted tone. */
-  --nav-surface: var(--s-bg-deeper);
-  --nav-border: rgba(255, 255, 255, 0.06);
+  --gl-nav-surface: var(--gl-bg-deeper);
+  --gl-nav-border: rgba(255, 255, 255, 0.06);
   /* Inactive nav items render in nav-text. Keeping this at pure #ffffff
      made inactive rows visually identical to the active row (which uses
-     --s-text-strong = #ffffff). Bone-tinted 60% lets the active row pop:
+     --gl-text-strong = #ffffff). Bone-tinted 60% lets the active row pop:
      active = bright bone + yellow icon, inactive = dimmer bone, hover =
      back to pure white. */
-  --nav-text: rgba(237, 234, 224, 0.6);
-  --nav-text-hover: #ffffff;
-  --nav-text-muted: rgba(255, 255, 255, 0.45);
+  --gl-nav-text: rgba(237, 234, 224, 0.6);
+  --gl-nav-text-hover: #ffffff;
+  --gl-nav-text-muted: rgba(255, 255, 255, 0.45);
 
   /* Status colors */
-  --s-success: #10b981;
-  --s-success-bg: rgba(16, 185, 129, 0.12);
-  --s-success-text: #34d399;
-  --s-danger: #ef4444;
-  --s-danger-bg: rgba(239, 68, 68, 0.12);
-  --s-danger-text: #fca5a5;
-  --s-warning: #f59e0b;
-  --s-warning-bg: rgba(245, 158, 11, 0.12);
-  --s-warning-text: #fbbf24;
+  --gl-success: #10b981;
+  --gl-success-bg: rgba(16, 185, 129, 0.12);
+  --gl-success-text: #34d399;
+  --gl-danger: #ef4444;
+  --gl-danger-bg: rgba(239, 68, 68, 0.12);
+  --gl-danger-text: #fca5a5;
+  --gl-warning: #f59e0b;
+  --gl-warning-bg: rgba(245, 158, 11, 0.12);
+  --gl-warning-text: #fbbf24;
 
   /* Probe-type identity hues — a muted categorical palette used to color-code
      diagnostic check types (rubric). Mid-tone + moderate saturation so each
      hue reads on the dark canvas AND the light styleguide without flipping. */
-  --s-probe-pdp: #E5B567;       /* amber  */
-  --s-probe-category: #5FB6A6;  /* teal   */
-  --s-probe-homepage: #A98EDA;  /* violet */
-  --s-probe-site-wide: #6E9BD6; /* blue   */
-  --s-probe-search: #D98AA6;    /* rose   */
+  --gl-probe-pdp: #E5B567;       /* amber  */
+  --gl-probe-category: #5FB6A6;  /* teal   */
+  --gl-probe-homepage: #A98EDA;  /* violet */
+  --gl-probe-site-wide: #6E9BD6; /* blue   */
+  --gl-probe-search: #D98AA6;    /* rose   */
 
   /* Radii (unchanged) */
-  --s-radius-sm: 6px;
-  --s-radius-md: 8px;
-  --s-radius-lg: 12px;
-  --s-radius-xl: 16px;
+  --gl-radius-sm: 6px;
+  --gl-radius-md: 8px;
+  --gl-radius-lg: 12px;
+  --gl-radius-xl: 16px;
 
   /* Fonts — landing-aligned. Permanent Marker for the brand mark + section
      H2s; Hanken Grotesk for body; ui-mono for eyebrow labels. */
-  --s-font: var(--font-hanken), "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
-  --s-font-brand: var(--font-marker), "Permanent Marker", cursive;
-  --s-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  --gl-font: var(--font-hanken), "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  --gl-font-brand: var(--font-marker), "Permanent Marker", cursive;
+  --gl-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
 
   /* -------------------------------------------------------------------------
      shadcn CSS variables (HSL) — derived from the tokens above so every
@@ -183,48 +192,48 @@ svg {
 }
 
 /* -----------------------------------------------------------------------------
-   Light-mode override — opt-in via `.rre-light` on any container.
+   Light-mode override — opt-in via `.gl-light` on any container.
    Used by the /styleguide split view and by future light surfaces. The
    sidebar stays dark either way (nav-surface tokens are not overridden).
    --------------------------------------------------------------------------- */
-.rre-light {
-  --s-bg: #FAFAF9;
-  --s-bg-deeper: #F2F2F0;
-  --s-surface: #FFFFFF;
+.gl-light {
+  --gl-bg: #FAFAF9;
+  --gl-bg-deeper: #F2F2F0;
+  --gl-surface: #FFFFFF;
   /* Light theme — same rule. surface-alt = surface so any nested
      "alt" container reads as plain white, not off-white-gray. */
-  --s-surface-alt: #FFFFFF;
-  --s-surface-hover: #EFEFEE;
-  --s-border: rgba(0, 0, 0, 0.08);
-  --s-border-strong: rgba(0, 0, 0, 0.16);
+  --gl-surface-alt: #FFFFFF;
+  --gl-surface-hover: #EFEFEE;
+  --gl-border: rgba(0, 0, 0, 0.08);
+  --gl-border-strong: rgba(0, 0, 0, 0.16);
 
-  --s-text: #1A1A1A;
-  --s-text-strong: #000000;
-  --s-text-secondary: #5F5E5A;
-  --s-text-tertiary: #888780;
-  --s-text-muted: #B4B2A9;
+  --gl-text: #1A1A1A;
+  --gl-text-strong: #000000;
+  --gl-text-secondary: #5F5E5A;
+  --gl-text-tertiary: #888780;
+  --gl-text-muted: #B4B2A9;
 
   /* The sidebar stays dark in both themes — it's the brand frame. Pin
-     every nav-* token to its dark-mode value so even when a `rre-light`
+     every nav-* token to its dark-mode value so even when a `gl-light`
      wrapper is present, the sidebar reads identically to dark mode.
      Only the content area picks up the light surface. */
-  --nav-surface: #0E0E11;
-  --nav-border: rgba(255, 255, 255, 0.06);
+  --gl-nav-surface: #0E0E11;
+  --gl-nav-border: rgba(255, 255, 255, 0.06);
   /* Light theme — sidebar stays dark, so mirror the dark-mode dimming
      so the active row pops here too. See the :root block for rationale. */
-  --nav-text: rgba(237, 234, 224, 0.6);
-  --nav-text-hover: #ffffff;
-  --nav-text-muted: rgba(255, 255, 255, 0.45);
+  --gl-nav-text: rgba(237, 234, 224, 0.6);
+  --gl-nav-text-hover: #ffffff;
+  --gl-nav-text-muted: rgba(255, 255, 255, 0.45);
 
-  --s-success: #1D9E75;
-  --s-success-bg: #E1F5EE;
-  --s-success-text: #085041;
-  --s-danger: #A32D2D;
-  --s-danger-bg: #FCEBEB;
-  --s-danger-text: #501313;
-  --s-warning: #B27A00;
-  --s-warning-bg: #FBEFD3;
-  --s-warning-text: #5D3F00;
+  --gl-success: #1D9E75;
+  --gl-success-bg: #E1F5EE;
+  --gl-success-text: #085041;
+  --gl-danger: #A32D2D;
+  --gl-danger-bg: #FCEBEB;
+  --gl-danger-text: #501313;
+  --gl-warning: #B27A00;
+  --gl-warning-bg: #FBEFD3;
+  --gl-warning-text: #5D3F00;
 
   /* shadcn HSL for the light surface */
   --background: 60 6% 98%;
@@ -261,28 +270,28 @@ svg {
    to flip the text tokens locally — without changing the surrounding
    theme.
 
-   Use case: a selected-state card paints itself in `--rre-accent-50`
+   Use case: a selected-state card paints itself in `--gl-accent-50`
    (pale yellow). In dark mode, text inside that card needs to be dark
    to be legible — but everywhere else on the page is still dark theme.
-   Adding `className="on-light-surface"` flips --s-text* to dark just
+   Adding `className="on-light-surface"` flips --gl-text* to dark just
    for that subtree.
 
-   Same shape as the global `.rre-light` class, just scoped to one
+   Same shape as the global `.gl-light` class, just scoped to one
    element. Stack with theme-wide light/dark however you like.
 */
 .on-light-surface {
-  --s-text: #1A1A1A;
-  --s-text-strong: #000000;
-  --s-text-secondary: rgba(19, 19, 22, 0.65);
-  --s-text-tertiary: rgba(19, 19, 22, 0.5);
-  --s-text-muted: rgba(19, 19, 22, 0.32);
+  --gl-text: #1A1A1A;
+  --gl-text-strong: #000000;
+  --gl-text-secondary: rgba(19, 19, 22, 0.65);
+  --gl-text-tertiary: rgba(19, 19, 22, 0.5);
+  --gl-text-muted: rgba(19, 19, 22, 0.32);
 }
 .on-dark-surface {
-  --s-text: #EDEAE0;
-  --s-text-strong: #FFFFFF;
-  --s-text-secondary: rgba(237, 234, 224, 0.65);
-  --s-text-tertiary: rgba(237, 234, 224, 0.45);
-  --s-text-muted: rgba(237, 234, 224, 0.3);
+  --gl-text: #EDEAE0;
+  --gl-text-strong: #FFFFFF;
+  --gl-text-secondary: rgba(237, 234, 224, 0.65);
+  --gl-text-tertiary: rgba(237, 234, 224, 0.45);
+  --gl-text-muted: rgba(237, 234, 224, 0.3);
 }
 
 @layer base {
@@ -303,10 +312,10 @@ html {
 }
 body {
   height: 100%;
-  font-family: var(--s-font);
+  font-family: var(--gl-font);
   font-size: 13px;
-  color: var(--s-text);
-  background: var(--s-bg);
+  color: var(--gl-text);
+  background: var(--gl-bg);
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
 }
@@ -332,14 +341,14 @@ button {
 
 /* Navigation — dark surface, gold accent on active state */
 .s-nav {
-  background: var(--nav-surface);
+  background: var(--gl-nav-surface);
   border-right: none;
   padding: 20px 14px;
   overflow-y: auto;
   position: sticky;
   top: 0;
   height: 100vh;
-  color: var(--nav-text);
+  color: var(--gl-nav-text);
   display: flex;
   flex-direction: column;
 }
@@ -374,7 +383,7 @@ button {
   width: max-content;
 }
 .s-brand-name {
-  font-family: var(--s-font-brand);
+  font-family: var(--gl-font-brand);
   font-size: 26px;
   font-weight: 400;
   letter-spacing: 0.02em;
@@ -387,11 +396,11 @@ button {
      "RECOVER LOST REVENUE" lands at roughly the same width as the
      "GroLabs" wordmark above it. Tuned by eye — the exact width
      depends on the rendered Permanent Marker glyphs. */
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
   font-size: 8.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--rre-accent);
+  color: var(--gl-accent);
   margin-top: 5px;
   white-space: nowrap;
   display: block;
@@ -401,7 +410,7 @@ button {
   margin: 18px 0 6px;
   padding: 0 10px;
   font-size: 10px;
-  color: var(--nav-text-muted);
+  color: var(--gl-nav-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 500;
@@ -412,17 +421,17 @@ button {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: var(--s-radius-md);
+  border-radius: var(--gl-radius-md);
   /* Match the section-trigger typography so leaf items (Dashboard, List,
      Rubric, Benchmarks, Style) read consistently with their section
      headers (CONVERSION, CATALOG, …). All nav rows now use the same
      uppercase, letter-spaced small-caps style — the active row is still
-     distinguished by --s-text-strong + yellow icon. */
+     distinguished by --gl-text-strong + yellow icon. */
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 500;
-  color: var(--nav-text);
+  color: var(--gl-nav-text);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   user-select: none;
@@ -430,12 +439,12 @@ button {
 }
 .s-nav-item:hover {
   background: rgba(255, 255, 255, 0.04);
-  color: var(--nav-text-hover);
+  color: var(--gl-nav-text-hover);
 }
 /* Active row: yellow icon, logo-white text.
    The icon picks up the yellow from the inline `color="#fae194"` prop
    passed to Lucide in Sidebar.tsx — that bypasses every CSS cascade
-   issue we ran into. The label here renders in --s-text-strong so the
+   issue we ran into. The label here renders in --gl-text-strong so the
    active row reads "lit up but not loud". Background stays transparent
    either way: no row highlight, ever. */
 .s-nav-item.active,
@@ -444,7 +453,7 @@ button {
 .s-nav-item.active:focus-visible,
 .s-nav-item.active:active {
   background: transparent !important;
-  color: var(--s-text-strong);
+  color: var(--gl-text-strong);
   outline: none;
   box-shadow: none;
 }
@@ -472,8 +481,8 @@ button {
 .s-nav-item.active .s-nav-icon,
 .s-nav-item.active svg,
 .s-nav-item.active svg * {
-  color: var(--rre-accent) !important;
-  stroke: var(--rre-accent) !important;
+  color: var(--gl-accent) !important;
+  stroke: var(--gl-accent) !important;
 }
 .s-nav-badge {
   margin-left: auto;
@@ -481,7 +490,7 @@ button {
   padding: 1px 7px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
-  color: var(--nav-text-muted);
+  color: var(--gl-nav-text-muted);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -504,14 +513,14 @@ button {
   border: none;
   cursor: pointer;
   font-size: 10px;
-  color: var(--nav-text-muted);
+  color: var(--gl-nav-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 500;
   transition: color 0.12s;
 }
 .s-nav-section-trigger:hover {
-  color: var(--nav-text-hover);
+  color: var(--gl-nav-text-hover);
 }
 .s-nav-section-trigger .s-nav-icon {
   opacity: 0.6;
@@ -533,7 +542,7 @@ button {
    a glance without indentation alone carrying the weight. */
 .s-nav-collapsible-inner {
   background: rgba(255, 255, 255, 0.025);
-  border-radius: var(--s-radius-md);
+  border-radius: var(--gl-radius-md);
   padding: 4px 4px 4px 16px;
   margin: 2px 0 6px;
 }
@@ -586,24 +595,24 @@ button {
   gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 14px;
-  border-bottom: 0.5px solid var(--s-border);
+  border-bottom: 0.5px solid var(--gl-border);
 }
 .s-breadcrumb {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 .s-breadcrumb a {
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   cursor: pointer;
 }
 .s-breadcrumb a:hover {
-  color: var(--rre-accent);
+  color: var(--gl-accent);
 }
 .s-breadcrumb-sep {
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
 }
 .s-topbar-spacer {
   flex: 1;
@@ -616,18 +625,18 @@ button {
   width: 100%;
   height: 32px;
   padding: 0 12px 0 32px;
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
   border: 0.5px solid transparent;
-  border-radius: var(--s-radius-md);
+  border-radius: var(--gl-radius-md);
   font-size: 12px;
   font-family: inherit;
-  color: var(--s-text);
+  color: var(--gl-text);
   outline: none;
   transition: background 0.12s, border-color 0.12s;
 }
 .s-search input:focus {
-  background: var(--s-surface);
-  border-color: var(--s-border-strong);
+  background: var(--gl-surface);
+  border-color: var(--gl-border-strong);
 }
 .s-search-icon {
   position: absolute;
@@ -636,7 +645,7 @@ button {
   transform: translateY(-50%);
   width: 13px;
   height: 13px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   pointer-events: none;
 }
 .s-search kbd {
@@ -646,10 +655,10 @@ button {
   transform: translateY(-50%);
   font-size: 10px;
   padding: 2px 5px;
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
   border-radius: 4px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   font-family: inherit;
   pointer-events: none;
 }
@@ -657,18 +666,18 @@ button {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--rre-accent-50);
+  background: var(--gl-accent-50);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 500;
-  color: var(--rre-accent-800);
+  color: var(--gl-accent-800);
   cursor: pointer;
   border: none;
 }
 .s-user:hover {
-  background: var(--rre-accent-100);
+  background: var(--gl-accent-100);
 }
 
 /* Title row */
@@ -693,9 +702,9 @@ button {
 }
 .s-meta {
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   margin: 0;
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
 }
 .s-title-actions {
   display: flex;
@@ -718,21 +727,21 @@ button {
   line-height: 1.4;
 }
 .s-tag-accent {
-  background: var(--rre-accent-50);
-  color: var(--rre-accent-800);
+  background: var(--gl-accent-50);
+  color: var(--gl-accent-800);
 }
 .s-tag-success {
-  background: var(--s-success-bg);
-  color: var(--s-success-text);
+  background: var(--gl-success-bg);
+  color: var(--gl-success-text);
 }
 .s-tag-neutral {
-  background: var(--s-surface-alt);
-  color: var(--s-text-secondary);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text-secondary);
+  border: 0.5px solid var(--gl-border);
 }
 .s-tag-danger {
-  background: var(--s-danger-bg);
-  color: var(--s-danger-text);
+  background: var(--gl-danger-bg);
+  color: var(--gl-danger-text);
 }
 
 /* =============================================================================
@@ -747,30 +756,30 @@ button {
   margin-bottom: 20px;
 }
 .s-strip.info {
-  background: var(--rre-accent-50);
-  border-left: 3px solid var(--rre-accent);
+  background: var(--gl-accent-50);
+  border-left: 3px solid var(--gl-accent);
 }
 .s-strip.success {
-  background: var(--s-success-bg);
-  border-left: 3px solid var(--s-success);
+  background: var(--gl-success-bg);
+  border-left: 3px solid var(--gl-success);
 }
 .s-strip.warning {
-  background: var(--s-surface-hover);
-  border-left: 3px solid var(--s-border-strong);
+  background: var(--gl-surface-hover);
+  border-left: 3px solid var(--gl-border-strong);
 }
 .s-strip-title {
   font-weight: 500;
   font-size: 13px;
 }
-.s-strip.info .s-strip-title { color: var(--rre-accent-800); }
-.s-strip.success .s-strip-title { color: var(--s-success-text); }
+.s-strip.info .s-strip-title { color: var(--gl-accent-800); }
+.s-strip.success .s-strip-title { color: var(--gl-success-text); }
 .s-strip-text {
   font-size: 12px;
   flex: 1;
 }
-.s-strip.info .s-strip-text { color: var(--rre-accent-800); }
-.s-strip.success .s-strip-text { color: var(--s-success-text); }
-.s-strip.warning .s-strip-text { color: var(--s-text-secondary); }
+.s-strip.info .s-strip-text { color: var(--gl-accent-800); }
+.s-strip.success .s-strip-text { color: var(--gl-success-text); }
+.s-strip.warning .s-strip-text { color: var(--gl-text-secondary); }
 .s-strip-cta {
   font-size: 12px;
   cursor: pointer;
@@ -781,7 +790,7 @@ button {
   color: inherit;
   padding: 0;
 }
-.s-strip.info .s-strip-cta { color: var(--rre-accent); }
+.s-strip.info .s-strip-cta { color: var(--gl-accent); }
 .s-strip-cta:hover {
   text-decoration: underline;
 }
@@ -813,14 +822,14 @@ button {
    ========================================================================== */
 
 .s-card {
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
   padding: 20px 22px;
 }
 .s-card-label {
   font-size: 13px;
-  color: var(--s-text);
+  color: var(--gl-text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 600;
@@ -834,7 +843,7 @@ button {
   margin: 0;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -845,14 +854,14 @@ button {
   display: inline-block;
   width: 2px;
   height: 14px;
-  background: var(--rre-accent);
+  background: var(--gl-accent);
   border-radius: 1px;
   flex-shrink: 0;
 }
 .s-card-sub {
   font-size: 12px;
   font-weight: 400;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   line-height: 1.5;
   margin: 6px 0 16px;
 }
@@ -864,7 +873,7 @@ button {
 }
 .s-card-link {
   font-size: 12px;
-  color: var(--rre-accent);
+  color: var(--gl-accent);
   cursor: pointer;
   font-weight: 500;
   background: none;
@@ -892,9 +901,9 @@ button {
   left: 10px;
   padding: 0 6px;
   /* Match the field surface so the label "notch" reads as a cutout. */
-  background: var(--s-surface);
+  background: var(--gl-surface);
   font-size: 10px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 500;
@@ -908,7 +917,7 @@ button {
   margin-top: 6px;
   font-size: 12px;
   font-weight: 400;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   line-height: 1.5;
 }
 .s-input,
@@ -916,25 +925,25 @@ button {
 .s-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: var(--s-surface);
+  background: var(--gl-surface);
   /* Border picks up the same muted tone as field-hint copy
-     (--s-text-tertiary) so an empty input still reads as a tangible
+     (--gl-text-tertiary) so an empty input still reads as a tangible
      surface — not invisible. The earlier "empty = transparent border"
      rule made fields disappear; this matches the hint-tone instead. */
-  border: 1px solid var(--s-text-tertiary);
-  border-radius: var(--s-radius-md);
+  border: 1px solid var(--gl-text-tertiary);
+  border-radius: var(--gl-radius-md);
   font-size: 14px;
   font-weight: 400;
   font-family: inherit;
-  color: var(--s-text);
+  color: var(--gl-text);
   outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 .s-input:disabled,
 .s-select:disabled,
 .s-textarea:disabled {
-  background: var(--s-surface-alt);
-  color: var(--s-text-tertiary);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text-tertiary);
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -945,8 +954,8 @@ button {
 .s-readonly .s-input:disabled,
 .s-readonly .s-select:disabled,
 .s-readonly .s-textarea:disabled {
-  background: var(--s-surface);
-  color: var(--s-text);
+  background: var(--gl-surface);
+  color: var(--gl-text);
   cursor: default;
   opacity: 1;
 }
@@ -954,7 +963,7 @@ button {
 .s-select::placeholder,
 .s-textarea::placeholder {
   font-weight: 400;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 .s-input,
 .s-select {
@@ -963,12 +972,12 @@ button {
 .s-input:hover,
 .s-select:hover,
 .s-textarea:hover {
-  border-color: var(--s-border-strong);
+  border-color: var(--gl-border-strong);
 }
 .s-input:focus,
 .s-select:focus,
 .s-textarea:focus {
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
@@ -983,7 +992,7 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
   box-shadow: 0 0 0 3px rgba(250, 225, 148, 0.18);
 }
 
@@ -992,24 +1001,24 @@ select:focus {
    email box), overriding the dark canvas. The browser's autofill background
    can't be set directly, so cover it with an inset box-shadow in the canvas
    color and restore the text color. The long transition defers the yellow
-   flash. --s-surface resolves per theme, so this is correct in light + dark. */
+   flash. --gl-surface resolves per theme, so this is correct in light + dark. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 .s-input:-webkit-autofill,
 .s-select:-webkit-autofill,
 .s-textarea:-webkit-autofill {
-  -webkit-text-fill-color: var(--s-text);
-  -webkit-box-shadow: inset 0 0 0 1000px var(--s-surface);
-  caret-color: var(--s-text);
+  -webkit-text-fill-color: var(--gl-text);
+  -webkit-box-shadow: inset 0 0 0 1000px var(--gl-surface);
+  caret-color: var(--gl-text);
   transition: background-color 9999s ease-in-out 0s;
 }
 input:-webkit-autofill:focus,
 .s-input:-webkit-autofill:focus,
 .s-select:-webkit-autofill:focus,
 .s-textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: inset 0 0 0 1000px var(--s-surface),
+  -webkit-box-shadow: inset 0 0 0 1000px var(--gl-surface),
     0 0 0 3px rgba(250, 225, 148, 0.18);
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
 }
 
 /* Content text inside ALL form controls is semi-bold (600) — whether
@@ -1046,7 +1055,7 @@ input[type="date"].s-input {
 
 /* The earlier "empty = transparent border / background" rule was
    removed per design feedback — empty inputs should still read as
-   tangible surfaces. The border color above (--s-text-tertiary)
+   tangible surfaces. The border color above (--gl-text-tertiary)
    matches the field-hint copy so empty fields look like a tangible
    tray instead of disappearing. */
 
@@ -1061,7 +1070,7 @@ input[type="date"].s-input {
   font-size: 14px;
 }
 .s-input-mono {
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
   font-size: 12px;
 }
 
@@ -1080,24 +1089,24 @@ input[type="date"].s-input {
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
   border-radius: 999px;
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   cursor: pointer;
   transition: all 0.12s;
   user-select: none;
   font-family: inherit;
 }
 .s-filter:hover {
-  border-color: var(--s-border-strong);
-  color: var(--s-text);
+  border-color: var(--gl-border-strong);
+  color: var(--gl-text);
 }
 .s-filter.active {
-  background: var(--rre-accent-50);
-  border-color: var(--rre-accent);
-  color: var(--rre-accent-800);
+  background: var(--gl-accent-50);
+  border-color: var(--gl-accent);
+  color: var(--gl-accent-800);
   font-weight: 500;
 }
 .s-filter-count {
@@ -1115,7 +1124,7 @@ input[type="date"].s-input {
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 0.5px solid var(--s-border);
+  border-bottom: 0.5px solid var(--gl-border);
 }
 .s-toggle-row:last-child {
   border-bottom: 0;
@@ -1134,7 +1143,7 @@ input[type="date"].s-input {
 .s-toggle-sub {
   font-size: 12px;
   font-weight: 400;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   margin-top: 3px;
   line-height: 1.5;
 }
@@ -1142,16 +1151,16 @@ input[type="date"].s-input {
   position: relative;
   width: 36px;
   height: 20px;
-  background: var(--s-surface-hover);
+  background: var(--gl-surface-hover);
   border-radius: 999px;
   cursor: pointer;
   transition: background 0.15s;
   flex-shrink: 0;
-  border: 0.5px solid var(--s-border);
+  border: 0.5px solid var(--gl-border);
 }
 .s-toggle.on {
-  background: var(--rre-accent);
-  border-color: var(--rre-accent);
+  background: var(--gl-accent);
+  border-color: var(--gl-accent);
 }
 .s-toggle::after {
   content: "";
@@ -1176,13 +1185,13 @@ input[type="date"].s-input {
 .s-gallery-main {
   width: 100%;
   aspect-ratio: 1;
-  background: var(--s-surface-alt);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface-alt);
+  border-radius: var(--gl-radius-lg);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
   font-size: 11px;
   position: relative;
   margin-bottom: 10px;
@@ -1191,9 +1200,9 @@ input[type="date"].s-input {
   content: "";
   position: absolute;
   inset: 20%;
-  background: var(--s-surface);
-  border-radius: var(--s-radius-md);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface);
+  border-radius: var(--gl-radius-md);
+  border: 0.5px solid var(--gl-border);
 }
 .s-gallery-main-label {
   position: relative;
@@ -1206,7 +1215,7 @@ input[type="date"].s-input {
 .s-gallery-main-label svg {
   width: 28px;
   height: 28px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 .s-gallery-thumbs {
   display: grid;
@@ -1215,14 +1224,14 @@ input[type="date"].s-input {
 }
 .s-thumb {
   aspect-ratio: 1;
-  background: var(--s-surface-alt);
-  border-radius: var(--s-radius-sm);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface-alt);
+  border-radius: var(--gl-radius-sm);
+  border: 0.5px solid var(--gl-border);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 
 /* =============================================================================
@@ -1240,51 +1249,51 @@ input[type="date"].s-input {
 .s-table th {
   text-align: left;
   font-weight: 500;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 12px;
-  border-bottom: 0.5px solid var(--s-border);
+  border-bottom: 0.5px solid var(--gl-border);
   white-space: nowrap;
 }
 .s-table td {
   padding: 12px;
-  border-bottom: 0.5px solid var(--s-border);
+  border-bottom: 0.5px solid var(--gl-border);
   vertical-align: middle;
 }
 .s-table tbody tr:last-child td {
   border-bottom: 0;
 }
 .s-table tbody tr:hover td {
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
 }
 .s-table tbody tr.clickable {
   cursor: pointer;
 }
 
 .s-sku {
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
   font-size: 11px;
   font-weight: 500;
-  color: var(--s-text);
-  background: var(--s-surface-alt);
+  color: var(--gl-text);
+  background: var(--gl-surface-alt);
   padding: 2px 6px;
   border-radius: 4px;
 }
 .s-barcode {
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
 }
 .s-size-pill {
   display: inline-flex;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
   font-size: 11px;
   font-weight: 500;
-  color: var(--s-text);
+  color: var(--gl-text);
   font-variant-numeric: tabular-nums;
 }
 .s-table-actions {
@@ -1297,9 +1306,9 @@ input[type="date"].s-input {
   height: 28px;
   border: none;
   background: transparent;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   cursor: pointer;
-  border-radius: var(--s-radius-sm);
+  border-radius: var(--gl-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1307,12 +1316,12 @@ input[type="date"].s-input {
   transition: background 0.12s, color 0.12s;
 }
 .s-icon-btn:hover {
-  background: var(--s-surface-alt);
-  color: var(--s-text);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text);
 }
 .s-icon-btn.danger:hover {
-  background: var(--s-danger-bg);
-  color: var(--s-danger-text);
+  background: var(--gl-danger-bg);
+  color: var(--gl-danger-text);
 }
 
 /* Status dot */
@@ -1327,9 +1336,9 @@ input[type="date"].s-input {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.s-dot.success { background: var(--s-success); }
-.s-dot.neutral { background: var(--s-text-muted); }
-.s-dot.accent { background: var(--rre-accent); }
+.s-dot.success { background: var(--gl-success); }
+.s-dot.neutral { background: var(--gl-text-muted); }
+.s-dot.accent { background: var(--gl-accent); }
 
 /* Product thumbnail cell */
 .s-prod-cell {
@@ -1340,14 +1349,14 @@ input[type="date"].s-input {
 .s-prod-thumb {
   width: 36px;
   height: 36px;
-  border-radius: var(--s-radius-sm);
-  background: var(--s-surface-alt);
-  border: 0.5px solid var(--s-border);
+  border-radius: var(--gl-radius-sm);
+  background: var(--gl-surface-alt);
+  border: 0.5px solid var(--gl-border);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
   font-size: 10px;
   font-weight: 600;
 }
@@ -1355,12 +1364,12 @@ input[type="date"].s-input {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
-  color: var(--s-text);
+  color: var(--gl-text);
 }
 .s-prod-slug {
   font-size: 11px;
-  color: var(--s-text-tertiary);
-  font-family: var(--s-font-mono);
+  color: var(--gl-text-tertiary);
+  font-family: var(--gl-font-mono);
 }
 
 /* =============================================================================
@@ -1372,24 +1381,24 @@ input[type="date"].s-input {
   font-size: 13px;
   font-family: inherit;
   font-weight: 500;
-  border-radius: var(--s-radius-md);
+  border-radius: var(--gl-radius-md);
   cursor: pointer;
   /* Default secondary border. A naked `.s-btn` (no -primary / -ghost /
      -danger modifier) needs to read as a clickable button, not a text
      label. Modifiers below override where they supply their own
      border-color (primary fills yellow, danger uses red bg, etc.). */
-  border: 0.5px solid var(--s-border-strong);
+  border: 0.5px solid var(--gl-border-strong);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  color: var(--s-text);
+  color: var(--gl-text);
   background: transparent;
   text-decoration: none;
 }
 .s-btn:hover {
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
 }
 .s-btn:disabled {
   opacity: 0.5;
@@ -1397,23 +1406,23 @@ input[type="date"].s-input {
 }
 .s-btn-secondary {
   background: transparent;
-  border-color: var(--s-border-strong);
-  color: var(--s-text);
+  border-color: var(--gl-border-strong);
+  color: var(--gl-text);
 }
 .s-btn-secondary:hover {
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
 }
 .s-btn-primary {
-  background: var(--rre-accent);
+  background: var(--gl-accent);
   /* Dark text on yellow — the kinetic yellow accent (#fae194) has
      poor contrast with white, so the action color uses #131316. */
-  color: var(--rre-accent-on);
-  border-color: var(--rre-accent);
+  color: var(--gl-accent-on);
+  border-color: var(--gl-accent);
   font-weight: 600;
 }
 .s-btn-primary:hover {
-  background: var(--rre-accent-hover);
-  border-color: var(--rre-accent-hover);
+  background: var(--gl-accent-hover);
+  border-color: var(--gl-accent-hover);
   transform: translateY(-1px);
 }
 .s-btn-primary:active {
@@ -1421,18 +1430,18 @@ input[type="date"].s-input {
 }
 .s-btn-ghost {
   background: transparent;
-  border-color: var(--s-border);
-  color: var(--s-text-secondary);
+  border-color: var(--gl-border);
+  color: var(--gl-text-secondary);
   padding: 6px 12px;
   font-size: 12px;
 }
 .s-btn-ghost:hover {
-  background: var(--s-surface-alt);
-  color: var(--s-text);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text);
 }
 .s-btn-danger {
-  background: var(--s-danger-bg);
-  color: var(--s-danger-text);
+  background: var(--gl-danger-bg);
+  color: var(--gl-danger-text);
   border-color: transparent;
 }
 
@@ -1443,7 +1452,7 @@ input[type="date"].s-input {
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 0.5px solid var(--s-border);
+  border-top: 0.5px solid var(--gl-border);
 }
 
 /* Pagination */
@@ -1452,11 +1461,11 @@ input[type="date"].s-input {
   align-items: center;
   justify-content: space-between;
   padding: 14px 12px;
-  border-top: 0.5px solid var(--s-border);
+  border-top: 0.5px solid var(--gl-border);
 }
 .s-page-info {
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
 }
 .s-page-btns {
   display: flex;
@@ -1468,22 +1477,22 @@ input[type="date"].s-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0.5px solid var(--s-border);
-  background: var(--s-surface);
-  border-radius: var(--s-radius-sm);
+  border: 0.5px solid var(--gl-border);
+  background: var(--gl-surface);
+  border-radius: var(--gl-radius-sm);
   cursor: pointer;
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   transition: all 0.12s;
   font-family: inherit;
 }
 .s-page-btn:hover {
-  border-color: var(--s-border-strong);
-  color: var(--s-text);
+  border-color: var(--gl-border-strong);
+  color: var(--gl-text);
 }
 .s-page-btn.active {
-  background: var(--rre-accent);
-  border-color: var(--rre-accent);
+  background: var(--gl-accent);
+  border-color: var(--gl-accent);
   color: #fff;
 }
 
@@ -1491,13 +1500,13 @@ input[type="date"].s-input {
 .s-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 0.5px solid var(--s-border);
+  border-bottom: 0.5px solid var(--gl-border);
   margin-bottom: 16px;
 }
 .s-tab {
   padding: 10px 16px;
   font-size: 13px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.12s;
@@ -1510,7 +1519,7 @@ input[type="date"].s-input {
   font-family: inherit;
 }
 .s-tab:hover {
-  color: var(--s-text);
+  color: var(--gl-text);
 }
 /* Active tab: yellow underline + a contrast bump on the label.
    The text color itself is NOT yellow — only the underline carries
@@ -1519,8 +1528,8 @@ input[type="date"].s-input {
      dark theme  →  inactive: muted bone   active: pure white
      light theme →  inactive: gray         active: pure black */
 .s-tab.active {
-  color: var(--s-text-strong);
-  border-bottom-color: var(--rre-accent);
+  color: var(--gl-text-strong);
+  border-bottom-color: var(--gl-accent);
   font-weight: 600;
 }
 
@@ -1532,15 +1541,15 @@ input[type="date"].s-input {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: var(--s-bg);
+  background: var(--gl-bg);
   padding: 24px;
 }
 .s-auth-card {
   width: 100%;
   max-width: 380px;
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
   padding: 32px 28px;
 }
 .s-auth-brand {
@@ -1564,24 +1573,24 @@ input[type="date"].s-input {
 }
 .s-auth-sub {
   font-size: 13px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   margin: 0 0 24px;
 }
 .s-auth-error {
-  background: var(--s-danger-bg);
-  color: var(--s-danger-text);
+  background: var(--gl-danger-bg);
+  color: var(--gl-danger-text);
   font-size: 12px;
   padding: 10px 12px;
-  border-radius: var(--s-radius-md);
+  border-radius: var(--gl-radius-md);
   margin-bottom: 16px;
-  border-left: 3px solid var(--s-danger);
+  border-left: 3px solid var(--gl-danger);
 }
 .s-auth-footnote {
   font-size: 11px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   text-align: center;
   margin-top: 20px;
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
 }
 
 /* =============================================================================
@@ -1595,36 +1604,36 @@ input[type="date"].s-input {
 .s-empty-title {
   font-size: 15px;
   font-weight: 500;
-  color: var(--s-text);
+  color: var(--gl-text);
   margin-bottom: 6px;
 }
 .s-empty-sub {
   font-size: 13px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   margin-bottom: 18px;
 }
 
 /* Misc helpers */
 .s-separator {
   height: 0.5px;
-  background: var(--s-border);
+  background: var(--gl-border);
   margin: 16px 0;
 }
 .text-mono {
-  font-family: var(--s-font-mono);
+  font-family: var(--gl-font-mono);
   font-size: 12px;
 }
 .text-muted {
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
 }
 .text-secondary {
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
 }
 .text-success {
-  color: var(--s-success-text);
+  color: var(--gl-success-text);
 }
 .text-accent {
-  color: var(--rre-accent-800);
+  color: var(--gl-accent-800);
 }
 .text-right {
   text-align: right;
@@ -1650,13 +1659,13 @@ input[type="date"].s-input {
 .s-page-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--s-text);
+  color: var(--gl-text);
   margin: 0 0 6px;
 }
 .s-page-description {
   font-size: 12px;
   font-weight: 400;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   margin: 0;
   line-height: 1.5;
 }
@@ -1679,7 +1688,7 @@ input[type="date"].s-input {
 }
 .s-field-stored-label {
   font-size: 13px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   flex: 1;
 }
 
@@ -1692,7 +1701,7 @@ input[type="date"].s-input {
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 
 /* Floating label for Select */
@@ -1700,7 +1709,7 @@ input[type="date"].s-input {
   display: block;
   font-size: 11px;
   font-weight: 500;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 4px;
@@ -1711,11 +1720,11 @@ input[type="date"].s-input {
   align-items: center;
   gap: 10px;
   padding: 10px 0;
-  border-top: 0.5px solid var(--s-border);
+  border-top: 0.5px solid var(--gl-border);
 }
 .s-status-label {
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 500;
@@ -1731,16 +1740,16 @@ input[type="date"].s-input {
   border-radius: 99px;
 }
 .s-status-badge--success {
-  background: var(--s-success-bg);
-  color: var(--s-success-text);
+  background: var(--gl-success-bg);
+  color: var(--gl-success-text);
 }
 .s-status-badge--danger {
-  background: var(--s-danger-bg);
-  color: var(--s-danger-text);
+  background: var(--gl-danger-bg);
+  color: var(--gl-danger-text);
 }
 .s-status-badge--neutral {
-  background: var(--s-surface-alt);
-  color: var(--s-text-secondary);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text-secondary);
 }
 
 .s-config-actions {
@@ -1757,15 +1766,15 @@ input[type="date"].s-input {
   display: grid;
   grid-template-columns: 280px 1fr;
   min-height: calc(100vh - 200px);
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
   overflow: hidden;
 }
 
 .s-split-aside {
-  background: var(--s-surface-alt);
-  border-right: 0.5px solid var(--s-border);
+  background: var(--gl-surface-alt);
+  border-right: 0.5px solid var(--gl-border);
   padding: 16px 14px;
   overflow-y: auto;
 }
@@ -1781,7 +1790,7 @@ input[type="date"].s-input {
 .s-aside-section-label {
   font-size: 10px;
   font-weight: 500;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 0 0 10px;
@@ -1800,11 +1809,11 @@ input[type="date"].s-input {
   align-items: center;
   gap: 5px;
   padding: 5px 11px;
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
   border-radius: 999px;
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   cursor: pointer;
   user-select: none;
   font-family: inherit;
@@ -1812,13 +1821,13 @@ input[type="date"].s-input {
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 .s-pill:hover {
-  border-color: var(--s-border-strong);
-  color: var(--s-text);
+  border-color: var(--gl-border-strong);
+  color: var(--gl-text);
 }
 .s-pill.active {
-  background: var(--rre-accent-50);
-  border-color: var(--rre-accent);
-  color: var(--rre-accent-800);
+  background: var(--gl-accent-50);
+  border-color: var(--gl-accent);
+  color: var(--gl-accent-800);
   font-weight: 500;
 }
 
@@ -1830,18 +1839,18 @@ input[type="date"].s-input {
   width: 100%;
   height: 32px;
   padding: 0 10px 0 30px;
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
-  border-radius: var(--s-radius-md);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
+  border-radius: var(--gl-radius-md);
   font-size: 12px;
   font-family: inherit;
-  color: var(--s-text);
+  color: var(--gl-text);
   outline: none;
   box-sizing: border-box;
 }
 .s-aside-search input:focus {
-  border-color: var(--rre-accent);
-  box-shadow: 0 0 0 3px var(--rre-accent-50);
+  border-color: var(--gl-accent);
+  box-shadow: 0 0 0 3px var(--gl-accent-50);
 }
 .s-aside-search-icon {
   position: absolute;
@@ -1849,7 +1858,7 @@ input[type="date"].s-input {
   top: 9px;
   width: 13px;
   height: 13px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   pointer-events: none;
 }
 
@@ -1867,10 +1876,10 @@ input[type="date"].s-input {
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  border-radius: var(--s-radius-sm);
+  border-radius: var(--gl-radius-sm);
   cursor: pointer;
   user-select: none;
-  color: var(--s-text);
+  color: var(--gl-text);
   font-weight: 500;
   font-size: 13px;
   font-family: inherit;
@@ -1880,35 +1889,35 @@ input[type="date"].s-input {
   text-align: left;
 }
 .s-tree-l1:hover {
-  background: var(--s-surface-hover);
+  background: var(--gl-surface-hover);
 }
 .s-tree-l1.expanded {
-  color: var(--rre-accent-600);
+  color: var(--gl-accent-600);
 }
 .s-tree-caret {
   width: 12px;
   height: 12px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   transition: transform 0.15s;
   flex-shrink: 0;
 }
 .s-tree-l1.expanded .s-tree-caret {
   transform: rotate(90deg);
-  color: var(--rre-accent-600);
+  color: var(--gl-accent-600);
 }
 .s-tree-icon {
   width: 14px;
   height: 14px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   flex-shrink: 0;
 }
 .s-tree-l1.expanded .s-tree-icon {
-  color: var(--rre-accent);
+  color: var(--gl-accent);
 }
 .s-tree-count {
   margin-left: auto;
   font-size: 11px;
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
   font-variant-numeric: tabular-nums;
 }
 .s-tree-children {
@@ -1921,27 +1930,27 @@ input[type="date"].s-input {
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  border-radius: var(--s-radius-sm);
+  border-radius: var(--gl-radius-sm);
   cursor: pointer;
   user-select: none;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   font-size: 13px;
   text-decoration: none;
 }
 .s-tree-l2:hover {
-  background: var(--s-surface-hover);
-  color: var(--s-text);
+  background: var(--gl-surface-hover);
+  color: var(--gl-text);
 }
 .s-tree-l2.selected {
-  background: var(--rre-accent-50);
-  color: var(--rre-accent-800);
+  background: var(--gl-accent-50);
+  color: var(--gl-accent-800);
   font-weight: 500;
 }
 .s-tree-l2 .s-tree-icon {
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
 }
 .s-tree-l2.selected .s-tree-icon {
-  color: var(--rre-accent-600);
+  color: var(--gl-accent-600);
 }
 
 /* =============================================================================
@@ -1949,9 +1958,9 @@ input[type="date"].s-input {
    ========================================================================== */
 
 .s-acc {
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
   overflow: hidden;
 }
 
@@ -1968,12 +1977,12 @@ input[type="date"].s-input {
   display: none;
 }
 .s-acc-summary:hover {
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
 }
 .s-acc-chev {
   width: 14px;
   height: 14px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   transition: transform 0.15s;
   flex-shrink: 0;
 }
@@ -1983,14 +1992,14 @@ input[type="date"].s-input {
 .s-acc-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--s-text);
+  color: var(--gl-text);
 }
 .s-acc-pic {
   width: 30px;
   height: 30px;
-  border-radius: var(--s-radius-md);
-  background: var(--rre-accent-50);
-  color: var(--rre-accent-600);
+  border-radius: var(--gl-radius-md);
+  background: var(--gl-accent-50);
+  color: var(--gl-accent-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2002,8 +2011,8 @@ input[type="date"].s-input {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--s-success-bg);
-  color: var(--s-success-text);
+  background: var(--gl-success-bg);
+  color: var(--gl-success-text);
   margin-left: auto;
 }
 
@@ -2043,7 +2052,7 @@ input[type="date"].s-input {
   padding-bottom: 0;
 }
 .s-def-row-label {
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2051,10 +2060,10 @@ input[type="date"].s-input {
   padding-top: 2px;
 }
 .s-def-row-value {
-  color: var(--s-text);
+  color: var(--gl-text);
 }
 .s-def-row-value a {
-  color: var(--rre-accent-600);
+  color: var(--gl-accent-600);
   text-decoration: none;
 }
 .s-def-row-value a:hover {
@@ -2077,10 +2086,10 @@ input[type="date"].s-input {
   border-bottom: 0;
 }
 .s-attr-row[open] {
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
   margin: 0 -8px;
   padding: 0 8px;
-  border-radius: var(--s-radius-sm);
+  border-radius: var(--gl-radius-sm);
   border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
 }
 .s-attr-summary {
@@ -2097,7 +2106,7 @@ input[type="date"].s-input {
 .s-attr-chev {
   width: 14px;
   height: 14px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   transition: transform 0.15s;
   flex-shrink: 0;
 }
@@ -2113,13 +2122,13 @@ input[type="date"].s-input {
   width: 22px;
   height: 22px;
   border-radius: 5px;
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--s-text-secondary);
-  font-family: var(--s-font-mono);
+  color: var(--gl-text-secondary);
+  font-family: var(--gl-font-mono);
   font-weight: 600;
   font-size: 11px;
 }
@@ -2136,16 +2145,16 @@ input[type="date"].s-input {
   background: #CECBF6;
 }
 .s-type-glyph.num {
-  color: var(--rre-accent-600);
-  background: var(--rre-accent-50);
+  color: var(--gl-accent-600);
+  background: var(--gl-accent-50);
 }
 .s-type-glyph.text-t {
-  color: var(--s-text-secondary);
-  background: var(--s-surface-alt);
+  color: var(--gl-text-secondary);
+  background: var(--gl-surface-alt);
 }
 .s-type-glyph.bool {
-  color: var(--s-success-text);
-  background: var(--s-success-bg);
+  color: var(--gl-success-text);
+  background: var(--gl-success-bg);
 }
 .s-type-glyph.date {
   color: #854F0B;
@@ -2171,7 +2180,7 @@ input[type="date"].s-input {
   background: #EF9F27;
 }
 .s-req-dot.opt {
-  background: var(--s-text-muted);
+  background: var(--gl-text-muted);
 }
 
 .s-attr-name {
@@ -2179,12 +2188,12 @@ input[type="date"].s-input {
   min-width: 0;
 }
 .s-attr-name a {
-  color: var(--s-text);
+  color: var(--gl-text);
   text-decoration: none;
   font-weight: 500;
 }
 .s-attr-name a:hover {
-  color: var(--rre-accent-600);
+  color: var(--gl-accent-600);
   text-decoration: underline;
 }
 
@@ -2195,11 +2204,11 @@ input[type="date"].s-input {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   padding: 4px 0;
 }
 .s-attr-body-label .lbl {
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 
 /* Option pills */
@@ -2212,17 +2221,17 @@ input[type="date"].s-input {
   display: inline-flex;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--s-surface);
-  border: 0.5px solid var(--s-border);
+  background: var(--gl-surface);
+  border: 0.5px solid var(--gl-border);
   font-size: 11px;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   cursor: pointer;
   text-decoration: none;
 }
 .s-opt:hover {
-  background: var(--rre-accent-50);
-  color: var(--rre-accent-800);
-  border-color: var(--rre-accent);
+  background: var(--gl-accent-50);
+  color: var(--gl-accent-800);
+  border-color: var(--gl-accent);
 }
 
 /* Per-species two-column block */
@@ -2232,8 +2241,8 @@ input[type="date"].s-input {
   gap: 12px;
 }
 .s-species-card {
-  background: var(--s-surface-alt);
-  border-radius: var(--s-radius-md);
+  background: var(--gl-surface-alt);
+  border-radius: var(--gl-radius-md);
   padding: 12px 14px;
 }
 .s-species-card-h {
@@ -2250,18 +2259,18 @@ input[type="date"].s-input {
   font-size: 12px;
 }
 .s-species-card-row .lbl {
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 .s-species-card-row .val {
-  color: var(--s-text);
+  color: var(--gl-text);
 }
 .s-species-card-badge {
   padding: 1px 8px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--rre-accent-100);
-  color: var(--rre-accent-800);
+  background: var(--gl-accent-100);
+  color: var(--gl-accent-800);
 }
 
 /* Compact products table for the in-category list */
@@ -2273,12 +2282,12 @@ input[type="date"].s-input {
 .s-table-compact th {
   text-align: left;
   font-weight: 500;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 8px 10px;
-  border-bottom: 0.5px solid var(--s-border);
+  border-bottom: 0.5px solid var(--gl-border);
 }
 .s-table-compact td {
   padding: 10px;
@@ -2289,7 +2298,7 @@ input[type="date"].s-input {
   border-bottom: 0;
 }
 .s-table-compact tbody tr:hover td {
-  background: var(--s-surface-alt);
+  background: var(--gl-surface-alt);
 }
 
 /* =============================================================================
@@ -2303,14 +2312,14 @@ input[type="date"].s-input {
 .s-variant-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--s-text);
+  color: var(--gl-text);
   margin-bottom: 4px;
 }
 
 .s-variant-desc {
   font-size: 12px;
   font-weight: 400;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   margin-bottom: 12px;
   line-height: 1.5;
 }
@@ -2328,10 +2337,10 @@ input[type="date"].s-input {
   gap: 5px;
   padding: 5px 12px;
   border-radius: 99px;
-  border: 1px solid var(--s-border);
-  background: var(--s-surface);
-  color: var(--s-text-secondary);
-  font-family: var(--s-font);
+  border: 1px solid var(--gl-border);
+  background: var(--gl-surface);
+  color: var(--gl-text-secondary);
+  font-family: var(--gl-font);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
@@ -2339,25 +2348,25 @@ input[type="date"].s-input {
 }
 
 .s-axis-chip:hover {
-  border-color: var(--s-border-strong);
-  background: var(--s-surface-alt);
+  border-color: var(--gl-border-strong);
+  background: var(--gl-surface-alt);
 }
 
 .s-axis-chip.selected {
-  background: var(--rre-accent-50);
-  border-color: var(--rre-accent);
-  color: var(--rre-accent-600);
+  background: var(--gl-accent-50);
+  border-color: var(--gl-accent);
+  color: var(--gl-accent-600);
   font-weight: 500;
 }
 
 .s-axis-chip.add {
   border-style: dashed;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
 }
 
 .s-axis-chip.add:hover {
-  color: var(--rre-accent);
-  border-color: var(--rre-accent);
+  color: var(--gl-accent);
+  border-color: var(--gl-accent);
 }
 
 .s-axis-icon {
@@ -2378,40 +2387,40 @@ input[type="date"].s-input {
   gap: 4px;
   padding: 4px 8px;
   border-radius: 99px;
-  border: 1px solid var(--rre-accent);
-  background: var(--rre-accent-50);
+  border: 1px solid var(--gl-accent);
+  background: var(--gl-accent-50);
 }
 
 .s-variant-note {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-sm);
-  font-family: var(--s-font-mono);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-sm);
+  font-family: var(--gl-font-mono);
   font-size: 12px;
   line-height: 1.6;
-  color: var(--s-text);
-  background: var(--s-surface-alt);
+  color: var(--gl-text);
+  background: var(--gl-surface-alt);
   resize: vertical;
   outline: none;
   transition: border-color 0.15s;
 }
 
 .s-variant-note:focus {
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
 }
 
 .s-variant-note::placeholder {
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
 }
 
 .s-agent-preview {
   margin-top: 12px;
   padding: 10px 14px;
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-sm);
-  background: var(--s-surface-alt);
-  font-family: var(--s-font-mono);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-sm);
+  background: var(--gl-surface-alt);
+  font-family: var(--gl-font-mono);
   font-size: 11px;
   line-height: 1.6;
 }
@@ -2420,14 +2429,14 @@ input[type="date"].s-input {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   margin-bottom: 4px;
-  font-family: var(--s-font);
+  font-family: var(--gl-font);
   font-weight: 500;
 }
 
 .s-agent-preview-body {
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
 }
 
 /* =============================================================================
@@ -2446,15 +2455,15 @@ input[type="date"].s-input {
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-md);
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-md);
   transition: all 0.15s;
   cursor: pointer;
 }
 
 .s-import-card:hover {
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
 }
 
 .s-import-card.disabled {
@@ -2463,30 +2472,30 @@ input[type="date"].s-input {
 }
 
 .s-import-card.disabled:hover {
-  border-color: var(--s-border);
+  border-color: var(--gl-border);
   box-shadow: none;
 }
 
 .s-import-card-icon {
   width: 40px;
   height: 40px;
-  border-radius: var(--s-radius-sm);
-  background: var(--s-surface-alt);
+  border-radius: var(--gl-radius-sm);
+  background: var(--gl-surface-alt);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
 }
 
 .s-import-card-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--s-text);
+  color: var(--gl-text);
 }
 
 .s-import-card-desc {
   font-size: 12px;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   line-height: 1.5;
 }
 
@@ -2499,11 +2508,11 @@ input[type="date"].s-input {
 }
 
 .s-import-card-status.active {
-  color: var(--s-success);
+  color: var(--gl-success);
 }
 
 .s-import-card-status.pending {
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
 }
 
 @media (max-width: 800px) {
@@ -2520,68 +2529,68 @@ input[type="date"].s-input {
 /* ============================================================================
  * Pricing module — sub-navigation tabs and dashboard atoms.
  * Matches the design tokens in docs/design/pricing/ but uses GroLabs's existing
- * --s-* / --rre-accent-* variables rather than introducing parallel tokens.
+ * --gl-* / --gl-accent-* variables rather than introducing parallel tokens.
  * ============================================================================ */
 
 .pricing-tab {
   padding: 12px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--s-text-secondary);
+  color: var(--gl-text-secondary);
   border-bottom: 2px solid transparent;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   text-decoration: none;
 }
 .pricing-tab:hover {
-  color: var(--s-text);
-  background: var(--s-surface-alt);
+  color: var(--gl-text);
+  background: var(--gl-surface-alt);
 }
 .pricing-tab.active {
-  color: var(--rre-accent);
-  border-bottom-color: var(--rre-accent);
+  color: var(--gl-accent);
+  border-bottom-color: var(--gl-accent);
 }
 
 .pricing-stat-card {
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-md);
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-md);
   padding: 20px;
 }
 .pricing-stat-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--s-text-tertiary);
+  color: var(--gl-text-tertiary);
   margin-bottom: 4px;
 }
 .pricing-stat-value {
   font-size: 32px;
   font-weight: 600;
-  color: var(--s-text);
+  color: var(--gl-text);
   margin-bottom: 8px;
   line-height: 1.1;
 }
 .pricing-stat-hint {
   font-size: 13px;
-  color: var(--s-text-muted);
+  color: var(--gl-text-muted);
 }
 
 .pricing-section {
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
   padding: 24px;
   margin-bottom: 24px;
 }
 
 .pricing-batch-card {
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-md);
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-md);
   padding: 16px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .pricing-batch-card:hover {
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
@@ -2593,16 +2602,16 @@ input[type="date"].s-input {
   font-weight: 500;
 }
 .pricing-status-pill.draft {
-  background: var(--s-surface-alt);
-  color: var(--s-text-tertiary);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text-tertiary);
 }
 .pricing-status-pill.ready {
-  background: var(--s-success-bg);
-  color: var(--s-success-text);
+  background: var(--gl-success-bg);
+  color: var(--gl-success-text);
 }
 .pricing-status-pill.synced {
-  background: var(--rre-accent-50);
-  color: var(--rre-accent-800);
+  background: var(--gl-accent-50);
+  color: var(--gl-accent-800);
 }
 
 .pricing-brand-chip {
@@ -2612,36 +2621,36 @@ input[type="date"].s-input {
   font-size: 12px;
   font-weight: 500;
   border-radius: 999px;
-  border: 1px solid var(--s-border-strong);
-  background: var(--s-surface);
-  color: var(--s-text-secondary);
+  border: 1px solid var(--gl-border-strong);
+  background: var(--gl-surface);
+  color: var(--gl-text-secondary);
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 .pricing-brand-chip:hover {
-  background: var(--s-surface-alt);
-  color: var(--s-text);
+  background: var(--gl-surface-alt);
+  color: var(--gl-text);
 }
 .pricing-brand-chip[data-active="true"] {
-  background: var(--rre-accent-50);
-  color: var(--rre-accent-800);
-  border-color: var(--rre-accent);
+  background: var(--gl-accent-50);
+  color: var(--gl-accent-800);
+  border-color: var(--gl-accent);
 }
 
 .pricing-provider-card {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  border-radius: var(--s-radius-lg);
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-border);
+  border-radius: var(--gl-radius-lg);
   padding: 20px;
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .pricing-provider-card:hover {
-  border-color: var(--rre-accent);
+  border-color: var(--gl-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 .pricing-provider-card[data-inactive="true"] {
@@ -2661,7 +2670,7 @@ input[type="date"].s-input {
 .tiptap-blog .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: var(--s-text-tertiary, hsl(var(--muted-foreground)));
+  color: var(--gl-text-tertiary, hsl(var(--muted-foreground)));
   pointer-events: none;
   height: 0;
 }
@@ -2704,13 +2713,13 @@ input[type="date"].s-input {
 .tiptap-blog td,
 .prose th,
 .prose td {
-  border: 1px solid var(--s-border, hsl(var(--border)));
+  border: 1px solid var(--gl-border, hsl(var(--border)));
   padding: 0.5rem 0.75rem;
   vertical-align: top;
 }
 .tiptap-blog th,
 .prose th {
-  background: var(--s-surface-muted, hsl(var(--muted) / 0.4));
+  background: var(--gl-surface-muted, hsl(var(--muted) / 0.4));
   font-weight: 600;
   text-align: left;
 }
@@ -2731,7 +2740,7 @@ input[type="date"].s-input {
 .tiptap-blog hr,
 .prose hr {
   border: 0;
-  border-top: 1px solid var(--s-border, hsl(var(--border)));
+  border-top: 1px solid var(--gl-border, hsl(var(--border)));
   margin: 2rem 0;
 }
 

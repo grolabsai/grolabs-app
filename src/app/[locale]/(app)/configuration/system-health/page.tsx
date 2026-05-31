@@ -35,9 +35,9 @@ export default async function SystemHealthPage() {
 
       <div
         style={{
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
         }}
       >
@@ -50,8 +50,8 @@ export default async function SystemHealthPage() {
         style={{
           marginTop: 16,
           fontSize: 11,
-          color: "var(--s-text-tertiary)",
-          fontFamily: "var(--s-font-mono)",
+          color: "var(--gl-text-tertiary)",
+          fontFamily: "var(--gl-font-mono)",
         }}
       >
         {t("footer", { count: checks.length })}
@@ -75,7 +75,7 @@ function OverallBadge({
         alignItems: "center",
         gap: 8,
         padding: "6px 12px",
-        borderRadius: "var(--s-radius-pill)",
+        borderRadius: "var(--gl-radius-pill)",
         background: palette.bg,
         color: palette.color,
         fontSize: 12,
@@ -106,7 +106,7 @@ function CheckRow({ check, isLast }: { check: HealthCheck; isLast: boolean }) {
         gridTemplateColumns: "minmax(220px, 1fr) 1fr auto",
         gap: 16,
         padding: "14px 18px",
-        borderBottom: isLast ? "none" : "0.5px solid var(--s-border)",
+        borderBottom: isLast ? "none" : "0.5px solid var(--gl-border)",
         alignItems: "start",
       }}
     >
@@ -123,7 +123,7 @@ function CheckRow({ check, isLast }: { check: HealthCheck; isLast: boolean }) {
           }}
         />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--s-text)" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--gl-text)" }}>
             {check.name}
           </div>
           <div
@@ -141,8 +141,8 @@ function CheckRow({ check, isLast }: { check: HealthCheck; isLast: boolean }) {
               <span
                 style={{
                   marginLeft: 6,
-                  color: "var(--s-text-tertiary)",
-                  fontFamily: "var(--s-font-mono)",
+                  color: "var(--gl-text-tertiary)",
+                  fontFamily: "var(--gl-font-mono)",
                   textTransform: "none",
                   letterSpacing: 0,
                   fontWeight: 400,
@@ -156,12 +156,12 @@ function CheckRow({ check, isLast }: { check: HealthCheck; isLast: boolean }) {
       </div>
 
       <div>
-        <div style={{ fontSize: 13, color: "var(--s-text)" }}>{check.summary}</div>
+        <div style={{ fontSize: 13, color: "var(--gl-text)" }}>{check.summary}</div>
         {check.detail && (
           <div
             style={{
               fontSize: 12,
-              color: "var(--s-text-secondary)",
+              color: "var(--gl-text-secondary)",
               marginTop: 4,
               lineHeight: 1.45,
             }}
@@ -187,8 +187,8 @@ function CheckRow({ check, isLast }: { check: HealthCheck; isLast: boolean }) {
               alignItems: "center",
               gap: 6,
               fontSize: 10,
-              fontFamily: "var(--s-font-mono)",
-              color: v.set ? "var(--s-text-secondary)" : "var(--s-danger)",
+              fontFamily: "var(--gl-font-mono)",
+              color: v.set ? "var(--gl-text-secondary)" : "var(--gl-danger)",
             }}
           >
             <span style={{ opacity: 0.7 }}>{v.set ? "✓" : v.required ? "✗" : "—"}</span>
@@ -209,26 +209,26 @@ function paletteFor(status: HealthStatus): {
     case "ok":
       return {
         bg: "rgba(34, 197, 94, 0.10)",
-        color: "var(--s-success-text, #16a34a)",
-        dot: "var(--s-success, #22c55e)",
+        color: "var(--gl-success-text, #16a34a)",
+        dot: "var(--gl-success, #22c55e)",
       };
     case "warn":
       return {
         bg: "rgba(250, 204, 21, 0.12)",
-        color: "var(--s-warning-text, #ca8a04)",
-        dot: "var(--s-warning, #facc15)",
+        color: "var(--gl-warning-text, #ca8a04)",
+        dot: "var(--gl-warning, #facc15)",
       };
     case "error":
       return {
         bg: "rgba(239, 68, 68, 0.10)",
-        color: "var(--s-danger-text, #dc2626)",
-        dot: "var(--s-danger, #ef4444)",
+        color: "var(--gl-danger-text, #dc2626)",
+        dot: "var(--gl-danger, #ef4444)",
       };
     case "disabled":
       return {
         bg: "rgba(148, 163, 184, 0.10)",
-        color: "var(--s-text-tertiary)",
-        dot: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
+        dot: "var(--gl-text-tertiary)",
       };
   }
 }

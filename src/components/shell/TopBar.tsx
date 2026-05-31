@@ -90,7 +90,7 @@ export function TopBar({
               "h-8 pl-8 pr-8 text-xs font-semibold",
               "focus-visible:ring-0 focus-visible:ring-offset-0",
               "disabled:opacity-100 disabled:cursor-default",
-              "rounded-[var(--s-radius-md)]",
+              "rounded-[var(--gl-radius-md)]",
               "placeholder:text-[color:var(--gl-search-placeholder-fixed)] placeholder:font-normal",
             )}
           />
@@ -135,17 +135,17 @@ export function TopBar({
               sideOffset={8}
               className="w-52"
               style={{
-                background: "var(--s-surface)",
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-md)",
+                background: "var(--gl-surface)",
+                border: "0.5px solid var(--gl-border)",
+                borderRadius: "var(--gl-radius-md)",
                 boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
               }}
             >
               <DropdownMenuLabel
                 className="text-[11px] font-normal break-all"
                 style={{
-                  color: "var(--s-text-tertiary)",
-                  fontFamily: "var(--s-font-mono)",
+                  color: "var(--gl-text-tertiary)",
+                  fontFamily: "var(--gl-font-mono)",
                 }}
               >
                 {userEmail}
@@ -154,7 +154,7 @@ export function TopBar({
               <DropdownMenuItem
                 onClick={signOut}
                 className="cursor-pointer text-[13px] gap-2"
-                style={{ color: "var(--s-text-secondary)" }}
+                style={{ color: "var(--gl-text-secondary)" }}
               >
                 <LogOut size={13} strokeWidth={1.5} />
                 {t("signOut")}

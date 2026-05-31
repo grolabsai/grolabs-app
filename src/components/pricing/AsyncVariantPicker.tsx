@@ -94,11 +94,11 @@ export function AsyncVariantPicker({
             alignItems: "center",
             gap: 6,
             padding: "6px 10px",
-            background: "var(--rre-accent-50)",
-            border: "1px solid var(--rre-accent)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-accent-50)",
+            border: "1px solid var(--gl-accent)",
+            borderRadius: "var(--gl-radius-md)",
             fontSize: 13,
-            color: "var(--rre-accent-800)",
+            color: "var(--gl-accent-800)",
           }}
         >
           <span style={{ flex: 1 }}>{valueLabel}</span>
@@ -112,7 +112,7 @@ export function AsyncVariantPicker({
               border: "none",
               background: "transparent",
               cursor: "pointer",
-              color: "var(--rre-accent-800)",
+              color: "var(--gl-accent-800)",
               padding: 2,
             }}
           >
@@ -127,7 +127,7 @@ export function AsyncVariantPicker({
               left: 10,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               pointerEvents: "none",
             }}
           >
@@ -146,10 +146,10 @@ export function AsyncVariantPicker({
               width: "100%",
               padding: "8px 12px 8px 32px",
               fontSize: 14,
-              border: "1px solid var(--s-border-strong)",
-              borderRadius: "var(--s-radius-md)",
-              background: "var(--s-surface)",
-              color: "var(--s-text)",
+              border: "1px solid var(--gl-border-strong)",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-surface)",
+              color: "var(--gl-text)",
             }}
           />
         </div>
@@ -164,8 +164,8 @@ export function AsyncVariantPicker({
             left: 0,
             right: 0,
             background: "white",
-            border: "1px solid var(--s-border-strong)",
-            borderRadius: "var(--s-radius-md)",
+            border: "1px solid var(--gl-border-strong)",
+            borderRadius: "var(--gl-radius-md)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             maxHeight: 280,
             overflowY: "auto",
@@ -177,7 +177,7 @@ export function AsyncVariantPicker({
               style={{
                 padding: 12,
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 textAlign: "center",
               }}
             >
@@ -188,7 +188,7 @@ export function AsyncVariantPicker({
               style={{
                 padding: 12,
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 textAlign: "center",
               }}
             >
@@ -199,7 +199,7 @@ export function AsyncVariantPicker({
               style={{
                 padding: 12,
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 textAlign: "center",
               }}
             >
@@ -221,12 +221,12 @@ export function AsyncVariantPicker({
                   textAlign: "left",
                   fontSize: 13,
                   background: "transparent",
-                  color: "var(--s-text)",
+                  color: "var(--gl-text)",
                   border: "none",
                   cursor: "pointer",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "var(--s-surface-alt)")
+                  (e.currentTarget.style.background = "var(--gl-surface-alt)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background = "transparent")

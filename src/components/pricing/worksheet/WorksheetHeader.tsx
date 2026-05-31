@@ -119,7 +119,7 @@ export function WorksheetHeader({
             alignItems: "center",
             gap: 4,
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             textDecoration: "none",
           }}
         >
@@ -156,11 +156,11 @@ export function WorksheetHeader({
               style={{
                 fontSize: 22,
                 fontWeight: 600,
-                color: "var(--s-text)",
+                color: "var(--gl-text)",
                 width: "100%",
                 background: "transparent",
-                border: "1px solid var(--rre-accent)",
-                borderRadius: "var(--s-radius-md)",
+                border: "1px solid var(--gl-accent)",
+                borderRadius: "var(--gl-radius-md)",
                 padding: "4px 8px",
                 marginBottom: 6,
                 outline: "none",
@@ -173,12 +173,12 @@ export function WorksheetHeader({
               style={{
                 fontSize: 22,
                 fontWeight: 600,
-                color: "var(--s-text)",
+                color: "var(--gl-text)",
                 marginBottom: 6,
                 cursor: isLocked ? "default" : "text",
                 padding: "4px 8px",
                 margin: "-4px -8px 2px",
-                borderRadius: "var(--s-radius-md)",
+                borderRadius: "var(--gl-radius-md)",
               }}
             >
               {batch.batch_name}
@@ -190,7 +190,7 @@ export function WorksheetHeader({
               alignItems: "center",
               gap: 10,
               fontSize: 12,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             <span className={`pricing-status-pill ${batch.status}`}>

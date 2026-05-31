@@ -79,13 +79,13 @@ export function MapRulesCard({
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginBottom: 4,
             }}
           >
             {t("title")}
           </h2>
-          <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+          <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
             {t("subtitle")}
           </p>
         </div>
@@ -101,7 +101,7 @@ export function MapRulesCard({
             padding: "32px 0",
             textAlign: "center",
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("empty")}
@@ -109,8 +109,8 @@ export function MapRulesCard({
       ) : (
         <div
           style={{
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             overflow: "hidden",
           }}
         >
@@ -124,8 +124,8 @@ export function MapRulesCard({
             <thead>
               <tr
                 style={{
-                  background: "var(--s-surface-alt)",
-                  borderBottom: "1px solid var(--s-border)",
+                  background: "var(--gl-surface-alt)",
+                  borderBottom: "1px solid var(--gl-border)",
                 }}
               >
                 <Th>{t("columns.source")}</Th>
@@ -145,18 +145,18 @@ export function MapRulesCard({
                   <tr
                     key={r.map_rule_id}
                     style={{
-                      borderBottom: "1px solid var(--s-border)",
+                      borderBottom: "1px solid var(--gl-border)",
                       opacity: r.is_active ? 1 : 0.5,
                     }}
                   >
                     <Td>
-                      <div style={{ fontWeight: 500, color: "var(--s-text)" }}>
+                      <div style={{ fontWeight: 500, color: "var(--gl-text)" }}>
                         {r.source_name}
                       </div>
                       <div
                         style={{
                           fontSize: 11,
-                          color: "var(--s-text-tertiary)",
+                          color: "var(--gl-text-tertiary)",
                         }}
                       >
                         {t(`sourceTypes.${r.source_type}`)}
@@ -169,8 +169,8 @@ export function MapRulesCard({
                             fontSize: 11,
                             padding: "2px 8px",
                             borderRadius: 999,
-                            background: "var(--s-surface-alt)",
-                            color: "var(--s-text-secondary)",
+                            background: "var(--gl-surface-alt)",
+                            color: "var(--gl-text-secondary)",
                             fontWeight: 500,
                           }}
                         >
@@ -180,7 +180,7 @@ export function MapRulesCard({
                         <span
                           style={{
                             fontSize: 12,
-                            color: "var(--s-text)",
+                            color: "var(--gl-text)",
                           }}
                         >
                           {r.variant_label}
@@ -191,12 +191,12 @@ export function MapRulesCard({
                     <Td align="right">
                       <span
                         style={{
-                          fontFamily: "var(--s-font-mono)",
+                          fontFamily: "var(--gl-font-mono)",
                           fontSize: 12,
                           color:
                             r.min_price === null
-                              ? "var(--s-text-tertiary)"
-                              : "var(--s-text)",
+                              ? "var(--gl-text-tertiary)"
+                              : "var(--gl-text)",
                         }}
                       >
                         {r.min_price === null ? "—" : formatGTQ(r.min_price)}
@@ -205,12 +205,12 @@ export function MapRulesCard({
                     <Td align="right">
                       <span
                         style={{
-                          fontFamily: "var(--s-font-mono)",
+                          fontFamily: "var(--gl-font-mono)",
                           fontSize: 12,
                           color:
                             r.max_price === null
-                              ? "var(--s-text-tertiary)"
-                              : "var(--s-text)",
+                              ? "var(--gl-text-tertiary)"
+                              : "var(--gl-text)",
                         }}
                       >
                         {r.max_price === null ? "—" : formatGTQ(r.max_price)}
@@ -220,7 +220,7 @@ export function MapRulesCard({
                       <div
                         style={{
                           fontSize: 12,
-                          color: "var(--s-text-secondary)",
+                          color: "var(--gl-text-secondary)",
                         }}
                       >
                         {r.effective_date}
@@ -235,8 +235,8 @@ export function MapRulesCard({
                           height: 10,
                           borderRadius: "50%",
                           background: r.is_active
-                            ? "var(--s-success)"
-                            : "var(--s-border-strong)",
+                            ? "var(--gl-success)"
+                            : "var(--gl-border-strong)",
                         }}
                         aria-label={
                           r.is_active ? t("active") : t("inactive")
@@ -302,8 +302,8 @@ const iconButtonStyle: React.CSSProperties = {
   height: 28,
   border: "none",
   background: "transparent",
-  color: "var(--s-text-tertiary)",
-  borderRadius: "var(--s-radius-md)",
+  color: "var(--gl-text-tertiary)",
+  borderRadius: "var(--gl-radius-md)",
   cursor: "pointer",
 };
 
@@ -323,7 +323,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {children}

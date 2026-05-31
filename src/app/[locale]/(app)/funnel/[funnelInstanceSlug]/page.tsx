@@ -115,7 +115,7 @@ function TabPlaceholder({ label }: { label: string }) {
       style={{
         padding: "32px 16px",
         fontSize: 13,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {label}

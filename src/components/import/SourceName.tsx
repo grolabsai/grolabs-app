@@ -49,7 +49,7 @@ export function SourceName({
         marginTop: 4,
         fontSize: 11,
         fontStyle: "italic",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         lineHeight: 1.3,
         fontFamily:
           "ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",

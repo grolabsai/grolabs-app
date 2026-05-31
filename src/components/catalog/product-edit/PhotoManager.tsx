@@ -88,10 +88,10 @@ export function PhotoManager({
             height: 36,
             padding: "0 10px",
             fontSize: 13,
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             background: "white",
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             outline: "none",
           }}
         />
@@ -112,9 +112,9 @@ export function PhotoManager({
             marginTop: 14,
             padding: "40px 20px",
             textAlign: "center",
-            color: "var(--s-text-tertiary)",
-            border: "1.5px dashed var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            color: "var(--gl-text-tertiary)",
+            border: "1.5px dashed var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
           }}
         >
           <Icon icon={ImageIcon} size={48} />
@@ -162,10 +162,10 @@ export function PhotoManager({
         style={{
           marginTop: 14,
           padding: 10,
-          background: "var(--s-surface-alt)",
-          borderRadius: "var(--s-radius-md)",
+          background: "var(--gl-surface-alt)",
+          borderRadius: "var(--gl-radius-md)",
           fontSize: 11,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         <strong>{t("photos.techDebtLabel")}</strong> {t("photos.techDebtBody")}
@@ -223,9 +223,9 @@ function PhotoTile({
     setAltDraft(incomingAlt);
   }
 
-  const ringColor = photo.isPrimary ? "var(--rre-accent)" : "var(--s-border)";
+  const ringColor = photo.isPrimary ? "var(--gl-accent)" : "var(--gl-border)";
   const ringWidth = photo.isPrimary ? 2 : 0.5;
-  const boxShadow = photo.isPrimary ? "0 0 0 3px var(--rre-accent-50)" : "none";
+  const boxShadow = photo.isPrimary ? "0 0 0 3px var(--gl-accent-50)" : "none";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -240,9 +240,9 @@ function PhotoTile({
           position: "relative",
           aspectRatio: "1 / 1",
           border: `${ringWidth}px solid ${ringColor}`,
-          borderRadius: "var(--s-radius-md)",
+          borderRadius: "var(--gl-radius-md)",
           overflow: "hidden",
-          background: "var(--s-surface-alt)",
+          background: "var(--gl-surface-alt)",
           cursor: disabled ? "default" : "move",
           opacity: dragging ? 0.5 : 1,
           boxShadow,
@@ -258,7 +258,7 @@ function PhotoTile({
               justifyContent: "center",
               width: "100%",
               height: "100%",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontSize: 11,
               gap: 6,
               padding: 8,
@@ -354,7 +354,7 @@ function PhotoTile({
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--gl-text)" }}>
               {t("photos.deleteConfirm")}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
@@ -368,9 +368,9 @@ function PhotoTile({
                 style={{
                   fontSize: 11,
                   padding: "4px 10px",
-                  borderRadius: "var(--s-radius-sm)",
+                  borderRadius: "var(--gl-radius-sm)",
                   border: "none",
-                  background: "var(--s-danger)",
+                  background: "var(--gl-danger)",
                   color: "white",
                   cursor: disabled ? "default" : "pointer",
                   fontWeight: 500,
@@ -384,10 +384,10 @@ function PhotoTile({
                 style={{
                   fontSize: 11,
                   padding: "4px 10px",
-                  borderRadius: "var(--s-radius-sm)",
-                  border: "0.5px solid var(--s-border)",
+                  borderRadius: "var(--gl-radius-sm)",
+                  border: "0.5px solid var(--gl-border)",
                   background: "white",
-                  color: "var(--s-text)",
+                  color: "var(--gl-text)",
                   cursor: "pointer",
                 }}
               >
@@ -403,7 +403,7 @@ function PhotoTile({
               position: "absolute",
               bottom: 6,
               left: 6,
-              background: "var(--rre-accent)",
+              background: "var(--gl-accent)",
               color: "white",
               fontSize: 9,
               fontWeight: 600,
@@ -442,10 +442,10 @@ function PhotoTile({
           height: 28,
           padding: "0 8px",
           fontSize: 11,
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-sm)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-sm)",
           background: "white",
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           outline: "none",
         }}
       />
@@ -469,10 +469,10 @@ function PhotoActionButton({
   const [hover, setHover] = useState(false);
   const bg = hover && !disabled
     ? danger
-      ? "var(--s-danger)"
+      ? "var(--gl-danger)"
       : "white"
     : "rgba(255,255,255,0.95)";
-  const color = hover && !disabled && danger ? "white" : "var(--s-text)";
+  const color = hover && !disabled && danger ? "white" : "var(--gl-text)";
   return (
     <button
       type="button"
@@ -488,7 +488,7 @@ function PhotoActionButton({
         width: 24,
         height: 24,
         border: "none",
-        borderRadius: "var(--s-radius-sm)",
+        borderRadius: "var(--gl-radius-sm)",
         background: bg,
         color,
         cursor: disabled ? "not-allowed" : "pointer",

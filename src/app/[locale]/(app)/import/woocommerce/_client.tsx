@@ -214,7 +214,7 @@ function WooImportControls({
           <div
             style={{
               fontSize: 12,
-              color: "var(--s-text-muted)",
+              color: "var(--gl-text-muted)",
               marginTop: 6,
             }}
           >
@@ -252,7 +252,7 @@ function WooImportControls({
           <div
             style={{
               fontSize: 12,
-              color: "var(--s-text-muted)",
+              color: "var(--gl-text-muted)",
               display: "grid",
               gridTemplateColumns: "auto auto",
               gap: "4px 16px",
@@ -265,7 +265,7 @@ function WooImportControls({
             {status.lastSummary.failed > 0 && (
               <>
                 <span>{t("summary.failed")}</span>
-                <span className="tabular" style={{ color: "var(--s-danger)" }}>
+                <span className="tabular" style={{ color: "var(--gl-danger)" }}>
                   {status.lastSummary.failed}
                 </span>
               </>
@@ -295,7 +295,7 @@ function WooImportControls({
               fontSize: 13,
               fontWeight: 500,
               marginBottom: 8,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
             }}
           >
             {t("errors.title")}
@@ -303,8 +303,8 @@ function WooImportControls({
           <pre
             style={{
               fontSize: 12,
-              fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
-              background: "var(--s-surface-2)",
+              fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
+              background: "var(--gl-surface-2)",
               padding: 12,
               borderRadius: 6,
               whiteSpace: "pre-wrap",
@@ -312,7 +312,7 @@ function WooImportControls({
               maxHeight: 240,
               overflow: "auto",
               margin: 0,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {status.lastJob.errorMessage}
@@ -341,7 +341,7 @@ function WooImportDebugPane({ status }: { status: ImportStatus }) {
           <div
             style={{
               fontSize: 13,
-              color: "var(--s-text-muted)",
+              color: "var(--gl-text-muted)",
               padding: "8px 0",
             }}
           >
@@ -352,8 +352,8 @@ function WooImportDebugPane({ status }: { status: ImportStatus }) {
             style={{
               fontSize: 12,
               lineHeight: 1.55,
-              fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
-              background: "var(--s-surface-2)",
+              fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
+              background: "var(--gl-surface-2)",
               padding: 14,
               borderRadius: 8,
               margin: 0,
@@ -361,7 +361,7 @@ function WooImportDebugPane({ status }: { status: ImportStatus }) {
               wordBreak: "break-word",
               maxHeight: "70vh",
               overflow: "auto",
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {text}

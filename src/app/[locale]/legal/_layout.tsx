@@ -28,7 +28,7 @@ export function LegalLayout({
         maxWidth: 760,
         margin: "0 auto",
         padding: "48px 24px 96px",
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         fontSize: 14.5,
         lineHeight: 1.7,
       }}
@@ -38,7 +38,7 @@ export function LegalLayout({
           href="/"
           style={{
             fontSize: 11,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             textDecoration: "none",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
@@ -51,7 +51,7 @@ export function LegalLayout({
             fontSize: 28,
             fontWeight: 700,
             margin: "12px 0 4px",
-            color: "var(--s-text-strong)",
+            color: "var(--gl-text-strong)",
           }}
         >
           {title}
@@ -59,7 +59,7 @@ export function LegalLayout({
         <p
           style={{
             fontSize: 14,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             margin: "0 0 8px",
           }}
         >
@@ -70,14 +70,14 @@ export function LegalLayout({
             display: "flex",
             gap: 16,
             fontSize: 11,
-            color: "var(--s-text-tertiary)",
-            fontFamily: "var(--s-font-mono)",
+            color: "var(--gl-text-tertiary)",
+            fontFamily: "var(--gl-font-mono)",
           }}
         >
           <span>{updated}</span>
           <Link
             href={altLink.href}
-            style={{ color: "var(--s-text-tertiary)" }}
+            style={{ color: "var(--gl-text-tertiary)" }}
           >
             {altLink.label}
           </Link>
@@ -88,20 +88,20 @@ export function LegalLayout({
         style={{
           marginTop: 64,
           paddingTop: 24,
-          borderTop: "0.5px solid var(--s-border)",
+          borderTop: "0.5px solid var(--gl-border)",
           fontSize: 11,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           display: "flex",
           gap: 16,
         }}
       >
-        <Link href="/legal/privacy" style={{ color: "var(--s-text-tertiary)" }}>
+        <Link href="/legal/privacy" style={{ color: "var(--gl-text-tertiary)" }}>
           Privacy
         </Link>
-        <Link href="/legal/terms" style={{ color: "var(--s-text-tertiary)" }}>
+        <Link href="/legal/terms" style={{ color: "var(--gl-text-tertiary)" }}>
           Terms
         </Link>
-        <Link href="/legal/security" style={{ color: "var(--s-text-tertiary)" }}>
+        <Link href="/legal/security" style={{ color: "var(--gl-text-tertiary)" }}>
           Security
         </Link>
       </footer>
@@ -116,7 +116,7 @@ export function H2({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 17,
         fontWeight: 600,
-        color: "var(--s-text-strong)",
+        color: "var(--gl-text-strong)",
         margin: "32px 0 8px",
       }}
     >
@@ -149,12 +149,12 @@ export function Note({ children }: { children: React.ReactNode }) {
       style={{
         margin: "16px 0",
         padding: "12px 14px",
-        background: "var(--s-surface)",
-        border: "0.5px solid var(--s-border)",
-        borderLeft: "2px solid var(--rre-accent)",
-        borderRadius: "var(--s-radius-md)",
+        background: "var(--gl-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderLeft: "2px solid var(--gl-accent)",
+        borderRadius: "var(--gl-radius-md)",
         fontSize: 13,
-        color: "var(--s-text-secondary)",
+        color: "var(--gl-text-secondary)",
       }}
     >
       {children}

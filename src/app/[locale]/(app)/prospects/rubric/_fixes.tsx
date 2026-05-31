@@ -34,7 +34,7 @@ export function FixesEditor({
           justifyContent: "space-between",
           marginBottom: 12,
           paddingBottom: 6,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div
@@ -43,7 +43,7 @@ export function FixesEditor({
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("fixes.sectionTitle")}
@@ -63,7 +63,7 @@ export function FixesEditor({
       </div>
 
       {fixes.length === 0 && !creating && (
-        <p style={{ fontSize: 12, color: "var(--s-text-tertiary)", fontStyle: "italic" }}>
+        <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)", fontStyle: "italic" }}>
           {t("fixes.empty")}
         </p>
       )}
@@ -93,7 +93,7 @@ export function FixesEditor({
       })}
 
       {error && (
-        <p style={{ fontSize: 12, color: "var(--s-danger)", marginTop: 8 }}>
+        <p style={{ fontSize: 12, color: "var(--gl-danger)", marginTop: 8 }}>
           {error}
         </p>
       )}
@@ -185,9 +185,9 @@ function FixRow({
         style={{
           padding: "10px 12px",
           marginBottom: 8,
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
-          background: fix.is_active ? "var(--s-surface)" : "var(--s-surface-alt)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
+          background: fix.is_active ? "var(--gl-surface)" : "var(--gl-surface-alt)",
           opacity: fix.is_active ? 1 : 0.7,
           display: "flex",
           alignItems: "center",
@@ -199,7 +199,7 @@ function FixRow({
             style={{
               fontSize: 13,
               fontWeight: 500,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {fix.fix_title}
@@ -207,14 +207,14 @@ function FixRow({
           <div
             style={{
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               display: "flex",
               gap: 10,
               marginTop: 2,
             }}
           >
             <span
-              style={{ fontFamily: "var(--s-font-mono, ui-monospace, monospace)" }}
+              style={{ fontFamily: "var(--gl-font-mono, ui-monospace, monospace)" }}
             >
               {fix.fix_code}
             </span>
@@ -231,11 +231,11 @@ function FixRow({
           onClick={() => setExpanded(true)}
           style={{
             fontSize: 11,
-            color: "var(--rre-accent)",
+            color: "var(--gl-accent)",
             background: "none",
             border: "none",
             cursor: "pointer",
-            fontFamily: "var(--s-font)",
+            fontFamily: "var(--gl-font)",
           }}
         >
           {readOnly ? t("fixes.view") : t("fixes.edit")}
@@ -249,9 +249,9 @@ function FixRow({
       style={{
         padding: 12,
         marginBottom: 8,
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
-        background: "var(--s-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
+        background: "var(--gl-surface)",
       }}
     >
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -266,7 +266,7 @@ function FixRow({
             onChange={(e) => setForm({ ...form, fix_code: e.target.value })}
             disabled={readOnly}
             style={{
-              fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
+              fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
               fontSize: 12,
             }}
           />
@@ -296,7 +296,7 @@ function FixRow({
           value={form.fix_body_md}
           onChange={(e) => setForm({ ...form, fix_body_md: e.target.value })}
           disabled={readOnly}
-          style={{ fontSize: 12, fontFamily: "var(--s-font-mono, ui-monospace, monospace)", resize: "vertical", minHeight: 100 }}
+          style={{ fontSize: 12, fontFamily: "var(--gl-font-mono, ui-monospace, monospace)", resize: "vertical", minHeight: 100 }}
         />
       </div>
 
@@ -312,11 +312,11 @@ function FixRow({
           disabled={readOnly}
           style={{
             fontSize: 11,
-            fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
+            fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
             resize: "vertical",
           }}
         />
-        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+        <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
           {t("fixes.fields.triggerHint")}
         </div>
       </div>
@@ -411,11 +411,11 @@ function FixRow({
             onClick={() => setExpanded(false)}
             style={{
               fontSize: 12,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               background: "none",
               border: "none",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
           >
             {t("actions.collapse")}
@@ -427,18 +427,18 @@ function FixRow({
             onClick={onCancel}
             style={{
               fontSize: 12,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               background: "none",
               border: "none",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
           >
             {t("actions.cancel")}
           </button>
         )}
         {error && (
-          <span style={{ fontSize: 12, color: "var(--s-danger)" }}>{error}</span>
+          <span style={{ fontSize: 12, color: "var(--gl-danger)" }}>{error}</span>
         )}
         {fix && !readOnly && (
           <button
@@ -448,13 +448,13 @@ function FixRow({
             style={{
               marginLeft: "auto",
               fontSize: 11,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
               background: "none",
-              border: "0.5px solid var(--s-danger)",
-              borderRadius: "var(--s-radius-md)",
+              border: "0.5px solid var(--gl-danger)",
+              borderRadius: "var(--gl-radius-md)",
               padding: "4px 8px",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
           >
             {t("actions.delete")}

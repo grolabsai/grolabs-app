@@ -95,9 +95,9 @@ export default async function RubricPage({
           display: "grid",
           gridTemplateColumns: "320px 1fr",
           minHeight: "calc(100vh - 240px)",
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
         }}
       >

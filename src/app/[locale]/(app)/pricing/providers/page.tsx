@@ -49,9 +49,9 @@ export default async function PricingProvidersPage() {
       {providers.length === 0 ? (
         <div
           style={{
-            background: "var(--s-surface)",
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-lg)",
+            background: "var(--gl-surface)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-lg)",
             padding: 60,
             textAlign: "center",
           }}
@@ -61,7 +61,7 @@ export default async function PricingProvidersPage() {
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginTop: 12,
               marginBottom: 8,
             }}
@@ -71,7 +71,7 @@ export default async function PricingProvidersPage() {
           <p
             style={{
               fontSize: 14,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               maxWidth: 460,
               margin: "0 auto 20px",
             }}
@@ -112,7 +112,7 @@ export default async function PricingProvidersPage() {
                   style={{
                     fontSize: 16,
                     fontWeight: 600,
-                    color: "var(--s-text)",
+                    color: "var(--gl-text)",
                     lineHeight: 1.2,
                   }}
                 >
@@ -124,8 +124,8 @@ export default async function PricingProvidersPage() {
                       fontSize: 11,
                       padding: "2px 8px",
                       borderRadius: 999,
-                      background: "var(--s-surface-alt)",
-                      color: "var(--s-text-tertiary)",
+                      background: "var(--gl-surface-alt)",
+                      color: "var(--gl-text-tertiary)",
                       fontWeight: 500,
                     }}
                   >
@@ -137,7 +137,7 @@ export default async function PricingProvidersPage() {
                 <div
                   style={{
                     fontSize: 12,
-                    color: "var(--s-text-tertiary)",
+                    color: "var(--gl-text-tertiary)",
                   }}
                 >
                   {p.legal_name}
@@ -147,7 +147,7 @@ export default async function PricingProvidersPage() {
                 <div
                   style={{
                     fontSize: 12,
-                    color: "var(--s-text-secondary)",
+                    color: "var(--gl-text-secondary)",
                     lineHeight: 1.6,
                   }}
                 >
@@ -170,8 +170,8 @@ export default async function PricingProvidersPage() {
                       fontSize: 11,
                       padding: "2px 8px",
                       borderRadius: 4,
-                      background: "var(--s-surface-alt)",
-                      color: "var(--s-text-secondary)",
+                      background: "var(--gl-surface-alt)",
+                      color: "var(--gl-text-secondary)",
                     }}
                   >
                     {p.payment_terms}
@@ -183,8 +183,8 @@ export default async function PricingProvidersPage() {
                       fontSize: 11,
                       padding: "2px 8px",
                       borderRadius: 4,
-                      background: "var(--rre-accent-50)",
-                      color: "var(--rre-accent-800)",
+                      background: "var(--gl-accent-50)",
+                      color: "var(--gl-accent-800)",
                       fontWeight: 500,
                     }}
                   >
@@ -200,7 +200,7 @@ export default async function PricingProvidersPage() {
                     gap: 4,
                     marginTop: 8,
                     paddingTop: 8,
-                    borderTop: "1px solid var(--s-border)",
+                    borderTop: "1px solid var(--gl-border)",
                   }}
                 >
                   <span
@@ -209,7 +209,7 @@ export default async function PricingProvidersPage() {
                       fontWeight: 600,
                       textTransform: "uppercase",
                       letterSpacing: "0.04em",
-                      color: "var(--s-text-tertiary)",
+                      color: "var(--gl-text-tertiary)",
                       width: "100%",
                       marginBottom: 2,
                     }}
@@ -223,8 +223,8 @@ export default async function PricingProvidersPage() {
                         fontSize: 11,
                         padding: "2px 8px",
                         borderRadius: 4,
-                        background: "var(--s-surface-alt)",
-                        color: "var(--s-text-secondary)",
+                        background: "var(--gl-surface-alt)",
+                        color: "var(--gl-text-secondary)",
                       }}
                     >
                       {name}

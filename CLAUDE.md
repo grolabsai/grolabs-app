@@ -162,15 +162,17 @@ Truly content-less placeholders (e.g. an empty search box where there's literall
 
 ### Surface tokens — no nested gray fills
 
-`--s-surface-alt` resolves to the same color as `--s-surface` in both themes. Information surfaces (cards, inputs, dropdowns, table rows, panels) always sit on the canvas — never on a slightly-darker tint. Visual hierarchy comes from borders, shadows, and typography — not from nested gray fills.
+`--gl-surface-alt` resolves to the same color as `--gl-surface` in both themes. Information surfaces (cards, inputs, dropdowns, table rows, panels) always sit on the canvas — never on a slightly-darker tint. Visual hierarchy comes from borders, shadows, and typography — not from nested gray fills.
 
 ```css
 /* ✅ Correct — surface-alt resolves to the same as surface */
-:root { --s-surface: #1c1d24; --s-surface-alt: #1c1d24; }
-.rre-light { --s-surface: #FFFFFF; --s-surface-alt: #FFFFFF; }
+:root { --gl-surface: #1c1d24; --gl-surface-alt: #1c1d24; }
+.gl-light { --gl-surface: #FFFFFF; --gl-surface-alt: #FFFFFF; }
 ```
 
-The alias is kept for back-compat with old component code that references `var(--s-surface-alt)` (hover states, disabled fields, sub-zones). New code should prefer `--s-surface` directly. If you need a nested visual zone, use a border or a shadow — not a fill.
+The alias is kept for back-compat with old component code that references `var(--gl-surface-alt)` (hover states, disabled fields, sub-zones). New code should prefer `--gl-surface` directly. If you need a nested visual zone, use a border or a shadow — not a fill.
+
+All shared design tokens use the unified `--gl-*` (GroLabs) prefix. The old `--s-*`, `--rre-accent*`, `--nav-*` prefixes and the `.rre-light` theme class were folded into `--gl-*` / `.gl-light` — see [`docs/design/design-tokens.md`](docs/design/design-tokens.md) for the full dictionary. shadcn variables (`--background`, `--primary`, …) are unchanged; they still derive their values from `--gl-*`.
 
 ### Toasts
 

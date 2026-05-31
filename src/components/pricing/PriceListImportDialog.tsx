@@ -262,13 +262,13 @@ export function PriceListImportDialog({
               onDrop={onDrop}
               style={{
                 border: `2px dashed ${
-                  dragOver ? "var(--rre-accent)" : "var(--s-border-strong)"
+                  dragOver ? "var(--gl-accent)" : "var(--gl-border-strong)"
                 }`,
                 background: dragOver
-                  ? "var(--rre-accent-50)"
-                  : "var(--s-surface-alt)",
+                  ? "var(--gl-accent-50)"
+                  : "var(--gl-surface-alt)",
                 padding: 40,
-                borderRadius: "var(--s-radius-lg)",
+                borderRadius: "var(--gl-radius-lg)",
                 textAlign: "center",
                 cursor: "pointer",
                 transition: "all 0.12s",
@@ -282,7 +282,7 @@ export function PriceListImportDialog({
                     ? parsedFile.fileName
                     : t("dropZone")}
               </div>
-              <div style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+              <div style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
                 {t("dropHint")}
               </div>
             </div>
@@ -302,7 +302,7 @@ export function PriceListImportDialog({
                   alignItems: "center",
                   gap: 10,
                   fontSize: 12,
-                  color: "var(--s-text-secondary)",
+                  color: "var(--gl-text-secondary)",
                 }}
               >
                 <Icon icon={FileText} size={14} strokeWidth={1.5} />
@@ -438,8 +438,8 @@ export function PriceListImportDialog({
             {previewRows.length > 0 ? (
               <div
                 style={{
-                  border: "1px solid var(--s-border)",
-                  borderRadius: "var(--s-radius-md)",
+                  border: "1px solid var(--gl-border)",
+                  borderRadius: "var(--gl-radius-md)",
                   overflow: "hidden",
                 }}
               >
@@ -448,9 +448,9 @@ export function PriceListImportDialog({
                     padding: "8px 12px",
                     fontSize: 12,
                     fontWeight: 500,
-                    color: "var(--s-text-secondary)",
-                    background: "var(--s-surface-alt)",
-                    borderBottom: "1px solid var(--s-border)",
+                    color: "var(--gl-text-secondary)",
+                    background: "var(--gl-surface-alt)",
+                    borderBottom: "1px solid var(--gl-border)",
                   }}
                 >
                   {t("preview.title")}
@@ -463,7 +463,7 @@ export function PriceListImportDialog({
                   }}
                 >
                   <thead>
-                    <tr style={{ background: "var(--s-surface)" }}>
+                    <tr style={{ background: "var(--gl-surface)" }}>
                       <Th>{t("preview.key")}</Th>
                       <Th>{t("preview.cost")}</Th>
                       <Th>{t("preview.suggested")}</Th>
@@ -475,7 +475,7 @@ export function PriceListImportDialog({
                         <Td>{row.key || ""}</Td>
                         <Td>
                           {row.cost === null ? (
-                            <span style={{ color: "var(--s-danger)" }}>
+                            <span style={{ color: "var(--gl-danger)" }}>
                               {row.costRaw || ""}
                             </span>
                           ) : (
@@ -586,10 +586,10 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 12px",
   fontSize: 14,
-  border: "1px solid var(--s-border-strong)",
-  borderRadius: "var(--s-radius-md)",
-  background: "var(--s-surface)",
-  color: "var(--s-text)",
+  border: "1px solid var(--gl-border-strong)",
+  borderRadius: "var(--gl-radius-md)",
+  background: "var(--gl-surface)",
+  color: "var(--gl-text)",
   marginTop: 6,
 };
 
@@ -608,14 +608,14 @@ function Field({
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         {label}
       </span>
       {children}
       {hint ? (
-        <span style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+        <span style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
           {hint}
         </span>
       ) : null}
@@ -669,8 +669,8 @@ function Th({ children }: { children: React.ReactNode }) {
         textAlign: "left",
         padding: "8px 12px",
         fontWeight: 500,
-        color: "var(--s-text-tertiary)",
-        borderBottom: "1px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "1px solid var(--gl-border)",
       }}
     >
       {children}
@@ -683,8 +683,8 @@ function Td({ children }: { children: React.ReactNode }) {
     <td
       style={{
         padding: "6px 12px",
-        borderBottom: "1px solid var(--s-border)",
-        color: "var(--s-text)",
+        borderBottom: "1px solid var(--gl-border)",
+        color: "var(--gl-text)",
       }}
     >
       {children}
@@ -708,7 +708,7 @@ function ResultRow({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "10px 0",
-        borderBottom: "1px solid var(--s-border)",
+        borderBottom: "1px solid var(--gl-border)",
         fontSize: 14,
       }}
     >
@@ -717,7 +717,7 @@ function ResultRow({
           display: "inline-flex",
           alignItems: "center",
           gap: 8,
-          color: warn ? "var(--s-danger)" : "var(--s-text-secondary)",
+          color: warn ? "var(--gl-danger)" : "var(--gl-text-secondary)",
         }}
       >
         {warn ? (
@@ -725,7 +725,7 @@ function ResultRow({
         ) : null}
         {label}
       </span>
-      <span style={{ fontWeight: 600, color: "var(--s-text)" }}>{value}</span>
+      <span style={{ fontWeight: 600, color: "var(--gl-text)" }}>{value}</span>
     </div>
   );
 }

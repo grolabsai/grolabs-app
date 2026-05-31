@@ -439,7 +439,7 @@ export function Sidebar({
         <div
           style={{
             fontSize: 10,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             textTransform: "uppercase",
             letterSpacing: "0.06em",
             marginBottom: 2,
@@ -450,8 +450,8 @@ export function Sidebar({
         <div
           style={{
             fontSize: 10,
-            color: "var(--s-text-tertiary)",
-            fontFamily: "var(--s-font-mono)",
+            color: "var(--gl-text-tertiary)",
+            fontFamily: "var(--gl-font-mono)",
           }}
         >
           {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}

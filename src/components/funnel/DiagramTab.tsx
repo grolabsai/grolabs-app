@@ -96,8 +96,8 @@ export function DiagramTab({
         style={{
           height: 640,
           width: "100%",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
           overflow: "hidden",
           background: "white",
         }}

@@ -40,7 +40,7 @@ const FloatingLabelInput = React.forwardRef<
       {/* Label cuts through the top border via z-index + background match */}
       <label
         htmlFor={id}
-        style={{ color: "var(--s-text-tertiary)" }}
+        style={{ color: "var(--gl-text-tertiary)" }}
         className={cn(
           // Positioning: sits on top of the border line
           "absolute -top-[7px] left-[10px] z-10",
@@ -48,7 +48,7 @@ const FloatingLabelInput = React.forwardRef<
           "inline-flex items-center gap-1 px-1.5",
           // Matches the input's surface so the label "notch" reads as
           // a cutout in the border (theme-aware via tokens).
-          "bg-[var(--s-surface)]",
+          "bg-[var(--gl-surface)]",
           // Typography — matches .s-field-label
           "text-[10px] font-medium uppercase tracking-[0.08em]",
           "leading-none",

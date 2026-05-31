@@ -258,7 +258,7 @@ export function CreateInstanceDialog({
               {error ? (
                 <p
                   className="text-xs"
-                  style={{ color: "var(--s-text-error, #b91c1c)" }}
+                  style={{ color: "var(--gl-text-error, #b91c1c)" }}
                 >
                   {error}
                 </p>
@@ -295,7 +295,7 @@ export function CreateInstanceDialog({
                 <div className="grid gap-2">
                   <label
                     className="text-xs font-medium"
-                    style={{ color: "var(--s-text)" }}
+                    style={{ color: "var(--gl-text)" }}
                     htmlFor="config-source-select"
                   >
                     {t("copy.configSourceLabel")}
@@ -329,9 +329,9 @@ export function CreateInstanceDialog({
                   {selectedConfig ? (
                     <p
                       className="text-xs"
-                      style={{ color: "var(--s-text-secondary)" }}
+                      style={{ color: "var(--gl-text-secondary)" }}
                     >
-                      <span style={{ color: "var(--s-text)" }}>
+                      <span style={{ color: "var(--gl-text)" }}>
                         {t("copy.willCopy")}
                       </span>{" "}
                       {[
@@ -361,7 +361,7 @@ export function CreateInstanceDialog({
                 <div className="grid gap-2">
                   <label
                     className="text-xs font-medium"
-                    style={{ color: "var(--s-text)" }}
+                    style={{ color: "var(--gl-text)" }}
                     htmlFor="template-source-select"
                   >
                     {t("copy.templateSourceLabel")}
@@ -397,9 +397,9 @@ export function CreateInstanceDialog({
                   {selectedTemplate ? (
                     <p
                       className="text-xs"
-                      style={{ color: "var(--s-text-secondary)" }}
+                      style={{ color: "var(--gl-text-secondary)" }}
                     >
-                      <span style={{ color: "var(--s-text)" }}>
+                      <span style={{ color: "var(--gl-text)" }}>
                         {t("copy.willCopy")}
                       </span>{" "}
                       {[
@@ -438,9 +438,9 @@ export function CreateInstanceDialog({
 
               <p
                 className="text-xs"
-                style={{ color: "var(--s-text-secondary)" }}
+                style={{ color: "var(--gl-text-secondary)" }}
               >
-                <span style={{ color: "var(--s-text)" }}>
+                <span style={{ color: "var(--gl-text)" }}>
                   {t("copy.willNotCopy")}
                 </span>{" "}
                 {t("copy.excluded")}
@@ -449,7 +449,7 @@ export function CreateInstanceDialog({
               {error ? (
                 <p
                   className="text-xs"
-                  style={{ color: "var(--s-text-error, #b91c1c)" }}
+                  style={{ color: "var(--gl-text-error, #b91c1c)" }}
                 >
                   {error}
                 </p>

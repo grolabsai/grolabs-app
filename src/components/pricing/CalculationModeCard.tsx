@@ -94,13 +94,13 @@ export function CalculationModeCard({
           style={{
             fontSize: 16,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             marginBottom: 4,
           }}
         >
           {t("title")}
         </h2>
-        <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+        <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
           {t("subtitle")}
         </p>
       </header>
@@ -135,8 +135,8 @@ export function CalculationModeCard({
       {/* Worked example */}
       <div
         style={{
-          background: "var(--s-surface-alt)",
-          borderRadius: "var(--s-radius-md)",
+          background: "var(--gl-surface-alt)",
+          borderRadius: "var(--gl-radius-md)",
           padding: 16,
           marginBottom: 24,
         }}
@@ -147,7 +147,7 @@ export function CalculationModeCard({
             fontWeight: 500,
             textTransform: "uppercase",
             letterSpacing: "0.06em",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             marginBottom: 8,
           }}
         >
@@ -162,7 +162,7 @@ export function CalculationModeCard({
             gridTemplateColumns: "1fr 1fr",
             gap: 16,
             fontSize: 13,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
           }}
         >
           <ExampleLine
@@ -236,15 +236,15 @@ function ModeOption({
       aria-pressed={checked}
       // When checked, the card paints a pale-yellow background. Text
       // inside must read on light regardless of the ambient theme —
-      // .on-light-surface flips --s-text* tokens locally.
+      // .on-light-surface flips --gl-text* tokens locally.
       className={checked ? "on-light-surface" : undefined}
       style={{
         textAlign: "left",
-        background: checked ? "var(--rre-accent-50)" : "var(--s-surface)",
+        background: checked ? "var(--gl-accent-50)" : "var(--gl-surface)",
         border: `2px solid ${
-          checked ? "var(--rre-accent)" : "var(--s-border)"
+          checked ? "var(--gl-accent)" : "var(--gl-border)"
         }`,
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         padding: 16,
         cursor: "pointer",
         transition: "all 0.12s",
@@ -256,7 +256,7 @@ function ModeOption({
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
           }}
         >
           {label}
@@ -265,7 +265,7 @@ function ModeOption({
       <p
         style={{
           fontSize: 12,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 10,
         }}
       >
@@ -273,9 +273,9 @@ function ModeOption({
       </p>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 12,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
           lineHeight: 1.7,
         }}
       >
@@ -294,10 +294,10 @@ function RadioDot({ checked }: { checked: boolean }) {
         width: 14,
         height: 14,
         borderRadius: "50%",
-        border: `2px solid ${checked ? "var(--rre-accent)" : "var(--s-border-strong)"}`,
-        background: checked ? "var(--rre-accent)" : "transparent",
+        border: `2px solid ${checked ? "var(--gl-accent)" : "var(--gl-border-strong)"}`,
+        background: checked ? "var(--gl-accent)" : "transparent",
         boxShadow: checked
-          ? "inset 0 0 0 3px var(--s-surface)"
+          ? "inset 0 0 0 3px var(--gl-surface)"
           : "none",
         flexShrink: 0,
       }}
@@ -325,8 +325,8 @@ function ExampleLine({
         fontWeight: highlighted ? 600 : 400,
       }}
     >
-      <span style={{ color: "var(--s-text-secondary)" }}>{label}</span>
-      <span style={{ color: "var(--s-text)" }}>{display}</span>
+      <span style={{ color: "var(--gl-text-secondary)" }}>{label}</span>
+      <span style={{ color: "var(--gl-text)" }}>{display}</span>
     </div>
   );
 }
@@ -346,14 +346,14 @@ function Field({
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         {label}
       </span>
       {children}
       {hint ? (
-        <span style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+        <span style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
           {hint}
         </span>
       ) : null}
@@ -381,10 +381,10 @@ function PercentInput({
           width: "100%",
           padding: "8px 28px 8px 12px",
           fontSize: 14,
-          border: "1px solid var(--s-border-strong)",
-          borderRadius: "var(--s-radius-md)",
-          background: "var(--s-surface)",
-          color: "var(--s-text)",
+          border: "1px solid var(--gl-border-strong)",
+          borderRadius: "var(--gl-radius-md)",
+          background: "var(--gl-surface)",
+          color: "var(--gl-text)",
         }}
       />
       <span
@@ -394,7 +394,7 @@ function PercentInput({
           top: "50%",
           transform: "translateY(-50%)",
           fontSize: 13,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           pointerEvents: "none",
         }}
       >

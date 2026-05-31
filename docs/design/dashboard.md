@@ -14,7 +14,7 @@ This brief is meant to be copy-pasted into a fresh design conversation. The desi
 
 GroLabs is a multi-tenant admin app for **solopreneur-run ecommerce stores** in Latin America (primarily Guatemala, Spanish-speaking). It is **industry-agnostic by design** — merchants come from any vertical (pet-shop, electronics, jewelry, clothing, …), each provisioned from the matching vertical template; no vertical is privileged in the product. Each merchant has one "instance" — their products, categories, attributes, integrations, and now their analytics live there.
 
-Today the merchant logs into a sidebar-driven web app and manages: product catalog, categories, attributes, pricing rules, WooCommerce sync, search configuration, imports. The app is at production at `scout.gro.gt` (or similar — check live URL).
+Today the merchant logs into a sidebar-driven web app and manages: product catalog, categories, attributes, pricing rules, WooCommerce sync, search configuration, imports. The app is in production at `app.grolabs.ai`.
 
 The user is **time-poor and not technically deep**. They run a small store, wear every hat, and don't want to learn analytics tooling. The dashboard is where they should be able to glance for 60 seconds each morning and know whether anything needs their attention.
 

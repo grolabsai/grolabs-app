@@ -341,7 +341,7 @@ export function Step3Grouping({
       {!state.grouped && !state.grouping ? (
         <div className="s-card">
           <p className="s-card-label">{t("title")}</p>
-          <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 16px" }}>
+          <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 16px" }}>
             {t("subtitle")}
           </p>
           <button
@@ -363,24 +363,24 @@ export function Step3Grouping({
           <div
             style={{
               padding: "12px 16px",
-              borderRadius: "var(--s-radius-md)",
+              borderRadius: "var(--gl-radius-md)",
               background: state.grouping
-                ? "var(--scout-accent-50)"
+                ? "var(--gl-accent-50)"
                 : unaccountedRows.length > 0
-                  ? "var(--s-warning-bg)"
-                  : "var(--s-success-bg)",
+                  ? "var(--gl-warning-bg)"
+                  : "var(--gl-success-bg)",
               border: `0.5px solid ${
                 state.grouping
-                  ? "var(--scout-accent)"
+                  ? "var(--gl-accent)"
                   : unaccountedRows.length > 0
-                    ? "var(--s-warning)"
-                    : "var(--s-success)"
+                    ? "var(--gl-warning)"
+                    : "var(--gl-success)"
               }`,
               color: state.grouping
-                ? "var(--scout-accent-800)"
+                ? "var(--gl-accent-800)"
                 : unaccountedRows.length > 0
-                  ? "var(--s-warning-text)"
-                  : "var(--s-success-text)",
+                  ? "var(--gl-warning-text)"
+                  : "var(--gl-success-text)",
               marginBottom: 16,
               fontSize: 13,
               display: "flex",
@@ -396,7 +396,7 @@ export function Step3Grouping({
                     width: 10,
                     height: 10,
                     borderRadius: "50%",
-                    border: "2px solid var(--scout-accent)",
+                    border: "2px solid var(--gl-accent)",
                     borderTopColor: "transparent",
                     animation: "spin 0.8s linear infinite",
                   }}
@@ -408,17 +408,17 @@ export function Step3Grouping({
             <span>
               <strong>{sourceRowCount}</strong> {t("statRows")}
             </span>
-            <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
+            <span style={{ color: "var(--gl-text-tertiary)" }}>·</span>
             <span>
               <strong>{totalBases}</strong> {t("statBases")}
             </span>
-            <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
+            <span style={{ color: "var(--gl-text-tertiary)" }}>·</span>
             <span>
               <strong>{totalVariants}</strong> {t("statVariants")}
             </span>
             {!state.grouping && unaccountedRows.length > 0 ? (
               <>
-                <span style={{ color: "var(--s-text-tertiary)" }}>·</span>
+                <span style={{ color: "var(--gl-text-tertiary)" }}>·</span>
                 <button
                   type="button"
                   onClick={() => setShowUnaccounted((s) => !s)}
@@ -427,7 +427,7 @@ export function Step3Grouping({
                     border: "none",
                     cursor: "pointer",
                     fontSize: 13,
-                    color: "var(--s-warning-text)",
+                    color: "var(--gl-warning-text)",
                     fontWeight: 500,
                     textDecoration: "underline",
                     padding: 0,
@@ -460,16 +460,16 @@ export function Step3Grouping({
                     <span
                       style={{
                         fontFamily: "ui-monospace, monospace",
-                        color: "var(--s-text-tertiary)",
+                        color: "var(--gl-text-tertiary)",
                         minWidth: 60,
                       }}
                     >
                       row-{u.rowIndex}
                     </span>
-                    <span style={{ flex: 1, fontStyle: u.productName ? "normal" : "italic", color: u.productName ? "var(--s-text)" : "var(--s-text-tertiary)" }}>
+                    <span style={{ flex: 1, fontStyle: u.productName ? "normal" : "italic", color: u.productName ? "var(--gl-text)" : "var(--gl-text-tertiary)" }}>
                       {u.productName || t("unaccountedEmptyName")}
                     </span>
-                    <span style={{ color: "var(--s-text-secondary)", fontSize: 11 }}>
+                    <span style={{ color: "var(--gl-text-secondary)", fontSize: 11 }}>
                       {u.reasonKey === "emptyName"
                         ? t("unaccountedReasonEmptyName")
                         : u.reasonKey === "noCategory"
@@ -489,10 +489,10 @@ export function Step3Grouping({
             <div
               style={{
                 padding: "10px 14px",
-                borderRadius: "var(--s-radius-md)",
-                background: "var(--s-warning-bg)",
-                border: "0.5px solid var(--s-warning)",
-                color: "var(--s-warning-text)",
+                borderRadius: "var(--gl-radius-md)",
+                background: "var(--gl-warning-bg)",
+                border: "0.5px solid var(--gl-warning)",
+                color: "var(--gl-warning-text)",
                 marginBottom: 16,
                 fontSize: 12,
               }}
@@ -546,18 +546,18 @@ export function Step3Grouping({
                       alignItems: "flex-start",
                       gap: 16,
                       padding: "14px 18px",
-                      borderBottom: "0.5px solid var(--s-border)",
-                      background: "var(--s-surface-alt)",
+                      borderBottom: "0.5px solid var(--gl-border)",
+                      background: "var(--gl-surface-alt)",
                     }}
                   >
                     <ProductThumbnail url={headPhoto} alt={base.baseName} />
                     <div style={{ minWidth: 200, maxWidth: 280, flexShrink: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{base.baseName}</div>
-                      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 2 }}>
                         {base.categoryName}
                       </div>
                       <div
-                        style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 2 }}
+                        style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 2 }}
                       >
                         {t("baseVariantCount", { n: base.variants.length })}
                       </div>
@@ -586,7 +586,7 @@ export function Step3Grouping({
                                   fontWeight: 500,
                                   letterSpacing: "0.04em",
                                   textTransform: "uppercase",
-                                  color: "var(--s-text-tertiary)",
+                                  color: "var(--gl-text-tertiary)",
                                   marginBottom: 4,
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -709,7 +709,7 @@ export function Step3Grouping({
                                   <td
                                     key={`ax-${attr.attribute_id}`}
                                     style={{
-                                      background: "var(--scout-accent-50)",
+                                      background: "var(--gl-accent-50)",
                                       padding: 4,
                                     }}
                                   >
@@ -781,8 +781,8 @@ function cellInput(): React.CSSProperties {
     height: 28,
     padding: "0 6px",
     fontSize: 12,
-    border: "0.5px solid var(--s-border)",
-    borderRadius: "var(--s-radius-sm)",
+    border: "0.5px solid var(--gl-border)",
+    borderRadius: "var(--gl-radius-sm)",
     background: "white",
     outline: "none",
   };
@@ -800,7 +800,7 @@ function ColumnHeader({
     <th
       style={
         variant === "axis"
-          ? { background: "var(--scout-accent-50)", color: "var(--scout-accent-800)", whiteSpace: "nowrap" }
+          ? { background: "var(--gl-accent-50)", color: "var(--gl-accent-800)", whiteSpace: "nowrap" }
           : { whiteSpace: "nowrap" }
       }
       title={`${attribute.attribute_name} · ${attribute.data_type}`}
@@ -833,9 +833,9 @@ function CatPill({ label, active, onClick }: { label: string; active: boolean; o
         borderRadius: 999,
         fontSize: 12,
         fontWeight: 500,
-        border: "0.5px solid var(--s-border)",
-        background: active ? "var(--scout-accent)" : "white",
-        color: active ? "white" : "var(--s-text)",
+        border: "0.5px solid var(--gl-border)",
+        background: active ? "var(--gl-accent)" : "white",
+        color: active ? "white" : "var(--gl-text)",
         cursor: "pointer",
       }}
     >

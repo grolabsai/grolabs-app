@@ -120,8 +120,8 @@ export default async function ProspectDetailPage({
 
   return (
     <div className="s-content">
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
-        <Link href="/prospects" style={{ color: "var(--s-text-tertiary)" }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
+        <Link href="/prospects" style={{ color: "var(--gl-text-tertiary)" }}>
           ← {t("backToList")}
         </Link>
       </div>
@@ -138,7 +138,7 @@ export default async function ProspectDetailPage({
                 href={prospect.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "var(--s-text-secondary)", textDecoration: "underline" }}
+                style={{ color: "var(--gl-text-secondary)", textDecoration: "underline" }}
               >
                 {prospect.url}
               </a>
@@ -163,9 +163,9 @@ export default async function ProspectDetailPage({
       {/* Contact + platform card */}
       <div
         style={{
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           padding: 20,
           marginBottom: 20,
           display: "grid",
@@ -175,13 +175,13 @@ export default async function ProspectDetailPage({
       >
         <div>
           <SectionLabel>{t("contact")}</SectionLabel>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--s-text)" }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--gl-text)" }}>
             {[prospect.contact_first_name, prospect.contact_last_name]
               .filter(Boolean)
               .join(" ") || "—"}
           </div>
           {prospect.contact_position && (
-            <div style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+            <div style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}>
               {prospect.contact_position}
             </div>
           )}
@@ -189,9 +189,9 @@ export default async function ProspectDetailPage({
             <div
               style={{
                 fontSize: 12,
-                color: "var(--s-text-secondary)",
+                color: "var(--gl-text-secondary)",
                 marginTop: 2,
-                fontFamily: "var(--s-font-mono)",
+                fontFamily: "var(--gl-font-mono)",
               }}
             >
               {prospect.contact_email}
@@ -207,8 +207,8 @@ export default async function ProspectDetailPage({
             <div
               style={{
                 fontSize: 12,
-                color: "var(--s-text-secondary)",
-                fontFamily: "var(--s-font-mono)",
+                color: "var(--gl-text-secondary)",
+                fontFamily: "var(--gl-font-mono)",
               }}
             >
               {prospect.engine_detected}
@@ -223,7 +223,7 @@ export default async function ProspectDetailPage({
                 {Number(prospect.est_annual_traffic).toLocaleString()} {t("trafficUnit")}
               </>
             ) : (
-              <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
+              <span style={{ color: "var(--gl-text-tertiary)" }}>—</span>
             )}
           </div>
           <div style={{ fontSize: 13 }}>
@@ -232,7 +232,7 @@ export default async function ProspectDetailPage({
                 ${Number(prospect.est_aov_usd).toFixed(2)} {t("aovSuffix")}
               </>
             ) : (
-              <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
+              <span style={{ color: "var(--gl-text-tertiary)" }}>—</span>
             )}
           </div>
         </div>
@@ -241,16 +241,16 @@ export default async function ProspectDetailPage({
       {/* Pages */}
       <div
         style={{
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
         }}
       >
         <div
           style={{
             padding: "12px 16px",
-            borderBottom: "0.5px solid var(--s-border)",
+            borderBottom: "0.5px solid var(--gl-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -262,7 +262,7 @@ export default async function ProspectDetailPage({
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("pagesTitle")} ({pages.length})
@@ -274,7 +274,7 @@ export default async function ProspectDetailPage({
             style={{
               padding: 24,
               textAlign: "center",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontSize: 13,
             }}
           >
@@ -285,7 +285,7 @@ export default async function ProspectDetailPage({
         {pages.length > 0 && (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "var(--s-surface-alt)" }}>
+              <tr style={{ background: "var(--gl-surface-alt)" }}>
                 <Th>{t("pageTable.type")}</Th>
                 <Th>{t("pageTable.url")}</Th>
                 <Th>{t("pageTable.scans")}</Th>
@@ -302,7 +302,7 @@ export default async function ProspectDetailPage({
                 return (
                   <tr
                     key={p.prospect_page_id}
-                    style={{ borderTop: "1px solid var(--s-border)" }}
+                    style={{ borderTop: "1px solid var(--gl-border)" }}
                   >
                     <Td>
                       <PageTypeBadge type={p.page_type} />
@@ -313,9 +313,9 @@ export default async function ProspectDetailPage({
                           `/prospects/${prospect.prospect_id}/pages/${p.prospect_page_id}` as never
                         }
                         style={{
-                          color: "var(--s-text)",
+                          color: "var(--gl-text)",
                           textDecoration: "none",
-                          fontFamily: "var(--s-font-mono)",
+                          fontFamily: "var(--gl-font-mono)",
                           fontSize: 12,
                         }}
                       >
@@ -369,8 +369,8 @@ function ProspectLogoBig({
           width: 56,
           height: 56,
           borderRadius: 10,
-          background: "var(--s-surface-alt)",
-          border: "0.5px solid var(--s-border)",
+          background: "var(--gl-surface-alt)",
+          border: "0.5px solid var(--gl-border)",
           flexShrink: 0,
         }}
       />
@@ -389,7 +389,7 @@ function ProspectLogoBig({
         objectFit: "contain",
         background: "#ffffff",
         borderRadius: 10,
-        border: "0.5px solid var(--s-border)",
+        border: "0.5px solid var(--gl-border)",
         flexShrink: 0,
         padding: 4,
       }}
@@ -399,9 +399,9 @@ function ProspectLogoBig({
 
 function PageTypeBadge({ type }: { type: string }) {
   const palette: Record<string, { bg: string; color: string }> = {
-    homepage: { bg: "rgba(250,225,148,0.12)", color: "var(--scout-accent)" },
-    pdp: { bg: "var(--s-surface-alt)", color: "var(--s-text-secondary)" },
-    category: { bg: "var(--s-surface-alt)", color: "var(--s-text-secondary)" },
+    homepage: { bg: "rgba(250,225,148,0.12)", color: "var(--gl-accent)" },
+    pdp: { bg: "var(--gl-surface-alt)", color: "var(--gl-text-secondary)" },
+    category: { bg: "var(--gl-surface-alt)", color: "var(--gl-text-secondary)" },
   };
   const p = palette[type] ?? palette.pdp;
   return (
@@ -432,7 +432,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.08em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         marginBottom: 6,
       }}
     >
@@ -461,8 +461,8 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
-        borderBottom: "0.5px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       {children}
@@ -476,9 +476,9 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
       style={{
         padding: "10px 14px",
         fontSize: 13,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         fontFamily: mono
-          ? "var(--s-font-mono, ui-monospace, monospace)"
+          ? "var(--gl-font-mono, ui-monospace, monospace)"
           : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
         verticalAlign: "top",

@@ -96,9 +96,9 @@ export function NewRunForm({
     <form
       onSubmit={handleSubmit}
       style={{
-        background: "var(--s-surface)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         padding: 20,
         marginBottom: 16,
       }}
@@ -107,7 +107,7 @@ export function NewRunForm({
         style={{
           fontSize: 13,
           fontWeight: 600,
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           marginBottom: 12,
         }}
       >
@@ -224,7 +224,7 @@ export function NewRunForm({
         </button>
       </div>
       {error && (
-        <div style={{ marginTop: 10, fontSize: 12, color: "var(--s-danger)" }}>
+        <div style={{ marginTop: 10, fontSize: 12, color: "var(--gl-danger)" }}>
           {error}
         </div>
       )}
@@ -232,7 +232,7 @@ export function NewRunForm({
         style={{
           marginTop: 8,
           fontSize: 11,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
         }}
       >
         {t("form.hint")}

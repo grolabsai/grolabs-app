@@ -65,7 +65,7 @@ export default async function ImportPage() {
           gap: 12,
           marginBottom: 20,
           paddingBottom: 14,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div className="s-breadcrumb">
@@ -148,7 +148,7 @@ export default async function ImportPage() {
           <div
             style={{
               padding: "12px 20px",
-              borderBottom: "0.5px solid var(--s-border)",
+              borderBottom: "0.5px solid var(--gl-border)",
               fontSize: 13,
               fontWeight: 500,
             }}
@@ -205,7 +205,7 @@ export default async function ImportPage() {
                           <span style={{ fontSize: 12 }}>{st.label}</span>
                         </div>
                       </td>
-                      <td style={{ fontSize: 12, color: "var(--s-text-muted)" }}>
+                      <td style={{ fontSize: 12, color: "var(--gl-text-muted)" }}>
                         {formatRelative(job.created_at)}
                       </td>
                     </tr>

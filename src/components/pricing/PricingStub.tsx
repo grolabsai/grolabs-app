@@ -11,9 +11,9 @@ export async function PricingStub({ heading }: { heading: string }) {
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "1px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "1px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         padding: 48,
         textAlign: "center",
       }}
@@ -23,7 +23,7 @@ export async function PricingStub({ heading }: { heading: string }) {
           fontSize: 12,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 8,
         }}
       >
@@ -33,7 +33,7 @@ export async function PricingStub({ heading }: { heading: string }) {
         style={{
           fontSize: 18,
           fontWeight: 600,
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           marginBottom: 8,
         }}
       >
@@ -42,7 +42,7 @@ export async function PricingStub({ heading }: { heading: string }) {
       <p
         style={{
           fontSize: 14,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           maxWidth: 480,
           margin: "0 auto",
         }}

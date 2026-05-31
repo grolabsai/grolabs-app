@@ -60,7 +60,7 @@ Existing instances are reassigned as follows:
 
 | instance_id | name                          | old `kind` | → tenant slug |
 | ----------- | ----------------------------- | ---------- | ------------- |
-| 0           | GRO Scout Template (System)   | template   | grolabs       |
+| 0           | GRO RRE Template (System)   | template   | grolabs       |
 | 1           | Wazu                          | customer   | wazu          |
 | 3           | Test Wazú                     | customer   | wazu          |
 

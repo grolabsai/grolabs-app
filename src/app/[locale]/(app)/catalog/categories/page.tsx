@@ -205,7 +205,7 @@ export default async function CategoriesPage({
           gap: 12,
           marginBottom: 20,
           paddingBottom: 14,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div className="s-breadcrumb">
@@ -303,7 +303,7 @@ export default async function CategoriesPage({
               style={{
                 padding: 20,
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 textAlign: "center",
               }}
             >
@@ -578,8 +578,8 @@ async function CategoryDetail({
             <span
               className="s-acc-status"
               style={{
-                background: "var(--s-surface-alt)",
-                color: "var(--s-text-secondary)",
+                background: "var(--gl-surface-alt)",
+                color: "var(--gl-text-secondary)",
               }}
             >
               Inactiva
@@ -604,7 +604,7 @@ async function CategoryDetail({
           <div className="s-def-row">
             <div className="s-def-row-label">Slug</div>
             <div className="s-def-row-value">
-              <span style={{ fontFamily: "var(--s-font-mono)", fontSize: 12 }}>
+              <span style={{ fontFamily: "var(--gl-font-mono)", fontSize: 12 }}>
                 {category.slug}
               </span>
             </div>
@@ -647,7 +647,7 @@ async function CategoryDetail({
             style={{
               marginLeft: "auto",
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -659,7 +659,7 @@ async function CategoryDetail({
             <div
               style={{
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 padding: "8px 0",
               }}
             >
@@ -705,7 +705,7 @@ async function CategoryDetail({
                       <span className="lbl">Título nav</span>
                       <span className="val">
                         {(sl.navigation_title as string | null) ?? (
-                          <span style={{ color: "var(--s-text-muted)" }}>—</span>
+                          <span style={{ color: "var(--gl-text-muted)" }}>—</span>
                         )}
                       </span>
                     </div>
@@ -713,7 +713,7 @@ async function CategoryDetail({
                       <span className="lbl">Título header</span>
                       <span className="val">
                         {(sl.header_title as string | null) ?? (
-                          <span style={{ color: "var(--s-text-muted)" }}>—</span>
+                          <span style={{ color: "var(--gl-text-muted)" }}>—</span>
                         )}
                       </span>
                     </div>
@@ -721,7 +721,7 @@ async function CategoryDetail({
                       <span className="lbl">Orden</span>
                       <span className="val tabular">
                         {(sl.visual_order as number | null) ?? (
-                          <span style={{ color: "var(--s-text-muted)" }}>—</span>
+                          <span style={{ color: "var(--gl-text-muted)" }}>—</span>
                         )}
                       </span>
                     </div>
@@ -748,7 +748,7 @@ async function CategoryDetail({
             style={{
               marginLeft: "auto",
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -783,7 +783,7 @@ async function CategoryDetail({
             style={{
               marginLeft: "auto",
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -795,7 +795,7 @@ async function CategoryDetail({
             <div
               style={{
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 padding: "8px 0",
               }}
             >
@@ -837,7 +837,7 @@ async function CategoryDetail({
                                 `/catalog/products/${p.product_id}` as Route
                               }
                               style={{
-                                color: "var(--s-text)",
+                                color: "var(--gl-text)",
                                 textDecoration: "none",
                                 fontWeight: 500,
                               }}
@@ -847,7 +847,7 @@ async function CategoryDetail({
                             <div
                               style={{
                                 fontSize: 10,
-                                color: "var(--s-text-tertiary)",
+                                color: "var(--gl-text-tertiary)",
                               }}
                             >
                               {pl.is_primary ? "primaria" : "secundaria"}
@@ -857,7 +857,7 @@ async function CategoryDetail({
                       </td>
                       <td
                         style={{
-                          color: "var(--s-text-secondary)",
+                          color: "var(--gl-text-secondary)",
                           fontSize: 12,
                         }}
                       >

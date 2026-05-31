@@ -39,33 +39,33 @@ import type {
 } from "@/lib/sync/woocommerce-client";
 
 export type FieldMappingRow = {
-  scoutField: string;
+  rreField: string;
   wpField: string;
   required: boolean;
   note: string;
 };
 
 export const WOOCOMMERCE_FIELD_MAPPINGS: FieldMappingRow[] = [
-  { scoutField: "product.product_name", wpField: "name", required: true, note: "Nombre del producto padre (variable)." },
-  { scoutField: "product.long_description", wpField: "description", required: false, note: "Descripción completa." },
-  { scoutField: "product.short_description", wpField: "short_description", required: false, note: "Descripción corta para tarjetas y subtítulos." },
-  { scoutField: "product.slug", wpField: "slug", required: false, note: "Slug del permalink." },
-  { scoutField: "product.is_active", wpField: "status", required: false, note: "publish | draft según el estado del producto en GroLabs." },
-  { scoutField: "product.product_category_link.category_id", wpField: "categories", required: false, note: "Array de ids de categoría WooCommerce; el árbol se sincroniza primero (category_sync_status mapea GroLabs → WC)." },
-  { scoutField: "product.brand.brand_name", wpField: "attributes / meta_data[scout_brand]", required: false, note: "Atributo \"Marca\" + meta. Para sitios con Perfect Brands, cambiar a la taxonomía pwb-brand." },
-  { scoutField: "product_variant.variant_name", wpField: "attributes (per variant)", required: false, note: "Cada eje del variant_name se envía como atributo de variación." },
-  { scoutField: "product_variant.sku", wpField: "variation.sku", required: true, note: "Cada variación necesita un SKU único en WC." },
-  { scoutField: "product_variant.barcode", wpField: "variation.meta_data[barcode]", required: false, note: "Meta personalizada (no hay campo nativo)." },
-  { scoutField: "product_variant.weight_grams", wpField: "variation.weight", required: false, note: "Convertido de gramos a kg (WC asume kg salvo configuración distinta)." },
-  { scoutField: "product_pricing.list_price (retail)", wpField: "variation.regular_price", required: false, note: "Precio regular como string (WC requiere string)." },
-  { scoutField: "product_pricing.cost_price (retail)", wpField: "variation.meta_data[scout_cost]", required: false, note: "Meta personalizada; WC no tiene costo nativo." },
-  { scoutField: "product_media (is_primary)", wpField: "images / variation.image", required: false, note: "Foto principal en el producto padre y en cada variación." },
+  { rreField: "product.product_name", wpField: "name", required: true, note: "Nombre del producto padre (variable)." },
+  { rreField: "product.long_description", wpField: "description", required: false, note: "Descripción completa." },
+  { rreField: "product.short_description", wpField: "short_description", required: false, note: "Descripción corta para tarjetas y subtítulos." },
+  { rreField: "product.slug", wpField: "slug", required: false, note: "Slug del permalink." },
+  { rreField: "product.is_active", wpField: "status", required: false, note: "publish | draft según el estado del producto en GroLabs." },
+  { rreField: "product.product_category_link.category_id", wpField: "categories", required: false, note: "Array de ids de categoría WooCommerce; el árbol se sincroniza primero (category_sync_status mapea GroLabs → WC)." },
+  { rreField: "product.brand.brand_name", wpField: "attributes / meta_data[scout_brand]", required: false, note: "Atributo \"Marca\" + meta. Para sitios con Perfect Brands, cambiar a la taxonomía pwb-brand." },
+  { rreField: "product_variant.variant_name", wpField: "attributes (per variant)", required: false, note: "Cada eje del variant_name se envía como atributo de variación." },
+  { rreField: "product_variant.sku", wpField: "variation.sku", required: true, note: "Cada variación necesita un SKU único en WC." },
+  { rreField: "product_variant.barcode", wpField: "variation.meta_data[barcode]", required: false, note: "Meta personalizada (no hay campo nativo)." },
+  { rreField: "product_variant.weight_grams", wpField: "variation.weight", required: false, note: "Convertido de gramos a kg (WC asume kg salvo configuración distinta)." },
+  { rreField: "product_pricing.list_price (retail)", wpField: "variation.regular_price", required: false, note: "Precio regular como string (WC requiere string)." },
+  { rreField: "product_pricing.cost_price (retail)", wpField: "variation.meta_data[scout_cost]", required: false, note: "Meta personalizada; WC no tiene costo nativo." },
+  { rreField: "product_media (is_primary)", wpField: "images / variation.image", required: false, note: "Foto principal en el producto padre y en cada variación." },
 ];
 
 /** Default category-ish name we attach to brand attributes. */
 const BRAND_ATTR_NAME = "Marca";
 
-export type ScoutToWcResult = {
+export type RreToWcResult = {
   parent: ProductPayload;
   variations: VariationPayload[];
   /** SKUs of the variants that were skipped because they had no SKU. */
@@ -84,7 +84,7 @@ export type WcMappingOptions = {
    * syncCategoryTreeToWoocommerce. Categories not in the map are emitted
    * to `unmappedCategoryIds` and not included in the WC payload.
    */
-  categoryIdByScoutId?: Map<number, number>;
+  categoryIdByRreId?: Map<number, number>;
 };
 
 /**
@@ -94,7 +94,7 @@ export type WcMappingOptions = {
 export function mapProductToWooCommerce(
   p: AlgoliaSourceProduct,
   opts: WcMappingOptions = {},
-): ScoutToWcResult {
+): RreToWcResult {
   const skippedVariantIds: number[] = [];
   const unmappedCategoryIds: number[] = [];
 
@@ -121,14 +121,14 @@ export function mapProductToWooCommerce(
 
   // Categories — emit WC ids from the pre-built map. Unmapped GroLabs
   // categories are reported back so the caller can surface a warning.
-  const categoryMap = opts.categoryIdByScoutId;
+  const categoryMap = opts.categoryIdByRreId;
   const categories: Array<{ id: number }> = [];
   for (const link of p.product_category_link ?? []) {
-    const scoutId = link.category_id;
-    if (typeof scoutId !== "number") continue;
-    const wcId = categoryMap?.get(scoutId);
+    const rreId = link.category_id;
+    if (typeof rreId !== "number") continue;
+    const wcId = categoryMap?.get(rreId);
     if (wcId === undefined) {
-      unmappedCategoryIds.push(scoutId);
+      unmappedCategoryIds.push(rreId);
       continue;
     }
     categories.push({ id: wcId });

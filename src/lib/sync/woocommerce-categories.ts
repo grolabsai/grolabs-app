@@ -22,7 +22,7 @@
  *        - Else create with parent's already-resolved WC id.
  *      Cache external_id back into category_sync_status.
  *
- * Returns a Map<scoutCategoryId, wcCategoryId> for every category that
+ * Returns a Map<rreCategoryId, wcCategoryId> for every category that
  * was successfully synced, plus a list of categories that failed (so the
  * caller can surface a per-product warning when a product references one
  * of them).
@@ -65,12 +65,12 @@ export async function syncCategoryTreeToWoocommerce(
   supabase: SupabaseServerClient,
   wc: WooClient,
   instanceId: number,
-  scoutCategoryIds: number[],
+  rreCategoryIds: number[],
 ): Promise<CategorySyncResult> {
   const idMap = new Map<number, number>();
   const failures: CategorySyncFailure[] = [];
 
-  if (scoutCategoryIds.length === 0) return { idMap, failures };
+  if (rreCategoryIds.length === 0) return { idMap, failures };
 
   // ── 1. Load the entire category tree for the instance ────────────────────
   // We need ancestors for any input id, and the easiest way is to grab the
@@ -83,7 +83,7 @@ export async function syncCategoryTreeToWoocommerce(
   if (catErr) {
     return {
       idMap,
-      failures: scoutCategoryIds.map((cid) => ({
+      failures: rreCategoryIds.map((cid) => ({
         categoryId: cid,
         error: catErr.message,
       })),
@@ -95,7 +95,7 @@ export async function syncCategoryTreeToWoocommerce(
 
   // ── 2. Expand input set with all ancestors ───────────────────────────────
   const needed = new Set<number>();
-  for (const cid of scoutCategoryIds) {
+  for (const cid of rreCategoryIds) {
     let cursor: number | null = cid;
     while (cursor !== null && !needed.has(cursor)) {
       const row = byId.get(cursor);
@@ -154,10 +154,10 @@ export async function syncCategoryTreeToWoocommerce(
         continue;
       }
       // Parent must be resolved before we can create.
-      const parentScoutId = row.parent_category_id;
+      const parentRreId = row.parent_category_id;
       let parentWcId = 0;
-      if (parentScoutId !== null) {
-        const m = idMap.get(parentScoutId);
+      if (parentRreId !== null) {
+        const m = idMap.get(parentRreId);
         if (m === undefined) continue; // Wait for next wave.
         parentWcId = m;
       }

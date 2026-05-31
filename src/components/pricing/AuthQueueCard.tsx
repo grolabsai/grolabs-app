@@ -90,13 +90,13 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginBottom: 4,
             }}
           >
             {t("title")}
           </h2>
-          <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+          <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
             {t("subtitle")}
           </p>
         </div>
@@ -108,7 +108,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
             padding: "32px 0",
             textAlign: "center",
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("empty")}
@@ -124,9 +124,9 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
               gap: 12,
               padding: "10px 14px",
               marginBottom: 12,
-              background: "var(--s-surface-alt)",
-              border: "1px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              background: "var(--gl-surface-alt)",
+              border: "1px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
             }}
           >
             <FilterField label={t("filters.severity")}>
@@ -177,7 +177,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
             <span
               style={{
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
               }}
             >
               {t("shown", { shown: filtered.length, total: initial.length })}
@@ -190,7 +190,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                 padding: "24px 0",
                 textAlign: "center",
                 fontSize: 13,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
               }}
             >
               {t("emptyAfterFilters")}
@@ -198,8 +198,8 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
           ) : (
             <div
               style={{
-                border: "1px solid var(--s-border)",
-                borderRadius: "var(--s-radius-md)",
+                border: "1px solid var(--gl-border)",
+                borderRadius: "var(--gl-radius-md)",
                 overflow: "hidden",
               }}
             >
@@ -213,8 +213,8 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                 <thead>
                   <tr
                     style={{
-                      background: "var(--s-surface-alt)",
-                      borderBottom: "1px solid var(--s-border)",
+                      background: "var(--gl-surface-alt)",
+                      borderBottom: "1px solid var(--gl-border)",
                     }}
                   >
                     <Th width={32}>{" "}</Th>
@@ -231,7 +231,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                   {filtered.map((r) => (
                     <tr
                       key={r.price_batch_item_id}
-                      style={{ borderBottom: "1px solid var(--s-border)" }}
+                      style={{ borderBottom: "1px solid var(--gl-border)" }}
                     >
                       <Td>
                         <SeverityDot status={r.status} />
@@ -241,7 +241,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                           style={{
                             fontSize: 13,
                             fontWeight: 500,
-                            color: "var(--s-text)",
+                            color: "var(--gl-text)",
                           }}
                         >
                           {r.variant_label}
@@ -250,7 +250,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                           <div
                             style={{
                               fontSize: 11,
-                              color: "var(--s-text-tertiary)",
+                              color: "var(--gl-text-tertiary)",
                             }}
                           >
                             {r.brand_name}
@@ -262,7 +262,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                           href={`/pricing/changes/${r.price_batch_id}`}
                           style={{
                             fontSize: 12,
-                            color: "var(--scout-accent-800)",
+                            color: "var(--gl-accent-800)",
                             textDecoration: "none",
                           }}
                         >
@@ -271,7 +271,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                         <div
                           style={{
                             fontSize: 11,
-                            color: "var(--s-text-tertiary)",
+                            color: "var(--gl-text-tertiary)",
                           }}
                         >
                           {formatRelative(r.updated_at)}
@@ -289,7 +289,7 @@ export function AuthQueueCard({ initial }: { initial: AuthQueueRow[] }) {
                             <span
                               style={{
                                 fontSize: 11,
-                                color: "var(--s-text-tertiary)",
+                                color: "var(--gl-text-tertiary)",
                               }}
                             >
                               —
@@ -401,7 +401,7 @@ function FilterField({
         alignItems: "center",
         gap: 8,
         fontSize: 12,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       <span style={{ fontWeight: 500 }}>{label}</span>
@@ -422,9 +422,9 @@ function SeverityDot({ status }: { status: "warning" | "critical" }) {
         height: 24,
         borderRadius: "50%",
         background:
-          status === "critical" ? "var(--s-danger-bg)" : "#FFF7ED",
+          status === "critical" ? "var(--gl-danger-bg)" : "#FFF7ED",
         color:
-          status === "critical" ? "var(--s-danger-text)" : "#B45309",
+          status === "critical" ? "var(--gl-danger-text)" : "#B45309",
       }}
     >
       <Icon
@@ -441,7 +441,7 @@ function ReasonChip({ code, label }: { code: string; label: string }) {
   // (e.g. manually_approved) read as informational.
   const palette = (() => {
     if (code === "below_map" || code === "above_max" || code === "low_margin") {
-      return { bg: "var(--s-danger-bg)", fg: "var(--s-danger-text)" };
+      return { bg: "var(--gl-danger-bg)", fg: "var(--gl-danger-text)" };
     }
     if (
       code === "under_target" ||
@@ -449,7 +449,7 @@ function ReasonChip({ code, label }: { code: string; label: string }) {
     ) {
       return { bg: "#FFF7ED", fg: "#B45309" };
     }
-    return { bg: "var(--s-surface-alt)", fg: "var(--s-text-secondary)" };
+    return { bg: "var(--gl-surface-alt)", fg: "var(--gl-text-secondary)" };
   })();
   return (
     <span
@@ -485,7 +485,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         width: width !== undefined ? `${width}px` : undefined,
       }}
     >
@@ -524,9 +524,9 @@ function Mono({
   return (
     <span
       style={{
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         fontSize: 12,
-        color: color === "muted" ? "var(--s-text-tertiary)" : "var(--s-text)",
+        color: color === "muted" ? "var(--gl-text-tertiary)" : "var(--gl-text)",
       }}
     >
       {children}
@@ -542,7 +542,7 @@ const iconBtnStyle: React.CSSProperties = {
   height: 28,
   border: "none",
   background: "transparent",
-  color: "var(--s-text-tertiary)",
-  borderRadius: "var(--s-radius-md)",
+  color: "var(--gl-text-tertiary)",
+  borderRadius: "var(--gl-radius-md)",
   cursor: "pointer",
 };

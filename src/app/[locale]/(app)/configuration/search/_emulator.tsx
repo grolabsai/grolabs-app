@@ -48,9 +48,9 @@ export function SearchEmulator({ instanceId, categories }: Props) {
   const t = useTranslations("configuration.search.emulator");
   const [query, setQuery] = useState("");
   // Track BOTH ids of the selected category: the WC term id is the filter
-  // value (matches indexed `category_ids[]`), the Scout PK is the lookup
+  // value (matches indexed `category_ids[]`), the RRE PK is the lookup
   // key for the per-category attribute list (form_order lives on
-  // category_product_attribute, which references Scout's category_id).
+  // category_product_attribute, which references RRE's category_id).
   const [selectedCategory, setSelectedCategory] = useState<EmulatorCategory | null>(null);
 
   // Facet selections — keyed by facet name. Brand-style (string) facets

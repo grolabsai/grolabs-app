@@ -46,11 +46,11 @@ export function NewInstanceBanner({
 
   return (
     <div
-      className="mb-4 flex items-center justify-between gap-3 rounded-[var(--s-radius-md)] px-4 py-2.5 text-[13px]"
+      className="mb-4 flex items-center justify-between gap-3 rounded-[var(--gl-radius-md)] px-4 py-2.5 text-[13px]"
       style={{
-        background: "var(--s-surface-alt)",
-        border: "0.5px solid var(--s-border)",
-        color: "var(--s-text-secondary)",
+        background: "var(--gl-surface-alt)",
+        border: "0.5px solid var(--gl-border)",
+        color: "var(--gl-text-secondary)",
       }}
     >
       <span>{t("emptyCatalogBanner")}</span>
@@ -58,8 +58,8 @@ export function NewInstanceBanner({
         type="button"
         onClick={dismiss}
         aria-label={t("dismissBanner")}
-        className="flex items-center justify-center rounded-[var(--s-radius-sm)] p-1 hover:bg-[var(--s-surface)]"
-        style={{ color: "var(--s-text-tertiary)" }}
+        className="flex items-center justify-center rounded-[var(--gl-radius-sm)] p-1 hover:bg-[var(--gl-surface)]"
+        style={{ color: "var(--gl-text-tertiary)" }}
       >
         <Icon icon={X} size={12} />
       </button>

@@ -447,7 +447,7 @@ export function ProductEditor({
               <p
                 style={{
                   fontSize: 11,
-                  color: "var(--s-text-tertiary)",
+                  color: "var(--gl-text-tertiary)",
                   marginTop: 8,
                 }}
               >
@@ -514,7 +514,7 @@ export function ProductEditor({
           <div className="s-card">
             <p className="s-card-label">{t("sections.attributes")}</p>
             {product.product_attribute_value.length === 0 ? (
-              <p style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+              <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
                 {t("attributesEmpty")}
               </p>
             ) : (
@@ -529,7 +529,7 @@ export function ProductEditor({
                       padding: "10px 0",
                       borderBottom:
                         idx < product.product_attribute_value.length - 1
-                          ? "0.5px solid var(--s-border)"
+                          ? "0.5px solid var(--gl-border)"
                           : "none",
                     }}
                   >
@@ -540,15 +540,15 @@ export function ProductEditor({
                       <div
                         style={{
                           fontSize: 11,
-                          color: "var(--s-text-tertiary)",
-                          fontFamily: "var(--s-font-mono)",
+                          color: "var(--gl-text-tertiary)",
+                          fontFamily: "var(--gl-font-mono)",
                           marginTop: 1,
                         }}
                       >
                         {av.product_attribute?.attribute_code ?? ""}
                       </div>
                     </div>
-                    <div style={{ fontSize: 13, color: "var(--s-text-secondary)" }}>
+                    <div style={{ fontSize: 13, color: "var(--gl-text-secondary)" }}>
                       {av.product_attribute_option?.value ??
                         av.value_text ??
                         "—"}
@@ -577,8 +577,8 @@ export function ProductEditor({
 
           <div
             style={{
-              background: "var(--scout-accent-50)",
-              borderRadius: "var(--s-radius-lg)",
+              background: "var(--gl-accent-50)",
+              borderRadius: "var(--gl-radius-lg)",
               padding: "16px 18px",
             }}
           >
@@ -588,7 +588,7 @@ export function ProductEditor({
                 alignItems: "center",
                 gap: 8,
                 marginBottom: 12,
-                color: "var(--scout-accent-800)",
+                color: "var(--gl-accent-800)",
                 fontSize: 13,
                 fontWeight: 500,
               }}
@@ -647,9 +647,9 @@ export function WoocommerceIdBadge({ id }: { id: number | null }) {
           display: "inline-flex",
           alignItems: "center",
           padding: "1px 8px",
-          background: "var(--s-surface-alt)",
-          color: "var(--s-text-secondary)",
-          border: "0.5px solid var(--s-border)",
+          background: "var(--gl-surface-alt)",
+          color: "var(--gl-text-secondary)",
+          border: "0.5px solid var(--gl-border)",
           borderRadius: 999,
           fontSize: 11,
           fontWeight: 500,
@@ -660,9 +660,9 @@ export function WoocommerceIdBadge({ id }: { id: number | null }) {
     );
   }
   return (
-    <span style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+    <span style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}>
       {t("wcId.label")}{" "}
-      <span style={{ fontFamily: "var(--s-font-mono)", color: "var(--s-text)" }}>{id}</span>
+      <span style={{ fontFamily: "var(--gl-font-mono)", color: "var(--gl-text)" }}>{id}</span>
     </span>
   );
 }
@@ -687,7 +687,7 @@ function SaveIndicator({
     <span
       style={{
         fontSize: 11,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         fontVariantNumeric: "tabular-nums",
       }}
       role="status"
@@ -780,7 +780,7 @@ function DeleteProductButton({
   if (confirming) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+        <span style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}>
           {t("deleteConfirm")}
         </span>
         <Button
@@ -846,7 +846,7 @@ function HtmlPreview({ html }: { html: string | null }) {
           fontSize: 10,
           textTransform: "uppercase",
           letterSpacing: "0.04em",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 4,
         }}
       >
@@ -856,9 +856,9 @@ function HtmlPreview({ html }: { html: string | null }) {
         className="s-html-preview"
         style={{
           fontSize: 13,
-          color: "var(--s-text-secondary)",
-          background: "var(--s-surface-alt)",
-          border: "0.5px solid var(--s-border)",
+          color: "var(--gl-text-secondary)",
+          background: "var(--gl-surface-alt)",
+          border: "0.5px solid var(--gl-border)",
           borderRadius: 6,
           padding: "10px 12px",
           maxHeight: 280,
@@ -914,15 +914,15 @@ function SummaryRow({
         fontSize: 12,
       }}
     >
-      <span style={{ color: "var(--scout-accent-800)", opacity: 0.85 }}>
+      <span style={{ color: "var(--gl-accent-800)", opacity: 0.85 }}>
         {label}
       </span>
       <span
         style={{
-          color: "var(--scout-accent-800)",
+          color: "var(--gl-accent-800)",
           fontWeight: 500,
           fontVariantNumeric: "tabular-nums",
-          fontFamily: mono ? "var(--s-font-mono)" : undefined,
+          fontFamily: mono ? "var(--gl-font-mono)" : undefined,
         }}
       >
         {value}

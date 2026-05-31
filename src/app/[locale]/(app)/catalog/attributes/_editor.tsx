@@ -200,7 +200,7 @@ export function AttributeEditor({
           padding: 40,
         }}
       >
-        <p style={{ color: "var(--s-text-tertiary)", fontSize: 13 }}>
+        <p style={{ color: "var(--gl-text-tertiary)", fontSize: 13 }}>
           {t("empty.selectPrompt")}
         </p>
       </div>
@@ -217,7 +217,7 @@ export function AttributeEditor({
 
   return (
     <div style={{ padding: "24px 28px", overflowY: "auto", height: "100%" }}>
-      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px", color: "var(--s-text)" }}>
+      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 20px", color: "var(--gl-text)" }}>
         {isEdit ? t("form.editTitle") : t("form.createTitle")}
       </h2>
 
@@ -251,7 +251,7 @@ export function AttributeEditor({
           }}
           style={isEdit ? { opacity: 0.6, cursor: "default" } : undefined}
         />
-        <div style={{ fontSize: 10, color: "var(--s-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
+        <div style={{ fontSize: 10, color: "var(--gl-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
           {codeHint()}
         </div>
       </div>
@@ -276,7 +276,7 @@ export function AttributeEditor({
           placeholder={t("form.fields.parsingHintPlaceholder")}
           onChange={(e) => setField("parsing_hint", e.target.value)}
         />
-        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
+        <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4, paddingLeft: 2 }}>
           {t("form.fields.parsingHintDesc")}
         </div>
       </div>
@@ -357,7 +357,7 @@ export function AttributeEditor({
           <SectionHeader style={{ marginTop: 20 }}>{t("form.sections.options")}</SectionHeader>
 
           {options.length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--s-text-tertiary)", marginBottom: 8 }}>
+            <p style={{ fontSize: 12, color: "var(--gl-text-tertiary)", marginBottom: 8 }}>
               {t("form.options.noOptions")}
             </p>
           )}
@@ -379,12 +379,12 @@ export function AttributeEditor({
                 onClick={() => handleDeleteOption(opt.value_id)}
                 style={{
                   fontSize: 14,
-                  color: "var(--s-text-tertiary)",
+                  color: "var(--gl-text-tertiary)",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   padding: "4px 6px",
-                  fontFamily: "var(--s-font)",
+                  fontFamily: "var(--gl-font)",
                 }}
               >
                 {t("form.options.deleteOption")}
@@ -428,7 +428,7 @@ export function AttributeEditor({
           gap: 12,
           marginTop: 24,
           paddingTop: 16,
-          borderTop: "0.5px solid var(--s-border)",
+          borderTop: "0.5px solid var(--gl-border)",
         }}
       >
         <button
@@ -440,10 +440,10 @@ export function AttributeEditor({
           {isPending ? t("actions.saving") : t("actions.save")}
         </button>
         {saved && (
-          <span style={{ fontSize: 12, color: "var(--s-success)" }}>{t("actions.saved")}</span>
+          <span style={{ fontSize: 12, color: "var(--gl-success)" }}>{t("actions.saved")}</span>
         )}
         {error && (
-          <span style={{ fontSize: 12, color: "var(--s-danger)" }}>{error}</span>
+          <span style={{ fontSize: 12, color: "var(--gl-danger)" }}>{error}</span>
         )}
         {isEdit && attribute && (
           <button
@@ -453,13 +453,13 @@ export function AttributeEditor({
             style={{
               marginLeft: "auto",
               fontSize: 12,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
               background: "none",
-              border: "0.5px solid var(--s-danger)",
-              borderRadius: "var(--s-radius-md)",
+              border: "0.5px solid var(--gl-danger)",
+              borderRadius: "var(--gl-radius-md)",
               padding: "5px 10px",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
             }}
           >
             {t("actions.delete")}
@@ -484,10 +484,10 @@ function SectionHeader({
         fontWeight: 600,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         marginBottom: 12,
         paddingBottom: 6,
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         ...style,
       }}
     >

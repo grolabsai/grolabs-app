@@ -297,13 +297,13 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
           style={{
             fontSize: 16,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             marginBottom: 4,
           }}
         >
           {t("title")}
         </h2>
-        <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+        <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
           {t("subtitle")}
         </p>
       </header>
@@ -317,11 +317,11 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
           gap: 12,
           padding: "10px 14px",
           marginBottom: 16,
-          background: "var(--s-surface-alt)",
-          border: "1px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          background: "var(--gl-surface-alt)",
+          border: "1px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
           fontSize: 12,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         <label
@@ -329,7 +329,7 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
             display: "flex",
             alignItems: "center",
             gap: 8,
-            fontFamily: "var(--s-font-mono)",
+            fontFamily: "var(--gl-font-mono)",
           }}
         >
           <span>{t("testCalculator.label")}</span>
@@ -344,27 +344,27 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
               width: 96,
               padding: "4px 8px",
               fontSize: 12,
-              border: "1px solid var(--s-border-strong)",
-              borderRadius: "var(--s-radius-md)",
-              background: "var(--s-surface)",
-              color: "var(--s-text)",
-              fontFamily: "var(--s-font-mono)",
+              border: "1px solid var(--gl-border-strong)",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-surface)",
+              color: "var(--gl-text)",
+              fontFamily: "var(--gl-font-mono)",
             }}
           />
         </label>
-        <span style={{ color: "var(--s-text-tertiary)" }}>→</span>
+        <span style={{ color: "var(--gl-text-tertiary)" }}>→</span>
         <span
           style={{
-            fontFamily: "var(--s-font-mono)",
+            fontFamily: "var(--gl-font-mono)",
             color: Number.isFinite(testOutput)
-              ? "var(--s-text)"
-              : "var(--s-text-tertiary)",
+              ? "var(--gl-text)"
+              : "var(--gl-text-tertiary)",
           }}
         >
           {Number.isFinite(testOutput) ? `Q${testOutput.toFixed(2)}` : "—"}
         </span>
         <span style={{ flex: 1 }} />
-        <span style={{ color: "var(--s-text-tertiary)" }}>
+        <span style={{ color: "var(--gl-text-tertiary)" }}>
           {testMatch
             ? t("testCalculator.matched", {
                 strategy: t(`strategies.${testMatch.strategy}.label`),
@@ -382,7 +382,7 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
             padding: "32px 0",
             textAlign: "center",
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("empty")}
@@ -390,8 +390,8 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
       ) : (
         <div
           style={{
-            border: "1px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            border: "1px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             overflow: "hidden",
           }}
         >
@@ -405,8 +405,8 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
             <thead>
               <tr
                 style={{
-                  background: "var(--s-surface-alt)",
-                  borderBottom: "1px solid var(--s-border)",
+                  background: "var(--gl-surface-alt)",
+                  borderBottom: "1px solid var(--gl-border)",
                 }}
               >
                 <Th>{t("columns.from")}</Th>
@@ -433,10 +433,10 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                   <tr
                     key={row.charm_rule_id ?? `new-${idx}`}
                     style={{
-                      borderBottom: "1px solid var(--s-border)",
+                      borderBottom: "1px solid var(--gl-border)",
                       background: row.is_active
-                        ? "var(--s-surface)"
-                        : "var(--s-surface-alt)",
+                        ? "var(--gl-surface)"
+                        : "var(--gl-surface-alt)",
                     }}
                   >
                     <Td>
@@ -480,7 +480,7 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                       <p
                         style={{
                           fontSize: 11,
-                          color: "var(--s-text-tertiary)",
+                          color: "var(--gl-text-tertiary)",
                           marginTop: 2,
                           lineHeight: 1.3,
                         }}
@@ -503,7 +503,7 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          fontFamily: "var(--s-font-mono)",
+                          fontFamily: "var(--gl-font-mono)",
                           fontSize: 12,
                         }}
                       >
@@ -517,12 +517,12 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                             )
                           }
                         />
-                        <span style={{ color: "var(--s-text-tertiary)" }}>→</span>
+                        <span style={{ color: "var(--gl-text-tertiary)" }}>→</span>
                         <span
                           style={{
                             color: Number.isFinite(exampleOutput)
-                              ? "var(--s-text-secondary)"
-                              : "var(--s-text-tertiary)",
+                              ? "var(--gl-text-secondary)"
+                              : "var(--gl-text-tertiary)",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -576,8 +576,8 @@ export function CharmRulesCard({ initial }: { initial: CharmRuleRow[] }) {
                             height: 28,
                             border: "none",
                             background: "transparent",
-                            color: "var(--s-text-tertiary)",
-                            borderRadius: "var(--s-radius-md)",
+                            color: "var(--gl-text-tertiary)",
+                            borderRadius: "var(--gl-radius-md)",
                             cursor: "pointer",
                           }}
                         >
@@ -623,7 +623,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {children}
@@ -672,10 +672,10 @@ function PriceInput({
         width: "100%",
         padding: "6px 8px",
         fontSize: 13,
-        border: "1px solid var(--s-border-strong)",
-        borderRadius: "var(--s-radius-md)",
-        background: "var(--s-surface)",
-        color: "var(--s-text)",
+        border: "1px solid var(--gl-border-strong)",
+        borderRadius: "var(--gl-radius-md)",
+        background: "var(--gl-surface)",
+        color: "var(--gl-text)",
       }}
     />
   );

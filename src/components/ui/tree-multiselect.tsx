@@ -163,8 +163,8 @@ export function TreeMultiSelectCombobox({
         style={{
           minHeight: 40,
           padding: "8px 12px",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
           background: "white",
           display: "flex",
           flexWrap: "wrap",
@@ -174,7 +174,7 @@ export function TreeMultiSelectCombobox({
         }}
       >
         {selected.length === 0 ? (
-          <span style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+          <span style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
             {placeholder}
           </span>
         ) : (
@@ -186,8 +186,8 @@ export function TreeMultiSelectCombobox({
                 alignItems: "center",
                 gap: 4,
                 padding: "2px 8px",
-                background: "var(--scout-accent-50)",
-                color: "var(--scout-accent-800)",
+                background: "var(--gl-accent-50)",
+                color: "var(--gl-accent-800)",
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 500,
@@ -231,15 +231,15 @@ export function TreeMultiSelectCombobox({
             left: 0,
             right: 0,
             background: "white",
-            border: "0.5px solid var(--s-border-strong)",
-            borderRadius: "var(--s-radius-md)",
+            border: "0.5px solid var(--gl-border-strong)",
+            borderRadius: "var(--gl-radius-md)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             maxHeight: 320,
             overflowY: "auto",
             zIndex: 100,
           }}
         >
-          <div style={{ padding: 8, borderBottom: "0.5px solid var(--s-border)" }}>
+          <div style={{ padding: 8, borderBottom: "0.5px solid var(--gl-border)" }}>
             <input
               autoFocus
               type="text"
@@ -251,8 +251,8 @@ export function TreeMultiSelectCombobox({
                 height: 32,
                 padding: "6px 10px",
                 fontSize: 13,
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-sm)",
+                border: "0.5px solid var(--gl-border)",
+                borderRadius: "var(--gl-radius-sm)",
                 outline: "none",
               }}
             />
@@ -264,7 +264,7 @@ export function TreeMultiSelectCombobox({
                 style={{
                   padding: 12,
                   fontSize: 12,
-                  color: "var(--s-text-tertiary)",
+                  color: "var(--gl-text-tertiary)",
                   textAlign: "center",
                 }}
               >
@@ -325,7 +325,7 @@ function TreeBody({
         style={{
           padding: 12,
           fontSize: 12,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           textAlign: "center",
         }}
       >
@@ -388,12 +388,12 @@ function TreeRow({
           padding: "6px 12px 6px 8px",
           paddingLeft: 8 + node.depth * 16,
           fontSize: 13,
-          background: isSelected ? "var(--scout-accent-50)" : "transparent",
-          color: isSelected ? "var(--scout-accent-800)" : "var(--s-text)",
+          background: isSelected ? "var(--gl-accent-50)" : "transparent",
+          color: isSelected ? "var(--gl-accent-800)" : "var(--gl-text)",
           cursor: "pointer",
         }}
         onMouseEnter={(e) => {
-          if (!isSelected) e.currentTarget.style.background = "var(--s-surface-alt)";
+          if (!isSelected) e.currentTarget.style.background = "var(--gl-surface-alt)";
         }}
         onMouseLeave={(e) => {
           if (!isSelected) e.currentTarget.style.background = "transparent";
@@ -412,7 +412,7 @@ function TreeRow({
             justifyContent: "center",
             width: 18,
             height: 18,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             cursor: hasChildren ? "pointer" : "default",
             visibility: hasChildren ? "visible" : "hidden",
           }}
@@ -432,9 +432,9 @@ function TreeRow({
             justifyContent: "center",
             width: 16,
             height: 16,
-            border: `1px solid ${isSelected ? "var(--scout-accent)" : "var(--s-border-strong)"}`,
+            border: `1px solid ${isSelected ? "var(--gl-accent)" : "var(--gl-border-strong)"}`,
             borderRadius: 4,
-            background: isSelected ? "var(--scout-accent)" : "white",
+            background: isSelected ? "var(--gl-accent)" : "white",
             color: "white",
             cursor: "pointer",
             padding: 0,

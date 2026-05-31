@@ -16,10 +16,10 @@ export function ScanStatusBadge({
   const { setHint } = useFieldHintState();
   const color =
     status === "completed"
-      ? "var(--s-success)"
+      ? "var(--gl-success)"
       : status === "failed"
-        ? "var(--s-danger)"
-        : "var(--s-text-tertiary)";
+        ? "var(--gl-danger)"
+        : "var(--gl-text-tertiary)";
 
   const clickable = status === "failed" && errorMessage != null;
 

@@ -6,7 +6,7 @@
 --      vertical_benchmark. Use the prompt_template pattern: per-instance
 --      with instance 0 fallthrough on SELECT, member-only writes.
 --   2. Run layer (written every diagnostic): prospect, diagnostic_run,
---      run_sample, finding, finding_fix. instance_id required for Scout
+--      run_sample, finding, finding_fix. instance_id required for RRE
 --      users; NULL allowed for anonymous landing-page runs (share by
 --      uuid run_id token).
 --

@@ -27,7 +27,7 @@ export type SearchTestEntryGroup = {
 };
 
 const VARIANT_COLORS: Record<string, string> = {
-  canonical: "var(--scout-accent)",
+  canonical: "var(--gl-accent)",
   typo: "#facc15",
   synonym: "#60a5fa",
   plural: "#a78bfa",
@@ -42,7 +42,7 @@ export function SearchTestsBody({ entries }: { entries: SearchTestEntryGroup[] }
           padding: 24,
           textAlign: "center",
           fontSize: 13,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
         }}
       >
         No search-test entries ran on this scan. Add entries on the prospect&apos;s
@@ -64,7 +64,7 @@ function SearchEntryCard({ entry }: { entry: SearchTestEntryGroup }) {
     <div
       style={{
         padding: "14px 18px",
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
@@ -89,8 +89,8 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
         gap: 12,
         alignItems: "center",
         padding: "8px 10px",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -107,7 +107,7 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
             fontSize: 10,
             textTransform: "uppercase",
             letterSpacing: "0.04em",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             fontWeight: 600,
           }}
         >
@@ -117,9 +117,9 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
       <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "var(--s-font-mono)",
+            fontFamily: "var(--gl-font-mono)",
             fontSize: 12,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -131,7 +131,7 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
           <div
             style={{
               fontSize: 10,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               marginTop: 2,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -146,10 +146,10 @@ function VariantResultRow({ variant }: { variant: SearchTestVariantResult }) {
         <span
           style={{
             fontSize: 11,
-            fontFamily: "var(--s-font-mono)",
+            fontFamily: "var(--gl-font-mono)",
             color: variant.results_returned
-              ? "var(--s-text)"
-              : "var(--s-text-tertiary)",
+              ? "var(--gl-text)"
+              : "var(--gl-text-tertiary)",
             fontWeight: 600,
           }}
         >
@@ -209,16 +209,16 @@ function ConfidenceBadge({
   const tier =
     confidence >= 80 ? "high" : confidence >= 50 ? "medium" : "low";
   const palette = {
-    high: { bg: "rgba(34,197,94,0.10)", color: "var(--s-success-text, #16a34a)" },
-    medium: { bg: "rgba(250,204,21,0.12)", color: "var(--s-warning-text, #ca8a04)" },
-    low: { bg: "rgba(239,68,68,0.10)", color: "var(--s-danger-text, #dc2626)" },
+    high: { bg: "rgba(34,197,94,0.10)", color: "var(--gl-success-text, #16a34a)" },
+    medium: { bg: "rgba(250,204,21,0.12)", color: "var(--gl-warning-text, #ca8a04)" },
+    low: { bg: "rgba(239,68,68,0.10)", color: "var(--gl-danger-text, #dc2626)" },
   }[tier];
   return (
     <span
       title={reason}
       style={{
         fontSize: 9,
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         padding: "1px 6px",
         borderRadius: 4,
         background: palette.bg,
@@ -243,13 +243,13 @@ function judgeVariant(
   variantType: string,
   resultsReturned: boolean,
 ): { label: string; color: string } {
-  if (resultsReturned) return { label: "OK", color: "var(--s-success)" };
+  if (resultsReturned) return { label: "OK", color: "var(--gl-success)" };
   if (variantType === "canonical")
-    return { label: "FAIL — no results", color: "var(--s-danger)" };
+    return { label: "FAIL — no results", color: "var(--gl-danger)" };
   if (variantType === "typo")
-    return { label: "FAIL — no typo tolerance", color: "var(--s-danger)" };
+    return { label: "FAIL — no typo tolerance", color: "var(--gl-danger)" };
   if (variantType === "synonym")
-    return { label: "FAIL — synonym not understood", color: "var(--s-danger)" };
+    return { label: "FAIL — synonym not understood", color: "var(--gl-danger)" };
   return { label: "WEAK — no results", color: "#d97706" };
 }
 

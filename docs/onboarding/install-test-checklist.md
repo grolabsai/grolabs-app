@@ -44,7 +44,7 @@ If any item fails: resolve before proceeding.
 ### Setup verification
 
 - [ ] Plugin appears in WP admin → Plugins, status "Active"
-- [ ] Plugin settings page is accessible at Settings → Scout Analytics (or current name)
+- [ ] Plugin settings page is accessible at Settings → RRE Analytics (or current name)
 - [ ] GA4 Measurement ID is populated (format `G-XXXXXXXXXX`)
 - [ ] MP API Secret is populated (non-empty)
 - [ ] All toggles are ON: Track traffic, Track ecommerce
@@ -157,7 +157,7 @@ These verify the supporting infrastructure that the plugin depends on:
 ### Setup verification
 
 - [ ] Plugin appears in WP admin → Plugins, status "Active"
-- [ ] Plugin settings page is accessible at Settings → Scout Search (or current name)
+- [ ] Plugin settings page is accessible at Settings → RRE Search (or current name)
 - [ ] GroLabs Core API host is populated and matches deployment URL
 - [ ] Instance ID is populated and matches the instance configured in grolabs-core
 - [ ] Test Connection button (if available) returns success

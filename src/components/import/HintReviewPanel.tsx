@@ -70,12 +70,12 @@ export function HintReviewPanel({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 18px",
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div>
           <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t("title")}</p>
-          <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", margin: "2px 0 0" }}>
+          <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", margin: "2px 0 0" }}>
             {t("subtitle")}
           </p>
         </div>
@@ -86,7 +86,7 @@ export function HintReviewPanel({
             background: "transparent",
             border: "none",
             cursor: "pointer",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             fontSize: 13,
           }}
         >
@@ -102,7 +102,7 @@ export function HintReviewPanel({
               key={s.attributeId}
               style={{
                 padding: "12px 18px",
-                borderBottom: "0.5px solid var(--s-border)",
+                borderBottom: "0.5px solid var(--gl-border)",
                 opacity: isAccepted ? 0.55 : 1,
                 display: "grid",
                 gridTemplateColumns: "minmax(160px, 200px) 1fr auto",
@@ -122,13 +122,13 @@ export function HintReviewPanel({
                 />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 500 }}>{s.attributeName}</div>
-                  <div style={{ fontSize: 10, color: "var(--s-text-tertiary)" }}>
+                  <div style={{ fontSize: 10, color: "var(--gl-text-tertiary)" }}>
                     {s.attributeCode}
                   </div>
                 </div>
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
+                <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
                   {t("newTerms")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>

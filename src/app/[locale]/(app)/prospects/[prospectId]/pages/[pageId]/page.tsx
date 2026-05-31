@@ -173,10 +173,10 @@ export default async function PageDetailPage({
 
   return (
     <div className="s-content">
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
         <Link
           href={`/prospects/${prospect.prospect_id}` as never}
-          style={{ color: "var(--s-text-tertiary)" }}
+          style={{ color: "var(--gl-text-tertiary)" }}
         >
           ← {prospect.display_name ?? prospect.url}
         </Link>
@@ -186,7 +186,7 @@ export default async function PageDetailPage({
           <h1
             className="s-title"
             style={{
-              fontFamily: "var(--s-font-mono)",
+              fontFamily: "var(--gl-font-mono)",
               fontSize: 22,
               fontWeight: 600,
             }}
@@ -199,7 +199,7 @@ export default async function PageDetailPage({
                 fontSize: 10,
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
-                color: "var(--scout-accent)",
+                color: "var(--gl-accent)",
                 marginRight: 8,
               }}
             >
@@ -209,7 +209,7 @@ export default async function PageDetailPage({
               href={page.url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--s-text-secondary)", textDecoration: "underline" }}
+              style={{ color: "var(--gl-text-secondary)", textDecoration: "underline" }}
             >
               {t("openPage")}
             </a>
@@ -222,9 +222,9 @@ export default async function PageDetailPage({
       {latest && (
         <div
           style={{
-            background: "var(--s-surface)",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-lg)",
+            background: "var(--gl-surface)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-lg)",
             padding: 20,
             marginBottom: 20,
           }}
@@ -235,7 +235,7 @@ export default async function PageDetailPage({
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               marginBottom: 12,
             }}
           >
@@ -291,9 +291,9 @@ export default async function PageDetailPage({
       {searchTestEntries.length > 0 && (
         <div
           style={{
-            background: "var(--s-surface)",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-lg)",
+            background: "var(--gl-surface)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-lg)",
             overflow: "hidden",
             marginBottom: 20,
           }}
@@ -301,12 +301,12 @@ export default async function PageDetailPage({
           <div
             style={{
               padding: "12px 16px",
-              borderBottom: "0.5px solid var(--s-border)",
+              borderBottom: "0.5px solid var(--gl-border)",
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("searchTestsTitle")}
@@ -318,21 +318,21 @@ export default async function PageDetailPage({
       {/* Scan history table */}
       <div
         style={{
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
         }}
       >
         <div
           style={{
             padding: "12px 16px",
-            borderBottom: "0.5px solid var(--s-border)",
+            borderBottom: "0.5px solid var(--gl-border)",
             fontSize: 11,
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("scanHistory")} ({scans.length})
@@ -342,7 +342,7 @@ export default async function PageDetailPage({
             style={{
               padding: 24,
               textAlign: "center",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontSize: 13,
             }}
           >
@@ -351,7 +351,7 @@ export default async function PageDetailPage({
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "var(--s-surface-alt)" }}>
+              <tr style={{ background: "var(--gl-surface-alt)" }}>
                 <Th>{t("scanTable.when")}</Th>
                 <Th>{t("scanTable.status")}</Th>
                 <Th>{t("scanTable.score")}</Th>
@@ -361,7 +361,7 @@ export default async function PageDetailPage({
             </thead>
             <tbody>
               {scans.map((s) => (
-                <tr key={s.scan_id} style={{ borderTop: "1px solid var(--s-border)" }}>
+                <tr key={s.scan_id} style={{ borderTop: "1px solid var(--gl-border)" }}>
                   <Td>
                     <LocalTime iso={s.started_at} fallback="—" />
                   </Td>
@@ -383,7 +383,7 @@ export default async function PageDetailPage({
                       href={`/prospects/runs/${s.run_id}` as never}
                       style={{
                         fontSize: 11,
-                        color: "var(--scout-accent)",
+                        color: "var(--gl-accent)",
                         textDecoration: "none",
                       }}
                     >
@@ -416,9 +416,9 @@ function ScoreCard({
   return (
     <div
       style={{
-        background: accent ? "rgba(250,225,148,0.06)" : "var(--s-surface-alt)",
-        border: `0.5px solid ${accent ? "rgba(250,225,148,0.3)" : "var(--s-border)"}`,
-        borderRadius: "var(--s-radius-md)",
+        background: accent ? "rgba(250,225,148,0.06)" : "var(--gl-surface-alt)",
+        border: `0.5px solid ${accent ? "rgba(250,225,148,0.3)" : "var(--gl-border)"}`,
+        borderRadius: "var(--gl-radius-md)",
         padding: 14,
       }}
     >
@@ -428,7 +428,7 @@ function ScoreCard({
           fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: accent ? "var(--scout-accent)" : "var(--s-text-tertiary)",
+          color: accent ? "var(--gl-accent)" : "var(--gl-text-tertiary)",
           marginBottom: 6,
         }}
       >
@@ -438,21 +438,21 @@ function ScoreCard({
         style={{
           fontSize: 24,
           fontWeight: 700,
-          fontFamily: "var(--s-font-mono)",
-          color: "var(--s-text)",
+          fontFamily: "var(--gl-font-mono)",
+          color: "var(--gl-text)",
         }}
       >
         {score ?? "—"}
       </div>
-      <div style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+      <div style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}>
         {uplift != null ? `$${Math.round(uplift).toLocaleString()} uplift` : "—"}
       </div>
       <div
         style={{
           fontSize: 10,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginTop: 4,
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
         }}
       >
         <LocalTime iso={when} />
@@ -485,17 +485,17 @@ function DeltaCard({
   const positive = (scoreDelta ?? 0) > 0;
   const negative = (scoreDelta ?? 0) < 0;
   const color = positive
-    ? "var(--s-success)"
+    ? "var(--gl-success)"
     : negative
-      ? "var(--s-danger)"
-      : "var(--s-text-secondary)";
+      ? "var(--gl-danger)"
+      : "var(--gl-text-secondary)";
   const sign = (n: number) => (n > 0 ? `+${n}` : String(n));
   return (
     <div
       style={{
-        background: "var(--s-surface-alt)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
+        background: "var(--gl-surface-alt)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
         padding: 14,
       }}
     >
@@ -505,7 +505,7 @@ function DeltaCard({
           fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 6,
         }}
       >
@@ -515,13 +515,13 @@ function DeltaCard({
         style={{
           fontSize: 24,
           fontWeight: 700,
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           color,
         }}
       >
         {scoreDelta != null ? sign(scoreDelta) : "—"}
       </div>
-      <div style={{ fontSize: 12, color, fontFamily: "var(--s-font-mono)" }}>
+      <div style={{ fontSize: 12, color, fontFamily: "var(--gl-font-mono)" }}>
         {upliftDelta != null
           ? `${upliftDelta > 0 ? "+" : ""}$${Math.round(Math.abs(upliftDelta)).toLocaleString()} uplift`
           : "—"}
@@ -549,8 +549,8 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
-        borderBottom: "0.5px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       {children}
@@ -564,9 +564,9 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
       style={{
         padding: "10px 12px",
         fontSize: 13,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         fontFamily: mono
-          ? "var(--s-font-mono, ui-monospace, monospace)"
+          ? "var(--gl-font-mono, ui-monospace, monospace)"
           : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
       }}

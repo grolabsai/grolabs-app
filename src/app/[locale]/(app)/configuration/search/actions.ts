@@ -133,7 +133,7 @@ export async function initializeIndex(instanceId: number): Promise<InitIndexResu
 
 export type IndexingStatus = {
   meiliDocCount: number;
-  scoutProductCount: number;
+  rreProductCount: number;
   lastSearchSyncAt: string | null;
   failedCount: number;
   pendingCount: number;
@@ -163,7 +163,7 @@ export async function getIndexingStatus(instanceId: number): Promise<IndexingSta
   // Service-role for counts: we want exact totals regardless of RLS.
   const sb = createServiceRoleClient();
 
-  const [meiliCount, scoutCount, instanceRow, failedCount, pendingCount] = await Promise.all([
+  const [meiliCount, rreCount, instanceRow, failedCount, pendingCount] = await Promise.all([
     getDocumentCount(instanceId).catch(() => 0),
     sb
       .from("product")
@@ -187,17 +187,17 @@ export async function getIndexingStatus(instanceId: number): Promise<IndexingSta
       .eq("last_status", "error"),
   ]);
 
-  const scoutProductCount = scoutCount.count ?? 0;
+  const rreProductCount = rreCount.count ?? 0;
   const meiliDocCount = meiliCount;
   const lastSearchSyncAt = (instanceRow.data?.last_search_sync_at as string | null) ?? null;
 
   return {
     meiliDocCount,
-    scoutProductCount,
+    rreProductCount,
     lastSearchSyncAt,
     failedCount: failedCount.count ?? 0,
     pendingCount: pendingCount.count ?? 0,
-    inSync: meiliDocCount === scoutProductCount,
+    inSync: meiliDocCount === rreProductCount,
   };
 }
 
@@ -588,7 +588,7 @@ export async function searchEventCounts(
   return { ok: true, counts: { windowSeconds, byName } };
 }
 
-// ── Stage 1: in-Scout search emulator ─────────────────────────────────────
+// ── Stage 1: in-RRE search emulator ─────────────────────────────────────
 //
 // Per docs/policy/search-foundations.md §17. Powers the "Emulador" tab on
 // /configuration/search. Goes through the same Meilisearch path the public
@@ -635,7 +635,7 @@ export type EmulatorSearchInput = {
   query: string;
   /** Single category constraint from the dropdown above the search input.
    * MUST be the WooCommerce term ID (matches indexed `category_ids[]` per
-   * §4), not Scout's `category.category_id`. `null` clears the constraint. */
+   * §4), not RRE's `category.category_id`. `null` clears the constraint. */
   categoryWcId: number | null;
   /** Facet rail selections — converted to a Meilisearch filter expression
    * server-side via `buildMeilisearchFilter`. */
@@ -801,10 +801,10 @@ export async function runEmulatorSearch(
 // ── Category list for the emulator dropdown ───────────────────────────────
 
 export type EmulatorCategory = {
-  /** Scout's internal PK — stable id for the React option. */
+  /** RRE's internal PK — stable id for the React option. */
   categoryId: number;
   /** WooCommerce term ID. This is what gets matched against the indexed
-   * document's `category_ids[]` (per §4: indexed value is WC IDs, not Scout
+   * document's `category_ids[]` (per §4: indexed value is WC IDs, not RRE
    * PKs). Categories without a WC mapping are excluded from the dropdown —
    * they cannot be used as a Meilisearch filter. */
   woocommerceId: number;

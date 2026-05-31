@@ -38,7 +38,7 @@ export function VocabularyEditor({
         style={{
           display: "flex",
           gap: 4,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
           marginBottom: 16,
         }}
       >
@@ -156,7 +156,7 @@ function SynonymPairsPanel({
           </div>
         </div>
         {error && (
-          <div style={{ padding: "0 14px 12px", fontSize: 12, color: "var(--s-danger)" }}>
+          <div style={{ padding: "0 14px 12px", fontSize: 12, color: "var(--gl-danger)" }}>
             {error}
           </div>
         )}
@@ -171,7 +171,7 @@ function SynonymPairsPanel({
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: "var(--s-surface-alt)" }}>
+              <tr style={{ background: "var(--gl-surface-alt)" }}>
                 <Th>{t("fields.vertical")}</Th>
                 <Th>{t("fields.termA")}</Th>
                 <Th>{t("fields.termB")}</Th>
@@ -210,7 +210,7 @@ function PairRow({
   const [isPending, startTransition] = useTransition();
   const isTemplate = pair.instance_id === 0 && currentInstanceId !== 0;
   return (
-    <tr style={{ borderBottom: "0.5px solid var(--s-border)", opacity: pair.is_active ? 1 : 0.55 }}>
+    <tr style={{ borderBottom: "0.5px solid var(--gl-border)", opacity: pair.is_active ? 1 : 0.55 }}>
       <Td>{verticalName}</Td>
       <Td mono>{pair.term_a}</Td>
       <Td mono>{pair.term_b}</Td>
@@ -218,7 +218,7 @@ function PairRow({
       <Td>{pair.notes ?? ""}</Td>
       <Td>
         {isTemplate ? (
-          <span style={{ fontSize: 10, color: "var(--s-text-tertiary)" }}>{t("template")}</span>
+          <span style={{ fontSize: 10, color: "var(--gl-text-tertiary)" }}>{t("template")}</span>
         ) : (
           <button
             type="button"
@@ -231,11 +231,11 @@ function PairRow({
             }}
             style={{
               fontSize: 11,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
               background: "none",
               border: "none",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
               padding: 0,
             }}
           >
@@ -334,7 +334,7 @@ function TestQueriesPanel({
           </div>
         </div>
         {error && (
-          <div style={{ padding: "0 14px 12px", fontSize: 12, color: "var(--s-danger)" }}>
+          <div style={{ padding: "0 14px 12px", fontSize: 12, color: "var(--gl-danger)" }}>
             {error}
           </div>
         )}
@@ -349,7 +349,7 @@ function TestQueriesPanel({
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: "var(--s-surface-alt)" }}>
+              <tr style={{ background: "var(--gl-surface-alt)" }}>
                 <Th>{t("fields.vertical")}</Th>
                 <Th>{t("fields.queryText")}</Th>
                 <Th>{t("fields.locale")}</Th>
@@ -388,7 +388,7 @@ function QueryRow({
   const [isPending, startTransition] = useTransition();
   const isTemplate = query.instance_id === 0 && currentInstanceId !== 0;
   return (
-    <tr style={{ borderBottom: "0.5px solid var(--s-border)", opacity: query.is_active ? 1 : 0.55 }}>
+    <tr style={{ borderBottom: "0.5px solid var(--gl-border)", opacity: query.is_active ? 1 : 0.55 }}>
       <Td>{verticalName}</Td>
       <Td mono>{query.query_text}</Td>
       <Td>{query.locale}</Td>
@@ -396,7 +396,7 @@ function QueryRow({
       <Td>{query.notes ?? ""}</Td>
       <Td>
         {isTemplate ? (
-          <span style={{ fontSize: 10, color: "var(--s-text-tertiary)" }}>{t("template")}</span>
+          <span style={{ fontSize: 10, color: "var(--gl-text-tertiary)" }}>{t("template")}</span>
         ) : (
           <button
             type="button"
@@ -409,11 +409,11 @@ function QueryRow({
             }}
             style={{
               fontSize: 11,
-              color: "var(--s-danger)",
+              color: "var(--gl-danger)",
               background: "none",
               border: "none",
               cursor: "pointer",
-              fontFamily: "var(--s-font)",
+              fontFamily: "var(--gl-font)",
               padding: 0,
             }}
           >
@@ -444,12 +444,12 @@ function TabButton({
         padding: "8px 14px",
         background: "none",
         border: "none",
-        borderBottom: active ? "2px solid var(--scout-accent)" : "2px solid transparent",
-        color: active ? "var(--s-text)" : "var(--s-text-tertiary)",
+        borderBottom: active ? "2px solid var(--gl-accent)" : "2px solid transparent",
+        color: active ? "var(--gl-text)" : "var(--gl-text-tertiary)",
         fontWeight: active ? 600 : 400,
         fontSize: 13,
         cursor: "pointer",
-        fontFamily: "var(--s-font)",
+        fontFamily: "var(--gl-font)",
       }}
     >
       {children}
@@ -461,9 +461,9 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         overflow: "hidden",
         marginBottom: 16,
       }}
@@ -478,10 +478,10 @@ function CardHeader({ children }: { children: React.ReactNode }) {
     <div
       style={{
         padding: "10px 14px",
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         fontSize: 12,
         fontWeight: 600,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
       }}
     >
       {children}
@@ -491,7 +491,7 @@ function CardHeader({ children }: { children: React.ReactNode }) {
 
 function Hint({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ marginLeft: 6, color: "var(--s-text-tertiary)", fontWeight: 400, fontSize: 11 }}>
+    <span style={{ marginLeft: 6, color: "var(--gl-text-tertiary)", fontWeight: 400, fontSize: 11 }}>
       {children}
     </span>
   );
@@ -499,7 +499,7 @@ function Hint({ children }: { children: React.ReactNode }) {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ padding: 24, textAlign: "center", color: "var(--s-text-tertiary)", fontSize: 12 }}>
+    <div style={{ padding: 24, textAlign: "center", color: "var(--gl-text-tertiary)", fontSize: 12 }}>
       {children}
     </div>
   );
@@ -515,8 +515,8 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
-        borderBottom: "0.5px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       {children}
@@ -530,8 +530,8 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
       style={{
         padding: "8px 12px",
         fontSize: 12,
-        color: "var(--s-text)",
-        fontFamily: mono ? "var(--s-font-mono, ui-monospace, monospace)" : undefined,
+        color: "var(--gl-text)",
+        fontFamily: mono ? "var(--gl-font-mono, ui-monospace, monospace)" : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
       }}
     >

@@ -110,16 +110,16 @@ export default async function LoginPage({
             justifyContent: "center",
             gap: 14,
             fontSize: 10,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
-          <Link href="/legal/privacy" style={{ color: "var(--s-text-tertiary)" }}>
+          <Link href="/legal/privacy" style={{ color: "var(--gl-text-tertiary)" }}>
             Privacy · Privacidad
           </Link>
-          <Link href="/legal/terms" style={{ color: "var(--s-text-tertiary)" }}>
+          <Link href="/legal/terms" style={{ color: "var(--gl-text-tertiary)" }}>
             Terms · Términos
           </Link>
-          <Link href="/legal/security" style={{ color: "var(--s-text-tertiary)" }}>
+          <Link href="/legal/security" style={{ color: "var(--gl-text-tertiary)" }}>
             Security · Seguridad
           </Link>
         </div>

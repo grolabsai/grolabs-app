@@ -8,7 +8,7 @@ export const runtime = "nodejs";
  *
  * Public, anonymous-readable summary of a diagnostic run. Only exposes
  * anonymous runs (instance_id IS NULL) — authenticated-instance runs are
- * not reachable via this route (the Scout admin has its own /prospects
+ * not reachable via this route (the RRE admin has its own /prospects
  * UI for those). The unguessable UUID acts as the share token.
  */
 

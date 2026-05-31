@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proveedores — Scout</title>
+  <title>Proveedores — RRE</title>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="pricing-tokens.css">
   <style>
     :root {
-      --scout-accent: #378ADD;
-      --scout-accent-hover: #185FA5;
-      --scout-accent-50: #E6F1FB;
-      --scout-accent-600: #185FA5;
-      --scout-accent-800: #0C447C;
+      --rre-accent: #378ADD;
+      --rre-accent-hover: #185FA5;
+      --rre-accent-50: #E6F1FB;
+      --rre-accent-600: #185FA5;
+      --rre-accent-800: #0C447C;
       --s-bg: #FAFAF9;
       --s-surface: #FFFFFF;
       --s-surface-alt: #F5F5F4;
@@ -92,8 +92,8 @@
 
     .nav-tab:hover { color: var(--s-text); }
     .nav-tab.active {
-      color: var(--scout-accent-800);
-      border-bottom-color: var(--scout-accent);
+      color: var(--rre-accent-800);
+      border-bottom-color: var(--rre-accent);
     }
 
     .s-btn {
@@ -114,13 +114,13 @@
     }
 
     .s-btn-primary {
-      background: var(--scout-accent);
+      background: var(--rre-accent);
       color: #fff;
-      border-color: var(--scout-accent);
+      border-color: var(--rre-accent);
     }
 
     .s-btn-primary:hover {
-      background: var(--scout-accent-hover);
+      background: var(--rre-accent-hover);
     }
 
     .provider-grid {
@@ -139,7 +139,7 @@
     }
 
     .provider-card:hover {
-      border-color: var(--scout-accent);
+      border-color: var(--rre-accent);
       box-shadow: 0 2px 12px rgba(55, 138, 221, 0.1);
     }
 
@@ -154,12 +154,12 @@
       width: 48px;
       height: 48px;
       border-radius: var(--s-radius-md);
-      background: var(--scout-accent-50);
+      background: var(--rre-accent-50);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 600;
-      color: var(--scout-accent-800);
+      color: var(--rre-accent-800);
       font-size: 16px;
       flex-shrink: 0;
     }
@@ -190,12 +190,12 @@
     .brand-pill {
       display: inline-flex;
       padding: 3px 8px;
-      background: var(--scout-accent-50);
-      border: 0.5px solid var(--scout-accent);
+      background: var(--rre-accent-50);
+      border: 0.5px solid var(--rre-accent);
       border-radius: 999px;
       font-size: 11px;
       font-weight: 500;
-      color: var(--scout-accent-800);
+      color: var(--rre-accent-800);
     }
 
     .provider-stats {

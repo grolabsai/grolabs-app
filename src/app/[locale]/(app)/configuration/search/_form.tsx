@@ -283,8 +283,8 @@ export function SearchSettingsForm({
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatusTile
-            label={t("indexing.scoutCount")}
-            value={status ? String(status.scoutProductCount) : "—"}
+            label={t("indexing.rreCount")}
+            value={status ? String(status.rreProductCount) : "—"}
           />
           <StatusTile
             label={t("indexing.meiliCount")}

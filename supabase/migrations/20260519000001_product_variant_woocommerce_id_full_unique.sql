@@ -22,4 +22,4 @@ create unique index if not exists uq_product_variant_woocommerce_id
   on public.product_variant (instance_id, woocommerce_id);
 
 comment on column public.product_variant.woocommerce_id is
-  'WC variation post ID. Set by the WC variations import or a Scout->WC push. Unique per instance when present; NULL until round-tripped. Used by the plugin to build add-to-cart URLs.';
+  'WC variation post ID. Set by the WC variations import or a RRE->WC push. Unique per instance when present; NULL until round-tripped. Used by the plugin to build add-to-cart URLs.';

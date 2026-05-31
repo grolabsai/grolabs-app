@@ -35,8 +35,8 @@ export function BrandList({
   return (
     <div
       style={{
-        borderRight: "0.5px solid var(--s-border)",
-        background: "var(--s-surface-alt)",
+        borderRight: "0.5px solid var(--gl-border)",
+        background: "var(--gl-surface-alt)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -51,7 +51,7 @@ export function BrandList({
             marginBottom: 10,
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--s-text)" }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--gl-text)" }}>
             {t("title")}
           </span>
           <button
@@ -80,12 +80,12 @@ export function BrandList({
             style={{
               padding: "8px 10px",
               margin: "4px 0",
-              borderRadius: "var(--s-radius-md)",
-              background: "var(--scout-accent-50)",
-              borderLeft: "3px solid var(--scout-accent)",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-accent-50)",
+              borderLeft: "3px solid var(--gl-accent)",
               fontSize: 12,
               fontWeight: 500,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {t("form.createTitle")}
@@ -97,7 +97,7 @@ export function BrandList({
             style={{
               padding: "24px 12px",
               textAlign: "center",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontSize: 12,
             }}
           >
@@ -108,11 +108,11 @@ export function BrandList({
                   type="button"
                   style={{
                     fontSize: 12,
-                    color: "var(--scout-accent)",
+                    color: "var(--gl-accent)",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    fontFamily: "var(--s-font)",
+                    fontFamily: "var(--gl-font)",
                   }}
                   onClick={() => router.push("?mode=create")}
                 >
@@ -136,13 +136,13 @@ export function BrandList({
                 alignItems: "center",
                 gap: 8,
                 padding: "7px 10px",
-                borderRadius: "var(--s-radius-md)",
+                borderRadius: "var(--gl-radius-md)",
                 border: "none",
                 background:
-                  selectedId === brand.brand_id ? "var(--s-surface-hover)" : "transparent",
+                  selectedId === brand.brand_id ? "var(--gl-surface-hover)" : "transparent",
                 cursor: "pointer",
                 textAlign: "left",
-                fontFamily: "var(--s-font)",
+                fontFamily: "var(--gl-font)",
               }}
             >
               <Icon icon={Building2} size={16} />
@@ -158,7 +158,7 @@ export function BrandList({
                 <span
                   style={{
                     fontSize: 13,
-                    color: "var(--s-text)",
+                    color: "var(--gl-text)",
                     fontWeight: 500,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -171,7 +171,7 @@ export function BrandList({
                   <span
                     style={{
                       fontSize: 11,
-                      color: "var(--s-text-tertiary)",
+                      color: "var(--gl-text-tertiary)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -185,9 +185,9 @@ export function BrandList({
                 <span
                   style={{
                     fontSize: 10,
-                    color: "var(--s-text-tertiary)",
-                    background: "var(--s-surface)",
-                    border: "0.5px solid var(--s-border)",
+                    color: "var(--gl-text-tertiary)",
+                    background: "var(--gl-surface)",
+                    border: "0.5px solid var(--gl-border)",
                     padding: "1px 5px",
                     borderRadius: 3,
                     flexShrink: 0,

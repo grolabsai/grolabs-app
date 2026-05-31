@@ -132,7 +132,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (eventType.length > 64 || eventName.length > 256) return deny(origin, 400);
   if (!KNOWN_EVENT_TYPES.has(eventType)) {
     // Accept it anyway — future event types should land cleanly without
-    // a Scout deploy — but log so operators can spot drift between
+    // a RRE deploy — but log so operators can spot drift between
     // plugin and backend taxonomies.
     console.warn("[events] unknown eventType:", eventType);
   }

@@ -17,7 +17,7 @@ import { Icon } from "@/components/ui/icon";
  *   3. A small ⓘ icon at the end of the field signals "there's a hint
  *      available." Tapping the icon opens it (focus also opens it).
  *
- * Any new form field in Scout should reach for HintedInput / HintedSelect.
+ * Any new form field in RRE should reach for HintedInput / HintedSelect.
  * The bare <input className="s-input" placeholder="..."> pattern is
  * forbidden — it visually reads as a "label inside" but is invisible
  * to assistive tech and clashes with the agent panel's role.
@@ -35,7 +35,7 @@ function InlineInfoIcon({ visible }: { visible: boolean }) {
         right: 10,
         top: "50%",
         transform: "translateY(-50%)",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         pointerEvents: "none",
         display: "inline-flex",
         opacity: 0.7,
@@ -90,7 +90,7 @@ export function HintedSelect({ hint, children, ...props }: HintedSelectProps) {
             right: 30,
             top: "50%",
             transform: "translateY(-50%)",
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             pointerEvents: "none",
             display: "inline-flex",
             opacity: 0.7,
@@ -124,8 +124,8 @@ export function HintedTextarea({
     <div style={{ position: "relative" }}>
       <label
         htmlFor={id}
-        style={{ color: "var(--s-text-tertiary)" }}
-        className="absolute -top-[7px] left-[10px] z-10 inline-flex items-center gap-1 px-1.5 bg-[var(--s-surface)] text-[10px] font-medium uppercase tracking-[0.08em] leading-none pointer-events-none"
+        style={{ color: "var(--gl-text-tertiary)" }}
+        className="absolute -top-[7px] left-[10px] z-10 inline-flex items-center gap-1 px-1.5 bg-[var(--gl-surface)] text-[10px] font-medium uppercase tracking-[0.08em] leading-none pointer-events-none"
       >
         {label}
       </label>
@@ -142,7 +142,7 @@ export function HintedTextarea({
             position: "absolute",
             right: 10,
             top: 10,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             pointerEvents: "none",
             display: "inline-flex",
             opacity: 0.7,

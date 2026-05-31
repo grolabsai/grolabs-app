@@ -25,7 +25,7 @@ create table public.tenant (
 );
 
 comment on table public.tenant is
-  'Tenants own one or more instances. kind=template_owner instances are Scout-owned blueprints; kind=customer instances are customer catalogs.';
+  'Tenants own one or more instances. kind=template_owner instances are RRE-owned blueprints; kind=customer instances are customer catalogs.';
 
 -- ----------------------------------------------------------------------------
 -- 2. instance.tenant_id (nullable for now; set NOT NULL after backfill)

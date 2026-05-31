@@ -70,9 +70,9 @@ export default function LocaleError({
         style={{
           maxWidth: 540,
           margin: "80px auto",
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           padding: 32,
           textAlign: "center",
         }}
@@ -91,7 +91,7 @@ export default function LocaleError({
           style={{
             fontSize: 18,
             fontWeight: 600,
-            color: "var(--s-text-strong)",
+            color: "var(--gl-text-strong)",
             margin: "0 0 8px",
           }}
         >
@@ -101,7 +101,7 @@ export default function LocaleError({
           style={{
             fontSize: 14,
             fontWeight: 500,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             margin: "0 0 20px",
           }}
         >
@@ -111,7 +111,7 @@ export default function LocaleError({
         <p
           style={{
             fontSize: 13,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             lineHeight: 1.55,
             margin: "0 0 6px",
           }}
@@ -122,7 +122,7 @@ export default function LocaleError({
         <p
           style={{
             fontSize: 13,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             lineHeight: 1.55,
             margin: "0 0 24px",
           }}
@@ -158,8 +158,8 @@ export default function LocaleError({
             style={{
               marginTop: 24,
               fontSize: 10,
-              fontFamily: "var(--s-font-mono)",
-              color: "var(--s-text-tertiary)",
+              fontFamily: "var(--gl-font-mono)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             ref: {error.digest}

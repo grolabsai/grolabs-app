@@ -118,9 +118,9 @@ export function BenchmarksEditor({
     <div>
       <div
         style={{
-          background: "var(--s-surface)",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
           marginBottom: 16,
         }}
@@ -128,15 +128,15 @@ export function BenchmarksEditor({
         <div
           style={{
             padding: "12px 16px",
-            borderBottom: "0.5px solid var(--s-border)",
+            borderBottom: "0.5px solid var(--gl-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--s-text)" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--gl-text)" }}>
             {t("listTitle")}
-            <span style={{ marginLeft: 8, color: "var(--s-text-tertiary)", fontWeight: 400 }}>
+            <span style={{ marginLeft: 8, color: "var(--gl-text-tertiary)", fontWeight: 400 }}>
               ({benchmarks.length})
             </span>
           </div>
@@ -154,7 +154,7 @@ export function BenchmarksEditor({
         </div>
 
         {creating && (
-          <div style={{ padding: 16, background: "var(--s-surface-alt)", borderBottom: "0.5px solid var(--s-border)" }}>
+          <div style={{ padding: 16, background: "var(--gl-surface-alt)", borderBottom: "0.5px solid var(--gl-border)" }}>
             <DraftForm
               draft={draft}
               setDraft={setDraft}
@@ -179,24 +179,24 @@ export function BenchmarksEditor({
                 }}
                 style={{
                   fontSize: 12,
-                  color: "var(--s-text-tertiary)",
+                  color: "var(--gl-text-tertiary)",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  fontFamily: "var(--s-font)",
+                  fontFamily: "var(--gl-font)",
                 }}
               >
                 {t("actions.cancel")}
               </button>
               {error && (
-                <span style={{ fontSize: 12, color: "var(--s-danger)" }}>{error}</span>
+                <span style={{ fontSize: 12, color: "var(--gl-danger)" }}>{error}</span>
               )}
             </div>
           </div>
         )}
 
         {benchmarks.length === 0 && !creating && (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--s-text-tertiary)", fontSize: 13 }}>
+          <div style={{ padding: 32, textAlign: "center", color: "var(--gl-text-tertiary)", fontSize: 13 }}>
             {t("empty")}
           </div>
         )}
@@ -214,9 +214,9 @@ export function BenchmarksEditor({
                   fontWeight: 600,
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
-                  color: "var(--s-text-tertiary)",
-                  background: "var(--s-surface-alt)",
-                  borderBottom: "0.5px solid var(--s-border)",
+                  color: "var(--gl-text-tertiary)",
+                  background: "var(--gl-surface-alt)",
+                  borderBottom: "0.5px solid var(--gl-border)",
                 }}
               >
                 {vertical.vertical_name}
@@ -229,7 +229,7 @@ export function BenchmarksEditor({
                 }}
               >
                 <thead>
-                  <tr style={{ background: "var(--s-surface-alt)" }}>
+                  <tr style={{ background: "var(--gl-surface-alt)" }}>
                     <Th>{t("table.scope")}</Th>
                     <Th>{t("table.baselineCr")}</Th>
                     <Th>{t("table.stageShare")}</Th>
@@ -329,7 +329,7 @@ function BenchmarkRowView({
   if (editing) {
     return (
       <tr>
-        <td colSpan={8} style={{ padding: 12, background: "var(--s-surface-alt)" }}>
+        <td colSpan={8} style={{ padding: 12, background: "var(--gl-surface-alt)" }}>
           <DraftForm
             draft={draft}
             setDraft={setDraft}
@@ -353,11 +353,11 @@ function BenchmarkRowView({
               onClick={() => setEditing(false)}
               style={{
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "var(--s-font)",
+                fontFamily: "var(--gl-font)",
               }}
             >
               {t("actions.cancel")}
@@ -369,7 +369,7 @@ function BenchmarkRowView({
   }
 
   return (
-    <tr style={{ borderBottom: "0.5px solid var(--s-border)" }}>
+    <tr style={{ borderBottom: "0.5px solid var(--gl-border)" }}>
       <Td>{scope}</Td>
       <Td mono>{row.baseline_cr ?? ""}</Td>
       <Td mono>{row.stage_share ?? ""}</Td>
@@ -379,7 +379,7 @@ function BenchmarkRowView({
       <Td>{row.effective_from}</Td>
       <Td>
         {isTemplate ? (
-          <span style={{ fontSize: 10, color: "var(--s-text-tertiary)" }}>
+          <span style={{ fontSize: 10, color: "var(--gl-text-tertiary)" }}>
             {t("template")}
           </span>
         ) : (
@@ -389,11 +389,11 @@ function BenchmarkRowView({
               onClick={() => setEditing(true)}
               style={{
                 fontSize: 11,
-                color: "var(--scout-accent)",
+                color: "var(--gl-accent)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "var(--s-font)",
+                fontFamily: "var(--gl-font)",
                 padding: 0,
               }}
             >
@@ -405,11 +405,11 @@ function BenchmarkRowView({
               disabled={isPending}
               style={{
                 fontSize: 11,
-                color: "var(--s-danger)",
+                color: "var(--gl-danger)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "var(--s-font)",
+                fontFamily: "var(--gl-font)",
                 padding: 0,
               }}
             >
@@ -607,8 +607,8 @@ function Th({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "var(--s-text-tertiary)",
-        borderBottom: "0.5px solid var(--s-border)",
+        color: "var(--gl-text-tertiary)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       {children}
@@ -622,9 +622,9 @@ function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
       style={{
         padding: "8px 12px",
         fontSize: 12,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
         fontFamily: mono
-          ? "var(--s-font-mono, ui-monospace, monospace)"
+          ? "var(--gl-font-mono, ui-monospace, monospace)"
           : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
       }}

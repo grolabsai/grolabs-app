@@ -179,10 +179,10 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
             padding: "12px 16px",
             marginBottom: 16,
             background: "#E6F1FB",
-            borderLeft: "3px solid var(--scout-accent)",
-            borderRadius: "var(--s-radius-md)",
+            borderLeft: "3px solid var(--gl-accent)",
+            borderRadius: "var(--gl-radius-md)",
             fontSize: 13,
-            color: "var(--scout-accent-800)",
+            color: "var(--gl-accent-800)",
           }}
         >
           <Icon icon={Sparkle} size={16} strokeWidth={2} />
@@ -241,9 +241,9 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
           gap: 12,
           padding: "10px 14px",
           marginBottom: 12,
-          background: "var(--s-surface-alt)",
-          border: "1px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          background: "var(--gl-surface-alt)",
+          border: "1px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
         }}
       >
         <FilterField label={t("filters.status")}>
@@ -295,7 +295,7 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
             alignItems: "center",
             gap: 8,
             fontSize: 13,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             cursor: "pointer",
           }}
         >
@@ -306,7 +306,7 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
         <span
           style={{
             fontSize: 12,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
           }}
         >
           {t("filters.shown", {
@@ -319,9 +319,9 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
       {/* Items table ---------------------------------------------------- */}
       <section
         style={{
-          background: "var(--s-surface)",
-          border: "1px solid var(--s-border)",
-          borderRadius: "var(--s-radius-lg)",
+          background: "var(--gl-surface)",
+          border: "1px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-lg)",
           overflow: "hidden",
         }}
       >
@@ -335,8 +335,8 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
           <thead>
             <tr
               style={{
-                background: "var(--s-surface-alt)",
-                borderBottom: "1px solid var(--s-border)",
+                background: "var(--gl-surface-alt)",
+                borderBottom: "1px solid var(--gl-border)",
               }}
             >
               <Th align="left" width={32}>
@@ -375,7 +375,7 @@ export function WorksheetClient({ batch }: { batch: BatchDetail }) {
               padding: "32px 0",
               textAlign: "center",
               fontSize: 13,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {batch.items.length === 0
@@ -417,7 +417,7 @@ function FilterField({
         alignItems: "center",
         gap: 8,
         fontSize: 12,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       <span style={{ fontWeight: 500 }}>{label}</span>
@@ -444,7 +444,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         width: width !== undefined ? `${width}px` : undefined,
       }}
     >
@@ -465,9 +465,9 @@ function CountCard({
   tone: "neutral" | "warn" | "critical";
 }) {
   const palette = {
-    neutral: { fg: "var(--s-success-text)", bg: "var(--s-success-bg)" },
+    neutral: { fg: "var(--gl-success-text)", bg: "var(--gl-success-bg)" },
     warn: { fg: "#B45309", bg: "#FFF7ED" },
-    critical: { fg: "var(--s-danger-text)", bg: "var(--s-danger-bg)" },
+    critical: { fg: "var(--gl-danger-text)", bg: "var(--gl-danger-bg)" },
   }[tone];
   return (
     <div
@@ -477,7 +477,7 @@ function CountCard({
         gap: 12,
         padding: 14,
         background: palette.bg,
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
       }}
     >
       <Icon icon={IconCmp} size={20} strokeWidth={2} />
@@ -534,9 +534,9 @@ function BulkBar({
         alignItems: "center",
         gap: 12,
         padding: "10px 14px",
-        background: "var(--s-text)",
+        background: "var(--gl-text)",
         color: "white",
-        borderRadius: "var(--s-radius-lg)",
+        borderRadius: "var(--gl-radius-lg)",
         boxShadow: "0 10px 30px rgba(0, 0, 0, 0.18)",
       }}
     >
@@ -595,6 +595,6 @@ const bulkBtnStyle: React.CSSProperties = {
   border: "none",
   background: "transparent",
   color: "white",
-  borderRadius: "var(--s-radius-sm)",
+  borderRadius: "var(--gl-radius-sm)",
   cursor: "pointer",
 };

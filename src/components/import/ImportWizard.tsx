@@ -101,7 +101,7 @@ function Inner({
           gap: 4,
           padding: "12px 0 20px",
           marginBottom: 20,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
           flexWrap: "wrap",
         }}
       >
@@ -122,10 +122,10 @@ function Inner({
                 padding: "8px 14px",
                 fontSize: 13,
                 fontWeight: 500,
-                color: active ? "var(--scout-accent)" : completed ? "var(--s-text)" : "var(--s-text-tertiary)",
-                background: active ? "var(--scout-accent-50)" : "transparent",
+                color: active ? "var(--gl-accent)" : completed ? "var(--gl-text)" : "var(--gl-text-tertiary)",
+                background: active ? "var(--gl-accent-50)" : "transparent",
                 border: "none",
-                borderRadius: "var(--s-radius-md)",
+                borderRadius: "var(--gl-radius-md)",
                 cursor: reachable ? "pointer" : "not-allowed",
                 opacity: reachable ? 1 : 0.5,
               }}
@@ -138,8 +138,8 @@ function Inner({
                   width: 22,
                   height: 22,
                   borderRadius: "50%",
-                  background: active ? "var(--scout-accent)" : completed ? "var(--s-success)" : "var(--s-surface-alt)",
-                  color: active || completed ? "white" : "var(--s-text-tertiary)",
+                  background: active ? "var(--gl-accent)" : completed ? "var(--gl-success)" : "var(--gl-surface-alt)",
+                  color: active || completed ? "white" : "var(--gl-text-tertiary)",
                   fontSize: 11,
                   fontWeight: 600,
                 }}

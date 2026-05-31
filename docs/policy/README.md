@@ -20,7 +20,7 @@ rather than working around it.
 - **search-events.md** — Stage 4 (shipped in plugin v0.3.0 + v0.5.0).
   Click and conversion event flow from the WP storefront directly to
   Meilisearch's analytics API. **The "where do I see event data?"
-  doc.** Scout mints the tenant token but does not persist events —
+  doc.** RRE mints the tenant token but does not persist events —
   they live in Meilisearch Cloud's analytics dashboard. Owner: Tuncho.
 - **wc-import.md** — One-way pull from WooCommerce into GroLabs's catalog
   tables. Categories and products only; raw data preservation, no
@@ -57,7 +57,7 @@ rather than working around it.
   URL, scores the storefront against a DB-driven rubric (catalog
   + per-vertical synonyms/queries/expected attributes), computes
   annual revenue uplift, surfaces fix recommendations. Two-service
-  architecture (Scout orchestrator + ASE static-HTML primitives).
+  architecture (RRE orchestrator + ASE static-HTML primitives).
   Public anonymous API for the landing-page widget, gated by per-IP
   rate-limit RPC. Playwright probe is feature-flagged (deployment
   caveats inside). Owner: Tuncho.

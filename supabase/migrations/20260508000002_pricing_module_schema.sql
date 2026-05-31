@@ -1,5 +1,5 @@
 -- Pricing module — provider-based costs, MAP rules, change batches.
--- Maps the ERD in design_handoff_pricing_module/ERD.html onto Scout conventions:
+-- Maps the ERD in design_handoff_pricing_module/ERD.html onto RRE conventions:
 -- bigserial IDs, instance_id everywhere, instance_isolation_* RLS via current_instance_id().
 
 -- ============================================================================

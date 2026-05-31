@@ -79,7 +79,7 @@ untouched (lower blast radius). Full pros/cons were weighed in conversation; thi
 
 ## 5. Event taxonomy — facts & gaps (verified against code)
 
-- **Search-Performed is ALREADY captured.** Scout is a full query **proxy** (`/api/v1/search`),
+- **Search-Performed is ALREADY captured.** RRE is a full query **proxy** (`/api/v1/search`),
   not just a token broker. It logs every query to `query_log` with `total_hits`. **Zero-results =
   `total_hits = 0`**; results-but-no-click = a `query_log` row whose `queryUid` never appears as a
   click in `analytics_event`. **No new plugin event needed for search.**
@@ -113,7 +113,7 @@ untouched (lower blast radius). Full pros/cons were weighed in conversation; thi
   search + cart + order so journeys stitch.
 - **`search-events.md` amendment (PROPOSED — not authorized).** This work contradicts that locked
   policy's non-goals and must amend it: §4 (best-effort/loss-acceptable no longer holds once events
-  feed revenue → durable buffer, see the proxy doc), §6 ("no aggregation API on Scout" — we *will*
+  feed revenue → durable buffer, see the proxy doc), §6 ("no aggregation API on RRE" — we *will*
   roll up), plus the new events and `query_log.userId`. **Do not edit that doc without explicit
   sign-off.** A forward-reference note has been added there pointing here.
 - **Separate proxy/ingest service** — see `search-proxy-event-pipeline.md` §6.

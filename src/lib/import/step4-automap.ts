@@ -1,4 +1,4 @@
-import type { ScoutFieldId } from "@/lib/import/types";
+import type { RreFieldId } from "@/lib/import/types";
 
 /**
  * Lightweight auto-mapper for Step 4. Suggests file-column → GroLabs-field
@@ -11,7 +11,7 @@ import type { ScoutFieldId } from "@/lib/import/types";
  * customers introduce new column conventions.
  */
 
-const FIELD_KEYWORDS: Record<ScoutFieldId, string[]> = {
+const FIELD_KEYWORDS: Record<RreFieldId, string[]> = {
   slug: ["slug", "url_slug", "permalink"],
   shortDescription: [
     "short_description",
@@ -97,15 +97,15 @@ function normalize(s: string): string {
 export function autoMapColumns(
   fileColumns: string[],
   reservedColumnIndices: ReadonlySet<number>,
-): Partial<Record<ScoutFieldId, number>> {
-  const out: Partial<Record<ScoutFieldId, number>> = {};
+): Partial<Record<RreFieldId, number>> {
+  const out: Partial<Record<RreFieldId, number>> = {};
   const used = new Set<number>(reservedColumnIndices);
   const normalized = fileColumns.map(normalize);
 
   // Iterate fields in the canonical order so the first field "wins" a
   // shared keyword (price could go to listPrice or costPrice; listPrice
   // listed first wins).
-  for (const field of Object.keys(FIELD_KEYWORDS) as ScoutFieldId[]) {
+  for (const field of Object.keys(FIELD_KEYWORDS) as RreFieldId[]) {
     const keywords = FIELD_KEYWORDS[field];
     let bestIdx: number | null = null;
     for (let i = 0; i < normalized.length; i++) {

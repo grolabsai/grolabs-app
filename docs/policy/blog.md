@@ -7,7 +7,7 @@ Audience: Anyone touching `/content/posts`, `/blog`, the `post` table, the `blog
 
 # Blog — policy
 
-A native, multi-tenant blog surface. Writing happens in Scout admin
+A native, multi-tenant blog surface. Writing happens in RRE admin
 (`/content/posts`); reading happens on a public URL (`/blog/[slug]`)
 served from the same Next.js app. No subscriptions, no paywall, no
 monetization in scope. Ghost is the visual + UX reference; nothing about
@@ -22,7 +22,7 @@ This doc covers v1 (shipped), v2/v3 (roadmap), and the AI/brand backlog
 
 Decided in PR #121.
 
-- Multi-tenant: one Scout instance → one blog. Hosting one Ghost per
+- Multi-tenant: one RRE instance → one blog. Hosting one Ghost per
   tenant is operationally annoying; one Ghost shared across tenants
   requires building a tenant-isolation layer that doesn't exist in Ghost.
 - Integration: writing posts will eventually be triggered by the agent
@@ -186,7 +186,7 @@ should nudge the writer to fill it.
   `instanceIdForHost()` server helper. Every public surface (index,
   post, sitemap, RSS, llms.txt) reads the host header, looks up the
   matching instance, and filters posts accordingly. When no domain
-  maps (Scout admin URL, preview), the surface shows every published
+  maps (RRE admin URL, preview), the surface shows every published
   post across instances — the working preview behavior. To bind a
   domain: `UPDATE instance SET domain = 'grolabs.com' WHERE …`.
 
@@ -410,7 +410,7 @@ Text-to-image generation built on Replicate. **Cost: ~$0.003/image,
 The original flow the user described, written down so it doesn't drift:
 
 1. Writer uploads a photo or screenshot (existing v1 upload flow).
-2. Before inserting into the post, Scout asks: **what do you want to do
+2. Before inserting into the post, RRE asks: **what do you want to do
    with this image?**
    - Keep as-is (current v1 behavior)
    - Recolor to brand palette (apply `brand_system` colors to dominant
@@ -467,7 +467,7 @@ The post editor surfaces unresolved research tasks alongside the draft
 post as a citation or footnote. The agent doing the actual research is
 likely Anthropic's Managed Agent with web-search + web-fetch tools —
 see `shared/managed-agents-*.md` in the `claude-api` skill — but the
-local Scout-side surface is the `research_task` table + a worker that
+local RRE-side surface is the `research_task` table + a worker that
 dispatches and polls.
 
 **Not in this PR's scope.** Listed here so it's not re-invented later.

@@ -296,7 +296,7 @@ export function ProviderForm({
                 checked={form.consignment}
                 onCheckedChange={(v) => update("consignment", v)}
               />
-              <span style={{ fontSize: 13, color: "var(--s-text-secondary)" }}>
+              <span style={{ fontSize: 13, color: "var(--gl-text-secondary)" }}>
                 {form.consignment ? t("yes") : t("no")}
               </span>
             </div>
@@ -355,7 +355,7 @@ export function ProviderForm({
                   checked={form.is_active}
                   onCheckedChange={onToggleActive}
                 />
-                <span style={{ fontSize: 13, color: "var(--s-text-secondary)" }}>
+                <span style={{ fontSize: 13, color: "var(--gl-text-secondary)" }}>
                   {form.is_active ? t("active") : t("inactive")}
                 </span>
               </div>
@@ -371,7 +371,7 @@ export function ProviderForm({
           justifyContent: "flex-end",
           gap: 8,
           paddingTop: 16,
-          borderTop: "1px solid var(--s-border)",
+          borderTop: "1px solid var(--gl-border)",
         }}
       >
         <Button
@@ -397,10 +397,10 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 12px",
   fontSize: 14,
-  border: "1px solid var(--s-border-strong)",
-  borderRadius: "var(--s-radius-md)",
-  background: "var(--s-surface)",
-  color: "var(--s-text)",
+  border: "1px solid var(--gl-border-strong)",
+  borderRadius: "var(--gl-radius-md)",
+  background: "var(--gl-surface)",
+  color: "var(--gl-text)",
 };
 
 function Section({
@@ -415,9 +415,9 @@ function Section({
   return (
     <section
       style={{
-        background: "var(--s-surface)",
-        border: "1px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "1px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         padding: 20,
       }}
     >
@@ -426,7 +426,7 @@ function Section({
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             textTransform: "uppercase",
             letterSpacing: "0.04em",
           }}
@@ -437,7 +437,7 @@ function Section({
           <p
             style={{
               fontSize: 12,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               marginTop: 4,
             }}
           >
@@ -481,11 +481,11 @@ function Field({
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         {label}
-        {required ? <span style={{ color: "var(--s-danger)" }}> *</span> : null}
+        {required ? <span style={{ color: "var(--gl-danger)" }}> *</span> : null}
       </span>
       {children}
     </label>

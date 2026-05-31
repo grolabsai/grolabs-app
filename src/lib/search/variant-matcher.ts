@@ -18,7 +18,7 @@
  * — see TODO below.
  */
 
-import type { ScoutSearchDocument, ScoutSearchVariant } from "./types";
+import type { RreSearchDocument, RreSearchVariant } from "./types";
 
 /** Shape of `_matchesPosition` we expect Meilisearch to return when
  * `showMatchesPosition: true` is set on the search request.
@@ -36,14 +36,14 @@ export type MatchesPosition = Record<string, unknown>;
 /**
  * Pick the variant that best satisfies the query for one search hit.
  *
- * Returns the full `ScoutSearchVariant` object (matching `document.variants[]`
+ * Returns the full `RreSearchVariant` object (matching `document.variants[]`
  * shape exactly per PR #68), or null when no variant should be highlighted
  * (simple products, or variable_multi with no in-stock variants at all).
  */
 export function pickMatchedVariation(
-  document: ScoutSearchDocument,
+  document: RreSearchDocument,
   matchesPosition: MatchesPosition | undefined
-): ScoutSearchVariant | null {
+): RreSearchVariant | null {
   const summary = document.variation_summary;
 
   if (summary.type === "simple") return null;

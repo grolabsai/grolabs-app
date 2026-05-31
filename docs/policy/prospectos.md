@@ -1,7 +1,7 @@
 ---
 Status: Active policy
 Owner: Tuncho
-Scope: Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in Scout (Next.js) + ASE (Agentic Services Engine — Python, formerly GLPIM).
+Scope: Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in RRE (Next.js) + ASE (Agentic Services Engine — Python, formerly GLPIM).
 Audience: Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, the `prospect`/`diagnostic_run`/`finding` tables, ASE's `tools/pdp_scanner.py` + `tools/site_scanner.py`, or `src/lib/diagnostic/**`.
 ---
 
@@ -9,7 +9,7 @@ Audience: Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, 
 
 A diagnostic that takes a URL, scores the storefront against a
 DB-driven rubric, computes annual revenue uplift, and surfaces a report
-+ specific fix recommendations. Used from the Scout admin (authenticated)
++ specific fix recommendations. Used from the RRE admin (authenticated)
 **and** from the GroLabs landing page (anonymous), backed by the same
 runner.
 
@@ -39,7 +39,7 @@ and an overall score (average of stages).
 ## 2. Two-service architecture
 
 ```
-Scout (Next.js, this repo)              ASE (Python, grolabsai/grolabs-ASE — formerly GLPIM)
+RRE (Next.js, this repo)              ASE (Python, grolabsai/grolabs-ASE — formerly GLPIM)
 ─────────────────────────────           ───────────────────────────────────
 • Orchestrator + rubric                 • POST /tools/pdp-signals
 • Public API + report viewer            • POST /tools/site-signals
@@ -51,12 +51,12 @@ Scout (Next.js, this repo)              ASE (Python, grolabsai/grolabs-ASE — f
 
 ASE owns the static-HTML extraction primitives (selector fallbacks,
 JSON-LD flattening, alt-text filtering, platform + engine fingerprints).
-Scout calls them, runs its own browser + CWV probes alongside, and
+RRE calls them, runs its own browser + CWV probes alongside, and
 scores everything against the catalog in DB.
 
 **Why split:** the signal extraction is brittle and hand-tested
-(WC/Shopify/Magento quirks); Scout doesn't want to maintain a second
-parser. Scoring lives in Scout because the rubric is editable per
+(WC/Shopify/Magento quirks); RRE doesn't want to maintain a second
+parser. Scoring lives in RRE because the rubric is editable per
 instance via the UI — coupling the two services to one rubric would
 prevent that.
 
@@ -98,7 +98,7 @@ rubric in instance 0; customers override or extend without touching it.
 
 | Caller | Catalog reads | Run reads | Run writes |
 |---|---|---|---|
-| `authenticated` (Scout admin) | Own instance ∪ instance 0 | Own instance | Own instance |
+| `authenticated` (RRE admin) | Own instance ∪ instance 0 | Own instance | Own instance |
 | `anon` (landing page) | Instance 0 only | Anonymous runs (`instance_id IS NULL`) by uuid token | Via service-role through `/api/v1/diagnostic/runs` |
 
 Anonymous writes never go through Supabase from the browser — the
@@ -253,7 +253,7 @@ probes are enabled).
 
 ## 11. Deployment notes for Playwright
 
-**Current production setup: Browserless via CDP.** Scout connects to a
+**Current production setup: Browserless via CDP.** RRE connects to a
 managed Chromium pool by setting two env vars:
 
 - `BROWSERLESS_HOST` — host without protocol (e.g. `production-sfo.browserless.io`,
@@ -261,7 +261,7 @@ managed Chromium pool by setting two env vars:
   `chrome.browserless.io` for an enterprise private fleet).
 - `BROWSERLESS_TOKEN` — the API token from the Browserless dashboard.
 
-Scout assembles `wss://<host>?token=<token>` at runtime, so region or
+RRE assembles `wss://<host>?token=<token>` at runtime, so region or
 fleet swaps are an env-var change, not a code change. The probe uses
 `chromium.connectOverCDP(...)` to attach to a pre-warmed browser, so
 there's no cold-start launch cost and the Vercel deploy bundle stays
@@ -323,7 +323,7 @@ browser-based scorers just report `result_status='na'` with reason
 - **Visual categorization of checks** (next iteration, user feedback
   2026-05-27) — every check should carry a category, an icon (Lucide,
   via the existing `<Icon>` wrapper — same family used everywhere
-  else in Scout), and an accent color so the user can scan a report
+  else in RRE), and an accent color so the user can scan a report
   and immediately know what kind of problem each row is about.
   Concretely: add `category` + `icon_name` columns on
   `diagnostic_check` (FK to a small `check_category` lookup table with

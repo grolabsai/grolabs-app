@@ -57,14 +57,14 @@ export function LiveActiveUsers() {
   }, [updatedAt]);
 
   return (
-    <div style={{ padding: 12, border: "0.5px solid var(--s-border)", borderRadius: 6 }}>
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+    <div style={{ padding: 12, border: "0.5px solid var(--gl-border)", borderRadius: 6 }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
         Active users (live)
       </div>
       <div style={{ fontSize: 32, fontWeight: 600 }}>
         {state?.ok ? state.activeUsers : "—"}
       </div>
-      <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+      <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
         {updatedAt === null
           ? "loading…"
           : `updated ${secondsAgo ?? 0}s ago`}

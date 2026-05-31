@@ -1,7 +1,7 @@
 /**
  * Synthetic products used by tests/integration/search/**.
  *
- * Shape matches ScoutSearchDocument minus the fields the test suite doesn't
+ * Shape matches RreSearchDocument minus the fields the test suite doesn't
  * care about (defaults filled in by buildFixtures()). Keep the catalog
  * small — every fixture costs ~one Meilisearch indexing task during setup.
  *
@@ -19,10 +19,10 @@
  */
 
 import type {
-  ScoutSearchDocument,
-  ScoutSearchVariant,
+  RreSearchDocument,
+  RreSearchVariant,
   VariationSummary,
-  ScoutAttributes,
+  RreAttributes,
 } from "@/lib/search/types";
 
 export const TEST_INSTANCE_ID = 99999;
@@ -44,7 +44,7 @@ export const PRODUCT_IDS = {
 
 const NOW = "2026-05-20T00:00:00.000Z";
 
-function defaultAttributes(): ScoutAttributes {
+function defaultAttributes(): RreAttributes {
   return {
     species: [],
     lifestage: [],
@@ -55,10 +55,10 @@ function defaultAttributes(): ScoutAttributes {
     medical_conditions: [],
     age_min_months: null,
     age_max_months: null,
-  } as unknown as ScoutAttributes;
+  } as unknown as RreAttributes;
 }
 
-function summaryFor(type: VariationSummary["type"], variants: ScoutSearchVariant[]): VariationSummary {
+function summaryFor(type: VariationSummary["type"], variants: RreSearchVariant[]): VariationSummary {
   const inStockVariants = variants.filter((v) => v.in_stock);
   const prices = variants.map((v) => v.price ?? 0).filter((p) => p > 0);
   return {
@@ -84,7 +84,7 @@ function simpleDoc(input: {
   categoryNames: string[];
   price?: number;
   inStock?: boolean;
-}): ScoutSearchDocument {
+}): RreSearchDocument {
   return {
     id: input.id,
     instance_id: TEST_INSTANCE_ID,
@@ -122,8 +122,8 @@ function variableDoc(input: {
   name: string;
   categoryIds: number[];
   categoryNames: string[];
-}): ScoutSearchDocument {
-  const variants: ScoutSearchVariant[] = [
+}): RreSearchDocument {
+  const variants: RreSearchVariant[] = [
     {
       variation_id: input.id * 10 + 1,
       sku: `SKU-${input.id}-S`,
@@ -178,7 +178,7 @@ function variableDoc(input: {
 }
 
 /** All synthetic fixtures, ready to push to Meilisearch. */
-export const FIXTURES: ScoutSearchDocument[] = [
+export const FIXTURES: RreSearchDocument[] = [
   simpleDoc({
     id: PRODUCT_IDS.magicwordA1,
     name: "Magicword Widget A1",

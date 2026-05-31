@@ -154,7 +154,7 @@ export function WooCommerceForm({
           onChange={(e) => setSiteUrl(e.target.value)}
           disabled={pending}
         />
-        <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+        <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
           {t("fields.siteUrlHint")}
         </p>
       </div>
@@ -192,7 +192,7 @@ export function WooCommerceForm({
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
               }}
               aria-label={showSecret ? t("actions.hideKey") : t("actions.showKey")}
             >
@@ -211,7 +211,7 @@ export function WooCommerceForm({
                   fontSize: 12,
                   background: "transparent",
                   border: "none",
-                  color: "var(--scout-accent)",
+                  color: "var(--gl-accent)",
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -224,10 +224,10 @@ export function WooCommerceForm({
           <div
             style={{
               padding: "10px 12px",
-              border: "0.5px dashed var(--s-border-strong)",
-              borderRadius: "var(--s-radius-md)",
+              border: "0.5px dashed var(--gl-border-strong)",
+              borderRadius: "var(--gl-radius-md)",
               fontSize: 12,
-              color: "var(--s-text-secondary)",
+              color: "var(--gl-text-secondary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -242,7 +242,7 @@ export function WooCommerceForm({
                 fontSize: 12,
                 background: "transparent",
                 border: "none",
-                color: "var(--scout-accent)",
+                color: "var(--gl-accent)",
                 cursor: "pointer",
                 padding: 0,
               }}
@@ -251,7 +251,7 @@ export function WooCommerceForm({
             </button>
           </div>
         )}
-        <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+        <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
           {t("fields.consumerSecretHint")}
         </p>
       </div>
@@ -264,13 +264,13 @@ export function WooCommerceForm({
             alignItems: "center",
             gap: 8,
             padding: "8px 12px",
-            borderRadius: "var(--s-radius-md)",
+            borderRadius: "var(--gl-radius-md)",
             background: (verifyState?.ok ?? verifiedOk)
-              ? "var(--s-success-bg)"
-              : "var(--s-danger-bg)",
+              ? "var(--gl-success-bg)"
+              : "var(--gl-danger-bg)",
             color: (verifyState?.ok ?? verifiedOk)
-              ? "var(--s-success-text)"
-              : "var(--s-danger-text)",
+              ? "var(--gl-success-text)"
+              : "var(--gl-danger-text)",
             fontSize: 12,
           }}
         >
@@ -285,7 +285,7 @@ export function WooCommerceForm({
               })}
         </div>
       ) : (
-        <div style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+        <div style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
           {t("status.notVerified")}
         </div>
       )}
@@ -308,7 +308,7 @@ export function WooCommerceForm({
       {/* Field-mapping detection ─────────────────────────────────────────
        *  Probes the connected WC site to figure out where brand / barcode /
        *  cost are stored, so a follow-up "Set as write target" UI can let
-       *  the user pick where Scout pushes data back. Read-only — no WC
+       *  the user pick where RRE pushes data back. Read-only — no WC
        *  data is modified by this button. */}
       <DetectFieldSinksSection
         canRun={hasConsumerSecret && !!initialValues.siteUrl.trim()}
@@ -339,7 +339,7 @@ function DetectFieldSinksSection({
       style={{
         marginTop: 24,
         paddingTop: 24,
-        borderTop: "0.5px solid var(--s-border)",
+        borderTop: "0.5px solid var(--gl-border)",
         display: "flex",
         flexDirection: "column",
         gap: 12,
@@ -350,7 +350,7 @@ function DetectFieldSinksSection({
         <p
           style={{
             fontSize: 12,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
             marginTop: 4,
             marginBottom: 0,
           }}
@@ -372,12 +372,12 @@ function DetectFieldSinksSection({
           </span>
         </Button>
         {!canRun && (
-          <span style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+          <span style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
             {t("needsCredentials")}
           </span>
         )}
         {report && (
-          <span style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+          <span style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
             {t("lastRun", {
               when: new Date(report.detected_at).toLocaleString(),
             })}
@@ -401,7 +401,7 @@ function FieldSinksReport({ report }: { report: FieldDetectionReport }) {
         marginTop: 4,
       }}
     >
-      <div style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+      <div style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}>
         {t("sampleSize", { n: report.sample_size })} ·{" "}
         {report.meta.wc_brands_endpoint_reachable
           ? t("brandsReachable")
@@ -432,8 +432,8 @@ function ConceptBlock({
       <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{title}</div>
       <div
         style={{
-          background: "var(--s-surface-2)",
-          borderRadius: "var(--s-radius-md)",
+          background: "var(--gl-surface-2)",
+          borderRadius: "var(--gl-radius-md)",
           padding: 10,
           display: "grid",
           gridTemplateColumns: "1fr auto auto",
@@ -441,9 +441,9 @@ function ConceptBlock({
           fontSize: 12,
         }}
       >
-        <div style={{ color: "var(--s-text-tertiary)" }}>{t("col.sink")}</div>
-        <div style={{ color: "var(--s-text-tertiary)" }}>{t("col.installed")}</div>
-        <div style={{ color: "var(--s-text-tertiary)" }}>{t("col.populated")}</div>
+        <div style={{ color: "var(--gl-text-tertiary)" }}>{t("col.sink")}</div>
+        <div style={{ color: "var(--gl-text-tertiary)" }}>{t("col.installed")}</div>
+        <div style={{ color: "var(--gl-text-tertiary)" }}>{t("col.populated")}</div>
         {sinks.map((s) => (
           <SinkRow key={s.id} score={s} />
         ))}
@@ -456,11 +456,11 @@ function SinkRow({ score }: { score: SinkScore }) {
   return (
     <>
       <div>
-        <code style={{ fontSize: 11, color: "var(--s-text)" }}>{score.id}</code>
+        <code style={{ fontSize: 11, color: "var(--gl-text)" }}>{score.id}</code>
         <div
           style={{
             fontSize: 11,
-            color: "var(--s-text-secondary)",
+            color: "var(--gl-text-secondary)",
           }}
         >
           {score.label}
@@ -469,7 +469,7 @@ function SinkRow({ score }: { score: SinkScore }) {
           <div
             style={{
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               fontStyle: "italic",
               marginTop: 2,
             }}
@@ -480,15 +480,15 @@ function SinkRow({ score }: { score: SinkScore }) {
       </div>
       <div className="tabular">
         {score.installed ? (
-          <CheckCircle2 size={14} style={{ color: "var(--s-success)" }} />
+          <CheckCircle2 size={14} style={{ color: "var(--gl-success)" }} />
         ) : (
-          <XCircle size={14} style={{ color: "var(--s-text-tertiary)" }} />
+          <XCircle size={14} style={{ color: "var(--gl-text-tertiary)" }} />
         )}
       </div>
       <div
         className="tabular"
         style={{
-          color: score.populated_count > 0 ? "var(--s-text)" : "var(--s-text-tertiary)",
+          color: score.populated_count > 0 ? "var(--gl-text)" : "var(--gl-text-tertiary)",
         }}
       >
         {score.populated_count}

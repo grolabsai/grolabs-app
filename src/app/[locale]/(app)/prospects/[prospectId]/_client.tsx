@@ -52,7 +52,7 @@ export function ProspectActions({
         {isPending ? t("scanning") : t("scanAll")}
       </button>
       {error && (
-        <div style={{ fontSize: 11, color: "var(--s-danger)" }}>{error}</div>
+        <div style={{ fontSize: 11, color: "var(--gl-danger)" }}>{error}</div>
       )}
     </div>
   );
@@ -87,7 +87,7 @@ export function RescanPageClient({ prospectPageId }: { prospectPageId: number })
       >
         {isPending ? t("scanning") : t("rescan")}
       </button>
-      {err && <span style={{ fontSize: 10, color: "var(--s-danger)" }}>{err}</span>}
+      {err && <span style={{ fontSize: 10, color: "var(--gl-danger)" }}>{err}</span>}
     </div>
   );
 }
@@ -143,7 +143,7 @@ export function AddProspectPageForm({ prospectId }: { prospectId: number }) {
       <div
         style={{
           padding: "10px 16px",
-          borderTop: "0.5px solid var(--s-border)",
+          borderTop: "0.5px solid var(--gl-border)",
         }}
       >
         <button
@@ -162,7 +162,7 @@ export function AddProspectPageForm({ prospectId }: { prospectId: number }) {
     <div
       style={{
         padding: 16,
-        borderTop: "0.5px solid var(--s-border)",
+        borderTop: "0.5px solid var(--gl-border)",
         display: "flex",
         flexDirection: "column",
         gap: 14,

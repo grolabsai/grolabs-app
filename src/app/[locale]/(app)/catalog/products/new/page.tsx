@@ -121,7 +121,7 @@ export default async function NewProductPage() {
           gap: 12,
           marginBottom: 20,
           paddingBottom: 14,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div className="s-breadcrumb">

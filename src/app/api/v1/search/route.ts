@@ -3,7 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { searchInstance } from "@/lib/search/meilisearch-client";
 import { pickMatchedVariation, type MatchesPosition } from "@/lib/search/variant-matcher";
 import { sanitizeFacets } from "@/lib/search/facets";
-import type { SearchHit, SearchResponse, ScoutSearchDocument } from "@/lib/search/types";
+import type { SearchHit, SearchResponse, RreSearchDocument } from "@/lib/search/types";
 import {
   checkRateLimit,
   searchBucketKey,
@@ -292,7 +292,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Apply the variant matcher per hit.
   const hits: SearchHit[] = raw.hits.map((rawHit) => {
     const { _matchesPosition, ...doc } = rawHit;
-    const document = doc as ScoutSearchDocument;
+    const document = doc as RreSearchDocument;
     const matched_variation = pickMatchedVariation(
       document,
       _matchesPosition as MatchesPosition | undefined

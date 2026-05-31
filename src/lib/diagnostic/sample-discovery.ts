@@ -17,7 +17,7 @@
  *     `/categoria/...`, `/collections/...`, `/c/...`, `/shop/...`.
  */
 
-const USER_AGENT = "Mozilla/5.0 (compatible; ScoutDiagnostic/1.0)";
+const USER_AGENT = "Mozilla/5.0 (compatible; SiteAuditBot/1.0)";
 const TIMEOUT_MS = 8000;
 
 export type DiscoveredSamples = {

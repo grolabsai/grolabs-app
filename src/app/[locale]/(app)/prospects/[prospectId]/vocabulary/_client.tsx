@@ -35,7 +35,7 @@ const VARIANT_LABELS: Record<VariantType, string> = {
 };
 
 const VARIANT_COLORS: Record<VariantType, string> = {
-  canonical: "var(--scout-accent)",
+  canonical: "var(--gl-accent)",
   typo: "#facc15",
   synonym: "#60a5fa",
   plural: "#a78bfa",
@@ -144,16 +144,16 @@ function Section({
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         overflow: "hidden",
       }}
     >
       <div
         style={{
           padding: "14px 18px",
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
           display: "flex",
           alignItems: "center",
           gap: 12,
@@ -166,7 +166,7 @@ function Section({
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {title}
@@ -175,7 +175,7 @@ function Section({
             <div
               style={{
                 fontSize: 12,
-                color: "var(--s-text-secondary)",
+                color: "var(--gl-text-secondary)",
                 marginTop: 2,
               }}
             >
@@ -197,7 +197,7 @@ function EmptyState({ children }: { children: React.ReactNode }) {
         padding: 24,
         textAlign: "center",
         fontSize: 13,
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
       }}
     >
       {children}
@@ -241,7 +241,7 @@ function EntryCard({
     <div
       style={{
         padding: "14px 18px",
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         opacity: entry.is_active ? 1 : 0.55,
       }}
     >
@@ -252,7 +252,7 @@ function EntryCard({
             <div
               style={{
                 fontSize: 11,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 marginTop: 2,
               }}
             >
@@ -265,8 +265,8 @@ function EntryCard({
             fontSize: 10,
             textTransform: "uppercase",
             letterSpacing: "0.04em",
-            color: "var(--s-text-tertiary)",
-            fontFamily: "var(--s-font-mono)",
+            color: "var(--gl-text-tertiary)",
+            fontFamily: "var(--gl-font-mono)",
           }}
         >
           {entry.locale}
@@ -289,7 +289,7 @@ function EntryCard({
               style={{
                 fontSize: 11,
                 padding: "4px 10px",
-                color: "var(--s-danger)",
+                color: "var(--gl-danger)",
               }}
             >
               {t("delete")}
@@ -323,9 +323,9 @@ function VariantChip({ type, text }: { type: VariantType; text: string }) {
         alignItems: "center",
         gap: 6,
         padding: "3px 8px 3px 4px",
-        borderRadius: "var(--s-radius-pill)",
-        background: "var(--s-surface-alt)",
-        border: "0.5px solid var(--s-border)",
+        borderRadius: "var(--gl-radius-pill)",
+        background: "var(--gl-surface-alt)",
+        border: "0.5px solid var(--gl-border)",
         fontSize: 11,
       }}
     >
@@ -337,8 +337,8 @@ function VariantChip({ type, text }: { type: VariantType; text: string }) {
           background: color,
         }}
       />
-      <span style={{ color: "var(--s-text-tertiary)" }}>{type}</span>
-      <span style={{ fontFamily: "var(--s-font-mono)" }}>{text}</span>
+      <span style={{ color: "var(--gl-text-tertiary)" }}>{type}</span>
+      <span style={{ fontFamily: "var(--gl-font-mono)" }}>{text}</span>
     </span>
   );
 }
@@ -429,8 +429,8 @@ function EntryForm({
     <div
       style={{
         padding: 18,
-        borderBottom: "0.5px solid var(--s-border)",
-        background: "var(--s-surface-alt)",
+        borderBottom: "0.5px solid var(--gl-border)",
+        background: "var(--gl-surface-alt)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -467,7 +467,7 @@ function EntryForm({
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
               marginBottom: 10,
             }}
           >
@@ -519,7 +519,7 @@ function EntryForm({
                     padding: "0",
                     width: 36,
                     height: 40,
-                    color: "var(--s-text-tertiary)",
+                    color: "var(--gl-text-tertiary)",
                     justifyContent: "center",
                   }}
                   title={t("removeVariant")}

@@ -2,7 +2,7 @@
  * Pick a foreground class based on background luminance.
  *
  * Returns "on-light-surface" or "on-dark-surface" — the same class
- * names defined in globals.css that flip the --s-text* tokens locally.
+ * names defined in globals.css that flip the --gl-text* tokens locally.
  *
  * Use case: a component needs to render text on a background whose
  * color it picks at runtime (a brand color from the DB, a status

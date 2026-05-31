@@ -104,7 +104,7 @@ export function WorksheetRow({
   }
 
   return (
-    <tr style={{ borderBottom: "1px solid var(--s-border)" }}>
+    <tr style={{ borderBottom: "1px solid var(--gl-border)" }}>
       <Td>
         <input
           type="checkbox"
@@ -115,7 +115,7 @@ export function WorksheetRow({
       </Td>
       <Td>
         <div
-          style={{ fontSize: 13, fontWeight: 500, color: "var(--s-text)" }}
+          style={{ fontSize: 13, fontWeight: 500, color: "var(--gl-text)" }}
         >
           {item.variant_label}
         </div>
@@ -123,7 +123,7 @@ export function WorksheetRow({
           <div
             style={{
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {item.brand_name}
@@ -154,12 +154,12 @@ export function WorksheetRow({
             onClick={() => editable && setCharmEditing(true)}
             style={{
               cursor: editable ? "text" : "default",
-              fontFamily: "var(--s-font-mono)",
+              fontFamily: "var(--gl-font-mono)",
               fontSize: 12,
               padding: "4px 6px",
               margin: "-4px -6px",
-              borderRadius: "var(--s-radius-sm)",
-              color: "var(--s-text)",
+              borderRadius: "var(--gl-radius-sm)",
+              color: "var(--gl-text)",
             }}
           >
             {formatGTQ(item.charm_price)}
@@ -193,12 +193,12 @@ export function WorksheetRow({
               style={{
                 cursor: editable ? "text" : "default",
                 fontWeight: 600,
-                fontFamily: "var(--s-font-mono)",
+                fontFamily: "var(--gl-font-mono)",
                 fontSize: 13,
                 padding: "4px 6px",
                 margin: "-4px -6px",
-                borderRadius: "var(--s-radius-sm)",
-                color: "var(--s-text)",
+                borderRadius: "var(--gl-radius-sm)",
+                color: "var(--gl-text)",
               }}
             >
               {formatGTQ(item.final_price)}
@@ -228,9 +228,9 @@ export function WorksheetRow({
                 border: "none",
                 background: "transparent",
                 color: item.manual_override
-                  ? "var(--scout-accent)"
-                  : "var(--s-border-strong)",
-                borderRadius: "var(--s-radius-sm)",
+                  ? "var(--gl-accent)"
+                  : "var(--gl-border-strong)",
+                borderRadius: "var(--gl-radius-sm)",
                 cursor: item.manual_override ? "pointer" : "default",
               }}
             >
@@ -288,12 +288,12 @@ function CellInput({
       style={{
         width: 100,
         padding: "4px 6px",
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         fontSize: 12,
-        border: "1px solid var(--scout-accent)",
-        borderRadius: "var(--s-radius-sm)",
-        background: "var(--s-surface)",
-        color: "var(--s-text)",
+        border: "1px solid var(--gl-accent)",
+        borderRadius: "var(--gl-radius-sm)",
+        background: "var(--gl-surface)",
+        color: "var(--gl-text)",
         textAlign: "right",
         outline: "none",
       }}
@@ -331,9 +331,9 @@ function Mono({
   return (
     <span
       style={{
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         fontSize: 12,
-        color: color === "muted" ? "var(--s-text-tertiary)" : "var(--s-text)",
+        color: color === "muted" ? "var(--gl-text-tertiary)" : "var(--gl-text)",
       }}
     >
       {children}
@@ -349,9 +349,9 @@ function StatusBadge({
   reasons: string[];
 }) {
   const palette = {
-    neutral: { bg: "var(--s-success-bg)", fg: "var(--s-success-text)" },
+    neutral: { bg: "var(--gl-success-bg)", fg: "var(--gl-success-text)" },
     warning: { bg: "#FFF7ED", fg: "#B45309" },
-    critical: { bg: "var(--s-danger-bg)", fg: "var(--s-danger-text)" },
+    critical: { bg: "var(--gl-danger-bg)", fg: "var(--gl-danger-text)" },
   }[status];
   return (
     <span

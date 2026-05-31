@@ -30,11 +30,11 @@ const FloatingLabelSelect = React.forwardRef<
     <div className={cn("relative", wrapperClassName)}>
       <label
         htmlFor={id}
-        style={{ color: "var(--s-text-tertiary)" }}
+        style={{ color: "var(--gl-text-tertiary)" }}
         className={cn(
           "absolute -top-[7px] left-[10px] z-10",
           "inline-flex items-center gap-1 px-1.5",
-          "bg-[var(--s-surface)]",
+          "bg-[var(--gl-surface)]",
           "text-[10px] font-medium uppercase tracking-[0.08em]",
           "leading-none",
           "pointer-events-none",

@@ -42,7 +42,7 @@ export default async function PricingSyncPage() {
           style={{
             fontSize: 18,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             marginTop: 12,
             marginBottom: 8,
           }}
@@ -52,7 +52,7 @@ export default async function PricingSyncPage() {
         <p
           style={{
             fontSize: 14,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             maxWidth: 460,
             margin: "0 auto 20px",
           }}
@@ -66,11 +66,11 @@ export default async function PricingSyncPage() {
             alignItems: "center",
             gap: 6,
             padding: "8px 16px",
-            background: "var(--scout-accent)",
+            background: "var(--gl-accent)",
             color: "white",
             fontSize: 14,
             fontWeight: 500,
-            borderRadius: "var(--s-radius-md)",
+            borderRadius: "var(--gl-radius-md)",
             textDecoration: "none",
           }}
         >
@@ -96,13 +96,13 @@ export default async function PricingSyncPage() {
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginBottom: 4,
             }}
           >
             {t("ready.title")}
           </h2>
-          <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+          <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
             {t("ready.subtitle")}
           </p>
         </header>
@@ -113,7 +113,7 @@ export default async function PricingSyncPage() {
               padding: "32px 0",
               textAlign: "center",
               fontSize: 13,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("ready.empty")}
@@ -121,8 +121,8 @@ export default async function PricingSyncPage() {
         ) : (
           <div
             style={{
-              border: "1px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              border: "1px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               overflow: "hidden",
             }}
           >
@@ -136,8 +136,8 @@ export default async function PricingSyncPage() {
               <thead>
                 <tr
                   style={{
-                    background: "var(--s-surface-alt)",
-                    borderBottom: "1px solid var(--s-border)",
+                    background: "var(--gl-surface-alt)",
+                    borderBottom: "1px solid var(--gl-border)",
                   }}
                 >
                   <Th>{t("ready.cols.name")}</Th>
@@ -151,13 +151,13 @@ export default async function PricingSyncPage() {
                 {ready.map((b) => (
                   <tr
                     key={b.price_batch_id}
-                    style={{ borderBottom: "1px solid var(--s-border)" }}
+                    style={{ borderBottom: "1px solid var(--gl-border)" }}
                   >
                     <Td>
                       <Link
                         href={`/pricing/changes/${b.price_batch_id}`}
                         style={{
-                          color: "var(--scout-accent-800)",
+                          color: "var(--gl-accent-800)",
                           fontWeight: 500,
                           textDecoration: "none",
                         }}
@@ -177,7 +177,7 @@ export default async function PricingSyncPage() {
                       <span
                         style={{
                           fontSize: 12,
-                          color: "var(--s-text-tertiary)",
+                          color: "var(--gl-text-tertiary)",
                         }}
                       >
                         {formatRelative(b.updated_at)}
@@ -201,13 +201,13 @@ export default async function PricingSyncPage() {
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
               marginBottom: 4,
             }}
           >
             {t("history.title")}
           </h2>
-          <p style={{ fontSize: 13, color: "var(--s-text-tertiary)" }}>
+          <p style={{ fontSize: 13, color: "var(--gl-text-tertiary)" }}>
             {t("history.subtitle")}
           </p>
         </header>
@@ -218,7 +218,7 @@ export default async function PricingSyncPage() {
               padding: "32px 0",
               textAlign: "center",
               fontSize: 13,
-              color: "var(--s-text-tertiary)",
+              color: "var(--gl-text-tertiary)",
             }}
           >
             {t("history.empty")}
@@ -226,8 +226,8 @@ export default async function PricingSyncPage() {
         ) : (
           <div
             style={{
-              border: "1px solid var(--s-border)",
-              borderRadius: "var(--s-radius-md)",
+              border: "1px solid var(--gl-border)",
+              borderRadius: "var(--gl-radius-md)",
               overflow: "hidden",
             }}
           >
@@ -241,8 +241,8 @@ export default async function PricingSyncPage() {
               <thead>
                 <tr
                   style={{
-                    background: "var(--s-surface-alt)",
-                    borderBottom: "1px solid var(--s-border)",
+                    background: "var(--gl-surface-alt)",
+                    borderBottom: "1px solid var(--gl-border)",
                   }}
                 >
                   <Th width={32}>{" "}</Th>
@@ -284,7 +284,7 @@ function HistoryRow({ row }: { row: SyncHistoryRow }) {
         )
       : null;
   return (
-    <tr style={{ borderBottom: "1px solid var(--s-border)" }}>
+    <tr style={{ borderBottom: "1px solid var(--gl-border)" }}>
       <Td>
         <StatusGlyph status={row.status} />
       </Td>
@@ -293,21 +293,21 @@ function HistoryRow({ row }: { row: SyncHistoryRow }) {
           <Link
             href={`/pricing/changes/${row.price_batch_id}`}
             style={{
-              color: "var(--scout-accent-800)",
+              color: "var(--gl-accent-800)",
               textDecoration: "none",
             }}
           >
             {row.batch_name ?? `#${row.price_batch_id}`}
           </Link>
         ) : (
-          <span style={{ color: "var(--s-text-tertiary)" }}>—</span>
+          <span style={{ color: "var(--gl-text-tertiary)" }}>—</span>
         )}
         {row.error_message ? (
           <div
             title={row.error_message}
             style={{
               fontSize: 11,
-              color: "var(--s-danger-text)",
+              color: "var(--gl-danger-text)",
               marginTop: 2,
               maxWidth: 320,
               whiteSpace: "nowrap",
@@ -333,7 +333,7 @@ function HistoryRow({ row }: { row: SyncHistoryRow }) {
         </Mono>
       </Td>
       <Td>
-        <span style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+        <span style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
           {formatRelative(row.started_at)}
         </span>
       </Td>
@@ -395,7 +395,7 @@ function Th({
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
-        color: "var(--s-text-tertiary)",
+        color: "var(--gl-text-tertiary)",
         width: width !== undefined ? `${width}px` : undefined,
       }}
     >
@@ -433,18 +433,18 @@ function Mono({
 }) {
   const c =
     color === "muted"
-      ? "var(--s-text-tertiary)"
+      ? "var(--gl-text-tertiary)"
       : color === "ok"
-        ? "var(--s-success-text)"
+        ? "var(--gl-success-text)"
         : color === "warn"
           ? "#B45309"
           : color === "critical"
-            ? "var(--s-danger-text)"
-            : "var(--s-text)";
+            ? "var(--gl-danger-text)"
+            : "var(--gl-text)";
   return (
     <span
       style={{
-        fontFamily: "var(--s-font-mono)",
+        fontFamily: "var(--gl-font-mono)",
         fontSize: 12,
         color: c,
       }}

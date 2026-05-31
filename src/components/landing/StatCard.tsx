@@ -44,20 +44,20 @@ export function StatCard({
   return (
     <div
       style={{
-        background: "var(--s-bg-deeper)",
-        border: "1px solid var(--s-border)",
+        background: "var(--gl-bg-deeper)",
+        border: "1px solid var(--gl-border)",
         borderRadius: 14,
         padding: "40px 44px",
         maxWidth: 720,
         width: "100%",
-        fontFamily: "var(--s-font)",
+        fontFamily: "var(--gl-font)",
       }}
     >
       <div
         style={{
-          fontFamily: "var(--s-font-brand)",
+          fontFamily: "var(--gl-font-brand)",
           fontSize: 56,
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           lineHeight: 1,
           letterSpacing: "0.005em",
           marginBottom: 22,
@@ -67,9 +67,9 @@ export function StatCard({
       </div>
       <div
         style={{
-          fontFamily: "var(--s-font-mono)",
+          fontFamily: "var(--gl-font-mono)",
           fontSize: 13,
-          color: "var(--scout-accent)",
+          color: "var(--gl-accent)",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           lineHeight: 1.4,
@@ -80,11 +80,11 @@ export function StatCard({
       </div>
       <p
         style={{
-          fontFamily: "var(--s-font)",
+          fontFamily: "var(--gl-font)",
           fontSize: 22,
           lineHeight: 1.5,
           margin: 0,
-          color: "var(--s-text-strong)",
+          color: "var(--gl-text-strong)",
         }}
       >
         {children}

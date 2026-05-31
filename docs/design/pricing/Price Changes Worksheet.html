@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hoja de Cambios — Scout</title>
+  <title>Hoja de Cambios — RRE</title>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="pricing-tokens.css">
   <style>
     :root {
-      --scout-accent: #378ADD;
-      --scout-accent-hover: #185FA5;
-      --scout-accent-50: #E6F1FB;
-      --scout-accent-100: #B5D4F4;
-      --scout-accent-600: #185FA5;
-      --scout-accent-800: #0C447C;
+      --rre-accent: #378ADD;
+      --rre-accent-hover: #185FA5;
+      --rre-accent-50: #E6F1FB;
+      --rre-accent-100: #B5D4F4;
+      --rre-accent-600: #185FA5;
+      --rre-accent-800: #0C447C;
       --s-bg: #FAFAF9;
       --s-surface: #FFFFFF;
       --s-surface-alt: #F5F5F4;
@@ -96,7 +96,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: var(--scout-accent);
+      background: var(--rre-accent);
       color: white;
       border: none;
       cursor: pointer;
@@ -108,7 +108,7 @@
     }
 
     .agent-toggle-btn:hover {
-      background: var(--scout-accent-hover);
+      background: var(--rre-accent-hover);
       box-shadow: 0 4px 16px rgba(55, 138, 221, 0.4);
     }
 
@@ -175,7 +175,7 @@
 
     .batch-name:focus {
       background: white;
-      box-shadow: 0 0 0 2px var(--scout-accent-50);
+      box-shadow: 0 0 0 2px var(--rre-accent-50);
     }
 
     .header-actions {
@@ -209,13 +209,13 @@
     }
 
     .s-btn-primary {
-      background: var(--scout-accent);
+      background: var(--rre-accent);
       color: #fff;
-      border-color: var(--scout-accent);
+      border-color: var(--rre-accent);
     }
 
     .s-btn-primary:hover {
-      background: var(--scout-accent-hover);
+      background: var(--rre-accent-hover);
     }
 
     .s-btn:disabled {
@@ -277,9 +277,9 @@
     }
 
     .filter-chip.active {
-      background: var(--scout-accent-50);
-      border-color: var(--scout-accent);
-      color: var(--scout-accent-800);
+      background: var(--rre-accent-50);
+      border-color: var(--rre-accent);
+      color: var(--rre-accent-800);
       font-weight: 500;
     }
 
@@ -299,9 +299,9 @@
     }
 
     .filter-toggle.active {
-      background: var(--scout-accent-50);
-      border-color: var(--scout-accent);
-      color: var(--scout-accent-800);
+      background: var(--rre-accent-50);
+      border-color: var(--rre-accent);
+      color: var(--rre-accent-800);
       font-weight: 500;
     }
 
@@ -316,8 +316,8 @@
     }
 
     .filter-toggle.active .toggle-switch {
-      background: var(--scout-accent);
-      border-color: var(--scout-accent);
+      background: var(--rre-accent);
+      border-color: var(--rre-accent);
     }
 
     .toggle-switch::after {
@@ -340,7 +340,7 @@
     .filter-clear {
       margin-left: auto;
       font-size: 12px;
-      color: var(--scout-accent);
+      color: var(--rre-accent);
       cursor: pointer;
       background: none;
       border: none;
@@ -422,7 +422,7 @@
     
     .price-cell.charm {
       font-weight: 600;
-      color: var(--scout-accent-800);
+      color: var(--rre-accent-800);
     }
 
     .price-with-info {
@@ -439,7 +439,7 @@
     }
 
     .info-icon:hover {
-      color: var(--scout-accent);
+      color: var(--rre-accent);
     }
 
     .margin-cell {
@@ -463,7 +463,7 @@
     }
 
     .lock-icon:hover {
-      color: var(--scout-accent);
+      color: var(--rre-accent);
     }
 
     .empty-state {

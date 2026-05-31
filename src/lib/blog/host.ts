@@ -4,7 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 /**
  * Resolve the current request's hostname → `instance.instance_id` for the
  * public blog surface. Returns `null` when no instance maps to the host
- * (e.g. the Scout admin domain itself, or a preview URL), which the
+ * (e.g. the RRE admin domain itself, or a preview URL), which the
  * caller interprets as "show all published posts across instances".
  *
  * The lookup is the host header, lowercased + port-stripped. Cached

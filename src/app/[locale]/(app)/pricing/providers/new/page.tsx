@@ -28,7 +28,7 @@ export default async function NewProviderPage() {
             alignItems: "center",
             gap: 4,
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             textDecoration: "none",
           }}
         >
@@ -39,7 +39,7 @@ export default async function NewProviderPage() {
           style={{
             fontSize: 22,
             fontWeight: 600,
-            color: "var(--s-text)",
+            color: "var(--gl-text)",
             marginTop: 4,
           }}
         >

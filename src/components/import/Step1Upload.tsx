@@ -84,7 +84,7 @@ export function Step1Upload() {
     <div>
       <div className="s-card">
         <p className="s-card-label">{t("title")}</p>
-        <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 16px" }}>
           {t("subtitle")}
         </p>
 
@@ -97,10 +97,10 @@ export function Step1Upload() {
           onDrop={onDrop}
           onClick={onPick}
           style={{
-            border: `2px dashed ${dragOver ? "var(--scout-accent)" : "var(--s-border-strong)"}`,
-            background: dragOver ? "var(--scout-accent-50)" : "var(--s-surface-alt)",
+            border: `2px dashed ${dragOver ? "var(--gl-accent)" : "var(--gl-border-strong)"}`,
+            background: dragOver ? "var(--gl-accent-50)" : "var(--gl-surface-alt)",
             padding: 48,
-            borderRadius: "var(--s-radius-lg)",
+            borderRadius: "var(--gl-radius-lg)",
             textAlign: "center",
             cursor: "pointer",
             transition: "all 0.12s",
@@ -110,7 +110,7 @@ export function Step1Upload() {
           <div style={{ fontSize: 14, fontWeight: 500, margin: "12px 0 4px" }}>
             {pending ? t("parsing") : file ? file.fileName : t("dropZone")}
           </div>
-          <div style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>{t("dropHint")}</div>
+          <div style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>{t("dropHint")}</div>
         </div>
         <input
           ref={inputRef}
@@ -123,10 +123,10 @@ export function Step1Upload() {
         {file ? (
           <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 16 }}>
             <Icon icon={FileText} size={16} />
-            <div style={{ fontSize: 12, color: "var(--s-text-secondary)" }}>
+            <div style={{ fontSize: 12, color: "var(--gl-text-secondary)" }}>
               {t("fileMeta", { columns: file.columns.length, rows: file.rows.length })}
             </div>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--s-text-secondary)" }}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--gl-text-secondary)" }}>
               <input
                 type="checkbox"
                 checked={file.hasHeaders}
@@ -140,7 +140,7 @@ export function Step1Upload() {
 
       {file && file.rows.length > 0 ? (
         <div className="s-card" style={{ padding: 0 }}>
-          <div style={{ padding: "12px 20px", fontSize: 13, fontWeight: 500, borderBottom: "0.5px solid var(--s-border)" }}>
+          <div style={{ padding: "12px 20px", fontSize: 13, fontWeight: 500, borderBottom: "0.5px solid var(--gl-border)" }}>
             {t("previewTitle")}
           </div>
           <div style={{ overflow: "auto", maxHeight: 400 }}>
@@ -167,7 +167,7 @@ export function Step1Upload() {
               </tbody>
             </table>
           </div>
-          <div style={{ padding: "10px 20px", fontSize: 11, color: "var(--s-text-tertiary)" }}>
+          <div style={{ padding: "10px 20px", fontSize: 11, color: "var(--gl-text-tertiary)" }}>
             {t("previewFooter", { shown: Math.min(5, file.rows.length), total: file.rows.length })}
           </div>
         </div>

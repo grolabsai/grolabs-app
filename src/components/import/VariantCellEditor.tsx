@@ -27,8 +27,8 @@ const CELL_INPUT_STYLE: React.CSSProperties = {
   height: 28,
   padding: "0 6px",
   fontSize: 12,
-  border: "0.5px solid var(--s-border)",
-  borderRadius: "var(--s-radius-sm)",
+  border: "0.5px solid var(--gl-border)",
+  borderRadius: "var(--gl-radius-sm)",
   background: "white",
   outline: "none",
 };

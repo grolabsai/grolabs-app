@@ -123,7 +123,7 @@ export function Step6Import({
       {!result && !state.importing ? (
         <div className="s-card">
           <p className="s-card-label">{t("title")}</p>
-          <p style={{ fontSize: 13, color: "var(--s-text-secondary)", margin: "0 0 16px" }}>
+          <p style={{ fontSize: 13, color: "var(--gl-text-secondary)", margin: "0 0 16px" }}>
             {t("ready", { bases: state.productBases.length, variants: totalVariants })}
           </p>
           <button
@@ -141,7 +141,7 @@ export function Step6Import({
         <div className="s-card" style={{ textAlign: "center", padding: 48 }}>
           <div className="s-spinner" style={{ margin: "0 auto 16px" }} />
           <div style={{ fontSize: 14, fontWeight: 500 }}>{t("importing")}</div>
-          <div style={{ fontSize: 12, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
             {t("importingHint")}
           </div>
         </div>
@@ -156,7 +156,7 @@ export function Step6Import({
                 <div style={{ fontSize: 18, fontWeight: 500, marginTop: 12 }}>
                   {t("successTitle")}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--s-text-secondary)", marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: "var(--gl-text-secondary)", marginTop: 4 }}>
                   {t("successSummary", {
                     bases: result.basesCreated,
                     variants: result.variantsCreated,
@@ -169,7 +169,7 @@ export function Step6Import({
                 <div style={{ fontSize: 18, fontWeight: 500, marginTop: 12 }}>
                   {t("partialTitle")}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--s-text-secondary)", marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: "var(--gl-text-secondary)", marginTop: 4 }}>
                   {t("partialSummary", {
                     created: result.basesCreated,
                     failed: result.errors.length,
@@ -202,7 +202,7 @@ export function Step6Import({
                   {result.errors.map((e, i) => (
                     <tr key={i}>
                       <td style={{ fontWeight: 500 }}>{e.baseName}</td>
-                      <td style={{ color: "var(--s-danger-text)", fontSize: 12 }}>{e.error}</td>
+                      <td style={{ color: "var(--gl-danger-text)", fontSize: 12 }}>{e.error}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -10,7 +10,7 @@ Dedicated GroLabs admin, shares visual language with GroLabs (D22).
 - **App shell**: sidebar + topbar, GroLabs's IA (Catálogo / Referencias / Configuración), Spanish copy throughout.
 - **Products list** (`/catalog/products`): real Supabase data, filter chips (all / active / inactive / consignment / service) with live counts, click-through to editor, empty state.
 - **Product editor** (`/catalog/products/[id]`): read-only two-column layout mirroring GroLabs's design, exercising the full GroLabs schema — product info, brand, primary category, attribute values, variants with SKU/barcode/weight/pricing, import-ID backlink when `wazudb1_id` is set.
-- **Design system**: the GroLabs tokens + components ported verbatim, prefix renamed `bl-` → `s-` and `bloom-` → `scout-`. See `src/app/globals.css`.
+- **Design system**: the GroLabs tokens + components ported verbatim, prefix renamed `bl-` → `s-` and `bloom-` → `rre-`. See `src/app/globals.css`.
 
 ## What's NOT built yet (deliberately)
 

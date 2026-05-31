@@ -139,7 +139,7 @@ export type ProposedProductBaseRow = {
  *                              agent extracts: variant axis values etc.)
  *   "unmapped"              — skip this field (default; produces blanks)
  */
-export type ScoutFieldId =
+export type RreFieldId =
   | "slug"
   | "shortDescription"
   | "longDescription"
@@ -151,7 +151,7 @@ export type ScoutFieldId =
   | "stockQty";
 
 export type ColumnMapping = Record<
-  ScoutFieldId,
+  RreFieldId,
   { kind: "column"; columnIndex: number } | { kind: "extract" } | { kind: "unmapped" }
 >;
 

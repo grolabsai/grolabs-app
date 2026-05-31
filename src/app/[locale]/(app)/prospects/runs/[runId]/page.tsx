@@ -200,8 +200,8 @@ export default async function RunDetailPage({
     <div className="s-content">
       <div className="s-title-row" style={{ marginBottom: 16 }}>
         <div className="s-title-inner">
-          <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginBottom: 4 }}>
-            <Link href="/prospects" style={{ color: "var(--s-text-tertiary)" }}>
+          <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginBottom: 4 }}>
+            <Link href="/prospects" style={{ color: "var(--gl-text-tertiary)" }}>
               ← {t("backToList")}
             </Link>
           </div>
@@ -261,14 +261,14 @@ export default async function RunDetailPage({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <tbody>
               {samples.map((s) => (
-                <tr key={s.sample_id} style={{ borderBottom: "0.5px solid var(--s-border)" }}>
-                  <td style={{ padding: "8px 14px", color: "var(--s-text-tertiary)", width: 120 }}>
+                <tr key={s.sample_id} style={{ borderBottom: "0.5px solid var(--gl-border)" }}>
+                  <td style={{ padding: "8px 14px", color: "var(--gl-text-tertiary)", width: 120 }}>
                     {s.sample_type}
                   </td>
-                  <td style={{ padding: "8px 14px", fontFamily: "var(--s-font-mono, ui-monospace, monospace)" }}>
+                  <td style={{ padding: "8px 14px", fontFamily: "var(--gl-font-mono, ui-monospace, monospace)" }}>
                     {s.url_or_query}
                   </td>
-                  <td style={{ padding: "8px 14px", fontSize: 11, color: "var(--s-text-tertiary)" }}>
+                  <td style={{ padding: "8px 14px", fontSize: 11, color: "var(--gl-text-tertiary)" }}>
                     {s.selection_reason}
                   </td>
                 </tr>
@@ -302,7 +302,7 @@ export default async function RunDetailPage({
             <CardHeader>
               {stage.stage_name}
               {score != null && (
-                <span style={{ marginLeft: 10, color: "var(--s-text-tertiary)", fontWeight: 400 }}>
+                <span style={{ marginLeft: 10, color: "var(--gl-text-tertiary)", fontWeight: 400 }}>
                   ({score}/100)
                 </span>
               )}
@@ -333,9 +333,9 @@ function Stat({ label, value, mono }: { label: string; value: React.ReactNode; m
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         padding: 14,
       }}
     >
@@ -345,7 +345,7 @@ function Stat({ label, value, mono }: { label: string; value: React.ReactNode; m
           fontWeight: 600,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 6,
         }}
       >
@@ -355,8 +355,8 @@ function Stat({ label, value, mono }: { label: string; value: React.ReactNode; m
         style={{
           fontSize: 20,
           fontWeight: 600,
-          color: "var(--s-text)",
-          fontFamily: mono ? "var(--s-font-mono, ui-monospace, monospace)" : undefined,
+          color: "var(--gl-text)",
+          fontFamily: mono ? "var(--gl-font-mono, ui-monospace, monospace)" : undefined,
           fontVariantNumeric: mono ? "tabular-nums" : undefined,
         }}
       >
@@ -370,9 +370,9 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "var(--s-surface)",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-lg)",
+        background: "var(--gl-surface)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-lg)",
         overflow: "hidden",
         marginBottom: 16,
       }}
@@ -387,10 +387,10 @@ function CardHeader({ children }: { children: React.ReactNode }) {
     <div
       style={{
         padding: "12px 16px",
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
         fontSize: 13,
         fontWeight: 600,
-        color: "var(--s-text)",
+        color: "var(--gl-text)",
       }}
     >
       {children}
@@ -410,17 +410,17 @@ function FindingRow({
   fixes: Fix[];
 }) {
   const statusColor: Record<string, string> = {
-    pass: "var(--s-success)",
+    pass: "var(--gl-success)",
     partial: "#d97706",
-    fail: "var(--s-danger)",
-    na: "var(--s-text-tertiary)",
-    error: "var(--s-danger)",
+    fail: "var(--gl-danger)",
+    na: "var(--gl-text-tertiary)",
+    error: "var(--gl-danger)",
   };
   return (
     <div
       style={{
         padding: "12px 16px",
-        borderBottom: "0.5px solid var(--s-border)",
+        borderBottom: "0.5px solid var(--gl-border)",
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
@@ -430,21 +430,21 @@ function FindingRow({
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.04em",
-            color: statusColor[finding.result_status] ?? "var(--s-text-tertiary)",
+            color: statusColor[finding.result_status] ?? "var(--gl-text-tertiary)",
             minWidth: 70,
           }}
         >
           {finding.result_status}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--s-text)" }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--gl-text)" }}>
             {checkName}
           </div>
           <div
             style={{
               fontSize: 11,
-              color: "var(--s-text-tertiary)",
-              fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
+              color: "var(--gl-text-tertiary)",
+              fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
             }}
           >
             {checkCode}
@@ -454,9 +454,9 @@ function FindingRow({
           <div
             style={{
               fontSize: 12,
-              fontFamily: "var(--s-font-mono, ui-monospace, monospace)",
+              fontFamily: "var(--gl-font-mono, ui-monospace, monospace)",
               fontVariantNumeric: "tabular-nums",
-              color: "var(--s-text)",
+              color: "var(--gl-text)",
             }}
           >
             {finding.score}/100
@@ -464,7 +464,7 @@ function FindingRow({
         )}
       </div>
       {finding.notes && (
-        <div style={{ marginTop: 6, fontSize: 11, color: "var(--s-text-tertiary)", paddingLeft: 82 }}>
+        <div style={{ marginTop: 6, fontSize: 11, color: "var(--gl-text-tertiary)", paddingLeft: 82 }}>
           {finding.notes}
         </div>
       )}
@@ -485,18 +485,18 @@ function FindingRow({
               style={{
                 padding: "8px 10px",
                 marginBottom: 6,
-                border: "0.5px solid var(--s-border)",
-                borderRadius: "var(--s-radius-md)",
-                background: "var(--s-surface-alt)",
+                border: "0.5px solid var(--gl-border)",
+                borderRadius: "var(--gl-radius-md)",
+                background: "var(--gl-surface-alt)",
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--gl-text)" }}>
                 {fix.fix_title}
               </div>
               <div
                 style={{
                   fontSize: 10,
-                  color: "var(--s-text-tertiary)",
+                  color: "var(--gl-text-tertiary)",
                   marginTop: 2,
                   display: "flex",
                   gap: 10,

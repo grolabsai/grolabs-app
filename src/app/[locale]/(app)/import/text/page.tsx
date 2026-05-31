@@ -17,7 +17,7 @@ export default function TextImportPage() {
         style={{
           fontSize: 18,
           fontWeight: 600,
-          color: "var(--s-text)",
+          color: "var(--gl-text)",
           marginBottom: 8,
         }}
       >
@@ -26,7 +26,7 @@ export default function TextImportPage() {
       <p
         style={{
           fontSize: 13,
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           marginBottom: 24,
         }}
       >
@@ -43,10 +43,10 @@ export default function TextImportPage() {
             flex: 1,
             fontSize: 13,
             padding: "8px 12px",
-            border: "1px solid var(--s-border)",
+            border: "1px solid var(--gl-border)",
             borderRadius: 6,
-            background: "var(--s-surface)",
-            color: "var(--s-text)",
+            background: "var(--gl-surface)",
+            color: "var(--gl-text)",
             fontFamily: "inherit",
           }}
         />
@@ -56,7 +56,7 @@ export default function TextImportPage() {
             padding: "8px 20px",
             fontSize: 13,
             fontWeight: 600,
-            background: "var(--scout-accent)",
+            background: "var(--gl-accent)",
             color: "#fff",
             border: "none",
             borderRadius: 6,
@@ -72,7 +72,7 @@ export default function TextImportPage() {
       <div
         style={{
           padding: 20,
-          background: "var(--s-surface-alt)",
+          background: "var(--gl-surface-alt)",
           borderRadius: 8,
           textAlign: "center" as const,
         }}
@@ -80,7 +80,7 @@ export default function TextImportPage() {
         <p
           style={{
             fontSize: 13,
-            color: "var(--s-text-tertiary)",
+            color: "var(--gl-text-tertiary)",
             margin: 0,
           }}
         >

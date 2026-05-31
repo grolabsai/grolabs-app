@@ -1,7 +1,7 @@
 -- category_sync_status: per-category, per-platform sync state.
 --
 -- Mirrors product_sync_status. The catalog → WooCommerce push needs to
--- map each Scout category to the WC numeric category id so products can
+-- map each RRE category to the WC numeric category id so products can
 -- be sent with categories: [{ id: <wcId> }] (WC's REST API silently
 -- ignores name-only category entries — name → no assignment).
 --
@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_category_sync_status_platform
 
 COMMENT ON TABLE public.category_sync_status IS
   'Per-category, per-platform sync state. Used by the WooCommerce push to '
-  'map Scout category_id → WC category id (external_id) so products can be '
+  'map RRE category_id → WC category id (external_id) so products can be '
   'sent with categories: [{ id }] rather than name-only (which WC ignores).';
 
 COMMENT ON COLUMN public.category_sync_status.external_id IS

@@ -63,10 +63,10 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
   if (!hasRefreshToken) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
-        <p style={{ fontSize: 14, color: "var(--s-text-secondary)" }}>
+        <p style={{ fontSize: 14, color: "var(--gl-text-secondary)" }}>
           {t("preConnect.intro")}
         </p>
-        <ul style={{ fontSize: 13, color: "var(--s-text-secondary)", paddingLeft: 18 }}>
+        <ul style={{ fontSize: 13, color: "var(--gl-text-secondary)", paddingLeft: 18 }}>
           <li>{t("preConnect.bulletDaily")}</li>
           <li>{t("preConnect.bulletAlerts")}</li>
           <li>{t("preConnect.bulletRealtime")}</li>
@@ -153,16 +153,16 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
           alignItems: "center",
           gap: 8,
           padding: "8px 12px",
-          borderRadius: "var(--s-radius-md)",
-          background: "var(--s-success-bg)",
-          color: "var(--s-success-text)",
+          borderRadius: "var(--gl-radius-md)",
+          background: "var(--gl-success-bg)",
+          color: "var(--gl-success-text)",
           fontSize: 12,
         }}
       >
         <CheckCircle2 size={14} />
         <span>{t("status.connected")}</span>
         {initialValues.oauthAccountEmail ? (
-          <span style={{ color: "var(--s-text-secondary)" }}>
+          <span style={{ color: "var(--gl-text-secondary)" }}>
             · {initialValues.oauthAccountEmail}
           </span>
         ) : null}
@@ -178,7 +178,7 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
           onChange={(e) => setPropertyId(e.target.value.replace(/[^0-9]/g, ""))}
           disabled={pending}
         />
-        <p style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+        <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
           {t("fields.propertyIdHint")}
         </p>
         <div style={{ marginTop: 8 }}>
@@ -197,18 +197,18 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
       <div
         style={{
           padding: "10px 12px",
-          border: "0.5px solid var(--s-border)",
-          borderRadius: "var(--s-radius-md)",
+          border: "0.5px solid var(--gl-border)",
+          borderRadius: "var(--gl-radius-md)",
           fontSize: 12,
-          color: "var(--s-text-secondary)",
+          color: "var(--gl-text-secondary)",
         }}
       >
         {lastPull ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {lastOk ? (
-              <CheckCircle2 size={14} color="var(--s-success-text)" />
+              <CheckCircle2 size={14} color="var(--gl-success-text)" />
             ) : (
-              <XCircle size={14} color="var(--s-danger-text)" />
+              <XCircle size={14} color="var(--gl-danger-text)" />
             )}
             <span>
               {lastOk

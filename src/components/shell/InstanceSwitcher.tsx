@@ -83,7 +83,7 @@ export function InstanceSwitcher({
           <button
             type="button"
             aria-label={t("triggerLabel")}
-            className="inline-flex items-center gap-1.5 rounded-[var(--s-radius-md)] px-2.5 py-1.5 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--s-border-strong)]"
+            className="inline-flex items-center gap-1.5 rounded-[var(--gl-radius-md)] px-2.5 py-1.5 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--gl-border-strong)]"
             style={{
               color: "#ffffff",
               background: "rgba(255,255,255,0.04)",
@@ -112,9 +112,9 @@ export function InstanceSwitcher({
           sideOffset={6}
           className="min-w-[220px]"
           style={{
-            background: "var(--s-surface)",
-            border: "0.5px solid var(--s-border)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-surface)",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
             boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
           }}
         >
@@ -128,7 +128,7 @@ export function InstanceSwitcher({
                   handleSwitch(inst.instanceId);
                 }}
                 className="cursor-pointer text-[13px] gap-2"
-                style={{ color: "var(--s-text)" }}
+                style={{ color: "var(--gl-text)" }}
               >
                 <span className="flex h-3 w-3 items-center justify-center">
                   {isCurrent ? <Icon icon={Check} size={12} /> : null}
@@ -145,7 +145,7 @@ export function InstanceSwitcher({
               setCreateOpen(true);
             }}
             className="cursor-pointer text-[13px] gap-2"
-            style={{ color: "var(--s-text-secondary)" }}
+            style={{ color: "var(--gl-text-secondary)" }}
           >
             <Icon icon={Plus} size={12} />
             {t("createEntry")}

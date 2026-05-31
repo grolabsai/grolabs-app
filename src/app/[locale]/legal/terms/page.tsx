@@ -27,7 +27,7 @@ function English() {
       altLink={{ href: "/legal/terms", label: "Versión en español →" }}
     >
       <P>
-        By accessing the GroLabs Scout application or using the public
+        By accessing the GroLabs application or using the public
         free-audit widget, you agree to these Terms. If you don&rsquo;t agree,
         please don&rsquo;t use the service.
       </P>
@@ -180,7 +180,7 @@ function English() {
         Questions about these Terms:{" "}
         <a
           href="mailto:legal@grolabs.ai"
-          style={{ color: "var(--scout-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           legal@grolabs.ai
         </a>
@@ -199,7 +199,7 @@ function Spanish() {
       altLink={{ href: "/en/legal/terms", label: "English version →" }}
     >
       <P>
-        Al acceder a la aplicación Scout de GroLabs o usar el widget público
+        Al acceder a la aplicación de GroLabs o usar el widget público
         de auditoría gratuita, aceptás estos Términos. Si no estás de
         acuerdo, por favor no uses el servicio.
       </P>
@@ -363,7 +363,7 @@ function Spanish() {
         Consultas sobre estos Términos:{" "}
         <a
           href="mailto:legal@grolabs.ai"
-          style={{ color: "var(--scout-accent)" }}
+          style={{ color: "var(--gl-accent)" }}
         >
           legal@grolabs.ai
         </a>

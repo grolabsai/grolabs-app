@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS public.analytics_event (
   -- is preserved via attribution lookup, but if the attribution had
   -- no position we store NULL).
   position      smallint NULL,
-  -- Originating storefront. The Scout endpoint validates this against
+  -- Originating storefront. The RRE endpoint validates this against
   -- instance.storefront_domains before inserting, so a row's presence
   -- here means the origin was authorized at write time.
   origin        text     NULL,

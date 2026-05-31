@@ -188,7 +188,7 @@ export function Combobox({
             ...triggerStyle(invalid),
             textAlign: "left",
             cursor: disabled ? "not-allowed" : "pointer",
-            color: selected ? "var(--s-text)" : "var(--s-text-tertiary)",
+            color: selected ? "var(--gl-text)" : "var(--gl-text-tertiary)",
             fontWeight: selected ? 500 : 400,
           }}
         >
@@ -214,7 +214,7 @@ export function Combobox({
           right: 10,
           top: "50%",
           transform: "translateY(-50%)",
-          color: "var(--s-text-tertiary)",
+          color: "var(--gl-text-tertiary)",
           cursor: disabled ? "not-allowed" : "pointer",
           display: "inline-flex",
           alignItems: "center",
@@ -233,8 +233,8 @@ export function Combobox({
             left: 0,
             right: 0,
             background: "white",
-            border: "0.5px solid var(--s-border-strong)",
-            borderRadius: "var(--s-radius-md)",
+            border: "0.5px solid var(--gl-border-strong)",
+            borderRadius: "var(--gl-radius-md)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             maxHeight: 240,
             overflowY: "auto",
@@ -246,7 +246,7 @@ export function Combobox({
               style={{
                 padding: 12,
                 fontSize: 12,
-                color: "var(--s-text-tertiary)",
+                color: "var(--gl-text-tertiary)",
                 textAlign: "center",
               }}
             >
@@ -277,14 +277,14 @@ export function Combobox({
                     padding: "8px 12px",
                     fontSize: 13,
                     textAlign: "left",
-                    background: isSelected ? "var(--scout-accent-50)" : "transparent",
-                    color: isSelected ? "var(--scout-accent-800)" : "var(--s-text)",
+                    background: isSelected ? "var(--gl-accent-50)" : "transparent",
+                    color: isSelected ? "var(--gl-accent-800)" : "var(--gl-text)",
                     border: "none",
                     cursor: "pointer",
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected)
-                      e.currentTarget.style.background = "var(--s-surface-alt)";
+                      e.currentTarget.style.background = "var(--gl-surface-alt)";
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) e.currentTarget.style.background = "transparent";
@@ -316,18 +316,18 @@ export function Combobox({
                 fontSize: 13,
                 textAlign: "left",
                 background: "transparent",
-                color: "var(--scout-accent-800, var(--scout-accent))",
+                color: "var(--gl-accent-800, var(--gl-accent))",
                 border: "none",
                 borderTop:
                   filtered.length > 0
-                    ? "0.5px solid var(--s-border)"
+                    ? "0.5px solid var(--gl-border)"
                     : "none",
                 cursor: creating ? "wait" : "pointer",
                 fontWeight: 500,
               }}
               onMouseEnter={(e) => {
                 if (!creating)
-                  e.currentTarget.style.background = "var(--s-surface-alt)";
+                  e.currentTarget.style.background = "var(--gl-surface-alt)";
               }}
               onMouseLeave={(e) => {
                 if (!creating) e.currentTarget.style.background = "transparent";
@@ -341,7 +341,7 @@ export function Combobox({
                   style={{
                     marginLeft: "auto",
                     fontSize: 11,
-                    color: "var(--s-text-tertiary)",
+                    color: "var(--gl-text-tertiary)",
                   }}
                 >
                   …
@@ -361,8 +361,8 @@ function triggerStyle(invalid: boolean): React.CSSProperties {
     height: 40,
     padding: "10px 32px 10px 12px",
     fontSize: 15,
-    border: `0.5px solid ${invalid ? "var(--s-danger)" : "var(--s-border)"}`,
-    borderRadius: "var(--s-radius-md)",
+    border: `0.5px solid ${invalid ? "var(--gl-danger)" : "var(--gl-border)"}`,
+    borderRadius: "var(--gl-radius-md)",
     background: "white",
     outline: "none",
   };

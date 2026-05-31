@@ -43,8 +43,8 @@ export function EvidenceScreenshot({
         style={{
           width: thumbWidth,
           height: "auto",
-          borderRadius: "var(--s-radius-sm)",
-          border: "0.5px solid var(--s-border)",
+          borderRadius: "var(--gl-radius-sm)",
+          border: "0.5px solid var(--gl-border)",
           cursor: "zoom-in",
           background: "#fff",
           display: "block",
@@ -133,8 +133,8 @@ function Lightbox({
           )}
           <span
             style={{
-              color: "var(--scout-accent)",
-              fontFamily: "var(--s-font-mono)",
+              color: "var(--gl-accent)",
+              fontFamily: "var(--gl-font-mono)",
               fontSize: 18,
               fontWeight: 600,
               letterSpacing: "0.02em",

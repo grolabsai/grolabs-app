@@ -226,7 +226,7 @@ export function SyncManager({
           gap: 12,
           marginBottom: 20,
           paddingBottom: 14,
-          borderBottom: "0.5px solid var(--s-border)",
+          borderBottom: "0.5px solid var(--gl-border)",
         }}
       >
         <div className="s-breadcrumb">
@@ -287,7 +287,7 @@ export function SyncManager({
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text-secondary)" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--gl-text-secondary)" }}>
           {t("filter.label")}
         </span>
         <Chip active={filter === "all"} onClick={() => setFilter("all")}>
@@ -326,9 +326,9 @@ export function SyncManager({
             display: "flex",
             gap: 12,
             padding: 16,
-            background: "var(--scout-accent-50)",
-            border: "0.5px solid var(--scout-accent-100)",
-            borderRadius: "var(--s-radius-md)",
+            background: "var(--gl-accent-50)",
+            border: "0.5px solid var(--gl-accent-100)",
+            borderRadius: "var(--gl-radius-md)",
             marginBottom: 16,
             alignItems: "center",
             flexWrap: "wrap",
@@ -338,7 +338,7 @@ export function SyncManager({
             style={{
               fontSize: 13,
               fontWeight: 500,
-              color: "var(--scout-accent-800)",
+              color: "var(--gl-accent-800)",
               marginRight: 4,
             }}
           >
@@ -347,7 +347,7 @@ export function SyncManager({
           <button
             type="button"
             className="s-btn"
-            style={{ background: "var(--s-success)", color: "white", border: "0.5px solid var(--s-success)" }}
+            style={{ background: "var(--gl-success)", color: "white", border: "0.5px solid var(--gl-success)" }}
             disabled={pending || !algoliaConfigured}
             onClick={() => runSync("algolia")}
           >
@@ -361,7 +361,7 @@ export function SyncManager({
           <button
             type="button"
             className="s-btn"
-            style={{ background: "var(--s-success)", color: "white", border: "0.5px solid var(--s-success)" }}
+            style={{ background: "var(--gl-success)", color: "white", border: "0.5px solid var(--gl-success)" }}
             disabled={pending || !woocommerceConfigured}
             onClick={() => runSync("woocommerce")}
           >
@@ -375,7 +375,7 @@ export function SyncManager({
           <button
             type="button"
             className="s-btn"
-            style={{ background: "var(--s-success)", color: "white", border: "0.5px solid var(--s-success)" }}
+            style={{ background: "var(--gl-success)", color: "white", border: "0.5px solid var(--gl-success)" }}
             disabled={pending}
             onClick={() => runSync("meilisearch")}
           >
@@ -442,12 +442,12 @@ export function SyncManager({
                         style={{ display: "block", color: "inherit", textDecoration: "none" }}
                       >
                         <div style={{ fontWeight: 500 }}>{r.productName}</div>
-                        <div style={{ fontSize: 11, color: "var(--s-text-tertiary)" }}>
+                        <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)" }}>
                           {r.slug} · {r.variantSkuCount} {t("col.variantsWithSku")}
                         </div>
                       </Link>
                     </td>
-                    <td style={{ fontSize: 12, color: "var(--s-text-tertiary)" }}>
+                    <td style={{ fontSize: 12, color: "var(--gl-text-tertiary)" }}>
                       {formatTime(r.effectiveUpdatedAt)}
                     </td>
                     <td style={{ textAlign: "center" }}>
@@ -473,7 +473,7 @@ export function SyncManager({
       {showLog ? (
         <div className="s-card" style={{ marginTop: 20 }}>
           <p className="s-card-label">{t("log.title")}</p>
-          <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "0 0 14px" }}>
+          <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "0 0 14px" }}>
             {t("log.subtitle")}
           </p>
           {logEntries.length === 0 ? (
@@ -508,7 +508,7 @@ export function SyncManager({
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "white",
-              borderRadius: "var(--s-radius-lg)",
+              borderRadius: "var(--gl-radius-lg)",
               padding: 24,
               maxWidth: 760,
               width: "92%",
@@ -520,13 +520,13 @@ export function SyncManager({
               style={{
                 marginBottom: 16,
                 paddingBottom: 14,
-                borderBottom: "0.5px solid var(--s-border)",
+                borderBottom: "0.5px solid var(--gl-border)",
               }}
             >
               <h2 style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>
                 {t("mappingModal.title")}
               </h2>
-              <p style={{ fontSize: 12, color: "var(--s-text-secondary)", margin: "4px 0 0" }}>
+              <p style={{ fontSize: 12, color: "var(--gl-text-secondary)", margin: "4px 0 0" }}>
                 {t("mappingModal.subtitle")}
               </p>
             </div>
@@ -538,7 +538,7 @@ export function SyncManager({
                   fontWeight: 500,
                   marginBottom: 10,
                   paddingBottom: 6,
-                  borderBottom: "0.5px solid var(--s-border)",
+                  borderBottom: "0.5px solid var(--gl-border)",
                 }}
               >
                 Algolia
@@ -553,7 +553,7 @@ export function SyncManager({
                   fontWeight: 500,
                   marginBottom: 10,
                   paddingBottom: 6,
-                  borderBottom: "0.5px solid var(--s-border)",
+                  borderBottom: "0.5px solid var(--gl-border)",
                 }}
               >
                 WooCommerce
@@ -565,7 +565,7 @@ export function SyncManager({
               style={{
                 marginTop: 20,
                 paddingTop: 14,
-                borderTop: "0.5px solid var(--s-border)",
+                borderTop: "0.5px solid var(--gl-border)",
                 display: "flex",
                 justifyContent: "flex-end",
               }}
@@ -590,8 +590,8 @@ export function SyncManager({
 function Badge({ label, kind }: { label: string; kind: "success" | "warning" }) {
   const m =
     kind === "success"
-      ? { bg: "var(--s-success-bg)", color: "var(--s-success-text)", border: "var(--s-success)" }
-      : { bg: "var(--s-warning-bg)", color: "var(--s-warning-text)", border: "var(--s-warning)" };
+      ? { bg: "var(--gl-success-bg)", color: "var(--gl-success-text)", border: "var(--gl-success)" }
+      : { bg: "var(--gl-warning-bg)", color: "var(--gl-warning-text)", border: "var(--gl-warning)" };
   return (
     <span
       style={{
@@ -599,7 +599,7 @@ function Badge({ label, kind }: { label: string; kind: "success" | "warning" }) 
         alignItems: "center",
         gap: 8,
         padding: "8px 14px",
-        borderRadius: "var(--s-radius-md)",
+        borderRadius: "var(--gl-radius-md)",
         fontSize: 12,
         fontWeight: 500,
         background: m.bg,
@@ -633,10 +633,10 @@ function ConfigStrip({
     <div
       style={{
         padding: "10px 14px",
-        borderRadius: "var(--s-radius-md)",
-        background: "var(--s-warning-bg)",
-        border: "0.5px solid var(--s-warning)",
-        color: "var(--s-warning-text)",
+        borderRadius: "var(--gl-radius-md)",
+        background: "var(--gl-warning-bg)",
+        border: "0.5px solid var(--gl-warning)",
+        color: "var(--gl-warning-text)",
         fontSize: 12,
         marginBottom: 12,
         display: "flex",
@@ -650,7 +650,7 @@ function ConfigStrip({
         style={{
           marginLeft: "auto",
           fontSize: 12,
-          color: "var(--scout-accent)",
+          color: "var(--gl-accent)",
           textDecoration: "none",
           fontWeight: 500,
         }}
@@ -679,9 +679,9 @@ function Chip({
         borderRadius: 999,
         fontSize: 12,
         fontWeight: 500,
-        border: "0.5px solid var(--s-border)",
-        background: active ? "var(--scout-accent)" : "white",
-        color: active ? "white" : "var(--s-text)",
+        border: "0.5px solid var(--gl-border)",
+        background: active ? "var(--gl-accent)" : "white",
+        color: active ? "white" : "var(--gl-text)",
         cursor: "pointer",
       }}
     >
@@ -724,26 +724,26 @@ function LogRow({ entry }: { entry: SyncLogEntry }) {
         : "WooCommerce";
   const status =
     entry.status === "success"
-      ? { color: "var(--s-success)", label: t("log.statusSuccess") }
+      ? { color: "var(--gl-success)", label: t("log.statusSuccess") }
       : entry.status === "partial"
-        ? { color: "var(--s-warning)", label: t("log.statusPartial") }
+        ? { color: "var(--gl-warning)", label: t("log.statusPartial") }
         : entry.status === "error"
-          ? { color: "var(--s-danger)", label: t("log.statusError") }
-          : { color: "var(--s-text-tertiary)", label: t("log.statusRunning") };
+          ? { color: "var(--gl-danger)", label: t("log.statusError") }
+          : { color: "var(--gl-text-tertiary)", label: t("log.statusRunning") };
   return (
     <div
       style={{
         padding: 12,
-        borderRadius: "var(--s-radius-md)",
-        background: "var(--s-surface-alt)",
+        borderRadius: "var(--gl-radius-md)",
+        background: "var(--gl-surface-alt)",
         fontSize: 12,
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{ fontWeight: 500 }}>{platform}</span>
-        <span style={{ color: "var(--s-text-tertiary)" }}>{formatTime(entry.startedAt)}</span>
+        <span style={{ color: "var(--gl-text-tertiary)" }}>{formatTime(entry.startedAt)}</span>
       </div>
-      <div style={{ color: "var(--s-text-secondary)" }}>
+      <div style={{ color: "var(--gl-text-secondary)" }}>
         <span style={{ color: status.color, fontWeight: 500 }}>{status.label}</span>
         {" · "}
         {t("log.summary", {
@@ -752,7 +752,7 @@ function LogRow({ entry }: { entry: SyncLogEntry }) {
           total: entry.productsCount,
         })}
         {entry.errorMessage ? (
-          <div style={{ marginTop: 4, color: "var(--s-danger-text)", fontSize: 11 }}>
+          <div style={{ marginTop: 4, color: "var(--gl-danger-text)", fontSize: 11 }}>
             {entry.errorMessage}
           </div>
         ) : null}
@@ -765,7 +765,7 @@ function FieldMappingTable({
   rows,
 }: {
   rows: ReadonlyArray<{
-    scoutField: string;
+    rreField: string;
     [k: string]: string | boolean | number | undefined;
     required: boolean;
     note: string;
@@ -784,29 +784,29 @@ function FieldMappingTable({
               gap: 12,
               alignItems: "start",
               padding: "10px 0",
-              borderBottom: i < rows.length - 1 ? "0.5px solid var(--s-border)" : "none",
+              borderBottom: i < rows.length - 1 ? "0.5px solid var(--gl-border)" : "none",
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--s-text)" }}>
-              <code style={{ fontFamily: "var(--s-font-mono)", fontSize: 11 }}>{r.scoutField}</code>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--gl-text)" }}>
+              <code style={{ fontFamily: "var(--gl-font-mono)", fontSize: 11 }}>{r.rreField}</code>
               {r.required ? (
-                <span style={{ color: "var(--s-danger)", marginLeft: 4 }}>*</span>
+                <span style={{ color: "var(--gl-danger)", marginLeft: 4 }}>*</span>
               ) : null}
             </div>
-            <div style={{ textAlign: "center", color: "var(--s-text-tertiary)" }}>→</div>
+            <div style={{ textAlign: "center", color: "var(--gl-text-tertiary)" }}>→</div>
             <div>
               <code
                 style={{
-                  fontFamily: "var(--s-font-mono)",
+                  fontFamily: "var(--gl-font-mono)",
                   fontSize: 11,
-                  background: "var(--s-surface-alt)",
+                  background: "var(--gl-surface-alt)",
                   padding: "2px 6px",
                   borderRadius: 4,
                 }}
               >
                 {target}
               </code>
-              <div style={{ fontSize: 11, color: "var(--s-text-tertiary)", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
                 {r.note}
               </div>
             </div>

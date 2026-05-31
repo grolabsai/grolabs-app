@@ -8,15 +8,15 @@ import { Icon } from "@/components/ui/icon";
  * Dark/light theme toggle for the topbar.
  *
  * The app defaults to dark (the Engineered Luxury palette). Adding a
- * `.scout-light` class to <html> flips every --s-* and shadcn HSL var
+ * `.gl-light` class to <html> flips every --gl-* and shadcn HSL var
  * to the light variant defined in globals.css. We persist the user's
- * pick in localStorage under `scout-theme` and re-apply on mount.
+ * pick in localStorage under `rre-theme` and re-apply on mount.
  *
  * SSR-safe: until the effect fires, we render the moon icon (the
  * default-dark state). After mount we may swap to sun if light is
  * stored. No layout shift since both icons are the same size.
  */
-const STORAGE_KEY = "scout-theme";
+const STORAGE_KEY = "rre-theme";
 
 function readStoredTheme(): "dark" | "light" {
   if (typeof window === "undefined") return "dark";
@@ -32,9 +32,9 @@ function applyTheme(theme: "dark" | "light") {
   if (typeof document === "undefined") return;
   const html = document.documentElement;
   if (theme === "light") {
-    html.classList.add("scout-light");
+    html.classList.add("gl-light");
   } else {
-    html.classList.remove("scout-light");
+    html.classList.remove("gl-light");
   }
 }
 
@@ -83,20 +83,20 @@ export function ThemeSwitcher() {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        border: "0.5px solid var(--s-border)",
-        borderRadius: "var(--s-radius-md)",
-        background: "var(--s-surface)",
-        color: "var(--s-text-secondary)",
+        border: "0.5px solid var(--gl-border)",
+        borderRadius: "var(--gl-radius-md)",
+        background: "var(--gl-surface)",
+        color: "var(--gl-text-secondary)",
         cursor: "pointer",
         transition: "color 0.15s, border-color 0.15s",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.color = "var(--scout-accent)";
-        e.currentTarget.style.borderColor = "var(--s-border-strong)";
+        e.currentTarget.style.color = "var(--gl-accent)";
+        e.currentTarget.style.borderColor = "var(--gl-border-strong)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.color = "var(--s-text-secondary)";
-        e.currentTarget.style.borderColor = "var(--s-border)";
+        e.currentTarget.style.color = "var(--gl-text-secondary)";
+        e.currentTarget.style.borderColor = "var(--gl-border)";
       }}
     >
       <Icon icon={showSun ? Sun : Moon} size={14} strokeWidth={1.5} />

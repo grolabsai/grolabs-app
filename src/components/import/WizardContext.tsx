@@ -11,7 +11,7 @@ import type {
   ProposedAttributeCell,
   ProposedAxisCell,
   ProposedProductBaseRow,
-  ScoutFieldId,
+  RreFieldId,
   WizardState,
 } from "@/lib/import/types";
 
@@ -67,7 +67,7 @@ type Action =
   | { type: "REMOVE_VARIANT_ATTRIBUTE"; baseId: string; variantId: string; attributeId: number | string }
   | { type: "UPSERT_BASE_ATTRIBUTE"; baseId: string; cell: ProposedAttributeCell }
   | { type: "REMOVE_BASE_ATTRIBUTE"; baseId: string; attributeId: number | string }
-  | { type: "SET_COLUMN_MAPPING_FIELD"; field: ScoutFieldId; mapping: ColumnMapping[ScoutFieldId] }
+  | { type: "SET_COLUMN_MAPPING_FIELD"; field: RreFieldId; mapping: ColumnMapping[RreFieldId] }
   | { type: "SET_IMPORTING"; on: boolean }
   | { type: "SET_IMPORT_RESULT"; result: ImportResult | null };
 

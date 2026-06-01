@@ -62,16 +62,16 @@ New repository secret.
 ### Or via gh CLI (faster)
 
 ```sh
-gh secret set MEILISEARCH_HOST           --repo grolabsai/grolabs-rre --body 'https://…'
-gh secret set MEILISEARCH_MASTER_KEY     --repo grolabsai/grolabs-rre --body '…'
-gh secret set NEXT_PUBLIC_SUPABASE_URL   --repo grolabsai/grolabs-rre --body 'https://….supabase.co'
-gh secret set SUPABASE_SERVICE_ROLE_KEY  --repo grolabsai/grolabs-rre --body '…'
+gh secret set MEILISEARCH_HOST           --repo grolabsai/grolabs-app --body 'https://…'
+gh secret set MEILISEARCH_MASTER_KEY     --repo grolabsai/grolabs-app --body '…'
+gh secret set NEXT_PUBLIC_SUPABASE_URL   --repo grolabsai/grolabs-app --body 'https://….supabase.co'
+gh secret set SUPABASE_SERVICE_ROLE_KEY  --repo grolabsai/grolabs-app --body '…'
 ```
 
 Grab the values from Vercel project env (RRE production) or the
 Meilisearch Cloud / Supabase dashboards. After all four are set,
 trigger a run manually at
-https://github.com/grolabsai/grolabs-rre/actions/workflows/test.yml →
+https://github.com/grolabsai/grolabs-app/actions/workflows/test.yml →
 "Run workflow" → confirm the `integration` job passes.
 
 ## Adding a new rule

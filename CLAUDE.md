@@ -5,7 +5,7 @@
 The Next.js application lives at the repo root (consolidated from `grolabs-rre/` in PR #11).
 
 ```
-grolabs-rre/
+grolabs-app/
 ├── src/
 │   ├── app/
 │   │   └── [locale]/          ← all routes (login, (app)/catalog, (app)/import, …)

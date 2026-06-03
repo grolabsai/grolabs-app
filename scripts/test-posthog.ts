@@ -12,11 +12,27 @@
  * or, if you keep them in .env.local:
  *   npx tsx --env-file=.env.local scripts/test-posthog.ts
  *
- * Then look in PostHog → Activity (live events) for distinct_id
- * "smoke-test-<timestamp>" — you should see all three within ~30s.
+ * Each send now reads PostHog's HTTP acknowledgement, so the test itself
+ * reports accepted/rejected per event — you no longer have to go hunting in
+ * the PostHog UI to know whether it worked. Exits non-zero if any event was
+ * rejected.
  */
 
-import { capturePostHog } from "../src/lib/analytics/posthog";
+import { capturePostHog, type CaptureResult } from "../src/lib/analytics/posthog";
+
+async function send(
+  event: string,
+  properties: Record<string, unknown>,
+  distinctId: string
+): Promise<boolean> {
+  const r: CaptureResult = await capturePostHog({ distinctId, event, properties });
+  if (r.ok) {
+    console.log(`[smoke] ACCEPTED  ${event} (HTTP ${r.status})`);
+    return true;
+  }
+  console.error(`[smoke] REJECTED  ${event}:`, r);
+  return false;
+}
 
 async function main() {
   if (!process.env.POSTHOG_API_KEY) {
@@ -33,54 +49,56 @@ async function main() {
   );
   console.log(`[smoke] distinct_id=${distinctId}`);
 
-  await capturePostHog({
-    distinctId,
-    event: "Search Performed",
-    properties: {
-      query: "smoke test query",
-      query_uid: "smoke-quid-1",
-      total_hits: 3,
-      user_id: distinctId,
-      instance_id: 0,
-      __smoke_test: true,
-    },
-  });
-  console.log("[smoke] sent: Search Performed");
+  const results = [
+    await send(
+      "Search Performed",
+      {
+        query: "smoke test query",
+        query_uid: "smoke-quid-1",
+        total_hits: 3,
+        user_id: distinctId,
+        instance_id: 0,
+        __smoke_test: true,
+      },
+      distinctId
+    ),
+    await send(
+      "Product Clicked",
+      {
+        event_type: "click",
+        query_uid: "smoke-quid-1",
+        keyword: "smoke test query",
+        position: 1,
+        object_id: "smoke-prod-1",
+        object_name: "Smoke Test Product",
+        instance_id: 0,
+        __smoke_test: true,
+      },
+      distinctId
+    ),
+    await send(
+      "Product Added to Cart",
+      {
+        event_type: "conversion",
+        query_uid: "smoke-quid-1",
+        keyword: "smoke test query",
+        object_id: "smoke-prod-1",
+        object_name: "Smoke Test Product",
+        instance_id: 0,
+        __smoke_test: true,
+      },
+      distinctId
+    ),
+  ];
 
-  await capturePostHog({
-    distinctId,
-    event: "Product Clicked",
-    properties: {
-      event_type: "click",
-      query_uid: "smoke-quid-1",
-      keyword: "smoke test query",
-      position: 1,
-      object_id: "smoke-prod-1",
-      object_name: "Smoke Test Product",
-      instance_id: 0,
-      __smoke_test: true,
-    },
-  });
-  console.log("[smoke] sent: Product Clicked");
-
-  await capturePostHog({
-    distinctId,
-    event: "Product Added to Cart",
-    properties: {
-      event_type: "conversion",
-      query_uid: "smoke-quid-1",
-      keyword: "smoke test query",
-      object_id: "smoke-prod-1",
-      object_name: "Smoke Test Product",
-      instance_id: 0,
-      __smoke_test: true,
-    },
-  });
-  console.log("[smoke] sent: Product Added to Cart");
-
+  const accepted = results.filter(Boolean).length;
+  console.log(`\n[smoke] ${accepted}/${results.length} events acknowledged by PostHog.`);
+  if (accepted !== results.length) {
+    console.error("[smoke] At least one event was rejected — see above.");
+    process.exit(1);
+  }
   console.log(
-    `\n[smoke] Done. In PostHog → Activity, filter distinct_id = "${distinctId}".\n` +
-      "[smoke] If all three appear, the forwarder + key work; any gap is the deploy/env, not the code."
+    `[smoke] All accepted. Confirm in PostHog → Activity, distinct_id = "${distinctId}".`
   );
 }
 

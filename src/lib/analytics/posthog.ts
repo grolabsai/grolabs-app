@@ -1,37 +1,24 @@
-import { PostHog } from "posthog-node";
-
 /**
- * Thin server-side PostHog forwarder (PostHog Analytics MVP, Prompt 1).
+ * Server-side PostHog forwarder (PostHog Analytics MVP).
  *
- * Forwarding is OPTIONAL: when POSTHOG_API_KEY is unset the client is a no-op,
- * so the app runs unchanged in envs where analytics isn't wired. We never add
+ * Forwarding is OPTIONAL: when POSTHOG_API_KEY is unset this is a no-op, so the
+ * app runs unchanged in envs where analytics isn't wired. We never add
  * posthog-js to the storefront — capture is server-side only, from the RRE
  * endpoints we already own (see docs/design/posthog-analytics-mvp.md).
+ *
+ * Why a direct fetch instead of posthog-node's capture()/flush():
+ *   posthog-node batches and resolves flush() whether or not PostHog actually
+ *   accepted the event — the transport outcome is swallowed, so a caller can
+ *   never tell a delivered event from a dropped one. We POST straight to
+ *   PostHog's capture endpoint and read the HTTP status + `{status:1}` body,
+ *   returning a definitive accepted/rejected result the caller can log. This
+ *   does NOT buffer or retry: a rejected event is logged and dropped (no
+ *   server-side hold-and-resend), which is acceptable for an analytics path.
  *
  * Credentials (references only; set the real values in env):
  *   POSTHOG_API_KEY  — project capture key (PostHog → Settings → Project → API keys)
  *   POSTHOG_HOST     — https://us.i.posthog.com | https://eu.i.posthog.com
  */
-
-let client: PostHog | null = null;
-let initialized = false;
-
-function getClient(): PostHog | null {
-  if (initialized) return client;
-  initialized = true;
-
-  const apiKey = process.env.POSTHOG_API_KEY;
-  if (!apiKey) return null;
-
-  client = new PostHog(apiKey, {
-    host: process.env.POSTHOG_HOST || "https://us.i.posthog.com",
-    // Serverless: send promptly and don't rely on a flush timer we may never
-    // reach. We flush() inline after each capture instead.
-    flushAt: 1,
-    flushInterval: 0,
-  });
-  return client;
-}
 
 export type PostHogEvent = {
   distinctId: string;
@@ -39,26 +26,67 @@ export type PostHogEvent = {
   properties?: Record<string, unknown>;
 };
 
+export type CaptureResult =
+  | { ok: true; status: number }
+  | { ok: false; reason: "not_configured" }
+  | { ok: false; reason: "http_error"; status: number; body: string }
+  | { ok: false; reason: "exception"; error: string };
+
+function host(): string {
+  return (process.env.POSTHOG_HOST || "https://us.i.posthog.com").replace(/\/+$/, "");
+}
+
 /**
- * Best-effort capture. No-ops when PostHog isn't configured, flushes inline so
- * the event actually leaves a serverless invocation, and swallows every error —
- * analytics must never break the request path. Invoke inside next/server
- * `after()` so it runs after the response is sent.
+ * Capture one event and return PostHog's acknowledgement. No-ops (returns
+ * not_configured) when POSTHOG_API_KEY is unset. Never throws — every failure
+ * path is a structured result. Invoke inside next/server `after()` so it runs
+ * after the response is sent; the returned result lands in server logs.
  */
-export async function capturePostHog(e: PostHogEvent): Promise<void> {
-  const c = getClient();
-  if (!c) return;
+export async function capturePostHog(e: PostHogEvent): Promise<CaptureResult> {
+  const apiKey = process.env.POSTHOG_API_KEY;
+  if (!apiKey) return { ok: false, reason: "not_configured" };
+
+  const payload = {
+    api_key: apiKey,
+    event: e.event,
+    distinct_id: e.distinctId,
+    properties: e.properties ?? {},
+    timestamp: new Date().toISOString(),
+  };
+
+  let result: CaptureResult;
   try {
-    c.capture({
-      distinctId: e.distinctId,
-      event: e.event,
-      properties: e.properties,
+    const res = await fetch(`${host()}/i/v0/e/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
-    await c.flush();
+
+    const text = await res.text();
+    // PostHog returns 200 with {"status":1} on accept. Treat any 2xx whose
+    // body doesn't explicitly report status:0 as accepted; everything else is
+    // a rejection we can see.
+    let accepted = res.ok;
+    if (res.ok && text) {
+      try {
+        const parsed = JSON.parse(text) as { status?: number };
+        if (parsed && parsed.status === 0) accepted = false;
+      } catch {
+        // Non-JSON 2xx body — trust the HTTP status.
+      }
+    }
+
+    result = accepted
+      ? { ok: true, status: res.status }
+      : { ok: false, reason: "http_error", status: res.status, body: text.slice(0, 512) };
   } catch (err) {
-    console.error(
-      "[posthog] capture failed:",
-      err instanceof Error ? err.message : err
-    );
+    result = { ok: false, reason: "exception", error: err instanceof Error ? err.message : String(err) };
   }
+
+  if (result.ok) {
+    console.log(`[posthog] "${e.event}" captured (HTTP ${result.status})`);
+  } else {
+    console.error(`[posthog] "${e.event}" not captured:`, result);
+  }
+  return result;
 }

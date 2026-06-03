@@ -374,7 +374,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // sent). Zero-result searches are included on purpose — they are the signal
   // that drives the no-results funnel. query_uid stitches this to the click /
   // conversion events the /api/v1/events route forwards for the same search.
-  after(() =>
+  const forwardSearchPerformed = () =>
     capturePostHog({
       distinctId: userId ?? "anonymous",
       event: "Search Performed",
@@ -385,8 +385,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         user_id: userId,
         instance_id: instanceId,
       },
-    })
-  );
+    });
+  // `after()` requires an active request scope. In production that always
+  // exists; when the handler is invoked directly (integration tests call
+  // POST(req) with no scope) `after()` throws. Fall back to fire-and-forget so
+  // the forwarding still runs and the handler never throws.
+  try {
+    after(forwardSearchPerformed);
+  } catch {
+    void forwardSearchPerformed();
+  }
 
   return corsify(NextResponse.json(response, { status: 200 }), origin);
 }

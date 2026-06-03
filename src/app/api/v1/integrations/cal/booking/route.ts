@@ -9,9 +9,11 @@ import { recordBackendOperation } from "@/lib/observability/backend-operation";
  * Cal.com webhook receiver for GroLabs's assessment-call funnel. Per
  * docs/design/klaviyo-assessment-call-events.md.
  *
- * Flow: Cal.com emits BOOKING_CREATED server-to-server → we verify the
- * HMAC-SHA256 signature → forward to GroLabs's corporate Klaviyo account as a
- * `Booked Assessment Call` event (upserts the profile, create-if-absent).
+ * Flow: Cal.com emits a booking-lifecycle event server-to-server → we verify
+ * the HMAC-SHA256 signature → map the trigger to a past-tense Klaviyo metric
+ * (see TRIGGER_TO_METRIC) → forward to GroLabs's corporate Klaviyo account
+ * (upserts the profile, create-if-absent). One booking produces several events
+ * across its life (requested → created → rescheduled → cancelled / rejected).
  *
  * Trust model: public endpoint (Cal.com is unauthenticated server-to-server).
  * The X-Cal-Signature-256 HMAC over the raw body, keyed by CALCOM_WEBHOOK_SECRET,
@@ -28,7 +30,8 @@ import { recordBackendOperation } from "@/lib/observability/backend-operation";
  *
  * Status contract:
  *   - 401 on bad/missing signature (do NOT forward to Klaviyo)
- *   - 200 on success or on a non-actionable trigger we intentionally ignore
+ *   - 200 on success or on a verified trigger we don't map (recorded as an
+ *     `ignored_trigger` row so unmapped/renamed triggers are visible, not silent)
  *   - 5xx on Klaviyo failure, so Cal.com retries (the unique_id guard keeps
  *     retries idempotent)
  */
@@ -36,7 +39,22 @@ import { recordBackendOperation } from "@/lib/observability/backend-operation";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const METRIC_NAME = "Booked Assessment Call";
+/**
+ * Cal.com booking-lifecycle trigger → GroLabs Klaviyo metric. Names follow the
+ * GroLabs standard: past tense. The trigger strings are Cal.com's
+ * `WebhookTriggerEvents` enum values (note: the API emits `BOOKING_CANCELLED`
+ * with the double-L spelling, even though the dashboard label reads "canceled").
+ * A trigger absent from this map is acknowledged but not forwarded — and a
+ * durable `ignored_trigger` row is written so a renamed/unexpected trigger
+ * surfaces instead of vanishing.
+ */
+const TRIGGER_TO_METRIC: Record<string, string> = {
+  BOOKING_REQUESTED: "Requested Assessment Call",
+  BOOKING_CREATED: "Booked Assessment Call",
+  BOOKING_RESCHEDULED: "Rescheduled Assessment Call",
+  BOOKING_CANCELLED: "Cancelled Assessment Call",
+  BOOKING_REJECTED: "Rejected Assessment Call",
+};
 
 /** GroLabs corporate. The assessment-call funnel is instance-agnostic; the
  * template instance (0) is the canonical home for GroLabs's own operations. */
@@ -62,6 +80,13 @@ interface CalBookingPayload {
   attendees?: CalAttendee[];
   responses?: Record<string, unknown>;
   metadata?: { videoCallUrl?: string } & Record<string, unknown>;
+  // Lifecycle-specific fields, present only on the relevant trigger.
+  cancellationReason?: string; // BOOKING_CANCELLED
+  rejectionReason?: string; // BOOKING_REJECTED
+  rescheduleUid?: string; // BOOKING_RESCHEDULED — the prior booking's uid
+  rescheduleStartTime?: string; // BOOKING_RESCHEDULED
+  rescheduleEndTime?: string; // BOOKING_RESCHEDULED
+  status?: string; // e.g. ACCEPTED / PENDING / CANCELLED
 }
 
 interface CalWebhookBody {
@@ -141,11 +166,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  console.log(`[cal-webhook] verified delivery — trigger: ${body.triggerEvent ?? "(none)"}`);
+  const trigger = body.triggerEvent ?? "";
+  console.log(`[cal-webhook] verified delivery — trigger: ${trigger || "(none)"}`);
 
-  // v1: only act on new bookings. Other triggers are acknowledged, not acted on.
-  if (body.triggerEvent !== "BOOKING_CREATED") {
-    return NextResponse.json({ ignored: body.triggerEvent ?? null }, { status: 200 });
+  const metricName = TRIGGER_TO_METRIC[trigger];
+  if (!metricName) {
+    // Verified, but a trigger we don't forward (e.g. a Ping test, or a trigger
+    // Cal.com added/renamed). Record it so the gap is visible — a silent 200
+    // here is exactly how a mis-subscribed or renamed trigger would hide.
+    console.log(`[cal-webhook] no metric mapped for trigger "${trigger || "(none)"}" — acknowledging`);
+    await recordBackendOperation({
+      instanceId: GROLABS_INSTANCE_ID,
+      operationType: OP_INBOUND,
+      status: "succeeded",
+      payloadSummary: { ignored_trigger: trigger || null },
+    });
+    return NextResponse.json({ ignored: trigger || null }, { status: 200 });
   }
 
   const p = body.payload ?? {};
@@ -155,39 +191,47 @@ export async function POST(request: Request): Promise<NextResponse> {
     // No identifier — nothing to attach in Klaviyo. Acknowledge so Cal.com
     // doesn't retry a payload that will never succeed.
     console.warn(
-      `[cal-webhook] BOOKING_CREATED had no attendee email — payload keys: ${Object.keys(p).join(",")}, attendees: ${p.attendees?.length ?? 0}`,
+      `[cal-webhook] ${trigger} had no attendee email — payload keys: ${Object.keys(p).join(",")}, attendees: ${p.attendees?.length ?? 0}`,
     );
     await recordFailure(OP_INBOUND, "no_attendee_email", {
       targetId: p.uid ?? null,
-      payloadSummary: { payload_keys: Object.keys(p), attendee_count: p.attendees?.length ?? 0 },
+      payloadSummary: { trigger, payload_keys: Object.keys(p), attendee_count: p.attendees?.length ?? 0 },
     });
     return NextResponse.json({ error: "No attendee email" }, { status: 200 });
   }
 
   const { firstName, lastName } = splitName(attendee.name);
   const startedAtMs = Date.now();
-  const opSummary = { metric: METRIC_NAME, email, event_type: p.type ?? p.eventTitle ?? p.title };
+  const opSummary = { trigger, metric: metricName, email, event_type: p.type ?? p.eventTitle ?? p.title };
 
   try {
     await trackEvent({
-      metricName: METRIC_NAME,
+      metricName,
       profile: {
         email,
         firstName,
         lastName,
       },
       properties: {
+        trigger,
         booking_uid: p.uid,
         event_type: p.type ?? p.eventTitle ?? p.title,
         scheduled_start: p.startTime,
         scheduled_end: p.endTime,
         timezone: attendee.timeZone,
         meeting_url: p.metadata?.videoCallUrl ?? p.location,
+        booking_status: p.status,
+        cancellation_reason: p.cancellationReason,
+        rejection_reason: p.rejectionReason,
+        reschedule_from_uid: p.rescheduleUid,
         source: "cal.com",
         responses: p.responses,
       },
       time: body.createdAt ?? p.startTime,
-      uniqueId: p.uid,
+      // Scope idempotency to trigger + booking so retries of the SAME lifecycle
+      // event dedupe, while distinct events on one booking (created, then
+      // rescheduled, then cancelled) are each recorded.
+      uniqueId: p.uid ? `${trigger}:${p.uid}` : undefined,
     });
   } catch (err) {
     if (err instanceof KlaviyoConfigError) {
@@ -222,6 +266,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     payloadSummary: opSummary,
     startedAtMs,
   });
-  console.log(`[cal-webhook] recorded "${METRIC_NAME}" for ${email} (uid ${p.uid})`);
+  console.log(`[cal-webhook] recorded "${metricName}" for ${email} (uid ${p.uid})`);
   return NextResponse.json({ recorded: true }, { status: 200 });
 }

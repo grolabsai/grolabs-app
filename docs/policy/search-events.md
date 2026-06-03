@@ -265,5 +265,6 @@ The "we don't see events" failure modes, in order of frequency:
 | v0.4.1 | Click events extended to typeahead dropdown items. |
 | v0.5.0 | All four conversion event types shipped. Attribution store added. |
 | v0.7.0 | Dual-write to RRE's `/api/v1/events` for the in-app analytics panel. Meilisearch path unchanged. |
+| v0.8.0 | Search POST to `/api/v1/search` now sends the anonymous `userId` (same localStorage session id the events use), so `query_log.user_id` populates for journey + intent stitching. Cache-buster bump required for the new `typeahead.js` to load. |
 
 The flow described in this doc reflects v0.7.0+ behavior.

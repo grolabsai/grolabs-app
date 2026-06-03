@@ -1,3 +1,64 @@
+---
+application: core-app
+module: Review
+title: "Review 1 — Document Conformance Review"
+status: Draft
+scope: "19 `.md` files under `docs/`"
+audience: "Maintainers deciding follow-up edits; a read-only audit grading each doc against the constitution and surfacing cross-document inconsistencies."
+actors:
+  - name: Reviewer
+    type: human
+    definition: "Claude acting as Discussion driver; performed a read-only conformance audit, edited no source doc, and deferred all actions to a follow-up Discussion."
+  - name: Constitution
+    type: system
+    definition: "docs/constitution.md v1.0 (11 articles) — the standard every other doc is graded against. Articles 1 (industry-agnostic), 2 (one core codebase), 3 (no silent tenant registration; domain identity), 7 (RLS modeled), 9 (pricing native), 10 (repo is source of truth) drive most findings."
+  - name: Audited docs
+    type: system
+    definition: "The 19 docs under docs/ classified as active / needs-reshape / conflicts / stale; includes the pricing design docs, search-foundations, dashboard, vision, and the three state snapshots."
+rules:
+  - id: R-1
+    statement: "This is a read-only audit: findings only, no source doc edited, with actions deferred to a follow-up Discussion."
+    truth: true
+    rationale: "Header 'Status of this document' and review type."
+  - id: R-2
+    statement: "The two pricing design docs (README, DATA_MODEL) severely conflict by speccing pricing as a WordPress plugin with its own wp_pricing_* MySQL tables — contradicting Articles 2 & 9 (pricing is GroLabs-native core) and Article 1 (pet-specific)."
+    truth: true
+    rationale: "Severity summary + findings #13/#14. (These docs were subsequently marked Superseded.)"
+  - id: R-3
+    statement: "search-foundations.md conflicts with Article 1 by baking pet-vertical synonyms, scout_attributes (species/breed/medical), and lifestage keyword detection into the core index schema + defaults; per CLAUDE.md §18 the flaw is raised as a question, not silently fixed, because it is a locked policy doc."
+    truth: true
+    rationale: "Severity summary + finding #8 and its process note."
+  - id: R-4
+    statement: "vision.md conflicts with ratified Article 3: its §2/§4/§6.3 'every plugin install auto-registers a tenant' contradicts the explicit grolabs.ai onboarding handshake; the constitution post-dates and overrides the vision draft."
+    truth: true
+    rationale: "Severity summary + finding #2. (vision.md was subsequently patched to align — see state/in-flight.md.)"
+  - id: R-5
+    statement: "The three state docs were stale at review time (generated 2026-04-30 @ b43157a, predating the constitution and the entire tenant layer) and were flagged for regeneration as separate tasks."
+    truth: true
+    rationale: "Severity summary + findings #16/#17/#18. (Now regenerated to 2026-05-17.)"
+  - id: R-6
+    statement: "Article 3 mandates domain as the tenant primary key, but tenant-model/tenant-membership/instance-management key on slug/name and capture no domain — an unmodeled constitutional requirement across multiple docs."
+    truth: true
+    rationale: "Appendix B item 3 and findings #7/#9/#10."
+  - id: R-7
+    statement: "Algolia and Meilisearch coexist across docs with no stated transition plan, and funnel/spec.md is the only doc that models verticals correctly (jewelry/clothing/electronics templates) per Article 1."
+    truth: true
+    rationale: "Appendix B items 4 and 5."
+useCases:
+  - id: T-1
+    title: "Triage a doc against the constitution"
+    given: "An auditor applies the status legend (active / needs-reshape / conflicts / stale)"
+    when: "They grade design/pricing/README.md, which makes WordPress the home of the pricing engine"
+    then: "It is marked a severe conflict against Articles 1/2/9 and slated to be superseded (not deleted), preserving its domain model as input to the pricing-parity Discussion"
+    verifies: [R-1, R-2]
+  - id: T-2
+    title: "Surface a cross-document contradiction"
+    given: "module-map Modules 5/6 + Article 9 say pricing is core, while the pricing design docs say it is a WP plugin"
+    when: "The auditor compiles Appendix B"
+    then: "The two mutually exclusive architectures are recorded as a severe cross-doc inconsistency for resolution"
+    verifies: [R-2]
+---
+
 # Review 1 — Document Conformance Review
 
 **Review type:** Read-only conformance audit

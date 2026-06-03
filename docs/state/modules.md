@@ -1,3 +1,82 @@
+---
+application: core-app
+module: State
+title: "GroLabs — Modules (current state)"
+status: Draft
+audience: "Contributors and assistants who need to know what is actually built on disk right now and how code clusters map to the Module Map."
+scope: "Point-in-time inventory (2026-05-17, commit 2f200e2) of code clusters, routes, server actions, and gaps, derived from src/ and supabase/migrations/. Time-sensitive; the repo is authoritative (Constitution Article 10)."
+actors:
+  - name: Identity / tenancy
+    type: system
+    definition: "Tenant/instance layer (M1/M2): tenant + tenant_member migrations, instance.ts/instanceSlug.ts, instance actions, Supabase server/client/service-role clients."
+  - name: Catalog
+    type: system
+    definition: "M3/M4: product/variant/category/attribute actions and routes, plus brand_manufacturer and attribute-screen migrations."
+  - name: Pricing
+    type: system
+    definition: "M5/M6: GroLabs-native pricing (calculate/charm/compute/column-detect/parse-money) + routes for changes/policies/providers/sync/violations. Built in this repo, not as a WP plugin."
+  - name: Sync
+    type: system
+    definition: "M7/M8: GroLabs→WC + Algolia push (woocommerce-client, algolia-client, mappings, sync-status) and the WC→GroLabs pull import path (xlsx, automap, vocabulary)."
+  - name: Search Engine
+    type: system
+    definition: "M9/M11: Meilisearch client/indexer/document-builder + api/v1/search(/token) routes + storefront-domains and rate-limit migrations. M10 Search Experience is the separate WP plugin, not in this repo."
+  - name: Analytics
+    type: system
+    definition: "M12/M13: GA4 integration routes (auth/callback/poll/realtime), dashboard/traffic, and the Algolia search no-results + synonym dashboard. M18 GA4 Plugin is a separate WP plugin."
+  - name: Funnel
+    type: system
+    definition: "Conceptual analysis/scenario tool: computeModel/edgeRouting/highlightRules/queries/revenue/validation + funnel routes and schema/seed/template migrations."
+  - name: Optimization Agent
+    type: system
+    definition: "M14/M15: not yet a standalone module on disk. Only agent-adjacent helpers exist (import/agent-message.ts); the attribute-extraction contract is specced (Constitution Article 12, search-foundations) but unbuilt."
+integrations:
+  - name: WooCommerce
+    kind: external-service
+    target: "merchant store (REST)"
+    direction: both
+    purpose: "Sync pushes GroLabs→WC; WC Import pulls WC→GroLabs via the import wizard."
+  - name: Meilisearch
+    kind: external-service
+    target: "search index"
+    direction: both
+    purpose: "Primary search engine (src/lib/search/*) behind api/v1/search."
+  - name: Algolia
+    kind: external-service
+    target: "search index + no-results analytics"
+    direction: both
+    purpose: "Coexists with Meilisearch (sync/algolia-* + dashboard no-results/synonyms); transition plan still unstated."
+  - name: GA4
+    kind: external-service
+    target: "Google Analytics property"
+    direction: both
+    purpose: "Traffic analytics via the ga4 integration routes and dashboard/traffic."
+rules:
+  - id: R-1
+    statement: "There are no Supabase edge functions (supabase/functions/ is absent); all server logic is Next.js server actions + route handlers + SQL RPCs in migrations."
+    truth: true
+    rationale: "Note under the regenerated header."
+  - id: R-2
+    statement: "Pricing is built GroLabs-native in this repo (src/lib/pricing/* + Supabase migrations), consistent with Constitution Article 9 and contradicting the superseded docs/design/pricing/* WP-plugin framing."
+    truth: true
+    rationale: "'Notable gaps / observations'."
+  - id: R-3
+    statement: "Algolia and Meilisearch coexist in the codebase; the transition plan from one to the other is still unstated (cross-doc inconsistency, Review 1 Appendix B)."
+    truth: true
+    rationale: "'Notable gaps / observations'."
+  - id: R-4
+    statement: "The Optimization Agent has no standalone module yet; Constitution Article 12 + search-foundations define the contract for when it is built."
+    truth: true
+    rationale: "'Notable gaps / observations' and the Optimization Agent code-cluster row."
+useCases:
+  - id: T-1
+    title: "Confirm pricing is native, not a plugin"
+    given: "A reader recalls the docs/design/pricing/* WP-plugin framing"
+    when: "They check this snapshot's pricing cluster and observations"
+    then: "They find pricing implemented in-repo (src/lib/pricing/* + migrations), confirming the WP-plugin docs are superseded"
+    verifies: [R-2]
+---
+
 # GroLabs — Modules (current state)
 
 **Regenerated:** 2026-05-17

@@ -1,3 +1,162 @@
+---
+application: core-app
+module: Policy
+title: "GroLabs Search Foundations — Stages 0 & 1"
+status: Active
+owner: "Tuncho"
+scope: "Stages 0 and 1 of the GroLabs search roadmap. Foundations and basic search live on Wazú."
+audience: "Claude Code (primary), future GroLabs contributors (secondary)"
+
+actors:
+  - name: Shopper
+    type: human
+    definition: A storefront customer who searches and gets faster, typo-tolerant, more relevant results in WooCommerce's existing UI.
+  - name: WordPress plugin
+    type: plugin
+    definition: Intercepts WordPress search before WP_Query, calls GroLabs's proxy, and renders two-button cards for variable products.
+  - name: Meilisearch
+    type: integration
+    definition: The cloud search engine; one project (scout-production) with a per-instance index inst_<instance_id>.
+  - name: GroLabs
+    type: system
+    definition: The canonical product database, indexing pipeline, token endpoint, and search proxy.
+  - name: CS engineer
+    type: human
+    definition: Staff who exercise the in-RRE emulator during support — query → filter → facet → result with match highlights.
+
+users:
+  - name: Shopper
+    description: Searches the storefront; sees variant-aware result cards.
+  - name: Merchant
+    description: Registers storefront domains, runs reindex, and views indexing status at /configuration/search.
+  - name: CS engineer
+    description: Uses the staff-only Emulador tab to reproduce a customer's search and see which attribute the match came from.
+
+integrations:
+  - name: Meilisearch Cloud
+    kind: external-service
+    target: meilisearch
+    direction: both
+    purpose: Build-tier project scout-production; per-instance indexes, document upserts, tenant-token-scoped search.
+  - name: WooCommerce REST API
+    kind: external-service
+    target: woocommerce
+    direction: in
+    purpose: Source of overlapping fields (name, price, stock); pulled into GroLabs via wc-import, never written back.
+  - name: WordPress plugin
+    kind: external-service
+    target: storefront
+    direction: both
+    purpose: Calls POST /api/v1/search/token and POST /api/v1/search; renders results in the merchant's theme.
+
+credentials:
+  - name: MEILISEARCH_MASTER_KEY
+    location: GroLabs backend env var
+    scope: Meilisearch admin — held only by src/lib/search/meilisearch-client.ts, never logged
+  - name: MEILISEARCH_HOST
+    location: GroLabs backend env var
+    scope: Meilisearch project URL
+  - name: Meilisearch tenant token
+    location: Minted by /api/v1/search/token; cached for TTL minus 1 minute
+    scope: searchRules filter pinning instance_id
+    rotation: 15-minute expiry
+
+permissions:
+  - actorId: Merchant
+    capability: select-query-log
+    effect: conditional
+    note: query_log SELECT is RLS-scoped to instance members.
+  - actorId: CS engineer
+    capability: run-emulator-search
+    effect: conditional
+    note: The emulator is staff-only, authenticated by instance_member, via the runEmulatorSearch server action — not the public route.
+  - actorId: WordPress plugin
+    capability: issue-search-token
+    effect: conditional
+    note: The token endpoint requires the Origin to be registered in instance.storefront_domains; otherwise a generic 403.
+
+rules:
+  - id: R-1
+    statement: Search runs on Meilisearch Cloud (not self-hosted) — one project scout-production with a per-instance index named inst_<instance_id>.
+    truth: true
+  - id: R-2
+    statement: GroLabs uses per-instance indexes rather than a shared index with tenant-token filtering, because per-instance settings are a Stage 5 requirement and isolation is simpler for support.
+    truth: true
+  - id: R-3
+    statement: GroLabs owns the Meilisearch keys end-to-end; merchants paste only an instance ID and the master key never leaves GroLabs's backend.
+    truth: true
+  - id: R-4
+    statement: GroLabs is the canonical product database; for overlapping fields (name, price, stock) WooCommerce is the source of truth, and for GroLabs-specific fields GroLabs is the only source.
+    truth: true
+  - id: R-5
+    statement: One document is indexed per parent product; variable products are a single document with a variants array, searchable via nested fields.
+    truth: true
+  - id: R-6
+    statement: Variation matching reads Meilisearch's _matchesPosition rather than a custom query parser or per-merchant attribute configuration.
+    truth: true
+  - id: R-7
+    statement: instance_id = 0 (the template instance) is a valid value, not a falsy sentinel; code must never use if(!instanceId) checks.
+    truth: true
+  - id: R-8
+    statement: variants[].attributes keys must be the WooCommerce taxonomy slug (e.g. pa_size), not the human-readable name, because the plugin builds add-to-cart URLs from slug keys.
+    truth: true
+  - id: R-9
+    statement: Tenant tokens include a defense-in-depth filter pinning instance_id and expire in 15 minutes.
+    truth: true
+  - id: R-10
+    statement: The token endpoint returns a single generic 403 for both unknown instance and unregistered origin to prevent enumeration; origin validation is the security boundary.
+    truth: true
+  - id: R-11
+    statement: Synonyms start empty per tenant and accumulate through the zero-result-query → agent-proposes → merchant-approves loop; no vertical ships default synonyms.
+    truth: true
+  - id: R-12
+    statement: Only publish-status products are indexed; price is stored in the merchant's native currency with no normalization.
+    truth: true
+  - id: R-13
+    statement: The facets contract is restrictive (counts respect active filters); Algolia-style disjunctive faceting is out of scope for this iteration.
+    truth: true
+  - id: R-14
+    statement: A search hit's matched_variation is a full variant object (same shape as variants[] entries), not just a variation_id, and is null for simple products and for variable_multi with no in-stock match.
+    truth: true
+  - id: R-15
+    statement: The staff emulator does not call the public /api/v1/search; it runs through the runEmulatorSearch server action authenticated by instance_member, sharing the same Meilisearch path.
+    truth: true
+  - id: R-16
+    statement: If the GroLabs API is unreachable the plugin falls back to WordPress's default search and never breaks the merchant's storefront.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Variant-specific query selects the matched variation
+    given: A variable_multi product and a query naming a specific variant attribute
+    when: The search proxy computes matched_variation from _matchesPosition
+    then: The in-stock variant with the most matches is returned as a full variant object
+    verifies: [R-6, R-14]
+  - id: T-2
+    title: Parent-only match falls back to the default variation
+    given: A query that matches only the parent product
+    when: matched_variation is computed
+    then: It falls back to default_variation_id, then first in-stock, then null
+    verifies: [R-14]
+  - id: T-3
+    title: Wrong origin is rejected without enumeration
+    given: A token request with a valid instance ID but an unregistered Origin
+    when: POST /api/v1/search/token runs
+    then: It returns a generic 403 instance_not_found_or_origin_not_authorized
+    verifies: [R-10]
+  - id: T-4
+    title: API outage degrades to native search
+    given: The GroLabs API is unreachable
+    when: A shopper searches
+    then: The plugin falls back to WordPress's default search and logs to a WP option
+    verifies: [R-16]
+  - id: T-5
+    title: Full sync stays within tolerance and propagates promptly
+    given: A full backfill of an instance's catalog
+    when: Indexing completes and a product is later modified
+    then: The document count is within 1% of the WC product count and the change propagates within 6 minutes
+---
+
 GroLabs Search Foundations — Stages 0 & 1
 
 > **Editor's note:** Reshaped 2026-05-17 to conform to Constitution Articles 1 and 12. Previous version contained pet-specific assumptions baked into core search defaults.

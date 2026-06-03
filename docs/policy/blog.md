@@ -1,8 +1,141 @@
 ---
-Status: Active policy
-Owner: Tuncho
-Scope: Multi-tenant blog (write, publish, public reading) for any GroLabs instance — Wazú, GroLabs marketing site, UX-Economics, future tenants.
-Audience: Anyone touching `/content/posts`, `/blog`, the `post` table, the `blog-images` bucket, or any future AI-assisted writing or image pipeline.
+application: core-app
+module: Policy
+title: "Blog — policy"
+status: Active
+owner: "Tuncho"
+scope: "Multi-tenant blog (write, publish, public reading) for any GroLabs instance — Wazú, GroLabs marketing site, UX-Economics, future tenants."
+audience: "Anyone touching `/content/posts`, `/blog`, the `post` table, the `blog-images` bucket, or any future AI-assisted writing or image pipeline."
+
+actors:
+  - name: Writer
+    type: human
+    definition: An RRE admin author who composes, schedules, and publishes posts (currently Tuncho).
+  - name: Public reader
+    type: human
+    definition: An anonymous visitor reading published posts at /blog and /blog/[slug].
+  - name: Agent panel
+    type: system
+    definition: Invokes blog server actions (AI writing assist) rather than a third-party HTTP API.
+  - name: pg_cron job
+    type: system
+    definition: Supabase pg_cron job running every 5 minutes; calls publish_due_posts() to flip matured scheduled posts to published.
+
+users:
+  - name: Writer
+    description: Writes, edits, and publishes posts from RRE admin (/content/posts).
+  - name: Public reader
+    description: Reads published posts on the public surface without authentication.
+
+permissions:
+  - actorId: Public reader
+    capability: select-published-post
+    effect: allow
+    note: post_select_published — anon and authenticated may SELECT any row with status='published'.
+  - actorId: Writer
+    capability: post-all
+    effect: conditional
+    note: post_member_all — authenticated members of post.instance_id may read drafts, write, and delete.
+  - actorId: Writer
+    capability: write-blog-image
+    effect: conditional
+    note: blog-images bucket is public-read; writes gated by storage.foldername(name)[1] matching the writer's instance_id.
+  - actorId: Public reader
+    capability: read-brand-system
+    effect: allow
+    note: brand_system is world-readable (it is the public brand, no secrets); writes are gated to instance_member.
+
+integrations:
+  - name: Anthropic API
+    kind: external-service
+    target: anthropic
+    direction: both
+    purpose: AI writing assist — suggest titles, generate summary, continue writing, rewrite selection. Model claude-opus-4-7, streamed server-side.
+  - name: Replicate (Flux Schnell)
+    kind: external-service
+    target: replicate
+    direction: both
+    purpose: Text-to-image generation (~$0.003/image, 1–2s). Model id and prompt template both live in the DB.
+  - name: blog-images bucket
+    kind: internal-module
+    target: storage
+    direction: both
+    purpose: Public-read Supabase Storage for cover, inline, and generated images, pathed by instance_id.
+  - name: pg_cron
+    kind: internal-module
+    target: postgres
+    direction: in
+    purpose: Drives scheduled publishing every 5 minutes via publish_due_posts() (SECURITY DEFINER).
+
+credentials:
+  - name: ANTHROPIC_API_KEY
+    location: Server env var (later instance.integrations_config.ai, Vault-backed)
+    scope: AI writing assist
+  - name: REPLICATE_API_TOKEN
+    location: Server env var on Vercel
+    scope: AI image generation
+  - name: CRON_SECRET
+    location: Server env var
+    scope: Gates the /api/v1/blog/publish-due manual trigger route
+
+rules:
+  - id: R-1
+    statement: The blog is a native multi-tenant surface, not headless Ghost (decided in PR #121); Ghost is only a visual/UX reference.
+    truth: true
+  - id: R-2
+    statement: The data model is a single post table; tags, comments, revisions, and authors-as-an-entity stay out of scope until a feature requires them.
+    truth: true
+  - id: R-3
+    statement: (instance_id, slug) is unique; identical slugs across different instances are allowed and expected.
+    truth: true
+  - id: R-4
+    statement: Published posts are world-readable (anon + authenticated SELECT where status='published'); only members of the post's instance can read drafts, write, or delete.
+    truth: true
+  - id: R-5
+    statement: Public blog routes live outside the (app) route group so the auth gate in (app)/layout.tsx does not apply.
+    truth: true
+  - id: R-6
+    statement: Anything loaded into an agent (system prompt, templates, voice guide, rewrite instructions) is a prompt_template row, not a code constant; resolution order is the writer's instance_id, then instance 0 (GroLabs template) as canonical fallback.
+    truth: true
+  - id: R-7
+    statement: Secrets stay in env vars, never in prompt_template (ANTHROPIC_API_KEY, CRON_SECRET, REPLICATE_API_TOKEN).
+    truth: true
+  - id: R-8
+    statement: Scheduled publishing uses Supabase pg_cron (5-minute granularity) rather than Vercel cron, because the Vercel Hobby tier only allows daily crons.
+    truth: true
+  - id: R-9
+    statement: AI image originals are immutable — a transform always creates a new file and never overwrites the upload.
+    truth: unverified
+    rationale: A locked rule for the deferred image-transform pipeline, not yet shipped.
+  - id: R-10
+    statement: Per-post translation is two post rows with different slugs, not one row with two language fields; i18n covers UI chrome only, not post content.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Anonymous read of a published post
+    given: A post with status='published'
+    when: An unauthenticated visitor opens /blog/[slug]
+    then: The page renders with metadata and JSON-LD, no auth required
+    verifies: [R-4, R-5]
+  - id: T-2
+    title: Cross-instance slug coexistence
+    given: Two instances each publish a post with slug "hello"
+    when: Both public URLs are requested
+    then: wazu.com/blog/hello and grolabs.com/blog/hello each resolve to their own post
+    verifies: [R-3]
+  - id: T-3
+    title: Scheduled post publishes on time
+    given: A post with status='scheduled' and a matured published_at
+    when: The pg_cron job runs
+    then: publish_due_posts() flips it to published within 5 minutes
+    verifies: [R-8]
+  - id: T-4
+    title: Tenant without an override reads the template prompt
+    given: A tenant that has not overridden a blog prompt
+    when: An AI operation loads its prompt
+    then: It reads the instance 0 (GroLabs template) seed
+    verifies: [R-6]
 ---
 
 # Blog — policy

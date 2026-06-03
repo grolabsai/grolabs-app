@@ -1,3 +1,78 @@
+---
+application: core-app
+module: State
+title: "GroLabs — Schema (current state)"
+status: Draft
+audience: "Contributors and assistants who need the current database shape — identity tables, the instance_id tenancy boundary, table inventory by domain, and RLS patterns."
+scope: "Point-in-time schema snapshot (2026-05-17, commit 2f200e2) derived from 39 migration files. Time-sensitive; where migration DDL and the live DB diverge, the live DB wins (Constitution Article 10)."
+actors:
+  - name: tenant
+    type: system
+    definition: "New identity layer (20260513000001) above instance: tenant_id PK, slug unique, kind in (template_owner, customer). RLS: SELECT for members of an owned instance; writes service_role only."
+  - name: tenant_member
+    type: system
+    definition: "New membership table (20260514000001) linking user_id to tenant with role (owner/admin/billing/member). A trigger requires a matching active tenant_member before any instance_member insert."
+  - name: instance
+    type: system
+    definition: "The org table renamed from the original tenant; instance_id PK is the tenancy/RLS boundary. Holds plan, locales, currency, integrations_config, storefront_domains; kind is deprecated and trigger-synced from tenant.kind."
+  - name: instance_member
+    type: system
+    definition: "Membership renamed from the original tenant_member; member_id PK, role free-text (no CHECK yet), is_current with a partial unique index (user_id) WHERE is_current."
+integrations:
+  - name: Supabase Vault
+    kind: external-service
+    target: "GA4 OAuth refresh token"
+    direction: in
+    purpose: "Stores the GA4 OAuth refresh token referenced by analytics config (instance.integrations_config.ga4); a credential reference, not a column."
+  - name: Meilisearch index
+    kind: external-service
+    target: "inst_<instance_id> per-instance index"
+    direction: both
+    purpose: "Search index config lives in Meilisearch, not a Postgres table; query_log and search_rate_limit are the only Postgres-side search tables."
+rules:
+  - id: R-1
+    statement: "The tenancy/RLS boundary column is instance_id, not tenant_id; tenant_id survives only in the initial migration text and legacy join tables (CLAUDE.md §2)."
+    truth: true
+    rationale: "Critical rename caveat section."
+  - id: R-2
+    statement: "The original 'tenant'/'tenant_member' tables were renamed to instance/instance_member; then a genuinely new tenant/tenant_member layer was added above instance — so the live schema has four distinct identity tables."
+    truth: true
+    rationale: "Critical rename caveat: four identity tables (tenant, tenant_member, instance, instance_member)."
+  - id: R-3
+    statement: "All non-identity tables are instance_id-scoped with instance_isolation_* RLS unless noted; templates (instance_id = 0) are visible only via service_role."
+    truth: true
+    rationale: "Table inventory intro and RLS pattern legend."
+  - id: R-4
+    statement: "Every table has RLS enabled except scout_schema_version, the sole exception."
+    truth: true
+    rationale: "RLS pattern legend final bullet and system/shared listing."
+  - id: R-5
+    statement: "Funnel per-instance tables use tenant_read (SELECT allows instance_id = 0 OR membership) + tenant_write_all, and several derive instance_id via BEFORE INSERT/UPDATE triggers from the parent funnel_instance; funnel shared tables use shared_read_all_authenticated + shared_write_service_role_only."
+    truth: true
+    rationale: "Funnel domain row and RLS pattern legend."
+  - id: R-6
+    statement: "Pricing is GroLabs-native (provider, price_list, charm_rule, etc.) consistent with Constitution Article 9, contradicting the superseded docs/design/pricing/* WP-plugin framing."
+    truth: true
+    rationale: "Pricing domain note."
+  - id: R-7
+    statement: "The instance sequence is still named tenant_tenant_id_seq (pre-rename naming debt); instance.kind is deprecated-not-dropped and kept in sync with tenant.kind by trigger."
+    truth: true
+    rationale: "instance table notes (instance_id and kind rows)."
+useCases:
+  - id: T-1
+    title: "Resolve the tenant_id vs instance_id confusion"
+    given: "A contributor reads 'the tenant_id column on every tenant-scoped table' in an old instruction"
+    when: "They consult the rename caveat"
+    then: "They learn the actual boundary column is instance_id and tenant_id only persists in legacy text, avoiding a wrong RLS assumption"
+    verifies: [R-1, R-2]
+  - id: T-2
+    title: "Enforce tenant membership before instance membership"
+    given: "A new instance_member row is being inserted"
+    when: "The BEFORE INSERT trigger trg_enforce_tenant_member_before_instance_member fires"
+    then: "The insert is rejected unless a matching active tenant_member row exists, keeping the two identity layers consistent"
+    verifies: [R-2]
+---
+
 # GroLabs — Schema (current state)
 
 **Regenerated:** 2026-05-17

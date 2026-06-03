@@ -1,3 +1,69 @@
+---
+application: core-app
+module: Design
+title: "GroLabs Design Tokens — the shared contract"
+status: Active
+owner: "Tuncho"
+scope: "The single shared dictionary of --gl-* design tokens that Claude Design and the repo (src/app/globals.css) both use, so a color decided in Design lands in code under the same name. One name per thing, named by role; the in-app /styleguide page is the live mirror."
+audience: "Whoever designs in Claude Design or edits globals.css; both sides align on the --gl-* names here."
+
+actors:
+  - name: Designer
+    type: human
+    definition: Decides colors/styles in Claude Design using the --gl-* names below, then hands the implementer a single-token change ("--gl-accent-on-light should be #b8901a").
+  - name: Implementer
+    type: human
+    definition: Changes that one token in globals.css; the product and the in-app /styleguide page update together because they read the same token.
+
+integrations:
+  - name: src/app/globals.css
+    kind: internal-module
+    target: The running token definitions
+    direction: both
+    purpose: Where the --gl-* tokens actually run; shadcn variables (--background, --primary, ...) derive their values from them.
+  - name: /styleguide page
+    kind: internal-module
+    target: In-app live mirror
+    direction: in
+    purpose: Renders the real tokens, so it can never drift from the product — the canonical visual reference.
+
+rules:
+  - id: R-1
+    statement: Everything shared between Design and code is named --gl-* (GroLabs), named by role (--gl-surface, --gl-text, --gl-accent) so the name never changes when an internal codename does. No app codename (scout, rre) or leftover initials (s-, bl-) in any shared token.
+    truth: true
+    rationale: §"the naming rule". The --gl-* names are now the real tokens; this contract folded the three historical prefixes (--s-*, --rre-*, --gl-*) into one vocabulary.
+  - id: R-2
+    statement: shadcn variables (--background, --primary, --border, --ring, ...) are NOT renamed — they are a required third-party Radix/shadcn contract; they stay and continue to derive their values from the --gl-* tokens.
+    truth: true
+    rationale: '§"what is NOT renamed". Also exempt: internal-only code Design never sees (TS types, function names, package name) may keep the rre codename.'
+  - id: R-3
+    statement: A darker-gold ramp exists for accents on light backgrounds (--gl-accent-on-light #a17914, -soft #b8901a, -strong #8a6516) because pale #fae194 is nearly invisible on white; these are now in code.
+    truth: true
+    rationale: §1 "gap to fix". The real fix for washed-out yellow on light screens.
+  - id: R-4
+    statement: Fixed tokens never flip with the theme (accent, dark canvas, bone-white text, topbar surface, white search pill); surfaces and text flip between dark (default) and light (.gl-light), and the sidebar/nav stays dark in both themes.
+    truth: true
+    rationale: §§2–5. Surface hierarchy comes from borders/shadows, not darker gray fills (surface-alt equals surface on purpose).
+  - id: R-5
+    statement: The system stays coordinated by a single dictionary (this doc), one set of tokens (globals.css), and one live mirror (/styleguide) — no separate style-guide repo. Change a value here → change it in globals.css → product and /styleguide update together.
+    truth: true
+    rationale: §"how we stay coordinated". The /styleguide page is the canonical visual reference; the Claude Design file is the sketchpad.
+
+useCases:
+  - id: T-1
+    title: A color change lands in code under the same name
+    given: The designer decides --gl-accent-on-light should be #b8901a in Claude Design
+    when: The implementer changes that one token in globals.css
+    then: The product and the /styleguide page both update because they read the same role-named token; the change cannot silently fail to land
+    verifies: [R-1, R-5]
+  - id: T-2
+    title: Accent stays visible on a white background
+    given: An accent text or border element on a light surface
+    when: It is styled
+    then: It uses the darker-gold --gl-accent-on-light ramp rather than the pale #fae194, which would be nearly invisible on white
+    verifies: [R-3]
+---
+
 # GroLabs Design Tokens — the shared contract
 
 Status: **Applied** — the `--gl-*` names below are now the real tokens in

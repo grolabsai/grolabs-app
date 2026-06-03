@@ -1,8 +1,125 @@
 ---
-Status: Draft (awaiting approval)
-Owner: Tuncho
-Scope: Introduce `tenant_member` — a user's direct membership in a tenant, parallel to `instance_member` but one layer up. Defines the two-layer membership model, role taxonomy, backfill rule, and the trigger contract that keeps the layers consistent.
-Audience: Claude Code (primary), future GroLabs contributors
+application: core-app
+module: Policy
+title: "GroLabs Tenant Membership — v1"
+status: Draft
+owner: "Tuncho"
+scope: "Introduce `tenant_member` — a user's direct membership in a tenant, parallel to `instance_member` but one layer up. Defines the two-layer membership model, role taxonomy, backfill rule, and the trigger contract that keeps the layers consistent."
+audience: "Claude Code (primary), future GroLabs contributors"
+
+actors:
+  - name: tenant_member
+    type: system
+    definition: A user's direct membership in a tenant — answers "which tenants does this user belong to?" Used for billing, tenant admin, signup, home-tenant lookup, invitations.
+  - name: instance_member
+    type: system
+    definition: A user's access to a specific instance/catalog — answers "which catalogs can this user access?" Drives RLS data isolation and the instance switcher.
+  - name: User
+    type: human
+    definition: A person who may belong to tenants (organizational) and instances (operational).
+  - name: service_role
+    type: system
+    definition: Privileged Postgres role; the only principal permitted to write tenant_member rows.
+  - name: Enforcement trigger
+    type: system
+    definition: trg_enforce_tenant_member_before_instance_member — BEFORE INSERT on instance_member, raises if no active matching tenant_member exists.
+
+users:
+  - name: owner
+    description: Tenant role with full control, including deleting the tenant and removing other owners.
+  - name: admin
+    description: Tenant role that manages instances and tenant members but cannot delete the tenant itself.
+  - name: billing
+    description: Tenant role limited to billing settings and history; no instance or member management.
+  - name: member
+    description: Baseline tenant role; belongs to the tenant and can be granted instance memberships, no admin powers.
+
+permissions:
+  - actorId: owner
+    capability: delete-tenant
+    effect: allow
+  - actorId: admin
+    capability: delete-tenant
+    effect: deny
+    note: Admin manages instances and members but cannot delete the tenant.
+  - actorId: billing
+    capability: manage-billing
+    effect: allow
+    note: Billing settings and history only; no instance or member management.
+  - actorId: member
+    capability: tenant-admin
+    effect: deny
+    note: Baseline role; can be granted instance memberships but holds no admin powers.
+  - actorId: User
+    capability: select-tenant-member
+    effect: conditional
+    note: A user may read only their own tenant_member rows (user_id = auth.uid()).
+  - actorId: service_role
+    capability: write-tenant-member
+    effect: allow
+    note: INSERT/UPDATE/DELETE on tenant_member is service_role only; writes flow through SECURITY DEFINER RPCs.
+
+integrations:
+  - name: instance_member
+    kind: internal-module
+    target: instance
+    direction: both
+    purpose: Operational membership layer; RLS is keyed on instance_id, never tenant_id. The enforcement trigger ties each instance_member to a tenant_member.
+  - name: tenant
+    kind: internal-module
+    target: tenant_member
+    direction: in
+    purpose: Parent record; ON DELETE CASCADE on the tenant_id FK cleans up tenant_member rows when a tenant is deleted.
+
+rules:
+  - id: R-1
+    statement: For every instance_member row there must exist a corresponding tenant_member row matching (instance.tenant_id, user_id) with is_active = true.
+    truth: true
+    rationale: Tenant membership is organizational and must exist before instance (operational) access; the trigger enforces this precondition.
+  - id: R-2
+    statement: A tenant_member row with no instance_member rows is valid; the reverse is required but not the forward — tenant access can exist without instance access.
+    truth: true
+    rationale: Covers sales-ops, billing contacts, and invited-but-not-yet-provisioned users.
+  - id: R-3
+    statement: tenant_member.role is CHECK-constrained to one of owner, admin, billing, member, with column default 'member'.
+    truth: true
+  - id: R-4
+    statement: instance_member.role is unchanged in this PR — free-text, default 'owner', no CHECK constraint.
+    truth: true
+    rationale: The instance role taxonomy and its CHECK constraint are deferred to a future PR.
+  - id: R-5
+    statement: The enforcement trigger is BEFORE INSERT only (not UPDATE) and raises rather than silently auto-creating a tenant_member.
+    truth: true
+    rationale: Loud failure surfaces callers operating on the wrong tenant; silent auto-create would hide those bugs.
+  - id: R-6
+    statement: Application code owns ordering — insert the tenant_member row first, then the instance_member row.
+    truth: true
+  - id: R-7
+    statement: tenant_member SELECT is restricted to a user's own rows; INSERT/UPDATE/DELETE is service_role only. Cross-user listing is not exposed via RLS in v1.
+    truth: true
+  - id: R-8
+    statement: Backfill creates one tenant_member (role owner, is_active true) per distinct (user_id, tenant_id) from instance_member joined to instance, using ON CONFLICT DO NOTHING so it is re-runnable.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Backfill produces three tenant_member rows
+    given: The migration has been applied against production data (verified 2026-05-14)
+    when: Querying tenant_member joined to tenant
+    then: Three rows exist — one owner under GroLabs (tenant 1) and two owners under Wazú (tenant 2)
+    verifies: [R-8]
+  - id: T-2
+    title: Invariant holds with no orphan instance_member rows
+    given: The migration and backfill are complete
+    when: Left-joining instance_member to tenant_member on (tenant_id, user_id)
+    then: Zero rows lack a matching tenant_member
+    verifies: [R-1]
+  - id: T-3
+    title: Inserting an instance_member without a tenant_member is rejected
+    given: No active tenant_member exists for the target user and tenant
+    when: An instance_member INSERT is attempted
+    then: The enforcement trigger raises and names the user and tenant
+    verifies: [R-1, R-5]
 ---
 
 # GroLabs Tenant Membership — v1

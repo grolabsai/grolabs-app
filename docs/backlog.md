@@ -1,3 +1,66 @@
+---
+application: core-app
+module: Foundation
+title: "GroLabs — Backlog"
+status: Draft
+owner: "Tuncho"
+scope: "Work that has been discussed and agreed as needing to happen, but is deliberately deferred with a defined trigger condition. Each entry is a commitment with scope, trigger, and reason for deferral — not an idea or a maybe-later. (Predates the proposed backlog-registry format.)"
+audience: "Anyone about to start work whose trigger condition may have been met, or who is writing a spec that one of these entries blocks."
+
+actors:
+  - name: Contributor
+    type: human
+    definition: Creates backlog entries only by explicit decision in a Discussion event, and moves them through the lifecycle (parked → triggered → active → complete) as triggers are met.
+
+rules:
+  - id: R-1
+    statement: A backlog entry is a commitment, not an idea — it captures discussed-and-agreed work that is deliberately deferred, each with a defined scope, trigger condition, and reason for deferral.
+    truth: true
+    rationale: Document purpose. Distinguishes the backlog from a wishlist.
+  - id: R-2
+    statement: Backlog entries follow the lifecycle parked → triggered → active → complete; entries are created only by explicit Discussion-event decision, never by anyone tossing in "we should also do this."
+    truth: true
+    rationale: Lifecycle + adding-entries sections.
+  - id: R-3
+    statement: Pricing parity with WooCommerce is parked, triggered before the catalog-integration spec is written (Phase 1 priority #2) — enumerate WC's full pricing surface (regular/sale/scheduled, tiered, role-based, currency, tax, shipping, combos, BOGO, coupons, dynamic, wholesale, pre-orders) and decide native / pass-through / ignore for each.
+    truth: true
+    rationale: Constitution Article 9 parity clause. Deferred because it branches further than the constitutional work could absorb; deserves its own Discussion.
+  - id: R-4
+    statement: Pet-shop-specific schema cleanup is parked, triggered before catalog-module stabilization — identify and drop every table/column/constraint encoding pet-shop assumptions, confirm no downstream references, and preserve the concept (attribute matching) as a future agnostic, opt-in, per-tenant feature.
+    truth: true
+    rationale: Constitution Article 1 sub-rule. Mechanical work, but needs a proper Discussion + spec, not ad-hoc deletion; must precede new schema built on top.
+  - id: R-5
+    statement: Reconciliation flow for pre-existing WC products at first sync is parked, triggered during catalog-integration spec writing — import existing WC products preserving their WC IDs, deciding the dedup, simples-that-are-really-variations, progress communication, and partial-failure rollback questions.
+    truth: true
+    rationale: Constitution Article 8. Not constitutional itself — a feature inside the catalog-integration spec, flagged so it is not lost.
+  - id: R-6
+    statement: Consent, privacy, and terms drafting is parked, triggered pre-launch before any plugin lands in the WP directory — draft consent paragraphs, privacy policy, ToS, and the dashboard revocation UX; likely requires external legal/privacy review.
+    truth: true
+    rationale: Constitution Article 4 compliance-deferred items. Drafting now would be redone with actual legal review.
+  - id: R-7
+    statement: Two SSO repo folders (scout-wordpress-social-login, wp-multi-social-login) are parked for consolidation, triggered before the login-plugin reaches production-readiness — determine the canonical one, delete/merge the other, rename consistent with Article 11.
+    truth: true
+    rationale: Constitution Article 11. Mechanical cleanup, but must happen before any login-plugin release.
+  - id: R-8
+    statement: Search personalization (Meilisearch re-ranking + behavioral signals) is parked, triggered after the demo ships and Stage-1 search is stable for Wazú with enough traffic to measure rerank lift and consent work far enough along to capture clicks legally — Phase A templated userContext, Phase B persistent user_search_profile, only if A shows lift.
+    truth: true
+    rationale: Research in docs/research/search-personalization.md; depends on Stage-1 search, click-event capture, and Article 4 consent. Not a demo priority.
+
+useCases:
+  - id: T-1
+    title: Trigger pulls a parked item into active work
+    given: A parked backlog entry such as pricing parity
+    when: Its trigger condition is met (the catalog-integration spec is about to be written)
+    then: The entry moves parked → triggered and into an explicit Discussion event with the full protocol, rather than being decided ad hoc
+    verifies: [R-2, R-3]
+  - id: T-2
+    title: New deferred work requires a Discussion decision
+    given: Someone proposes deferring a new piece of work
+    when: They want it tracked in the backlog
+    then: It is added only by explicit Discussion-event decision with scope, trigger, and reason — not by informally tossing it in
+    verifies: [R-1, R-2]
+---
+
 # GroLabs — Backlog
 
 **Purpose:** This document captures work that has been discussed and agreed-upon as needing to happen, but is deliberately not happening right now. Items here are not "ideas" or "maybe later" — they are commitments with a defined trigger condition that will pull them into active work.

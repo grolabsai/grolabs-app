@@ -1,3 +1,79 @@
+---
+application: core-app
+module: Research
+title: "Search personalization — implementation research"
+status: Draft
+scope: "How to add per-search personalization on top of the Meilisearch foundation (`docs/policy/search-foundations.md`), if and when we decide to."
+audience: "Engineers evaluating whether and how to add per-search personalization; research notes, not a build commitment."
+actors:
+  - name: RRE search proxy
+    type: system
+    definition: "The core app's search path that would build a userContext string at query time from session signals and cart, then pass it to Meilisearch. Owns all profile storage and generation — Meilisearch stores none."
+  - name: Meilisearch
+    type: integration
+    definition: "Provides personalization as a per-query re-ranking layer: it forwards top-N candidates plus the caller-supplied userContext string to an external reranker and returns the reordered list. It stores no user profiles."
+  - name: Reranker provider
+    type: integration
+    definition: "External scoring service (Cohere Rerank 3.5, Jina, Mixedbread, or custom REST) that scores candidate docs against the userContext string. Billed per-rerank, scaling with QPS."
+  - name: WP search plugin
+    type: plugin
+    definition: "Storefront plugin that would gain click and add-to-cart event tracking, POSTing {user_id_or_session, product_id, event_type, timestamp} back to RRE to feed behavioral signals."
+integrations:
+  - name: Meilisearch personalization
+    kind: external-service
+    target: "POST /indexes/{index}/search with personalize.userContext"
+    direction: both
+    purpose: "Experimental re-ranking; requires enabling the feature flag and configuring a reranker provider in index settings."
+  - name: Reranker API
+    kind: external-service
+    target: "Cohere / Jina / Mixedbread / custom REST"
+    direction: both
+    purpose: "Scores candidates against the userContext; cost model and provider choice are open questions before building."
+  - name: search_event store (proposed)
+    kind: internal-module
+    target: "search_event(instance_id, session_id, user_id, event_type, product_id, attributes_snapshot, created_at)"
+    direction: both
+    purpose: "Proposed RLS-by-instance_id rolling event table (30-day cleanup) feeding buildUserContext; not yet built."
+rules:
+  - id: R-1
+    statement: "Meilisearch personalization is a per-query re-ranking layer, not a profile store — the caller supplies the userContext string on every search and owns all storage and generation."
+    truth: true
+    rationale: "§1, quoting Meilisearch docs: 'Meilisearch does not yet provide automated generation of user profiles.'"
+  - id: R-2
+    statement: "userContext must use affirmative statements only ('likes red' works; 'dislikes blue' is ignored), and personalization is an experimental feature requiring a feature flag and configured reranker."
+    truth: true
+    rationale: "§1 hard constraints from the Meilisearch docs."
+  - id: R-3
+    statement: "Start with Option A (lightweight): derive userContext at query time from session signals + cart with a templated string and no LLM, validating rerank quality and cost before any profile table."
+    truth: unverified
+    rationale: "§3 recommendation — explicitly not a commitment to build; design not locked."
+  - id: R-4
+    statement: "Preference inference ('user prefers black') runs server-side in RRE as aggregation over a small recent-events table — detect an attribute value repeated above a threshold (e.g. ≥3 of last 10) — with no LLM needed for the learn step."
+    truth: unverified
+    rationale: "§5 recipe — research proposal, threshold is a tuning knob not a decision."
+  - id: R-5
+    statement: "Capturing click events ties to Constitution Article 4 (consent + privacy) and must be resolved before the WP plugin ships event tracking."
+    truth: unverified
+    rationale: "§7 open questions — privacy/consent is an unresolved blocker."
+  - id: R-6
+    statement: "Session-scoped vs user-scoped memory for logged-in users is the one real product call to make before building; cloud plan tier, reranker cost, and experimental-flag-in-production are also unresolved."
+    truth: unverified
+    rationale: "§7 open questions to resolve before building."
+useCases:
+  - id: T-1
+    title: "Personalize a search via re-ranking"
+    given: "Meilisearch personalization enabled with a configured reranker and an Option-A userContext built from cart + session signals"
+    when: "RRE sends a search with personalize.userContext"
+    then: "Meilisearch runs the search, the reranker reorders the top-N candidates against the context string, and the reordered list is returned"
+    verifies: [R-1, R-3]
+  - id: T-2
+    title: "Infer a color preference from behavior"
+    given: "A proposed search_event store capturing clicked products' attribute values"
+    when: "≥3 of the last 10 interactions share color = black"
+    then: "buildUserContext composes a sentence noting interest in black products and injects it into the next query's userContext"
+    verifies: [R-4]
+---
+
 # Search personalization — implementation research
 
 **Status:** Research notes — not policy

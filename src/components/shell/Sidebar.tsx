@@ -9,47 +9,7 @@ import { usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import type { Route } from "next";
 import { useCallback, useSyncExternalStore } from "react";
-import {
-  Package,
-  LayoutList,
-  LayoutDashboard,
-  SlidersHorizontal,
-  Building2,
-  Shapes,
-  Tag,
-  GitMerge,
-  PawPrint,
-  Rabbit,
-  UserRound,
-  Settings,
-  Search,
-  Telescope,
-  Download,
-  Palette,
-  Workflow,
-  RefreshCw,
-  ShoppingBag,
-  CircleDollarSign,
-  ClipboardList,
-  ShieldCheck,
-  Receipt,
-  Truck,
-  LineChart,
-  GitBranch,
-  Layers,
-  DollarSign,
-  Database,
-  Library,
-  Wrench,
-  Activity,
-  FileText,
-  Stethoscope,
-  ListChecks,
-  Gauge,
-  ChevronRight,
-  ChevronDown,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -57,6 +17,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Icon } from "@/components/ui/icon";
 import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
+import { buildRreNav, buildAdminNav, type NavItem, type NavGroup } from "./nav";
 import { cn } from "@/lib/utils";
 
 const SECTION_STATE_KEY = "grolabs.sidebar.sections";
@@ -112,29 +73,13 @@ function writeSectionState(next: SectionState) {
  *
  * Icons use lucide-react stroke style. Sizes match the original 14×14 SVGs.
  *
+ * The nav config lives in ./nav.ts and is selected by `variant`: the RRE
+ * surface (app.grolabs.ai) and the admin surface (admin.grolabs.ai) render
+ * the same Sidebar with different nav groups. See rre-admin-split.md §3.4.
+ *
  * TODO (follow-up): swap plain next/link for @/i18n/routing Link once all
  * hrefs are migrated to locale-aware navigation.
  */
-
-type NavItem = {
-  href: Route | null; // null = not yet implemented
-  label: string;
-  icon: LucideIcon;
-  // When true, render through the shared <Icon> wrapper. New entries opt in;
-  // legacy entries stay raw until the whole-file migration ships.
-  useIconWrapper?: boolean;
-};
-
-type NavGroup = {
-  // Stable, locale-independent key used for active detection and persistence.
-  key: string;
-  title: string;
-  // Section header icon. Omitted for the flat Dashboard group.
-  icon?: LucideIcon;
-  // Flat groups (Dashboard) render as a single link with no collapse behavior.
-  flat?: boolean;
-  items: NavItem[];
-};
 
 function itemMatchesPath(href: Route | string | null, pathname: string): boolean {
   if (!href) return false;
@@ -164,124 +109,24 @@ function computeActiveHref(
 }
 
 export function Sidebar({
+  variant = "rre",
   instanceName: _instanceName,
   instances,
   currentInstanceId,
 }: {
+  variant?: "rre" | "admin";
   instanceName: string;
   instances: InstanceListItem[];
   currentInstanceId: number | null;
 }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
-  const t = useTranslations("configuration.algolia");
-  const tSearch = useTranslations("configuration.search");
-  const tGa4 = useTranslations("configuration.ga4");
-  const tHealth = useTranslations("configuration.systemHealth");
+  // Root translator (full dotted keys) so the nav builders can reach both the
+  // `nav.*` and `configuration.*` namespaces.
+  const t = useTranslations();
 
-  const NAV: NavGroup[] = [
-    {
-      key: "dashboard",
-      title: tNav("dashboard"),
-      flat: true,
-      items: [
-        { href: "/dashboard" as Route, label: tNav("dashboard"), icon: LayoutDashboard },
-      ],
-    },
-    {
-      key: "conversion",
-      title: tNav("conversion"),
-      icon: GitBranch,
-      items: [
-        { href: "/funnel" as Route, label: tNav("funnel"), icon: Workflow, useIconWrapper: true },
-      ],
-    },
-    {
-      key: "catalog",
-      title: tNav("catalog"),
-      icon: Layers,
-      items: [
-        { href: "/catalog/products", label: tNav("products"), icon: Package },
-        { href: "/catalog/categories" as Route, label: tNav("categories"), icon: LayoutList },
-        { href: "/catalog/attributes" as Route, label: tNav("attributes"), icon: SlidersHorizontal },
-        { href: "/catalog/brands" as Route, label: tNav("brands"), icon: Building2 },
-        { href: null, label: tNav("productTypes"), icon: Shapes },
-        { href: null, label: tNav("tags"), icon: Tag },
-        { href: null, label: tNav("matchingRules"), icon: GitMerge },
-      ],
-    },
-    {
-      key: "pricing",
-      title: tNav("pricing"),
-      icon: DollarSign,
-      items: [
-        { href: "/pricing" as Route, label: tNav("pricingOverview"), icon: CircleDollarSign, useIconWrapper: true },
-        { href: "/pricing/policies" as Route, label: tNav("pricingPolicies"), icon: ShieldCheck, useIconWrapper: true },
-        { href: "/pricing/providers" as Route, label: tNav("pricingProviders"), icon: Truck, useIconWrapper: true },
-        { href: "/pricing/changes" as Route, label: tNav("pricingChanges"), icon: ClipboardList, useIconWrapper: true },
-        { href: "/pricing/violations" as Route, label: tNav("pricingViolations"), icon: Receipt, useIconWrapper: true },
-        { href: "/pricing/sync" as Route, label: tNav("pricingSync"), icon: RefreshCw, useIconWrapper: true },
-      ],
-    },
-    {
-      key: "data",
-      title: tNav("data"),
-      icon: Database,
-      items: [
-        { href: "/import" as Route, label: tNav("import"), icon: Download },
-        { href: "/sync" as Route, label: tNav("sync"), icon: RefreshCw },
-      ],
-    },
-    {
-      key: "content",
-      title: tNav("content"),
-      icon: FileText,
-      items: [
-        { href: "/content/posts" as Route, label: tNav("blog"), icon: FileText },
-      ],
-    },
-    {
-      key: "prospects",
-      title: tNav("prospects"),
-      icon: Stethoscope,
-      items: [
-        { href: "/prospects" as Route, label: tNav("prospectsList"), icon: Stethoscope, useIconWrapper: true },
-        { href: "/prospects/rubric" as Route, label: tNav("prospectsRubric"), icon: ListChecks, useIconWrapper: true },
-        { href: "/prospects/benchmarks" as Route, label: tNav("prospectsBenchmarks"), icon: Gauge, useIconWrapper: true },
-      ],
-    },
-    {
-      key: "references",
-      title: tNav("references"),
-      icon: Library,
-      items: [
-        { href: null, label: tNav("species"), icon: PawPrint },
-        { href: null, label: tNav("breeds"), icon: Rabbit },
-        { href: null, label: tNav("profileAttributes"), icon: UserRound },
-      ],
-    },
-    {
-      key: "system",
-      title: tNav("system"),
-      icon: Settings,
-      items: [
-        { href: "/styleguide" as Route, label: tNav("styleguide"), icon: Palette },
-      ],
-    },
-    {
-      key: "configuration",
-      title: tNav("configuration"),
-      icon: Wrench,
-      items: [
-        { href: "/configuration/search" as Route, label: tSearch("navLabel"), icon: Telescope, useIconWrapper: true },
-        { href: "/configuration/algolia" as Route, label: t("navLabel"), icon: Search },
-        { href: "/configuration/woocommerce" as Route, label: tNav("woocommerce"), icon: ShoppingBag },
-        { href: "/configuration/ga4" as Route, label: tGa4("navLabel"), icon: LineChart, useIconWrapper: true },
-        { href: "/configuration/system-health" as Route, label: tHealth("navLabel"), icon: Activity, useIconWrapper: true },
-        { href: null, label: tNav("storeSettings"), icon: Settings },
-      ],
-    },
-  ];
+  const NAV: NavGroup[] =
+    variant === "admin" ? buildAdminNav(t) : buildRreNav(t);
 
   // Single active href across all NAV. Longest matching href wins so
   // parent rows (e.g. /prospects) don't light up alongside their

@@ -1,3 +1,103 @@
+---
+application: core-app
+module: Funnel
+title: "Funnel Flow Map — Production Spec for Next.js"
+status: Draft
+owner: "Tuncho"
+scope: "The production implementation for the Funnel Flow Map — a React Flow visualization that models, analyzes, and simulates e-commerce funnels. Defines the domain entities (flow/stage/transition/instance/dataset/friction), the visual language and highlight rules, the reach/conversion/revenue formulas, the schema, the seed flow (17 stages, 44 transitions, 3 industry templates), and validation rules."
+audience: "Anyone implementing or maintaining the funnel canvas, its computeModel/revenue logic, or its maintenance CRUD screens."
+
+actors:
+  - name: Flow
+    type: system
+    definition: A reusable graph definition (flow_ecommerce_standard) containing stages and transitions. Every flow must have traffic, purchase, and drop-off.
+  - name: Stage
+    type: system
+    definition: A node in the diagram (Traffic, Homepage, PDP, Cart, Checkout, Purchase, Drop-off, ...). May be terminal (purchase) or a drop-off sink.
+  - name: Transition
+    type: system
+    definition: A directed edge between stages, typed forward / dropoff / backward(rework) / standard. Carries a per-dataset conversion percentage of its source stage.
+  - name: Instance
+    type: system
+    definition: 'A customer, tenant, scenario, or template using a flow + dataset. Holds monthly_traffic, average_order_value, and average_cart_skus (default 2.0). Three seeded templates: jewelry, clothing, electronics.'
+  - name: Dataset
+    type: system
+    definition: The set of transition conversion values and assumptions for one flow/instance. Seeded as one benchmark dataset per industry template (132 = 44 transitions × 3).
+  - name: Friction Point / Finding
+    type: system
+    definition: A known UX/business issue on a stage (friction point) and concrete severity-rated evidence of it (friction finding), backed by benchmark sources for conversion values.
+
+users:
+  - name: Analyst / operator
+    description: Hovers/clicks stages to trace forward paths, edits conversion values and assumptions, and manages flows/stages/transitions/instances/datasets/friction via the nine DB-backed maintenance screens.
+
+integrations:
+  - name: "@xyflow/react (React Flow)"
+    kind: external-service
+    target: Funnel canvas
+    direction: out
+    purpose: Renders the diagram (nodes, smart edges, Controls, MiniMap); highlighted transitions animate; the dotted background is intentionally not rendered.
+  - name: PostgreSQL / Supabase
+    kind: external-service
+    target: flows, stages, transitions, instances, datasets, dataset_transition_values, benchmark_sources, friction_points, friction_findings
+    direction: both
+    purpose: Stores the graph definition, per-dataset values, and friction evidence. Live schema at supabase/migrations/20260430000001_funnel_schema.sql (the spec's SQL block is historical).
+
+rules:
+  - id: R-1
+    statement: Transition color encodes meaning — green forward (value/progress), red drop-off (loss), gray backward/rework (friction), light gray not-highlighted (context). Highlighted forward transitions are 3.5px; all others 1.15px. Highlighted transitions animate; the React Flow background dots are not rendered.
+    truth: true
+    rationale: §"visual language" + thickness/animation/background. Product rules remain canonical even though the SQL block is historical.
+  - id: R-2
+    statement: Hovering/clicking a stage highlights it, its incoming transitions + immediate sources, its outgoing transitions + immediate targets, and then continues only along forward paths until purchase — never expanding through backward/rework or drop-off transitions; everything else stays faded. Hovering a transition highlights only that edge, its two stages, and its percentage label.
+    truth: true
+    rationale: §"UI highlight rules".
+  - id: R-3
+    statement: A transition value is a percentage of its source stage; a stage's reach is the cumulative percentage of original traffic reaching it; downstream_conversion = purchase_reach / selected_stage_reach (purchase=100%, drop-off=0%) and downstream_loss = 100% − downstream_conversion.
+    truth: true
+    rationale: §"key calculations".
+  - id: R-4
+    statement: From a selected stage, scenario_revenue = monthly_traffic × downstream_conversion × average_order_value and scenario_lost_revenue uses downstream_loss; with average_cart_skus (default 2.0), estimated_sku_items_purchased = converted_orders × average_cart_skus and estimated_sku_items_lost = lost_orders × average_cart_skus. The UI shows these beside revenue/lost revenue.
+    truth: true
+    rationale: §"key calculations" + revenue.ts helper.
+  - id: R-5
+    statement: The seed flow flow_ecommerce_standard has 17 stages and 44 transitions (PLP Cat Nav → Site Search removed; PLP Search → Site Search kept as backward/rework), seeded across 3 industry templates (jewelry AOV 180/1.6 SKU, clothing 100/2.3, electronics 250/1.4) giving 132 dataset transition values.
+    truth: true
+    rationale: §"current flow" + seed SQL + historical note. The seeded counts are the reconciled figures.
+  - id: R-6
+    statement: Validation — every transition's source and target must exist; every flow must contain traffic, purchase, and drop-off; for each source stage the sum of outgoing conversion_pct must be 100% (tolerance 99.5–100.5); and monthly_traffic, average_order_value, average_cart_skus must each be ≥ 0.
+    truth: true
+    rationale: §"validation rules".
+  - id: R-7
+    statement: Nine DB-backed CRUD maintenance screens exist (flow, stage, transition, instance, dataset, dataset transition values, benchmark source, friction point, friction finding); adding a transition prompts whether to also add dataset values for all / selected / no datasets.
+    truth: true
+    rationale: §"maintenance screens".
+  - id: R-8
+    statement: The SQL schema block in this spec is historical and predates the GroLabs-conventions reconciliation — the live schema is the migration file; only the product rules (visual language, highlight rules, formulas, validation) remain canonical.
+    truth: false
+    rationale: Historical note at top. The in-doc schema/seed no longer reflect the live schema (see PR #25 reconciliation). See [[in-flight]].
+
+useCases:
+  - id: T-1
+    title: Trace forward conversion from a stage
+    given: An analyst viewing the standard funnel
+    when: They click the PDP stage
+    then: The canvas highlights PDP, its incoming/outgoing transitions and immediate neighbors, and continues along forward paths to purchase, stopping at backward and drop-off edges; the rest fades
+    verifies: [R-2]
+  - id: T-2
+    title: Dataset rejects outgoing values that don't sum to 100
+    given: A source stage whose outgoing transition conversion percentages sum to 97%
+    when: The dataset is validated
+    then: Validation fails because the sum is outside the 99.5–100.5 tolerance
+    verifies: [R-6]
+  - id: T-3
+    title: Scenario revenue from a selected stage
+    given: An instance with monthly_traffic, average_order_value, and average_cart_skus set
+    when: A stage is selected as the starting point
+    then: The UI shows scenario revenue, lost revenue, and estimated SKU items purchased/lost computed from that stage's downstream conversion and loss
+    verifies: [R-3, R-4]
+---
+
 # Funnel Flow Map — Production Spec for Next.js
 
 > **Note:** the SQL schema block below is historical and predates the GroLabs-conventions reconciliation. The live schema is at `supabase/migrations/20260430000001_funnel_schema.sql`. See PR #25 for the reconciliation log. The spec's product rules (visual language, highlight rules, formulas, validation rules) remain canonical. The seeded counts are **17 stages, 44 transitions, 132 dataset values** (44 transitions × 3 templates).

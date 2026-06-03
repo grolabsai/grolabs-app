@@ -1,3 +1,100 @@
+---
+application: core-app
+module: Foundation
+title: "GroLabs — Constitution (v1.0)"
+status: Active
+owner: "Tuncho (with Claude as scribe)"
+scope: "The non-negotiable rules that govern every spec, feature, and code change in GroLabs. Where this conflicts with any other document, the constitution wins. Amended only through deliberate, dated Discussion events."
+audience: "Every contributor (human or agent) writing any spec or code in GroLabs core or plugins."
+
+actors:
+  - name: GroLabs core
+    type: system
+    definition: One codebase, one schema, one deployable, multi-tenant by instance_id. Owns canonical entity UUIDs, pricing logic, the search index, analytics, and the optimization agent (Articles 1, 2, 8, 9).
+  - name: Plugin
+    type: plugin
+    definition: Physically separate codebase running on the merchant's WordPress, talking to core only through the public API. Never shares libraries with core beyond a thin client SDK (Article 2). Names are functional/source-based (Article 11).
+  - name: Merchant
+    type: human
+    definition: The tenant, identified by domain as primary key. Registers through an explicit handshake at grolabs.ai, never silently on install (Article 3). Retains revocable controls but defaults are full-activation (Article 4).
+  - name: Optimization Agent
+    type: system
+    definition: Pure, industry-agnostic, stateless capability module. Accepts inputs and produces proposals; does not know who called it or why. Workflow context lives in the calling module (Article 12).
+  - name: Contributor
+    type: human
+    definition: Author of record for specs and amendments. Flags repo/memory conflicts explicitly rather than silently resolving them (Article 10).
+
+rules:
+  - id: R-1
+    statement: Industry-agnostic core — no vertical-specific naming, schema, columns, tables, or assumptions in core code, DB, or docs. Verticals exist only as instance-provisioning templates (data, not schema); Wazú is one tenant among many with no privileged code path.
+    truth: true
+    rationale: Article 1. Permanent, no trigger to revisit. Vertical assumptions in schema permanently shape the product; the pet-shop bridge table is debt to be dropped.
+  - id: R-2
+    statement: One core codebase, one schema, one deployable; plugins are physically separate codebases, separately distributed and versioned, communicating only through the public API.
+    truth: true
+    rationale: Article 2. Plugins run on the merchant's WP, not GroLabs' infra; entitlements cannot be flipped across separately-deployed apps. Expands (never narrows) for any future connector.
+  - id: R-3
+    statement: Plugin-driven funnel with explicit onboarding — install redirects to grolabs.ai for explicit account creation; tenants are never silently auto-registered. Tenant identity is keyed by domain; email is unique per user, not per tenant. Cross-tenant access is solved by a collaborator model, not by merging tenants.
+    truth: true
+    rationale: Article 3. Silent registration is a privacy/trust violation; explicit handshake is the only acceptable consent surface.
+  - id: R-4
+    statement: Frictionless value delivery; compliance through disclosure — defaults are the most value-delivering option, not the most data-minimizing; compliance is achieved via disclosure (consent paragraphs, privacy policy, ToS, in-product transparency), not opt-in friction. Controls to revoke/limit are clearly exposed.
+    truth: true
+    rationale: Article 4. SMB SaaS adoption is friction-sensitive; the Shopify/Stripe default-on model is the proven pattern. Consent/policy/ToS drafting is compliance-deferred to pre-launch.
+  - id: R-5
+    statement: 'One switch in the search-plugin — a single toggle controls data flow: search-only (no behavioral data) or full mode (search + commerce events + revenue). The toggle lives in the dashboard, defaults ON. The middle ground (events without money) is rejected.'
+    truth: true
+    rationale: Article 5. A third toggle state would serve a customer segment the market data shows does not meaningfully exist.
+  - id: R-6
+    statement: Clerk-delegation is solved inside GroLabs via the per-member financial_data_visible flag, evaluated in the dashboard UI. When false, currency values are blanked (not placeholder chars); trends remain visible. The plugin always sends what it sends; the dashboard decides what to render.
+    truth: true
+    rationale: Article 6. Solving this at the plugin layer would destroy the analytics product for everyone; the UI layer keeps GroLabs whole.
+  - id: R-7
+    statement: Phase 1 builds models without enforcement — every model needed at scale (entitlements, roles, multi-tenancy, sync identity, RLS) is modeled in schema and referenced in code, but enforcement is deferred until it is the bottleneck. In Phase 1 role checks pass through to admin-everywhere, entitlement checks always return granted, RLS is present but permissive.
+    truth: true
+    rationale: Article 7. "Define everything, gate nothing" until commercial readiness; building enforcement early creates premature complexity. This article is the source of the deferred-work registry's items.
+  - id: R-8
+    statement: Sync identity through entity-to-entity mapping — GroLabs owns the canonical UUID for every entity; external IDs (WC product/variation, Meilisearch doc) are stored as mapped references, never inferred from names/SKUs. Sync is non-destructive — restructuring preserves original external IDs at the appropriate entity level.
+    truth: true
+    rationale: Article 8. Inferring identity from names/SKUs causes silent duplicates and wrong updates; destroying external IDs breaks merchant trust and downstream references.
+  - id: R-9
+    statement: Pricing engine is GroLabs-native — GroLabs is the source of truth for product structure and pricing; WC displays the synced final price and loses on price-conflict (next sync overrides, with a drift signal). Tax computation stays with WC. Parity clause — GroLabs pricing must reach functional parity with WC before MVP launch (parity Discussion required, tracked in backlog).
+    truth: true
+    rationale: Article 9. A pricing engine with rules/approvals/conditionals cannot be expressed in WC's flat price field; parity ensures GroLabs is strictly additive.
+  - id: R-10
+    statement: Repository is the permanent source of truth — specs, decisions, schema, code, config all live in the version-controlled repo; memory, conversation history, and external notes are hints, never authoritative. On repo/memory conflict, flag explicitly and wait for the user; do not silently resolve.
+    truth: true
+    rationale: Article 10. Permanent, no trigger. The repo is the only artifact that survives every session, agent, and team change.
+  - id: R-11
+    statement: Plugin names are functional, source-based, decoupled from marketing — technical names follow [domain]-plugin or [source]-plugin; marketing names live on the product wrapper. The WP directory slug grolabs-[name]-plugin is permanent; display names may change with rebranding.
+    truth: true
+    rationale: Article 11. Marketing names change every few years; WP directory slugs cannot change once published.
+  - id: R-12
+    statement: Agent capabilities are agnostic, stateless, and reusable — Optimization Agent functions are pure and industry-agnostic; they accept inputs and produce proposals without knowing the caller or context. Workflow context (when to invoke, how to surface proposals, who approves, how to apply) belongs in the calling module.
+    truth: true
+    rationale: Article 12 (added 2026-05-17 from the search-foundations reshape Discussion). This decoupling is what keeps the agent reusable across import, sweeps, review-all, and first-sync probe.
+
+useCases:
+  - id: T-1
+    title: Constitution wins on document conflict
+    given: A spec, plan, README, code comment, or memory contradicts a constitutional article
+    when: The conflict is detected during work
+    then: The constitutional article governs; the conflicting work is rejected regardless of convenience or speed
+    verifies: [R-10]
+  - id: T-2
+    title: Amendment only through dated Discussion
+    given: An article's trigger-to-revisit condition is met
+    when: A change to the constitution is wanted
+    then: An explicit amendment is proposed, discussed, approved, and dated in the amendment log — not introduced by implicit drift
+    verifies: [R-7]
+  - id: T-3
+    title: Same domain joins existing tenant
+    given: Two users from the same merchant domain sign up independently
+    when: The second install completes its explicit handshake at grolabs.ai
+    then: Both join the same domain-keyed tenant rather than creating a duplicate; each user keeps a unique email
+    verifies: [R-3]
+---
+
 # GroLabs — Constitution (v1.0)
 
 **Status:** Ratified

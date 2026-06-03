@@ -1,8 +1,168 @@
 ---
-Status: Active policy
-Owner: Tuncho
-Scope: Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in RRE (Next.js) + ASE (Agentic Services Engine — Python, formerly GLPIM).
-Audience: Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, the `prospect`/`diagnostic_run`/`finding` tables, ASE's `tools/pdp_scanner.py` + `tools/site_scanner.py`, or `src/lib/diagnostic/**`.
+application: core-app
+module: Policy
+title: "Prospectos — policy"
+status: Active
+owner: "Tuncho"
+scope: "Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in RRE (Next.js) + ASE (Agentic Services Engine — Python, formerly GLPIM)."
+audience: "Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, the `prospect`/`diagnostic_run`/`finding` tables, ASE's `tools/pdp_scanner.py` + `tools/site_scanner.py`, or `src/lib/diagnostic/**`."
+
+actors:
+  - name: RRE
+    type: system
+    definition: The Next.js orchestrator — owns the rubric, public API, report viewer, browser + CWV probes, the revenue formula, and Supabase persistence.
+  - name: ASE
+    type: integration
+    definition: The Python Agentic Services Engine; owns the static-HTML signal-extraction primitives exposed as /tools/pdp-signals and /tools/site-signals.
+  - name: Prospect
+    type: system
+    definition: The external storefront being diagnosed.
+  - name: RRE admin
+    type: human
+    definition: An authenticated user who runs diagnostics and edits the rubric.
+  - name: Anonymous visitor
+    type: human
+    definition: A landing-page user who runs a single diagnostic against a URL with no account.
+
+users:
+  - name: RRE admin
+    description: Runs diagnostics from RRE admin and edits the per-instance rubric (checks, benchmarks, vocabulary).
+  - name: Landing-page prospect
+    description: Anonymous caller who diagnoses a storefront from the public widget and views the shareable report.
+
+permissions:
+  - actorId: RRE admin
+    capability: read-catalog
+    effect: conditional
+    note: authenticated reads its own instance ∪ instance 0; runs are read and written within its own instance.
+  - actorId: Anonymous visitor
+    capability: read-catalog
+    effect: conditional
+    note: anon reads instance 0 only; reads anonymous runs (instance_id IS NULL) by uuid token.
+  - actorId: Anonymous visitor
+    capability: write-run
+    effect: conditional
+    note: Anonymous writes never go through Supabase from the browser — only via the service-role client behind /api/v1/diagnostic/runs, gated by the record_diagnostic_request RPC.
+
+integrations:
+  - name: ASE /tools/pdp-signals
+    kind: external-service
+    target: ase
+    direction: in
+    purpose: PDP signal extraction (selector fallbacks, JSON-LD flattening, alt-text filtering).
+  - name: ASE /tools/site-signals
+    kind: external-service
+    target: ase
+    direction: in
+    purpose: Platform + search-engine fingerprint and facet extraction.
+  - name: Anthropic (Claude Haiku)
+    kind: external-service
+    target: anthropic
+    direction: both
+    purpose: Vertical-classification tie-breaker on the homepage snippet when keyword scoring is inconclusive.
+  - name: Browserless
+    kind: external-service
+    target: browserless
+    direction: both
+    purpose: Managed Chromium pool the Playwright probe attaches to over CDP (wss://host?token=…).
+  - name: Google PSI
+    kind: external-service
+    target: psi
+    direction: in
+    purpose: Core Web Vitals fetch for the diagnosed PDP.
+  - name: Supabase
+    kind: internal-module
+    target: supabase
+    direction: both
+    purpose: Persistence for catalog and run-layer tables, plus the rate-limit RPC.
+
+credentials:
+  - name: ASE_API_URL
+    location: Server env var
+    scope: PDP + site signal scorers (unset → those scorers degrade to error)
+  - name: ANTHROPIC_API_KEY
+    location: Server env var
+    scope: Haiku vertical-classification tie-breaker
+  - name: BROWSERLESS_HOST
+    location: Server env var (Vercel)
+    scope: Browserless host for the Playwright probe
+  - name: BROWSERLESS_TOKEN
+    location: Server env var (Vercel)
+    scope: Browserless API token
+  - name: GOOGLE_PSI_API_KEY
+    location: Server env var
+    scope: Lifts the PSI free-tier throttle (optional)
+  - name: SUPABASE_SERVICE_ROLE_KEY
+    location: Server env var
+    scope: Required for the public API and landing-page report (anon flow)
+
+rules:
+  - id: R-1
+    statement: Every check ties to exactly one funnel stage (Discovery, On-site nav, PDP, Returns) and one revenue lever.
+    truth: true
+  - id: R-2
+    statement: A run produces a 0–100 score per stage (weighted average of its checks) and an overall score (average of stages), plus a maturity tier (low < 45 ≤ medium < 75 ≤ high).
+    truth: true
+  - id: R-3
+    statement: ASE owns the static-HTML extraction primitives; scoring lives in RRE because the rubric is editable per instance via the UI.
+    truth: true
+    rationale: Coupling both services to one rubric would prevent per-instance rubric editing.
+  - id: R-4
+    statement: Catalog tables use the prompt_template pattern — per-instance rows with instance-0 fallthrough on SELECT; GroLabs ships the canonical rubric in instance 0.
+    truth: true
+  - id: R-5
+    statement: Anonymous writes never go through Supabase from the browser; the public API uses the service-role client gated by record_diagnostic_request (5 req/hour, 20/day per IP).
+    truth: true
+  - id: R-6
+    statement: The unguessable run_id UUID is the only auth token a public report viewer needs.
+    truth: true
+  - id: R-7
+    statement: Typo-tolerance words and the brand term are discovered live from the homepage (no DB lookup); synonyms, empty-state queries, and expected attributes come from per-vertical DB rows with instance-0 fallback.
+    truth: true
+  - id: R-8
+    statement: Per-finding uplift = traffic × stage_share × baseline_cr × aov × delta_rate × (1 − score/100), with factor resolution most-specific-wins (check > stage > vertical).
+    truth: true
+  - id: R-9
+    statement: NA and error findings contribute 0 uplift, and passing checks (score 100) contribute 0 because there is no headroom.
+    truth: true
+  - id: R-10
+    statement: The diagnostic runs end-to-end even when the browser probe is disabled; browser-based scorers report result_status='na' while the other 12+ scorers still score.
+    truth: true
+  - id: R-11
+    statement: Vertical classification picks a keyword winner when its top score ≥ 3 and beats #2 by ≥ 25%; the Haiku tie-breaker fires only when keywords are inconclusive and ANTHROPIC_API_KEY is set.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Anonymous landing-page run returns a shareable report
+    given: An anonymous visitor submits a storefront URL
+    when: POST /api/v1/diagnostic/runs executes
+    then: It returns { run_id, report_url } and the report is viewable by uuid with no auth
+    verifies: [R-5, R-6]
+  - id: T-2
+    title: Per-IP rate limit blocks excess runs
+    given: An IP that has already made 5 requests this hour
+    when: It posts another diagnostic run
+    then: record_diagnostic_request rejects it
+    verifies: [R-5]
+  - id: T-3
+    title: Diagnostic completes with the browser probe off
+    given: PROSPECTOS_BROWSER_PROBE_ENABLED is unset
+    when: A run executes
+    then: Browser-based scorers report na with reason browser_probe_disabled and the run still completes
+    verifies: [R-10]
+  - id: T-4
+    title: Inconclusive keywords with no API key yield no LLM vertical
+    given: Keyword scoring is inconclusive and ANTHROPIC_API_KEY is unset
+    when: Vertical classification runs
+    then: The classifier returns no LLM result and relies on keyword scoring alone
+    verifies: [R-11]
+  - id: T-5
+    title: Missing ASE URL degrades signal scorers
+    given: ASE_API_URL is unset
+    when: A run executes
+    then: The PDP and site-signal scorers degrade to result_status='error' while other scorers proceed
+    verifies: [R-3]
 ---
 
 # Prospectos — policy

@@ -1,3 +1,120 @@
+---
+application: core-app
+module: Policy
+title: "GroLabs Instance Management — v1"
+status: Active
+owner: "Tuncho"
+scope: "A logged-in user's ability to belong to multiple GroLabs instances, switch between them via a topbar dropdown, and create new ones. v1 is the minimum interactive surface — invitations, role management, renames, and template seeding are deferred."
+audience: "Claude Code (primary), future GroLabs contributors"
+
+actors:
+  - name: User
+    type: human
+    definition: A logged-in user who may belong to multiple instances via instance_member rows, switches between them, and creates new ones.
+  - name: switchToInstance
+    type: system
+    definition: Server action that validates membership and atomically flips is_current booleans to change the active instance.
+  - name: createInstance
+    type: system
+    definition: Server action that creates an instance plus an owner membership and switches the creator into it.
+  - name: service_role
+    type: system
+    definition: Privileged client used by switchToInstance because the lookup spans rows the user could not otherwise see.
+
+users:
+  - name: Owner
+    description: The instance creator, automatically granted role 'owner' and is_current=true. No invite step in v1.
+
+permissions:
+  - actorId: User
+    capability: create-instance
+    effect: allow
+    note: Anyone can create an instance and becomes its owner; no permission gate in v1.
+  - actorId: User
+    capability: switch-instance
+    effect: conditional
+    note: A user may switch only to instances on which they hold an is_active membership.
+
+integrations:
+  - name: instance_member
+    kind: internal-module
+    target: instance
+    direction: both
+    purpose: Carries the new is_current boolean that scopes the UI to one instance per user.
+  - name: current_instance_id()
+    kind: internal-module
+    target: rls
+    direction: out
+    purpose: RPC returning the auth user's is_current instance_id; used by RLS policies and server code.
+
+rules:
+  - id: R-1
+    statement: is_active means "the user has access to this instance"; the new is_current means "this is the instance the UI is showing right now".
+    truth: true
+  - id: R-2
+    statement: A user has at most one is_current=true membership at a time, enforced by a partial unique index.
+    truth: true
+  - id: R-3
+    statement: The migration backfills is_current=true onto each user's single is_active=true membership, preserving existing behavior.
+    truth: true
+  - id: R-4
+    statement: The instance is resolved server-side from the is_current membership; URL-based instance routing (/rre/[instance_id]/...) is explicitly rejected.
+    truth: true
+  - id: R-5
+    statement: Switching validates membership, clears is_current on the user's other rows, and sets it on the target, wrapped in a single transaction.
+    truth: true
+  - id: R-6
+    statement: Creating an instance gives the creator role 'owner' and is_current=true and switches them into it; there is no invite step in v1.
+    truth: true
+  - id: R-7
+    statement: New instances start empty (no categories, attributes, or products); required fields auto-default (kind='customer', primary_locale='es-GT', default_currency='GTQ', is_active=true, integrations_config='{}').
+    truth: true
+    rationale: Template seeding is deferred per CLAUDE.md §17 known debt.
+  - id: R-8
+    statement: The slug is lower(regex_replace(name,'[^a-z0-9]+','-')) plus a numeric suffix on collision, and an all-special-character name that sanitizes to empty is rejected.
+    truth: true
+  - id: R-9
+    statement: The is_current partial unique index also resolves the pre-existing .maybeSingle() ambiguity where multiple is_active=true rows produced undefined behavior.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Multi-membership dropdown highlights the current instance
+    given: A user with three instance memberships
+    when: They open the topbar dropdown
+    then: All three are listed and the current one is checkmarked
+  - id: T-2
+    title: Switching reloads scoped to the new instance
+    given: A user viewing instance A
+    when: They click instance B in the dropdown
+    then: The page reloads with the sidebar and data scoped to instance B
+    verifies: [R-5]
+  - id: T-3
+    title: Creating an instance makes the creator its owner
+    given: A user submits the name "Mi Nueva Tienda"
+    when: createInstance runs
+    then: The slug becomes mi-nueva-tienda, the user becomes owner, and the page reloads scoped to the new empty instance
+    verifies: [R-6, R-8]
+  - id: T-4
+    title: Colliding slug gets a numeric suffix
+    given: An instance with slug mi-nueva-tienda already exists
+    when: A second instance is created with a name yielding the same slug
+    then: The new slug becomes mi-nueva-tienda-2
+    verifies: [R-8]
+  - id: T-5
+    title: All-special-character name is rejected
+    given: A name like "🌟🌟" whose sanitized slug is empty
+    when: The user attempts to submit
+    then: Submission is disabled
+    verifies: [R-8]
+  - id: T-6
+    title: Concurrent switches leave no orphaned current row
+    given: A user switching instances from two browser tabs at once
+    when: Both actions race
+    then: The last write wins and no orphaned is_current=true rows remain
+    verifies: [R-2]
+---
+
 # GroLabs Instance Management — v1
 
 Status: Active policy

@@ -1,3 +1,146 @@
+---
+application: core-app
+module: Policy
+title: "GroLabs GA4 Integration — v1"
+status: Active
+owner: "Tuncho"
+scope: "Read-only Google Analytics 4 integration. Daily snapshot pull into GroLabs's DB plus on-demand real-time queries. Alert pipeline for the top three traffic-health metrics. Daily-digest dashboard surface for the rest."
+audience: "Claude Code (primary), future GroLabs contributors (secondary)"
+
+actors:
+  - name: GA4
+    type: integration
+    definition: Google Analytics 4 — the read-only external source of site-traffic data.
+  - name: Polling job
+    type: system
+    definition: Cron-driven job (every 6h per active instance) that pulls daily snapshots and upserts the five ga4_*_daily tables.
+  - name: Alert job
+    type: system
+    definition: Anomaly-detection job that runs after polling and drives the ga4_alert lifecycle.
+  - name: Merchant
+    type: human
+    definition: The solopreneur viewing the daily-digest traffic cockpit; connects GA4 via OAuth and acknowledges alerts.
+
+users:
+  - name: Solopreneur
+    description: Wants a daily-digest cockpit that surfaces what changed in site traffic without forcing them to learn GA4.
+
+integrations:
+  - name: GA4 Data API
+    kind: external-service
+    target: ga4
+    direction: in
+    purpose: Daily snapshot pull of session, traffic, page, geo, and device grains.
+  - name: GA4 Realtime API
+    kind: external-service
+    target: ga4
+    direction: in
+    purpose: Live "Active Users right now" widget, hit directly (not from the DB), 30s refresh.
+  - name: Google OAuth 2.0
+    kind: external-service
+    target: google
+    direction: both
+    purpose: Server-side auth flow with scope analytics.readonly; exchanges code for refresh + access tokens.
+  - name: Supabase Vault
+    kind: internal-module
+    target: vault
+    direction: both
+    purpose: Stores the GA4 refresh token; read via the ga4_get_refresh_token RPC gated by instance_member.
+  - name: Vercel Cron
+    kind: external-service
+    target: cron
+    direction: in
+    purpose: Drives the 6-hourly polling job.
+  - name: Notification UI
+    kind: internal-module
+    target: notifications
+    direction: out
+    purpose: Surfaces firing GA4 alerts.
+
+credentials:
+  - name: ga4_refresh_token_<instance_id>
+    location: Supabase Vault
+    scope: analytics.readonly
+    rotation: Access tokens are short-lived; the polling job refreshes them as needed.
+  - name: GOOGLE_CLIENT_ID
+    location: Server env var (Vercel + .env.local)
+    scope: Google OAuth client
+  - name: GOOGLE_CLIENT_SECRET
+    location: Server env var (Vercel + .env.local)
+    scope: Google OAuth client
+
+rules:
+  - id: R-1
+    statement: The integration is read-only; GroLabs never writes data back to GA4.
+    truth: true
+    rationale: None of the GA4 API surfaces used support write-back.
+  - id: R-2
+    statement: Daily-aggregated metrics live in GroLabs's DB; only the "Active Users right now" widget hits the GA4 Realtime API live.
+    truth: true
+    rationale: Hybrid storage unlocks fast reads, anomaly baselines, and resilience to GA4 access loss.
+  - id: R-3
+    statement: Snapshots use one table per dimension grain (session, traffic, page, geo, device), not an EAV shape.
+    truth: true
+  - id: R-4
+    statement: The pipeline polls every 6 hours per active instance and re-pulls the trailing 3 days because GA4 finalizes data 24–48 hours late.
+    truth: true
+  - id: R-5
+    statement: Re-runs are idempotent — composite uniqueness on (instance_id, date, <dimensions>) with upsert on conflict; re-pulls overwrite, never duplicate.
+    truth: true
+  - id: R-6
+    statement: The refresh token is stored in Supabase Vault, never plaintext in integrations_config.
+    truth: true
+  - id: R-7
+    statement: The top-3 alert metrics are fixed in v1 — sessions ±15% vs 7-day rolling average, engagement rate −10pp absolute drop, and source/medium share shift >20pp.
+    truth: true
+    rationale: Merchant-configurable thresholds are deferred to v3.
+  - id: R-8
+    statement: A given (instance_id, metric, dimension_key) can have only one firing alert at a time; subsequent breaches update the same row rather than inserting duplicates.
+    truth: true
+  - id: R-9
+    statement: Alert lifecycle is firing → acknowledged → cleared; an alert auto-clears when its metric returns within threshold.
+    truth: true
+  - id: R-10
+    statement: The multi-tenancy boundary is instance_id; RLS gates every ga4_* row to the user's instance.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Unconnected instance shows a connect CTA
+    given: An instance with no GA4 connected
+    when: The /dashboard/traffic screen renders
+    then: It shows a "Conectar Google Analytics" CTA with no errors
+  - id: T-2
+    title: Polling re-run is idempotent
+    given: The five daily tables already hold data for the trailing window
+    when: The polling job re-runs within the same window
+    then: Rows upsert cleanly with no duplicates
+    verifies: [R-5]
+  - id: T-3
+    title: A sessions drop fires an alert
+    given: A 7-day baseline exists
+    when: Sessions drop 30% versus baseline
+    then: A ga4_alert row is inserted with status firing
+    verifies: [R-7]
+  - id: T-4
+    title: Re-running anomaly detection does not duplicate a firing alert
+    given: A firing alert already exists for the metric
+    when: The anomaly job re-runs while it is still breached
+    then: The existing row is updated, not duplicated
+    verifies: [R-8]
+  - id: T-5
+    title: A recovered metric clears its alert
+    given: A firing sessions alert
+    when: Sessions return to within threshold on the next pull
+    then: The alert transitions to cleared
+    verifies: [R-9]
+  - id: T-6
+    title: Realtime widget degrades gracefully
+    given: The GA4 Realtime API is unreachable
+    when: The "Active Users right now" widget refreshes
+    then: It shows "—" rather than an error
+---
+
 # GroLabs GA4 Integration — v1
 
 Status: Active policy

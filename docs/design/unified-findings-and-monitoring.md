@@ -1,3 +1,104 @@
+---
+application: core-app
+module: Design
+title: "Unified Findings & Monitoring — Architecture Exploration"
+status: Draft
+owner: "Tuncho"
+audience: "Claude Code (future implementer), GroLabs contributors scoping the findings/monitoring layer."
+scope: "The data-model design for unifying three signal sources (prospect rubric, search/cart events, GA4 traffic) into one structured store that produces reports and findings. Storage model and finding taxonomy are DECIDED; monitor scheduling, identity, and the search-events amendment are leaning/proposed and need sign-off. Covers the data model; search-proxy-event-pipeline.md owns the infra/scaling/fault-tolerance side of the same system."
+
+actors:
+  - name: Scheduled evaluator
+    type: system
+    definition: A single cron (leaning) reading the aggregate tables and firing all rules — the GA4 poll-then-anomaly model generalized. Monitors read aggregates; they do NOT re-scrape the storefront.
+  - name: RRE search proxy
+    type: system
+    definition: Already logs every query to query_log with total_hits, so Search-Performed is captured without a new plugin event (zero-results = total_hits 0; results-but-no-click = a query_log row whose queryUid never appears as a click).
+  - name: WP plugin
+    type: plugin
+    definition: Mints a per-browser anonymous userId and dual-writes events; needs to send userId on the search POST and emit the new remove-from-cart and un-gated completed-order events.
+
+integrations:
+  - name: finding / finding_fix
+    kind: internal-module
+    target: Prospect rubric run layer (prospectos.md)
+    direction: in
+    purpose: Run-scoped, immutable findings + the uplift formula; left as-is and UNIONed into the unified view.
+  - name: analytics_event
+    kind: internal-module
+    target: Event mirror (search-events.md, plugin v0.7.0)
+    direction: both
+    purpose: The store for everything to slice or stitch into journeys — un-gated, with userId + line items. Gets remove-from-cart and un-gated orders.
+  - name: query_log
+    kind: internal-module
+    target: Search proxy log
+    direction: in
+    purpose: Source of Search-Performed; needs a new userId column to stitch no-results searches into journeys.
+  - name: ga4_alert / ga4_*_daily
+    kind: internal-module
+    target: GA4 integration (ga4-integration.md)
+    direction: in
+    purpose: The stateful alert lifecycle and daily snapshots; ga4_alert is generalized into the new monitor_alert.
+
+rules:
+  - id: R-1
+    statement: The system is a five-layer pipeline — Raw events (analytics_event, query_log) → Aggregates (rollups + ga4_*_daily) → Rules/thresholds → Findings (finding + monitor_alert) → Delivery (alert vs. summary). Generalize the shipped GA4 poll-then-anomaly pattern to all sources; don't invent a new one.
+    truth: true
+    rationale: §1. The pattern already ships for GA4.
+  - id: R-2
+    statement: 'Findings classify into three first-class classes orthogonal to severity — revenue_leak (quantifiable money lost), ux_issue (subjective conversion impediments), and value_prop (demand-side non-conversion: price/delivery/offer, the genuinely new class). The earlier quick_win class was dropped ("easy fix" is a property of the fix, not the finding).'
+    truth: true
+    rationale: §2 DECIDED. Severity + effort live separately.
+  - id: R-3
+    statement: Storage is two physical tables of opposite shape unified by a view — finding (run-scoped, immutable, exists) and monitor_alert (new, stateful firing→acknowledged→cleared, ga4_alert generalized) — UNIONed by a findings_unified view. finding_class is stored on both tables, and fixes reference a unified (source, id) identity.
+    truth: true
+    rationale: §3 DECIDED (Plan B + one borrow). Plan B builds on a proven pattern and leaves the live finding flow untouched (lower blast radius).
+  - id: R-4
+    statement: Three of the four pillars already ship — rubric findings, the analytics_event mirror, and query_log exist; net-new is only monitor_alert, finding_class on both finding tables, and the findings_unified view.
+    truth: true
+    rationale: §4. The new storage is small.
+  - id: R-5
+    statement: Routing principle — Meilisearch gets only what improves ranking (queryUid-gated); the own store (analytics_event) gets everything to slice or stitch into journeys (un-gated, with userId + line items). Remove-from-cart is a new event to analytics_event only; completed orders also get an un-gated write (the Meilisearch path stays attribution-gated).
+    truth: true
+    rationale: §5 verified against code. Cart value = adds − removes − purchases needs remove-from-cart.
+  - id: R-6
+    statement: Don't denormalize category onto events — events carry product_id; join product_id → category at rollup time (DB is source of truth, category membership shifts). Freeze category onto an event only to capture "category as it was at purchase time."
+    truth: true
+    rationale: §5.
+  - id: R-7
+    statement: query_log has no userId, so no-results searches can't yet be stitched into a journey — the fix is small (the plugin already mints an anonymous userId; send it on the search POST and add a userId column), with no Meilisearch involvement.
+    truth: true
+    rationale: §5 gap. Requires reusing the same userId across search + cart + order.
+  - id: R-8
+    statement: Monitor scheduling, identity, and the search-events.md amendment are leaning/proposed and need sign-off — one scheduled evaluator (leaning), per-browser anonymous userId sufficient for v1 (leaning), and the amendment to search-events §4/§6 plus query_log.userId (proposed, NOT authorized — do not edit that locked doc without explicit sign-off).
+    truth: unverified
+    rationale: §6 needs user sign-off. A forward-reference note was added to search-events.md pointing here. See [[search-events]], [[search-proxy-event-pipeline]].
+  - id: R-9
+    statement: Each rule carries a threshold and a delivery mode — a breach above the alert line fires a lifecycle-tracked monitor_alert; a smaller deviation rolls into a periodic summary rather than paging. Start with sane fixed defaults; merchant-configurable thresholds are deferred (GA4 doc marks this v3).
+    truth: unverified
+    rationale: §7. Generalizes ga4_alert's fixed top-3.
+
+useCases:
+  - id: T-1
+    title: Unified read across run-scoped and continuous findings
+    given: A report or dashboard needs both a diagnostic run's findings and a firing traffic-drop monitor
+    when: It reads findings_unified
+    then: The view UNIONs the immutable finding rows and the stateful monitor_alert rows, each already carrying its finding_class
+    verifies: [R-3, R-2]
+  - id: T-2
+    title: No-results search stitched into a journey
+    given: A shopper performs a zero-result search then later abandons a cart
+    when: The plugin sends its anonymous userId on the search POST and query_log gains a userId column
+    then: The no-results search can be reconstructed as part of that user's journey post-hoc, no Meilisearch involvement
+    verifies: [R-7, R-5]
+  - id: T-3
+    title: Cart value computed from un-gated events
+    given: A shopper adds, removes, and purchases items
+    when: Remove-from-cart writes to analytics_event and orders are written un-gated
+    then: Cart value = adds − removes − purchases is computable across all orders, not only search-attributed ones
+    verifies: [R-5]
+---
+
 # Unified Findings & Monitoring — Architecture Exploration
 
 Status: **Exploration.** Storage model + taxonomy DECIDED; several items LEANING/PROPOSED (see §6). No code written yet.

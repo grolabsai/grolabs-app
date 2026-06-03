@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { capturePostHog } from "@/lib/analytics/posthog";
 
 /**
  * POST /api/v1/events
@@ -192,6 +193,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       origin
     );
   }
+
+  // Mirror the event to PostHog (best-effort, after the response is sent).
+  // distinct_id is the anonymous storefront session id. We resolve queryUid ->
+  // keyword from query_log so the click/conversion event carries the search
+  // term that produced it — closing the keyword↔conversion loop without the
+  // storefront having to re-send the query string.
+  after(async () => {
+    let keyword: string | null = null;
+    if (queryUid) {
+      const { data: logRow } = await sb
+        .from("query_log")
+        .select("query")
+        .eq("instance_id", instanceId)
+        .eq("query_uid", queryUid)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      keyword = typeof logRow?.query === "string" ? logRow.query : null;
+    }
+    await capturePostHog({
+      distinctId: userId ?? "anonymous",
+      event: eventName,
+      properties: {
+        event_type: eventType,
+        query_uid: queryUid,
+        keyword,
+        position,
+        object_id: objectId,
+        object_name: objectName,
+        index_uid: indexUid,
+        instance_id: instanceId,
+      },
+    });
+  });
 
   return corsify(NextResponse.json({ ok: true }, { status: 200 }), origin);
 }

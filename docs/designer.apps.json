@@ -1,0 +1,14 @@
+{
+  "core-app": {
+    "name": "Core App",
+    "kind": "core",
+    "repo": "grolabs-app",
+    "summary": "The core multi-tenant GroLabs deployable — its specs, policies, design briefs, and current-state docs."
+  },
+  "dev-studio": {
+    "name": "Dev Studio",
+    "kind": "service",
+    "repo": "TBD",
+    "summary": "Standalone, project-agnostic studio that pairs a Designer (visualize a spec + AI panel → inject tasks to Notion) with an Executor (reads Notion → executes each task to a reviewable PR). Notion is the bridge. GroLabs is its first consumer."
+  }
+}

@@ -1,3 +1,139 @@
+---
+application: core-app
+module: Policy
+title: "GroLabs Search — Click & Conversion Event Tracking"
+status: Active
+owner: "Tuncho"
+scope: "Storefront-side relevance feedback events. Stage 4 of the search roadmap."
+audience: "Claude Code (primary), future GroLabs contributors (secondary), anyone debugging \"why don't I see events / why isn't relevance improving\"."
+
+actors:
+  - name: Customer
+    type: human
+    definition: A storefront shopper who clicks search results and converts (add-to-cart, checkout, order) on the WooCommerce site.
+  - name: WP plugin
+    type: plugin
+    definition: grolabs-wordpress-search; its events.js dual-writes each event to Meilisearch and RRE using keepalive POSTs.
+  - name: Meilisearch
+    type: integration
+    definition: The authoritative event store; consumes its own events to train ranking relevance.
+  - name: RRE
+    type: system
+    definition: Receives the mirror POST, validates origin, and stores events in analytics_event for the in-app panel.
+  - name: Merchant
+    type: human
+    definition: Views recent events in GroLabs admin → /configuration/search.
+
+users:
+  - name: Merchant
+    description: Watches the "Eventos recientes" panel without leaving the app or logging into Meilisearch Cloud.
+
+integrations:
+  - name: Meilisearch /events
+    kind: external-service
+    target: meilisearch
+    direction: out
+    purpose: Authoritative event store and the only path that feeds back into ranking relevance.
+  - name: RRE /api/v1/events
+    kind: internal-module
+    target: rre
+    direction: in
+    purpose: Local mirror receiver; origin-validated, inserts into analytics_event.
+  - name: RRE /api/v1/events/token
+    kind: internal-module
+    target: meilisearch
+    direction: out
+    purpose: Mints the Meilisearch tenant token scoped to the caller's instance, 15-minute lifetime.
+
+permissions:
+  - actorId: Merchant
+    capability: select-analytics-event
+    effect: conditional
+    note: RLS scopes analytics_event SELECT to instance_member.
+  - actorId: RRE
+    capability: write-analytics-event
+    effect: allow
+    note: Writes happen only via the service-role client from the receiver endpoint.
+
+credentials:
+  - name: Meilisearch tenant token
+    location: Minted by /api/v1/events/token; cached in-memory for the page lifetime
+    scope: searchRules pinned to the caller's instance index
+    rotation: 15-minute lifetime; cache invalidated 60s before expiry
+
+rules:
+  - id: R-1
+    statement: As of plugin v0.7.0 each event is dual-written to both Meilisearch Cloud and RRE; the two writes are independent and a failure of one does not block the other.
+    truth: true
+  - id: R-2
+    statement: Meilisearch's /events is the authoritative store and the only one that feeds ranking relevance; RRE's analytics_event is a local mirror.
+    truth: true
+    rationale: Meilisearch Build tier exposes events only via the web dashboard, so the mirror is the only programmatic read path for the admin UI.
+  - id: R-3
+    statement: Both POSTs use keepalive:true so they complete even if the user navigates away.
+    truth: true
+  - id: R-4
+    statement: Event-type names are stable strings; renaming one splits historical data across two labels in Meilisearch's dashboard.
+    truth: true
+  - id: R-5
+    statement: A conversion without a queryUid is rejected; attribution comes from a per-product localStorage store (7-day TTL, 100-entry LRU), and no attribution means no event.
+    truth: true
+  - id: R-6
+    statement: Variable products are attributed to the parent product_id because that is what the search index keys on.
+    truth: true
+  - id: R-7
+    statement: Event delivery is best-effort — no retries, no queue; occasional event loss is acceptable for this signal.
+    truth: true
+    rationale: A pending 2026-05-29 amendment would move to a durable buffer once events feed revenue findings; not yet applied.
+  - id: R-8
+    statement: The tenant token's searchRules pin it to the caller's instance, so even if a merchant exposes it via DevTools the worst they can do is write events for their own instance.
+    truth: true
+  - id: R-9
+    statement: The RRE receiver validates origin against instance.storefront_domains, mirroring the /api/v1/search trust model.
+    truth: true
+  - id: R-10
+    statement: Events carry no PII — userId is an anonymous localStorage UUID and there is no cross-device user attribution.
+    truth: true
+  - id: R-11
+    statement: A pending amendment (2026-05-29) will add Remove-from-cart and an un-gated Completed-order write to analytics_event, a userId column on query_log, and RRE-side aggregation; this doc remains authoritative until that amendment merges.
+    truth: unverified
+  - id: R-12
+    statement: RRE forwards events server-side to PostHog (the external product) — "Search Performed" from /api/v1/search and click/conversion from /api/v1/events — via posthog-node inside Next after(), best-effort and a no-op when POSTHOG_API_KEY is unset. This is a third destination alongside Meilisearch (authoritative/relevance) and analytics_event (local mirror); posthog-js is never loaded on the storefront.
+    truth: true
+    rationale: Cross-event analytics and funnels (keyword↔conversion, journeys, intent) need a query engine Meilisearch's events dashboard and the flat analytics_event table don't provide. Forwarding is additive — neither existing write path changed. See docs/design/posthog-analytics-mvp.md.
+
+useCases:
+  - id: T-1
+    title: Click-then-convert fires an attributed conversion
+    given: A customer clicked a search result, storing its queryUid
+    when: They add that product to cart
+    then: A conversion event fires carrying the stored queryUid
+    verifies: [R-5]
+  - id: T-2
+    title: Direct navigation produces no conversion event
+    given: A customer who reached a product without searching
+    when: They add to cart and complete the order
+    then: Zero conversion events are generated because there is no search to credit
+    verifies: [R-5]
+  - id: T-3
+    title: One failed write does not block the other
+    given: An event being dual-written
+    when: The Meilisearch POST or the RRE POST fails independently
+    then: The other write still records the event
+    verifies: [R-1]
+  - id: T-4
+    title: Older plugin shows an empty mirror panel
+    given: A merchant running a plugin older than v0.7.0
+    when: They open the "Eventos recientes" panel
+    then: It shows a clear "no events recorded yet" message
+  - id: T-5
+    title: Completed order fires exactly once
+    given: An order-received page load
+    when: The Completed-order handler runs, deduped via localStorage keyed on orderId
+    then: The event fires exactly once per order, ever
+    verifies: [R-4]
+---
+
 GroLabs Search — Click & Conversion Event Tracking
 
 Status: Active policy
@@ -109,9 +245,15 @@ The "we don't see events" failure modes, in order of frequency:
 > side); and the event list (§2) gains **Remove-from-cart** + an **un-gated Completed-order** write
 > to `analytics_event`, plus a `userId` column on `query_log`. **Not yet applied — this doc remains
 > authoritative until the amendment is approved and merged.**
+>
+> **✅ Partially landed (2026-06-03, PostHog Analytics MVP).** The `query_log` bridge columns are now
+> applied — `user_id` (the `userId` the banner foreshadowed), `query_uid`, and `intent_group_id`
+> (migrations `20260603000001`, `20260603000002`). The aggregation reversal is realized via **PostHog**
+> rather than a Meilisearch webhook (see the amended "No aggregation API on RRE" bullet + R-12). The
+> durable buffer, Remove-from-cart, and the un-gated Completed-order write remain unapplied.
 
 - **No cross-device user attribution.** `userId` is a random UUID stored in `localStorage`; clearing the browser starts a new identity.
-- **No aggregation API on RRE.** If a future feature needs to surface event counts in the RRE admin UI, that's net-new work — likely a webhook from Meilisearch into RRE, or a RRE-side proxy that queries Meilisearch's analytics API on demand.
+- **~~No aggregation API on RRE.~~ Cross-event analytics live in PostHog (2026-06-03).** RRE forwards events server-side to the external PostHog product (R-12), where keyword↔conversion, journeys, and intent funnels are queried. The local `analytics_event` / `query_log` store still powers the in-app admin panels (`/configuration/search`), and Meilisearch remains the only relevance-training path. A Meilisearch→RRE webhook is no longer needed for aggregation.
 - **No retries on event POST failures.** Best-effort, async, page-paint-blocking would be worse than the occasional lost signal.
 - **No PII in events.** `userId` is anonymous; `objectId`/`objectName` come from the product catalog.
 

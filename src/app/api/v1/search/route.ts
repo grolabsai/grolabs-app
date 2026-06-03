@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { capturePostHog } from "@/lib/analytics/posthog";
 import { searchInstance } from "@/lib/search/meilisearch-client";
+import { assignIntent, type RecentQuery } from "@/lib/analytics/intent";
 import { pickMatchedVariation, type MatchesPosition } from "@/lib/search/variant-matcher";
 import { sanitizeFacets } from "@/lib/search/facets";
 import type { SearchHit, SearchResponse, RreSearchDocument } from "@/lib/search/types";
@@ -104,10 +106,35 @@ async function logRequest(input: {
   origin: string | null;
   hits?: SearchHit[];
   processingTimeMs?: number;
+  queryUid?: string | null;
+  userId?: string | null;
 }): Promise<void> {
   try {
     const sb = createServiceRoleClient();
     const isSuccess = input.denialReason === null;
+
+    // Intent grouping (skeleton): label this query with an intent_group_id so
+    // consecutive same-meaning refinements from one session collapse to one
+    // intent. Only for successful searches that carry a session + query — a
+    // denial or anonymous-less search has no journey to stitch. Best-effort:
+    // the read failing just leaves intent_group_id NULL.
+    let intentGroupId: string | null = null;
+    if (isSuccess && input.userId && input.query) {
+      const { data: recentRows } = await sb
+        .from("query_log")
+        .select("query, intent_group_id")
+        .eq("instance_id", input.instanceId)
+        .eq("user_id", input.userId)
+        .not("intent_group_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      const recent: RecentQuery[] = (recentRows ?? [])
+        .filter((r): r is { query: string; intent_group_id: string } =>
+          typeof r.query === "string" && typeof r.intent_group_id === "string"
+        )
+        .map((r) => ({ query: r.query, intentGroupId: r.intent_group_id }));
+      intentGroupId = assignIntent(recent, input.query);
+    }
     // Include wc_id + name so the request-log panel can show which products
     // we handed to the WordPress plugin — essential when WP says "no results"
     // but we returned non-zero hits (stale index, deleted products, etc.).
@@ -129,6 +156,9 @@ async function logRequest(input: {
       status: input.status,
       denial_reason: input.denialReason,
       total_handler_ms: input.totalHandlerMs,
+      query_uid: input.queryUid ?? null,
+      user_id: input.userId ?? null,
+      intent_group_id: intentGroupId,
     });
   } catch (err) {
     console.error("[search] query_log insert failed:", err instanceof Error ? err.message : err);
@@ -182,6 +212,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!host) return deny(origin);
 
   const query = typeof b.query === "string" ? b.query : "";
+  // Anonymous storefront session id (same id events.js mints). Persisted to
+  // query_log.user_id so no-result searches + query sequences stitch into a
+  // journey. Matches the `userId` field the /api/v1/events route reads.
+  const userId = typeof b.userId === "string" ? b.userId.slice(0, 128) : null;
   const limit = typeof b.limit === "number" && Number.isFinite(b.limit) ? Math.min(Math.max(b.limit, 1), 100) : 20;
   const offset = typeof b.offset === "number" && Number.isFinite(b.offset) ? Math.max(b.offset, 0) : 0;
   const filters = typeof b.filters === "string" ? b.filters : undefined;
@@ -216,6 +250,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       denialReason: "instance_inactive",
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
+      userId,
     });
     return deny(origin);
   }
@@ -229,6 +264,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       denialReason: "origin_not_authorized",
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
+      userId,
     });
     return deny(origin);
   }
@@ -248,6 +284,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       denialReason: "rate_limited",
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
+      userId,
     });
     return corsify(
       NextResponse.json({ error: "rate_limited" }, { status: 429 }),
@@ -282,6 +319,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       denialReason: "meilisearch_failed",
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
+      userId,
     });
     return corsify(
       NextResponse.json({ error: "search_failed" }, { status: 502 }),
@@ -328,7 +366,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     origin: host,
     hits,
     processingTimeMs: response.processing_time_ms,
+    queryUid: queryUid || null,
+    userId,
   });
+
+  // Forward "Search Performed" to PostHog (best-effort, after the response is
+  // sent). Zero-result searches are included on purpose — they are the signal
+  // that drives the no-results funnel. query_uid stitches this to the click /
+  // conversion events the /api/v1/events route forwards for the same search.
+  after(() =>
+    capturePostHog({
+      distinctId: userId ?? "anonymous",
+      event: "Search Performed",
+      properties: {
+        query,
+        query_uid: queryUid || null,
+        total_hits: response.total_hits,
+        user_id: userId,
+        instance_id: instanceId,
+      },
+    })
+  );
 
   return corsify(NextResponse.json(response, { status: 200 }), origin);
 }

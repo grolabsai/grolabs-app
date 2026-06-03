@@ -1,3 +1,112 @@
+---
+application: core-app
+module: Design
+title: "Search Proxy & Event Pipeline — Scaling / Fault-Tolerance Exploration"
+status: Draft
+owner: "Tuncho"
+audience: "Claude Code (future implementer), GroLabs contributors scoping the event pipeline."
+scope: "An exploration (no decisions locked) of how to harden the RRE search proxy and the event pipeline once richer events feed revenue findings. Covers the auto-scaling/Postgres-ceiling problem, two opposite failover models (search vs. events), a durable accept-fast/process-async buffer, the cost guardrail, and the separate-service-vs-in-app question."
+
+actors:
+  - name: RRE search proxy
+    type: system
+    definition: A full query proxy (not just a token broker) on Vercel serverless (nodejs runtime), each request an isolated horizontally-scaling invocation. Validates instance + origin, calls Meilisearch with the master-key client, runs the variant matcher, and logs every query to query_log.
+  - name: WP plugin
+    type: plugin
+    definition: POSTs every storefront search to POST /api/v1/search; dual-writes events to both Meilisearch and RRE's analytics_event mirror.
+  - name: Scheduled drainer
+    type: system
+    definition: A pg_cron job (same mechanism as blog + GA4 polling) that reads the durable buffer in batches, writes analytics_event, updates rollups, and marks events processed — decoupling ingest latency from processing latency.
+  - name: Shopper
+    type: human
+    definition: Needs results now; tolerates a lost keystroke but not latency.
+
+integrations:
+  - name: Meilisearch
+    kind: external-service
+    target: RRE search proxy
+    direction: both
+    purpose: The downstream search; needs a tight timeout (~2s) + one retry + a circuit breaker so a spike fails fast with 503 + Retry-After instead of piling up concurrency and cost.
+  - name: Supabase Postgres
+    kind: external-service
+    target: Rate-limit RPC, instance/origin lookup, query_log
+    direction: both
+    purpose: The real scaling ceiling — ~3–4 round-trips per keystroke. Connection exhaustion (not CPU) is the failure mode; must use the pooler (Supavisor/pgBouncer, transaction mode).
+  - name: Redis (Upstash / Vercel KV)
+    kind: external-service
+    target: Rate limiting (proposed)
+    direction: both
+    purpose: Atomic INCR + TTL to move the throttle off Postgres, so the limiter that protects the DB is not itself a DB call.
+  - name: pgmq / event_inbox
+    kind: internal-module
+    target: Durable event buffer (proposed)
+    direction: both
+    purpose: Postgres-native queue (or append-only table) — accept-fast, process-async; events pile up safely if the drainer lags. The lean starting choice over an external queue.
+  - name: PostHog (external product) + local Supabase store
+    kind: external-service
+    target: Destination event store
+    direction: out
+    purpose: RESOLVED (2026-06-03, PostHog Analytics MVP). It is BOTH, with distinct roles — the real external product **PostHog** is the cross-event analytics/funnel destination (server-side forwarding via posthog-node from /api/v1/search and /api/v1/events; never posthog-js on the storefront), and the local Supabase store (analytics_event + query_log) remains the source of truth for in-app admin panels and the durable buffer this doc designs. "post-hoc" was never the product name; it described the local store.
+
+rules:
+  - id: R-1
+    statement: RRE is already a full query proxy, not just a token broker — it validates instance + origin, calls Meilisearch with the master key, runs the variant matcher, returns results, and fire-and-forget logs every query to query_log with total_hits, query string, processing time, and denial reason.
+    truth: true
+    rationale: §1 "verified". Being in the request path is the opportunity and the blast-radius risk this doc reasons about.
+  - id: R-2
+    statement: The serverless proxy auto-scales but Postgres is the real ceiling — one keystroke costs ~3–4 Postgres round-trips + 1 Meilisearch call; under a spike thousands of invocations stampede the same Supabase and connection exhaustion (not CPU) is the failure mode. The rate limiter meant to protect under load is itself a DB call.
+    truth: true
+    rationale: §1 implication. Drives the "get the hot path off the primary DB" hardening.
+  - id: R-3
+    statement: 'Search and events have opposite tolerances and get different failover — search tolerates a lost keystroke but not latency (fail fast + degrade: timeout, circuit breaker, graceful "unavailable"); events tolerate latency but not loss once they feed revenue (durable buffer + async drain). The buffer is the failover for events and has no role in the search response path.'
+    truth: true
+    rationale: §§2,4. Corrects a discussion assumption that "the failover system is the same one that stores events."
+  - id: R-4
+    statement: The event pipeline uses accept-fast/process-async — the ingest endpoint validates origin, appends the raw event to a durable buffer, and returns 202; a scheduled drainer batches buffer → analytics_event → rollups → mark processed. Ingest latency is decoupled from processing latency, so a slow/down store makes events lag, never lost.
+    truth: unverified
+    rationale: §3. The durability answer to "what if we can't record it immediately"; proposed pattern, not yet built.
+  - id: R-5
+    statement: Events require server-side idempotency — each carries a client-generated event_id and the drainer upserts on it (events arrive twice via keepalive + retries); query_log writes route through the same buffer so the search hot path never synchronously touches analytics tables.
+    truth: unverified
+    rationale: §3 correctness requirements. Order dedup is client-side via localStorage today; server-side idempotency is the durable guarantee.
+  - id: R-6
+    statement: Start the buffer with pgmq (or a plain append-only event_inbox) on the current stack — lowest friction, durable, same stack — and graduate to an external queue only when analytics write volume contends with the app DB. Don't over-build the queue before traffic justifies it.
+    truth: unverified
+    rationale: §3 "lean". A leaning recommendation, not a locked decision.
+  - id: R-7
+    statement: The rate limiter is the cost cap (keep it; move it to Redis so it survives a DB blip) and the circuit breaker is the backstop — a traffic spike or a storefront stuck in a search loop auto-scales the bill and upstream load, so both guardrails are required.
+    truth: true
+    rationale: §5. Auto-scaling cuts both ways.
+  - id: R-8
+    statement: Ideally the proxy + event-recording system is a completely separate service (not tied to the whole app) for blast-radius isolation, independent scaling (shopper vs. merchant curves), independent deploys, and a right-sized edge runtime — but this is NOT decided; options range from status-quo in-app to a fully separate service + separate telemetry store.
+    truth: unverified
+    rationale: §6 directive captured 2026-05-28. Trade-offs (shared code factoring, more ops surface, the event-store choice) weighed but unresolved.
+  - id: R-9
+    statement: This pipeline amends search-events.md — §4 (best-effort/loss-acceptable no longer holds once events feed revenue) and §6 ("no aggregation API on RRE" — rollups will happen on RRE's side); that locked policy must not be amended without explicit sign-off.
+    truth: unverified
+    rationale: §8 related policy. A proposed amendment, pending authorization. See [[search-events]].
+
+useCases:
+  - id: T-1
+    title: Drainer absorbs a downstream outage
+    given: The destination event store or drainer is slow or down during traffic
+    when: Events keep arriving at the ingest endpoint
+    then: Each is validated and appended to the durable buffer with a 202; nothing is lost — processing lags and catches up on recovery
+    verifies: [R-4]
+  - id: T-2
+    title: Meilisearch spike fails fast instead of piling up
+    given: Meilisearch's error rate spikes under load
+    when: The circuit breaker trips
+    then: The proxy returns 503 + Retry-After and the storefront shows "search temporarily unavailable," rather than every function hanging the full timeout and piling up concurrency and cost
+    verifies: [R-3, R-7]
+  - id: T-3
+    title: Duplicate event is deduped on drain
+    given: A client retries an event (keepalive + retry) carrying the same client-generated event_id
+    when: The drainer processes the buffer
+    then: It upserts on event_id so the event is recorded exactly once
+    verifies: [R-5]
+---
+
 # Search Proxy & Event Pipeline — Scaling / Fault-Tolerance Exploration
 
 Status: **Draft / exploration — no decisions locked.** Revisit before we start recording events at volume.
@@ -11,12 +120,15 @@ Audience: Claude Code (future implementer), GroLabs contributors scoping the eve
 > also puts us in the blast radius of storefront traffic. This captures the discussion so we can
 > pick the right architecture when we actually build the event pipeline, rather than re-deriving it.
 
-> **Terminology to resolve.** Throughout the discussion the destination event store was referred to
-> as "posthog" / "posthoc". This is **unresolved** and must be pinned down before building:
-> is it (a) the product **PostHog** (a real external analytics platform), or (b) our **own
-> post-hoc pipeline** on Supabase (the existing `analytics_event` table + a scheduled rollup)?
-> The two imply very different architectures. This doc is written against (b) — our own store —
-> because that's what exists today; flag and revise if the intent is the PostHog product.
+> **Terminology — RESOLVED (2026-06-03, PostHog Analytics MVP).** The destination was referred to
+> throughout as "posthog" / "posthoc". It is **both**, with distinct roles, not an either/or:
+> (a) the product **PostHog** is now the cross-event analytics/funnel destination — RRE forwards
+> server-side via `posthog-node` from `/api/v1/search` ("Search Performed") and `/api/v1/events`
+> (click/conversion), inside Next 15 `after()` so it never blocks the request; we never load
+> posthog-js on the storefront. (b) The **local Supabase store** (`analytics_event` + `query_log`,
+> now carrying `query_uid` / `user_id` / `intent_group_id`) remains the source of truth for the
+> in-app admin panels and is the durable buffer this doc designs. "post-hoc" was never a product —
+> it just described the local store. This doc's buffer/scaling design still targets (b).
 
 ---
 

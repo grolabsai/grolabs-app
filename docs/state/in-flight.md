@@ -1,3 +1,48 @@
+---
+application: core-app
+module: State
+title: "GroLabs — In-flight (current state)"
+status: Draft
+audience: "Contributors and assistants needing a point-in-time snapshot of open PRs, active branches, known debt, and open architectural decisions."
+scope: "A regenerated snapshot (2026-05-17, commit 2f200e2) of working tree, branch state, draft docs, known debt, and open architectural decisions. Time-sensitive — superseded as the repo moves; the repo itself is authoritative (Constitution Article 10)."
+actors:
+  - name: Contributor
+    type: human
+    definition: "Engineer regenerating this snapshot from git status/branch/log and doc-header inspection at the end of relevant PRs."
+rules:
+  - id: R-1
+    statement: "This snapshot is regenerated from the live repo (git status, git branch -a, git log main..HEAD, doc headers) because the repo is the source of truth per Constitution Article 10."
+    truth: true
+    rationale: "Method line and supersedes note at the top of the doc."
+  - id: R-2
+    statement: "The tenant and tenant_member schema is already migrated (20260513000001, 20260514000001), but the policy docs tenant-model.md and tenant-membership.md remain Draft (awaiting approval) — schema landed ahead of ratification."
+    truth: true
+    rationale: "'Draft documents (awaiting approval)' section."
+  - id: R-3
+    statement: "Open debt: instance.instance_id sequence default is still named tenant_tenant_id_seq (pre-rename artifact); instance.kind is deprecated-not-dropped with a trigger syncing it to tenant.kind during the deprecation window."
+    truth: true
+    rationale: "'Known debt' section."
+  - id: R-4
+    statement: "Constitution Article 3 mandates domain as the tenant primary key, but tenant/tenant_member are keyed on slug with no domain column — an unmodeled constitutional requirement flagged in Review 1."
+    truth: unverified
+    rationale: "'Open architectural decisions' — domain-as-tenant-identity is an open, unresolved decision."
+  - id: R-5
+    statement: "The unified findings + monitoring layer is decided as a 3-class taxonomy + Plan-B storage (finding + monitor_alert + findings_unified view), but monitor scheduling, identity model, and a required amendment to the locked search-events.md remain open."
+    truth: unverified
+    rationale: "'Open architectural decisions' (added 2026-05-29); full design in design/unified-findings-and-monitoring.md."
+  - id: R-6
+    statement: "Search-proxy fault-tolerance / event ingest at scale (Postgres-per-keystroke bottleneck, durable buffer, possible service extraction) has no decisions locked."
+    truth: unverified
+    rationale: "'Open architectural decisions' (added 2026-05-29); design in design/search-proxy-event-pipeline.md."
+useCases:
+  - id: T-1
+    title: "Determine whether schema leads policy"
+    given: "An assistant is asked whether the tenant layer is safe to build on"
+    when: "It reads this snapshot's draft-documents section"
+    then: "It learns the tenant/tenant_member tables are migrated while their policy docs are still awaiting approval, so code can rely on schema but not on ratified policy"
+    verifies: [R-2]
+---
+
 # GroLabs — In-flight (current state)
 
 **Regenerated:** 2026-05-17

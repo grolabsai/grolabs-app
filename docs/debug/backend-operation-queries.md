@@ -1,3 +1,61 @@
+---
+application: core-app
+module: Operations
+title: "Debugging the `backend_operation` audit table"
+status: Draft
+audience: "Engineers debugging backend integration calls (Meilisearch indexing, WooCommerce pull) with no UI, by querying the audit table directly."
+scope: "A query cookbook for public.backend_operation — recent failures, per-product traces, status rollups, skip reasons, slow ops, stuck/unconfirmed ops, and raw Meilisearch task errors. Run in the Supabase SQL editor or via MCP."
+actors:
+  - name: Operator
+    type: human
+    definition: "Engineer running the provided SQL in the Supabase SQL editor (project scout / ixbbhwtpnebrhquunege) or via the Supabase MCP, substituting :iid with the instance id (TestInstanceWazu1 = 4)."
+  - name: backend_operation table
+    type: system
+    definition: "public.backend_operation — the persistent audit trail, one row per discrete backend integration call: opened pending, closed succeeded/failed/partial once the real outcome is confirmed."
+  - name: Meilisearch
+    type: integration
+    definition: "Indexing target whose task object is polled to completion; the raw task (including error.code/type/message) is stored in response_payload on failure."
+  - name: WooCommerce
+    type: integration
+    definition: "Pull integration whose calls also record backend_operation rows; target_id is the product's woocommerce_id for index ops."
+integrations:
+  - name: Supabase SQL / MCP
+    kind: external-service
+    target: "project scout (ixbbhwtpnebrhquunege)"
+    direction: both
+    purpose: "Where these debug queries are executed; the only access path documented (no UI for this table)."
+rules:
+  - id: R-1
+    statement: "An operation is closed succeeded/failed/partial only once the real outcome is confirmed — for Meilisearch, after polling the task to completion; enqueue is not success."
+    truth: true
+    rationale: "Intro paragraph."
+  - id: R-2
+    statement: "status='pending' with a non-null response_payload.task_uid means the Meilisearch task didn't confirm within the wait timeout and is still processing — not a failure."
+    truth: true
+    rationale: "Operation types section."
+  - id: R-3
+    statement: "meilisearch_index_skipped rows have status succeeded because nothing failed — the product was a deliberate no-op, with payload_summary.reason explaining why (e.g. not-indexable: no-parent-wc-id)."
+    truth: true
+    rationale: "Operation types table."
+  - id: R-4
+    statement: "The reliable key across all operation types is payload_summary->>'product_id'; target_id is the woocommerce_id for index ops, or the product_id when there is no WC id."
+    truth: true
+    rationale: "'Why a specific product failed / didn't land' section."
+useCases:
+  - id: T-1
+    title: "Trace why one product didn't land"
+    given: "A product appears missing from the index"
+    when: "The operator queries backend_operation filtered by instance_id and payload_summary->>'product_id'"
+    then: "Every operation for that product (status, error_message, payload_summary, response_payload) is returned in time order, revealing failure or a deliberate skip with its reason"
+    verifies: [R-3, R-4]
+  - id: T-2
+    title: "Find stuck operations"
+    given: "Indexing seems to hang"
+    when: "The operator queries status='pending' with started_at older than 5 minutes"
+    then: "Operations whose Meilisearch task never confirmed are listed with their task_uid for further inspection"
+    verifies: [R-2]
+---
+
 # Debugging the `backend_operation` audit table
 
 `public.backend_operation` is the persistent trail for every backend

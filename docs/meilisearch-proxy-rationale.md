@@ -1,3 +1,142 @@
+---
+application: core-app
+module: Foundation
+title: "Why the GroLabs proxy sits between the WordPress plugin and Meilisearch"
+status: Draft
+owner: "Tuncho (GroLabs)"
+audience: "Meilisearch engineering / product"
+scope: "A focused justification of every responsibility the thin GroLabs proxy provides between the WordPress plugin and Meilisearch Cloud, what Meilisearch would need to absorb each one, and a set of asks/questions about collapsing the hop and Cloud analytics drilldowns."
+
+actors:
+  - name: Shopper
+    type: human
+    definition: Searches from the storefront box. In Stage 2 the in-browser widget calls search directly; today the WP plugin makes the call.
+  - name: WordPress plugin
+    type: plugin
+    definition: PHP running inside the merchant's WP install. Knows only its instance_id (public, like a Stripe publishable key) and the GroLabs API base URL — never the Meilisearch host, master key, or even a tenant token. POSTs to the proxy with its browser Origin header.
+  - name: GroLabs proxy
+    type: system
+    definition: ~330-line Next.js route on Vercel, single multi-tenant deployment. Origin-bound trust, token minting, rate limiting, filter pinning, variant resolution, query logging. Intentionally thin — no business logic beyond matched_variation.
+  - name: Meilisearch Cloud
+    type: integration
+    definition: One project, one index per instance (inst_<id>). Performs the actual search, stemming, synonym expansion, typo tolerance, ranking, and returns _matchesPosition. Holds the analytics the proxy cannot see (queries that reached the index, processing times).
+  - name: Operator
+    type: human
+    definition: Authenticated instance_member using /configuration/search — the live query-log tail, the operator-only search preview (Supabase-session auth, bypassing rate limit and query_log), and per-token match pills.
+
+integrations:
+  - name: Meilisearch Cloud search
+    kind: external-service
+    target: meilisearch.index('inst_<id>').search(...)
+    direction: both
+    purpose: The downstream search call. Proxy passes the query unchanged (no rewriting), preserves result order (no reranking), no caching, no fan-out.
+  - name: Meilisearch Cloud /events
+    kind: external-service
+    target: Meilisearch analytics API
+    direction: out
+    purpose: The storefront posts click events directly to /events (authenticated via a short-lived events token) so each click is attributed to the query via metadata.queryUid.
+  - name: Postgres query_log
+    kind: internal-module
+    target: query_log table
+    direction: out
+    purpose: Per-request log (success and every denial) with query text, status + denial reason, hits, Meilisearch processing time, total handler time, origin host, returned product IDs/names, and variant selection — the single most important cross-system debugging surface.
+  - name: WooCommerce catalog
+    kind: external-service
+    target: GroLabs Postgres (product, product_variant, product_pricing, ...)
+    direction: in
+    purpose: Pulled, enriched (HTML strip, variation_summary, taxonomy-slug normalization, canonical URL), then pushed to Meilisearch. The plugin and merchant never write to Meilisearch.
+
+credentials:
+  - name: Meilisearch master key
+    location: GroLabs server-side (src/lib/search/meilisearch-client.ts)
+    scope: Full admin — minting tenant tokens, index settings writes, indexing pipeline. Never shipped to the plugin or browser.
+    rotation: Not specified here
+  - name: Meilisearch tenant token
+    location: Minted on demand by POST /api/v1/search/token
+    scope: Scoped to inst_<id> with a defense-in-depth filter instance_id = <id>; 15-minute TTL. Used by the Stage 2 in-browser widget.
+    rotation: 15-minute TTL (re-minted per use)
+  - name: Meilisearch events token
+    location: Minted by /api/v1/events/token
+    scope: Short-lived, lets the storefront post click/conversion events directly to Meilisearch /events.
+    rotation: Short-lived
+  - name: instance_id
+    location: Public identifier held by the WP plugin / browser bundle
+    scope: Public, like a Stripe publishable key — names the tenant; the Origin allowlist (not this id) is the security boundary.
+    rotation: Stable per instance
+
+rules:
+  - id: R-1
+    statement: The WP plugin never calls Meilisearch directly — it calls a thin GroLabs proxy that holds the master key end-to-end; the plugin knows only its public instance_id and the GroLabs API base URL.
+    truth: true
+    rationale: §"full request path". The hop is real latency the team would rather not pay, but it carries the responsibilities below.
+  - id: R-2
+    statement: Origin-bound trust without a server-side secret — the proxy reads instance.storefront_domains and rejects any request whose Origin host is not allowlisted, returning a generic 403 for bad ID, inactive instance, and wrong origin alike (no enumeration leak). The Origin allowlist is the security boundary; instance_id is public.
+    truth: true
+    rationale: §1. Avoids shipping a long-lived secret to PHP or the browser; merchants control the allowlist in /configuration/search.
+  - id: R-3
+    statement: Short-lived tenant tokens are minted on demand — POST /api/v1/search/token exchanges instance_id + valid Origin for a token scoped to inst_<id> with filter instance_id=<id>, 15-min TTL, used by the in-browser widget. Minting requires the master key, so it happens server-side.
+    truth: true
+    rationale: §2. The master key stays server-side; the merchant only holds the public instance_id.
+  - id: R-4
+    statement: Two rate-limit buckets per endpoint — per-IP (600/min, applied before any DB lookup) and per-(instance_id, origin) (60/min for the token endpoint, higher for search); 429 on either. Per-IP runs first (cheapest); the per-pair check runs after instance validation so throttled calls are still attributable.
+    truth: true
+    rationale: §3. Protects shared infra and Meilisearch query budget from bot/scraper/misconfigured-plugin loops; 429 before paying for the search.
+  - id: R-5
+    statement: Filter pinning (defense in depth) — whatever filter the caller supplies is wrapped as (<caller filter>) AND instance_id = <id>, belt-and-suspenders on top of the per-instance index name, so a bug elsewhere can never serve cross-instance results.
+    truth: true
+    rationale: §4. Cheap insurance; one extra clause. Moves with tenant tokens automatically if direct-from-plugin tokens land.
+  - id: R-6
+    statement: Variant resolution — for each hit the proxy computes a full matched_variation (id, sku, attributes, price, image, stock) from the parent's variants[] using _matchesPosition (simple→null, variable_single→that variation, variable_multi→highest-match in-stock variant with fallbacks). This is genuine application logic about what to render and is kept server-side for reuse across the future browser widget and React Native client.
+    truth: true
+    rationale: §5. Powers the two-button storefront card ("Agregar 4kg al carrito"); chosen over one-document-per-variation to avoid index bloat and near-duplicate hits.
+  - id: R-7
+    statement: Every request (success and every denial) appends a query_log row with query text, status + denial reason, hits, Meilisearch processing time, total handler time, origin host, returned product IDs/names, and variant selection. /configuration/search shows a live tail polling every 2s — the primary cross-system debugging surface.
+    truth: true
+    rationale: §6. Meilisearch analytics show only Meilisearch's view; they miss pre-Meilisearch rejections, the IDs handed back, total handler time, and per-tenant breakdown.
+  - id: R-8
+    statement: The proxy is boringly thin — no query rewriting, no result reranking, no result caching, no request fan-out, and no business logic beyond matched_variation. One inbound request maps to one outbound Meilisearch call.
+    truth: true
+    rationale: §"what the proxy does not do". The round-trip cost is dominated by network, not code (Meilisearch 5–40ms; total handler 60–180ms; implied overhead + WP→GroLabs network 50–150ms).
+  - id: R-9
+    statement: GroLabs is the canonical product database, not WooCommerce — WC's catalog is pulled into Postgres, enriched (HTML strip, variation_summary, taxonomy-slug normalization, canonical URL), then pushed to Meilisearch. The plugin and merchant never write to Meilisearch.
+    truth: true
+    rationale: §8. Enrichment is the product moat (future agent-driven attribute extraction) and is reused beyond search (pricing, dashboards, sync); it runs on writes, off the hot path.
+  - id: R-10
+    statement: The minimum Meilisearch primitive needed to collapse the read-path proxy is a public per-index key with an origin allowlist, per-(key, origin) rate limiting, and account-visible request events including rejections; tenant tokens already cover scoping. matched_variation would at most shrink to ~25 lines on a Worker.
+    truth: unverified
+    rationale: §"what we'd give up" + asks 1–5. This is a proposal/ask to Meilisearch, not an existing capability — hence unverified.
+  - id: R-11
+    statement: Open Cloud-analytics questions — enumerate no-result queries, per-keyword CTR and conversion, per-product CTR/avg-position/conversion, drilling generic metrics down to keyword/product/category/time cohorts, query-time tagging for A/B cohorting, and event retention (need 90–120 days). If unavailable, GroLabs keeps accumulating analytics in query_log, keeping the proxy on the hot path longer.
+    truth: unverified
+    rationale: §"open questions about Cloud analytics" Q1–Q7. Open questions to Meilisearch; answers determine how thin the proxy can become.
+
+useCases:
+  - id: T-1
+    title: Wrong-origin request is rejected indistinguishably
+    given: A request carrying an Origin host not in instance.storefront_domains
+    when: The proxy validates the request
+    then: It returns a generic 403 identical to bad-ID and inactive-instance responses, so the endpoint cannot be enumerated; a denial row is still written to query_log
+    verifies: [R-2, R-7]
+  - id: T-2
+    title: Multi-variant card shows the matched size
+    given: A shopper searches "4kg Royal Canin Puppy" for a product with 1kg/4kg/12kg variants
+    when: The proxy reads _matchesPosition and counts matches per variant index
+    then: It returns matched_variation for the in-stock 4kg variant, powering "Agregar 4kg al carrito" as the primary card action
+    verifies: [R-6]
+  - id: T-3
+    title: Debugging "search says no results"
+    given: A merchant reports their storefront search shows no results
+    when: An operator checks /configuration/search live tail
+    then: The query_log row shows the proxy returned N hits with their product IDs, proving the plugin is filtering them rather than the search failing
+    verifies: [R-7]
+  - id: T-4
+    title: Operator preview bypasses the public path
+    given: An authenticated instance_member on /configuration/search
+    when: They run the operator-only search preview against the instance index
+    then: The query runs via Supabase session auth (not instance_id/origin), bypasses rate limiting and query_log, and renders per-token green/red match pills with attribute-path tooltips
+    verifies: [R-8]
+---
+
 # Why the GroLabs proxy sits between the WordPress plugin and Meilisearch
 
 Status: Discussion brief for the Meilisearch team

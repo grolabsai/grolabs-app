@@ -1,3 +1,126 @@
+---
+application: core-app
+module: Onboarding
+title: "GroLabs WordPress Plugin Test Checklist"
+status: Draft
+audience: "GroLabs operators and engineering colleagues verifying a plugin install. Run through this checklist after every fresh install on a new test site, after every plugin version upgrade, and as a pre-flight check before any merchant demo."
+scope: "Verification checklist for the three installed GroLabs plugins (GA4, Login, Search) plus a cross-plugin end-to-end journey. Companion to the install runbooks; does not cover initial install steps."
+actors:
+  - name: GroLabs operator
+    type: human
+    definition: "Tester running the checklist after a fresh install, a version upgrade, or before a merchant demo; records pass/fail in the issues log and verification record."
+  - name: GA4 plugin
+    type: plugin
+    definition: "GroLabs WordPress GA4 plugin under test — client-side and server-side ecommerce events to a GA4 property."
+  - name: Login plugin
+    type: plugin
+    definition: "GroLabs WordPress Login plugin under test — Google SSO at checkout, customer creation/matching, no duplicate users on repeat sign-in."
+  - name: Search plugin
+    type: plugin
+    definition: "GroLabs WordPress Search plugin v0.3.0 under test — search overlay, result-card data attributes, anonymous session UUID, click events, token caching, graceful degradation."
+  - name: grolabs-core
+    type: system
+    definition: "Supporting infrastructure verified in pre-conditions: deployed with search-click-events, env vars set, active instance, reindexed catalog."
+  - name: Customer browser
+    type: human
+    definition: "Anonymous/incognito shopper persona used to drive each plugin's behavior through DevTools (Network, Console, Application tabs)."
+integrations:
+  - name: Google Analytics 4
+    kind: external-service
+    target: "GA4 Realtime + collect / mp/collect endpoints"
+    direction: out
+    purpose: "Checked for client-side collect requests and the server-side mp/collect call carrying transaction_id matching the WC order."
+  - name: Google OAuth
+    kind: external-service
+    target: "Google Cloud OAuth client"
+    direction: both
+    purpose: "Verified the redirect URI matches exactly, the test user is listed, and SSO returns to checkout (not wp-login.php) with no redirect_uri_mismatch."
+  - name: MeiliSearch Cloud
+    kind: external-service
+    target: "project /events + Analytics dashboard"
+    direction: both
+    purpose: "Click events POST to {meilisearch_host}/events return success; analytics show CTR and average click position after volume."
+  - name: grolabs-core search API
+    kind: internal-module
+    target: "POST /api/v1/search, POST /api/v1/events/token"
+    direction: both
+    purpose: "Verified search returns 200 with metadata.queryUid/indexUid, and clicks mint a cached tenant token via the events/token endpoint."
+  - name: WordPress + WooCommerce
+    kind: external-service
+    target: "test storefront"
+    direction: both
+    purpose: "Hosts the journey; checked for the SSO-created Customer user and order association in WC admin."
+credentials:
+  - name: GA4 Measurement ID + MP API Secret
+    location: "GA4 plugin settings (verified populated)"
+    scope: "Identify the stream and authorize server-side events"
+    rotation: "n/a for testing"
+  - name: Google OAuth Client ID + Secret
+    location: "Login plugin settings (verified populated; secret masked) and Google Cloud Console"
+    scope: "Authorize the OAuth exchange"
+    rotation: "n/a for testing"
+  - name: scout_session_id
+    location: "Browser localStorage (set by Search plugin)"
+    scope: "Anonymous per-browser session UUID sent as userId on click events; persists across refresh, differs per private window"
+    rotation: "Cleared with browser storage"
+  - name: grolabs-core Instance ID
+    location: "Search plugin settings (verified matches grolabs-core)"
+    scope: "Binds the storefront to its tenant config"
+    rotation: "n/a"
+rules:
+  - id: R-1
+    statement: "Work the checklist in install order (GA4 → Login → Search); if any item fails, stop and resolve before continuing because later sections may depend on earlier ones."
+    truth: true
+    rationale: "'How to use this document' section."
+  - id: R-2
+    statement: "The site must be reachable on HTTPS — required for the OAuth flows — with WooCommerce active and at least 10 catalog products before any plugin is tested."
+    truth: true
+    rationale: "Pre-flight environment check."
+  - id: R-3
+    statement: "The purchase event must fire exactly once per order (client-side) plus one server-side MP copy carrying transaction_id matching the WC order ID; duplicate fires are a failure."
+    truth: true
+    rationale: "Test Set A server-side firing and common failure modes."
+  - id: R-4
+    statement: "Repeat Google sign-in with the same account must resolve to the existing Customer user, never creating a duplicate user."
+    truth: true
+    rationale: "Test Set B 'Sign back in flow' and account creation verification."
+  - id: R-5
+    statement: "Each rendered search result card carries data-query-uid, data-index-uid, data-product-id, data-product-name, and zero-based data-position matching the search response."
+    truth: true
+    rationale: "Test Set C 'Result cards have data attributes'."
+  - id: R-6
+    statement: "The events/token request is cached in memory: a second click on the same page reuses the token and does not re-call /api/v1/events/token, while the click event still fires to MeiliSearch."
+    truth: true
+    rationale: "Test Set C 'Token caching'."
+  - id: R-7
+    statement: "The plugin must degrade gracefully — wrong instance ID falls back to WC default search, a blocked grolabs-core URL throws no JS errors (only GroLabs: warnings), and click navigation proceeds even if event submission fails."
+    truth: true
+    rationale: "Test Set C 'Failure-mode tolerance'."
+  - id: R-8
+    statement: "White-label holds at runtime: no vendor names appear in DOM, HTML source, rendered page, or console — all console messages are GroLabs: prefixed."
+    truth: true
+    rationale: "Test Set C common failure modes; reinforces install-runbooks white-label rule."
+useCases:
+  - id: T-1
+    title: "Full cross-plugin customer journey verifies end-to-end"
+    given: "All three plugins installed and individually passing"
+    when: "The tester completes one session: homepage → search → click result → view product → add to cart → checkout → Google SSO → purchase"
+    then: "GA4 Realtime shows the full event sequence, MeiliSearch analytics record the search and click, and WC admin shows the order tied to the SSO-created user"
+    verifies: [R-1, R-3, R-4]
+  - id: T-2
+    title: "Anonymous session UUID is stable per browser"
+    given: "Search plugin active and a result page rendered"
+    when: "The tester inspects localStorage, refreshes, and opens a separate private window"
+    then: "scout_session_id is a UUID that persists across refresh but differs across private windows"
+    verifies: [R-5]
+  - id: T-3
+    title: "Plugin degrades gracefully under failure"
+    given: "Search plugin configured and working"
+    when: "The tester sets a wrong Instance ID, then blocks the grolabs-core URL, then clicks a result"
+    then: "Search falls back to WC default with no page break, no JS errors are thrown (only GroLabs: warnings), and click navigation still proceeds"
+    verifies: [R-7, R-8]
+---
+
 # GroLabs WordPress Plugin Test Checklist
 
 **Audience:** GroLabs operators and engineering colleagues verifying a plugin install. Run through this checklist after every fresh install on a new test site, after every plugin version upgrade, and as a pre-flight check before any merchant demo.

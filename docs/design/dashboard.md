@@ -1,3 +1,90 @@
+---
+application: core-app
+module: Design
+title: "GroLabs Dashboard — Design Brief"
+status: Draft
+owner: "Tuncho"
+audience: "Designer (Claude in claude.ai), then implementer (Claude Code)"
+scope: "A self-contained design brief for evolving /dashboard from a single no-results table into a unified daily cockpit. Specifies the screens to mock (dashboard landing, traffic detail, GA4 connection, notifications), the existing visual language to match, and the states to cover. Copy-pasteable into a fresh design conversation."
+
+actors:
+  - name: Designer
+    type: human
+    definition: Claude in claude.ai with zero GroLabs context. Produces immediately-implementable mockups in Spanish that respect the existing visual language; flags questions to Tuncho directly.
+  - name: Implementer
+    type: human
+    definition: Claude Code, which turns the returned mockups into HTML/CSS/React using the existing Tailwind + shadcn primitives.
+  - name: Background polling job
+    type: system
+    definition: Detects threshold breaches and fires alerts; the merchant sees them next time they are in the app via a nav badge and the alerts inbox.
+
+users:
+  - name: Solopreneur merchant
+    description: Time-poor, not technically deep, runs a small Latin-American (primarily Guatemalan, Spanish-speaking) WooCommerce store and wears every hat. Should be able to glance at the dashboard for 60 seconds each morning and know whether anything needs attention.
+
+integrations:
+  - name: Google Analytics 4
+    kind: external-service
+    target: Traffic & engagement section
+    direction: in
+    purpose: The v1-priority data source — daily digest of top-3 traffic-health metrics, live active-users widget, alerts inbox, and 14-day charts.
+  - name: WooCommerce
+    kind: external-service
+    target: Catalog health / Sync status sections (planned)
+    direction: in
+    purpose: Import status, enrichment progress, last successful sync — lower-fidelity placeholder cards in v1.
+
+rules:
+  - id: R-1
+    statement: GroLabs is industry-agnostic — the dashboard is for solopreneur-run ecommerce stores from any vertical (provisioned from a matching template); the pet-shop angle is one template, not the product's identity.
+    truth: true
+    rationale: Editor's note reframing to Constitution Article 1. The previous "for pet supply ecommerce stores" framing was corrected.
+  - id: R-2
+    statement: The dashboard evolves from one screen/one data source into a unified daily cockpit of multiple summary sections (Traffic, Search, Catalog, Pricing, Sync); the landing carries no deep data — every card answers "is this OK or do I need to look?" and drills into a detail sub-page.
+    truth: unverified
+    rationale: §"what's coming". Draft brief — the cockpit is the target design, not yet built.
+  - id: R-3
+    statement: Traffic & engagement (GA4) is the v1 priority and gets the most prominent placement; the other module cards (Catalog, Pricing, Sync) are lower-fidelity placeholders until those features mature.
+    truth: unverified
+    rationale: §"screens to mock up". Design effort is focused on the Traffic card/detail.
+  - id: R-4
+    statement: Mockups must match the existing visual language — Tailwind v3.4 + shadcn/ui primitives, stroke-only Lucide icons (16px, no fills), brand palette used sparingly (alerts pop, normal cards calm), system fonts, all visible copy in Latin-American/Guatemalan Spanish, no emojis, no gradients/glassmorphism/decorative animation.
+    truth: true
+    rationale: §"existing visual language (must match)". A hard constraint on the deliverables.
+  - id: R-5
+    statement: Every screen reserves the right quarter as a vertical strip for a future natural-language agent panel — it may be empty in v1 but must not be used for content yet.
+    truth: true
+    rationale: §"existing visual language" layout. Shared with the pricing-module agent-panel convention.
+  - id: R-6
+    statement: Every screen is mocked in five states — empty (e.g. GA4 not connected), loading, error (e.g. GA4 quota exhausted), populated-normal, and populated-alert; the visual difference of the alert state matters most.
+    truth: true
+    rationale: §"interactions and states". The "something's wrong" version is the point of an alerts-first product.
+  - id: R-7
+    statement: Out of scope for this brief — login/auth, the sidebar, the topbar/instance switcher (all already built), any non-dashboard module, and Google's OAuth consent screen.
+    truth: true
+    rationale: §"what you don't need to design".
+
+useCases:
+  - id: T-1
+    title: 60-second morning glance
+    given: A merchant opens /dashboard in the morning
+    when: They scan the summary cards
+    then: Each card shows an at-a-glance OK/attention signal (green dot, red badge, unresolved count) and clicking a card drills into that section's detail screen; no deep data lives on the landing
+    verifies: [R-2]
+  - id: T-2
+    title: Traffic card empty when GA4 not connected
+    given: A merchant who has not connected Google Analytics
+    when: They view the dashboard landing and the Traffic detail
+    then: The Traffic card and detail render an empty state (live widget shows "—") rather than erroring, pointing the merchant toward /configuration/ga4
+    verifies: [R-6, R-3]
+  - id: T-3
+    title: Fired alert surfaces on next visit
+    given: The background polling job detected a breached threshold while the merchant was away
+    when: The merchant next opens the app
+    then: A count badge appears on the dashboard nav item and the firing alert appears in the /dashboard/traffic alerts inbox with when/what/how-much and an acknowledge action
+    verifies: [R-6]
+---
+
 # GroLabs Dashboard — Design Brief
 
 > **Editor's note:** Reframed 2026-05-17 to conform to Constitution Article 1. Previous version positioned the dashboard as for 'pet supply ecommerce stores.' GroLabs is industry-agnostic; the pet-shop angle is one of several vertical templates, not the product's identity.

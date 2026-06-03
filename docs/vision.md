@@ -1,3 +1,113 @@
+---
+application: core-app
+module: Foundation
+title: "GroLabs — Vision Document (Draft v0.4)"
+status: Draft
+owner: "Tuncho (with Claude as scribe)"
+scope: "What GroLabs is, the three revenue-loss categories it recovers, the core+plugins architecture, the four selling shapes, the ideal customer, and the Phase 1 scope. The product's spine; constitutional rules emerge from it."
+audience: "Anyone forming the mental model of the product before reading feature specs; the precursor to the constitution."
+
+actors:
+  - name: GroLabs core
+    type: system
+    definition: Multi-tenant SaaS — catalog, pricing, search index (Meilisearch-backed), analytics, optimization agent, identity. One codebase, one schema, one deployable. Platform-agnostic in design, WooCommerce-first in execution.
+  - name: catalog-plugin
+    type: plugin
+    definition: Bidirectional catalog and pricing sync between WC and GroLabs. Addresses Loss 2 (catalog quality).
+  - name: search-plugin
+    type: plugin
+    definition: Replaces WC default search with Meilisearch-backed search. Addresses Loss 1 (find failure). Carries the single Article-5 data-flow toggle.
+  - name: ga4-plugin
+    type: plugin
+    definition: Forwards GA4 events and basic metrics to GroLabs. Source-named because other analytics sources would each need their own plugin. Cross-cutting; powers detection.
+  - name: login-plugin
+    type: plugin
+    definition: Social SSO connector removing username/password friction. Addresses Loss 3 (checkout friction) and is the free funnel hook.
+  - name: Optimization Agent
+    type: system
+    definition: Probes the store on signup, detects leaks across the three loss categories, and drives evidence-based upsell ("47 products with no photos, 12 zero-result queries").
+  - name: Merchant
+    type: human
+    definition: WordPress + WooCommerce SMB (1–5 people, solopreneurs included). Manages catalog in Excel/WC admin, runs default WC search, has GA4 installed but unopened.
+
+users:
+  - name: Solopreneur / SMB merchant
+    description: 1–5 person WooCommerce store with no dedicated person/KPI for search, catalog, or analytics. The diagnostic — "is there a dedicated person with a related KPI?" — if no, that area is bleeding revenue and is a GroLabs target.
+  - name: Enterprise / non-WC store
+    description: Explicitly NOT a customer — enterprise retailers with merchandising teams, Shopify/Magento/BigCommerce stores (until connectors ship), pure-digital-product stores, and stores already running mature search/analytics stacks.
+
+integrations:
+  - name: WordPress + WooCommerce storefront
+    kind: external-service
+    target: Merchant's WP site
+    direction: both
+    purpose: The initial connector and beachhead. Core reads catalog/search/events from WC via the plugins and pushes structured results back. Platform-agnostic core could later connect to Shopify/Magento.
+  - name: Meilisearch
+    kind: external-service
+    target: Search Index module
+    direction: both
+    purpose: Backs the search index that the search-plugin replaces WC default search with.
+  - name: Google Analytics 4
+    kind: external-service
+    target: Analytics module (via ga4-plugin)
+    direction: in
+    purpose: Source of traffic events and basic metrics feeding leak detection.
+
+rules:
+  - id: R-1
+    statement: The brand verb is "recover," not grow or improve — the product addresses loss-aversion ("you're losing $X" beats "you could earn $X"). GRO encodes Growth (outcome) / Recovery (mechanism) / Optimization (method).
+    truth: true
+    rationale: Positioning spine; every feature, plugin, and alert maps to one of the three loss categories.
+  - id: R-2
+    statement: There are exactly three independently-addressable revenue-loss categories — Loss 1 (search/navigation failure → Search module), Loss 2 (catalog quality failure → Catalog module), Loss 3 (auth/checkout friction → Login module). Each is independently sellable and measurable; addressing all three plus analytics yields the compound Optimize product.
+    truth: true
+    rationale: §2. The product's spine — the funnel from incoming traffic to conversion branches at find/convince/checkout.
+  - id: R-3
+    statement: The product is two layers — multi-tenant SaaS core (one codebase, one schema, one deployable) plus physically separate WordPress plugins distributed via the WP directory. The merchant installs only the plugins matching what they purchased.
+    truth: true
+    rationale: §3. Mirrors Constitution Articles 1, 2.
+  - id: R-4
+    statement: Platform-agnostic in design, WooCommerce-first in execution — the core (catalog, pricing, search, analytics, agent) is tech-agnostic and could connect to Shopify/Magento later without architectural change; WC is only the initial connector.
+    truth: true
+    rationale: §1. WordPress + WooCommerce is where the SMB beachhead is (~4M stores, sub-5% external-search adoption).
+  - id: R-5
+    statement: Four selling shapes share one codebase — three standalone entry products (Catalog+Pricing, Search, Insights), one compound product (Optimize, meaningful only when 1+2+3 are active), and one free hook (Login). Each entry product is sellable standalone.
+    truth: true
+    rationale: §4. Exposed via entitlements (feature flags), not separate deployables.
+  - id: R-6
+    statement: The login-plugin is the free funnel hook — installing it prompts explicit signup at grolabs.ai (Article 3 handshake); after connecting, the agent probes the store and turns the assessment into evidence-based, personalized upsell.
+    truth: true
+    rationale: §4 selling logic. Aligned with Constitution Article 3 — no silent auto-registration.
+  - id: R-7
+    statement: The product rules out becoming a full e-commerce platform, a generic BI tool, or a CRM; it does not sell on dashboards (alerts-first) and never requires merchant code (plugin install + API key is the whole integration path).
+    truth: true
+    rationale: §10 negative space — the boundaries that keep the product opinionated.
+  - id: R-8
+    statement: Eleven constitutional rules flow from this vision (industry-agnostic core, one-core/many-plugins, explicit-signup funnel, default settings, one switch, clerk delegation in-dashboard, build-without-enforcement, mapping-based sync identity, GroLabs-native pricing, repo-wins-over-memory, functional plugin names).
+    truth: unverified
+    rationale: §6. Listed here as emerging rules; ratified and superseded by the constitution. Note §6 item 4 ("privacy-first defaults") was reversed by Constitution Article 4 (default-on); trust the constitution.
+
+useCases:
+  - id: T-1
+    title: Evidence-based upsell after signup
+    given: A merchant installs the free login-plugin and completes the explicit grolabs.ai handshake
+    when: The optimization agent probes the connected store
+    then: It surfaces concrete leaks across the three loss categories ("47 products with no photos, 12 zero-result queries") and uses them to drive personalized upsell to the paid products
+    verifies: [R-6, R-2]
+  - id: T-2
+    title: Diagnostic qualifies a target merchant
+    given: A prospective WooCommerce store
+    when: The diagnostic question "is there a dedicated person with a related KPI tied to this area?" is asked of search, catalog, and analytics
+    then: Each area with no dedicated owner is treated as bleeding revenue and a GroLabs target; enterprise stores with dedicated teams are out of profile
+    verifies: [R-2]
+  - id: T-3
+    title: Standalone entry purchase
+    given: A merchant who only wants catalog management
+    when: They buy the Catalog+Pricing entry product
+    then: It works standalone without adopting Search, Insights, or Optimize; the compound Optimize product remains an upsell that requires 1+2+3 active
+    verifies: [R-5]
+---
+
 # GroLabs — Vision Document (Draft v0.4)
 
 **Status:** Draft, pending review

@@ -1,3 +1,105 @@
+---
+application: core-app
+module: Policy
+title: "GroLabs WooCommerce Import — v1"
+status: Active
+owner: "Tuncho"
+scope: "One-way pull from WooCommerce into GroLabs's catalog tables. Categories and products only. Raw data preservation, no enrichment, no restructuring."
+audience: "Claude Code (primary), future GroLabs contributors"
+
+actors:
+  - name: WooCommerce
+    type: integration
+    definition: The merchant's WooCommerce store; the read-only source of categories and products (WC REST API v3).
+  - name: Import job
+    type: system
+    definition: The pull-direction importer at src/lib/import/woocommerce/ that upserts WC data into GroLabs catalog tables.
+  - name: Merchant
+    type: human
+    definition: The instance owner who triggers category and product imports from /import/woocommerce.
+
+users:
+  - name: Merchant
+    description: Connects WooCommerce credentials and runs "Importar categorías" / "Importar productos" from the admin UI.
+
+integrations:
+  - name: WooCommerce REST API
+    kind: external-service
+    target: woocommerce
+    direction: in
+    purpose: One-way pull of product_cat and products (GET /wp-json/wc/v3/...), paged 100 at a time, products filtered to status=publish.
+  - name: src/lib/sync/
+    kind: internal-module
+    target: woocommerce
+    direction: out
+    purpose: The existing push-direction (GroLabs→WC) sync; unchanged by this pull-direction work and deliberately kept in a separate namespace.
+
+credentials:
+  - name: instance.integrations_config.woocommerce
+    location: instance.integrations_config (configured via /configuration/woocommerce)
+    scope: WooCommerce REST credentials reused by the importer
+
+rules:
+  - id: R-1
+    statement: The import is a one-way pull — WC is the source, GroLabs writes and never pushes back from this code path.
+    truth: true
+  - id: R-2
+    statement: The import is lossless — any WC field with no mapped GroLabs column is preserved in product.wc_raw (JSONB), never thrown away.
+    truth: true
+  - id: R-3
+    statement: Re-runs are idempotent — (instance_id, woocommerce_id) is the upsert conflict key, so re-importing UPDATEs rather than INSERTs; no checkpoint table is needed.
+    truth: true
+  - id: R-4
+    statement: Categories preserve hierarchy as-is — WC parent id maps to category.parent_id via a second-pass woocommerce_id lookup, with no merging into template categories.
+    truth: true
+  - id: R-5
+    statement: WC variable products become exactly one GroLabs product row each; the variations array is kept in wc_raw and no product_variant rows are created during import.
+    truth: true
+  - id: R-6
+    statement: No enrichment happens during import — scout_attributes stay null and are populated by a separate process.
+    truth: true
+  - id: R-7
+    statement: Field mapping is obvious-only — only clear 1:1 fields get columns; when in doubt the field stays in wc_raw.
+    truth: true
+  - id: R-8
+    statement: Composite uniqueness (instance_id, woocommerce_id) lets the same WC ID exist independently in different instances.
+    truth: true
+  - id: R-9
+    statement: Each upsert is its own transaction, so a mid-run failure cannot corrupt the catalog and a re-run picks up where it left off.
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Re-running the import produces no duplicates
+    given: A catalog already imported once
+    when: The import runs again
+    then: Existing rows are updated in place with no duplicates
+    verifies: [R-3]
+  - id: T-2
+    title: Variable products are stored, not exploded
+    given: A WC variable product
+    when: It is imported
+    then: Exactly one GroLabs product row is created and wc_raw.variations holds all variations
+    verifies: [R-5]
+  - id: T-3
+    title: Category hierarchy is reconstructed
+    given: WC categories with parent relationships
+    when: The categories pass and its second pass run
+    then: All rows are present and parent_id is correctly set across the tree
+    verifies: [R-4]
+  - id: T-4
+    title: Non-published products are skipped
+    given: WC products whose status is not publish
+    when: The products pass runs
+    then: Those products are ignored
+  - id: T-5
+    title: Mid-import network failure does not corrupt data
+    given: A network failure partway through a run
+    when: The run aborts and is retried
+    then: No partial corruption exists because each upsert is independent
+    verifies: [R-9]
+---
+
 # GroLabs WooCommerce Import — v1
 
 Status: Active policy

@@ -1,8 +1,76 @@
 ---
-Status: Draft (awaiting approval)
-Owner: Tuncho
-Scope: Introduce a tenant layer above `instance`. A tenant owns one or more instances and carries the "template vs. customer" distinction at the ownership level instead of as a flag on each instance row.
-Audience: Claude Code (primary), future GroLabs contributors
+application: core-app
+module: Policy
+title: "GroLabs Tenant Model — v1"
+status: Draft
+owner: "Tuncho"
+scope: "Introduce a tenant layer above `instance`. A tenant owns one or more instances and carries the \"template vs. customer\" distinction at the ownership level instead of as a flag on each instance row."
+audience: "Claude Code (primary), future GroLabs contributors"
+
+actors:
+  - name: Tenant
+    type: system
+    definition: The legal/organizational owner of one or more GroLabs instances. Carries a kind of template_owner or customer.
+  - name: Instance
+    type: system
+    definition: Belongs to exactly one tenant via instance.tenant_id. A tenant can own many instances.
+  - name: User
+    type: human
+    definition: Belongs to instances via instance_member.user_id, never to tenants directly.
+  - name: service_role
+    type: system
+    definition: Privileged Postgres role; the only principal permitted to write tenant rows.
+
+permissions:
+  - actorId: User
+    capability: select-tenant
+    effect: conditional
+    note: Allowed for an authenticated user who has at least one instance_member row pointing to an instance owned by that tenant.
+  - actorId: service_role
+    capability: write-tenant
+    effect: allow
+    note: INSERT / UPDATE / DELETE on tenant is service_role only. Customer signup will write tenants via a SECURITY DEFINER RPC.
+  - actorId: User
+    capability: write-tenant
+    effect: deny
+    note: Authenticated app role cannot insert/update/delete tenant rows directly.
+
+integrations:
+  - name: instance_member
+    kind: internal-module
+    target: instance
+    direction: both
+    purpose: Remains the security perimeter; membership (not tenant) gates cross-instance access, enforced by Postgres RLS keyed on instance_id.
+
+rules:
+  - id: R-1
+    statement: An instance is a template iff its owning tenant has kind = 'template_owner'.
+    truth: true
+    rationale: Template ownership is a property of the owner, so it lives on the parent tenant, not as a per-instance flag.
+  - id: R-2
+    statement: tenant.kind is constrained to exactly two values, template_owner and customer, by a CHECK constraint.
+    truth: true
+  - id: R-3
+    statement: An instance belongs to exactly one tenant via instance.tenant_id; after backfill instance.tenant_id is NOT NULL.
+    truth: true
+  - id: R-4
+    statement: New code must not read instance.kind; it must join instance to tenant and read tenant.kind.
+    truth: true
+    rationale: instance.kind is deprecated and kept in sync only during the transition window.
+  - id: R-5
+    statement: Tenants are an organizational/ownership layer, not a security layer; the security perimeter stays instance_member plus RLS keyed on instance_id.
+    truth: true
+  - id: R-6
+    statement: During deprecation an instance INSERT/UPDATE trigger keeps instance.kind in sync with the parent tenant's kind (template_owner→'template', customer→'customer').
+    truth: true
+
+useCases:
+  - id: T-1
+    title: Backfill yields two tenants and three reassigned instances
+    given: The tenant migration has been applied
+    when: The verification queries join instance to tenant
+    then: Two tenant rows exist; three instance rows all have non-null tenant_id; instance 0 sits under GroLabs (template_owner) and instances 1 and 3 under Wazú (customer)
+    verifies: [R-1, R-3]
 ---
 
 # GroLabs Tenant Model — v1

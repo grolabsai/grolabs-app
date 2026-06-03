@@ -1,3 +1,37 @@
+---
+application: core-app
+module: Policy
+title: "GroLabs — Policy documents"
+status: Draft
+scope: "Index of the authoritative feature specs and the conventions for writing them."
+audience: "Anyone writing code in a policy's scope, or adding a new policy doc."
+
+actors:
+  - name: Contributor
+    type: human
+    definition: Reads the relevant policy doc before writing any code in its scope and treats its decisions as locked.
+
+rules:
+  - id: R-1
+    statement: Read the relevant policy doc before writing any code in its scope; decisions inside a policy are locked, so raise a flaw as a question rather than working around it.
+    truth: true
+  - id: R-2
+    statement: There is one policy doc per feature surface, named <feature>.md.
+    truth: true
+  - id: R-3
+    statement: Each policy doc opens with Status, Owner, Scope, and Audience lines.
+    truth: true
+  - id: R-4
+    statement: Sections labeled APPROVAL REQUIRED are hard checkpoints — stop and wait for explicit approval before proceeding.
+    truth: true
+  - id: R-5
+    statement: Out-of-scope items are listed at the bottom and pointed at the future policy doc that will own them.
+    truth: true
+  - id: R-6
+    statement: When a policy is superseded, change Status to "Superseded by <new-doc>.md" rather than deleting it, because the history matters.
+    truth: true
+---
+
 <!-- 2026-05-29: re-tick to force Vercel to redeploy main HEAD as
      production. An earlier manual promote-to-prod of an unrelated
      rubric branch (ef651e8) pinned production behind PRs #158

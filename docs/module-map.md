@@ -1,3 +1,118 @@
+---
+application: core-app
+module: Foundation
+title: "GroLabs — Module Map (v1.0)"
+status: Active
+owner: "Tuncho (with Claude as scribe)"
+scope: "The internal modular decomposition of GroLabs core plus the plugin-side modules. Each module's ownership boundary — what it owns, what it does NOT own, and its dependencies. The source of truth for what belongs where; specs declare which modules they touch."
+audience: "Anyone writing a feature spec (which must declare modules_affected) or deciding where new logic belongs."
+
+actors:
+  - name: Identity
+    type: system
+    definition: Backend foundational module. Owns tenants/users/instances, tenant_member + instance_member, role definitions, financial_data_visible flag, the entitlement schema (modeled not enforced), the collaborator model, RLS enforcement, JWT claims. Depends on nothing; everything depends on it.
+  - name: Catalog
+    type: system
+    definition: Backend. Owns products, categories, attributes, attribute_values, variants, product-image relationships, vertical templates (agnostic seed data), and catalog-enhancement logic. Depends on Identity.
+  - name: Pricing
+    type: system
+    definition: Backend, demo-scoped for Phase 1. Owns the prices table, pricing rules, cognitive-bias rounding, rule-violation detection, the authorization workflow, and audit log. Full scope (tax, sales, coupons, multi-currency, etc.) deferred. Depends on Identity, Catalog.
+  - name: Sync
+    type: system
+    definition: Backend. Owns the GroLabs-UUID↔external-ID mapping (Article 8), the WC REST client, queues/jobs, change- and drift-detection, non-destructive restructuring, and the GA4 Data API ingest path. Depends on Identity, Catalog, Pricing.
+  - name: Search Engine
+    type: system
+    definition: Backend. Owns per-tenant Meilisearch index config, synonym dictionary, typo tolerance, relevance tuning, the zero-result query log, search-event ingestion, and the query API the search-plugin calls. Depends on Identity, Catalog, Sync.
+  - name: Analytics
+    type: system
+    definition: Backend. Owns event ingestion (search + commerce when Article 5 toggle on), GA4 aggregation, time-series storage, the threshold alert engine, and KPI computation. Depends on Identity, Catalog, Pricing, Sync, Search Engine.
+  - name: Optimization Agent
+    type: system
+    definition: Backend, top-of-stack consumer. Owns detection, proposal, and measurement logic, per-tenant working memory, and the tenant-creation store-probe. Delegates application of accepted proposals to the relevant backend module. Depends on Catalog, Pricing, Search Engine, Analytics.
+  - name: GroLabs Admin
+    type: system
+    definition: The Next.js dashboard chassis at grolabs.ai. Owns top-level nav, authentication flows, onboarding wizards, the notification center, account/billing pages, and hosts every module-specific Admin UI (modules 2, 4, 6, 8, 11, 13, 15). Owns no module-specific UI itself.
+  - name: Admin UI modules
+    type: system
+    definition: Seven per-module UI surfaces (Identity/Catalog/Pricing/Sync/Search/Analytics/Agent Admin UI) rendered inside the GroLabs Admin shell. Each owns its module's authoring, configuration, and display surfaces.
+  - name: Search Experience
+    type: plugin
+    definition: The search-plugin on WordPress. Owns the storefront search box/results/facets/typeahead, variant handling in result cards, mobile/theme compatibility, reading and respecting the Article 5 toggle, and emitting events when on. Does not own relevance/synonyms/index.
+  - name: Login Experience
+    type: plugin
+    definition: The login-plugin on WordPress. Owns social SSO buttons on WC login/checkout, the OAuth flow per provider, the local WC-user↔social-identity mapping, and the "Configure in GroLabs" link. Does not own the GroLabs user/tenant record.
+  - name: GA4 Plugin
+    type: plugin
+    definition: The ga4-plugin on WordPress, optional (only if the merchant has no GA4 capture). Owns GA4 tag installation, event configuration, and the "Configure in GroLabs" link. Does not own the GA4 property or the ingestion into GroLabs (that is Sync).
+
+integrations:
+  - name: WooCommerce REST API
+    kind: external-service
+    target: Sync
+    direction: both
+    purpose: Catalog/pricing pull and structured-result push; Sync owns the client (calls, retries, rate limiting, error handling).
+  - name: Meilisearch
+    kind: external-service
+    target: Search Engine
+    direction: both
+    purpose: Backs the per-tenant search index; Search Engine owns index config and the query API.
+  - name: GA4 Data API
+    kind: external-service
+    target: Sync → Analytics
+    direction: in
+    purpose: GA4 data pulled by Sync's ingest path and written into Analytics.
+
+rules:
+  - id: R-1
+    statement: GroLabs core decomposes into 18 modules with explicit ownership boundaries — each declares what it owns, what it does NOT own, and which modules it depends on. The conceptual boundaries are the source of truth even if the implementation organizes code differently.
+    truth: true
+    rationale: Document purpose. Implementation may render multiple UI modules in one Next.js app, but ownership is per-module.
+  - id: R-2
+    statement: Identity is the foundational module — it depends on nothing and every other backend module depends on it (everything is tenant-scoped). The Optimization Agent is top-of-stack — it reads from almost everything and is depended on by no other backend module.
+    truth: true
+    rationale: Cross-cutting dependency map. An arrow A→B means "B reads from or depends on A's data."
+  - id: R-3
+    statement: Backend modules own data and logic; Admin UI modules own authoring/config/display; plugin modules own the merchant-site experience. A module never owns another's data — e.g. Catalog references pricing but Pricing defines it; Search Engine builds the index but Catalog owns product data.
+    truth: true
+    rationale: Ownership boundaries throughout. Prevents entanglement and drift.
+  - id: R-4
+    statement: GroLabs Admin is the chassis only — it owns navigation, auth flows, onboarding, notifications, and account/billing, and hosts the seven module-specific Admin UIs, but owns no module-specific UI itself.
+    truth: true
+    rationale: Module 16. Keeps the shell separate from the surfaces it hosts.
+  - id: R-5
+    statement: Every feature spec written from this point must declare which modules it touches (modules_affected), making the module map a queryable index — "show me every spec that touches Pricing" becomes a grep, not an interpretation.
+    truth: true
+    rationale: '"How specs reference modules." To be enforced in the Discussion Protocol.'
+  - id: R-6
+    statement: The Optimization Agent does not apply changes itself — once a proposal is accepted, the change is enacted by the relevant backend module (e.g. an accepted "add synonym" calls Search Engine). The agent owns the capability; calling modules own the workflow.
+    truth: true
+    rationale: Module 14, mirrors Constitution Article 12.
+  - id: R-7
+    statement: The Phase 1 demo build touches Catalog, Pricing, Identity (role flag), Sync, and their Admin UIs; Search/Analytics come post-demo; Login Experience, GA4 Plugin, the Optimization Agent + UI, and full Pricing scope are designed here but not in the Phase 1 build.
+    truth: true
+    rationale: Phase 1 build implications, mapping Vision §9 priorities to modules.
+
+useCases:
+  - id: T-1
+    title: Spec declares the modules it touches
+    given: A new feature adding a default_currency to products
+    when: The spec is written
+    then: It declares modules_affected (Catalog adds the column, Catalog Admin UI adds the selector, Sync extends the WC mapping) so the map stays a queryable index
+    verifies: [R-5]
+  - id: T-2
+    title: Accepted agent proposal enacted by the owning module
+    given: The agent proposes adding a synonym for a zero-result query
+    when: The merchant accepts the proposal in Agent Admin UI
+    then: The agent delegates to Search Engine to update the synonym dictionary; the agent does not write the index itself
+    verifies: [R-6]
+  - id: T-3
+    title: Financial blanking stays in the dashboard
+    given: A staff member whose financial_data_visible flag is false
+    when: They view an analytics surface with currency values
+    then: Currency is blanked while trends remain visible (Article 6), decided in the Admin UI — the plugin still sends what it sends
+    verifies: [R-3]
+---
+
 # GroLabs — Module Map (v1.0)
 
 **Status:** Ratified

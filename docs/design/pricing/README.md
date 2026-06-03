@@ -1,3 +1,78 @@
+---
+application: core-app
+module: Pricing
+title: "Handoff: Pricing Module for WooCommerce"
+status: Draft
+owner: "Tuncho"
+scope: "SUPERSEDED — a build-handoff for a pricing module as a WordPress/WooCommerce plugin (PHP backend + React admin SPA + custom wp_pricing_* tables), with hi-fi HTML prototypes, six screens, import wizard, server-side violation detection, and design tokens. The plugin framing contradicts Constitution Articles 1, 2, 9; retained as UI/UX and workflow input for the pricing-parity Discussion."
+audience: "Anyone running the pricing-parity Discussion who wants the screen inventory, workflows, and design references; must reconcile with module-map.md §5 (GroLabs-native Pricing) before building anything."
+
+actors:
+  - name: Pricing user
+    type: human
+    definition: Imports cost price lists from multiple providers, applies pricing policies (charm pricing, margin targets, MAP rules), reviews/edits the worksheet, resolves violations, and syncs final prices to WooCommerce.
+  - name: Agent panel
+    type: system
+    definition: Right-sidebar "Observaciones del Agente" surface — Phase 1 passive/observation-only infrastructure for LLM-based observations (info/warning/suggestion cards).
+  - name: Violation detector
+    type: system
+    definition: Server-side logic that runs on PriceBatchItem create/update — fetches latest cost, computes charm price, applies overrides, queries brand+provider MAP rules, checks margin and max change %, and sets status + status_reasons.
+
+integrations:
+  - name: WooCommerce REST API
+    kind: external-service
+    target: Product variations (mapped via SKU)
+    direction: out
+    purpose: Sync final prices from a batch to WC product variations; ProductVariant = WC product variation.
+  - name: CSV/Excel import
+    kind: external-service
+    target: PriceList + PriceListItems
+    direction: in
+    purpose: The import wizard (upload → map columns → select provider → effective date → review → import) ingests provider cost sheets.
+
+credentials:
+  - name: WordPress capabilities / nonces
+    location: WP auth layer (superseded design)
+    scope: REST endpoint authorization, input sanitization, output escaping per WPCS.
+    rotation: Managed by WordPress
+
+rules:
+  - id: R-1
+    statement: The HTML files are hi-fi design references, not production code — the intended deliverable (in the superseded framing) is a WordPress plugin recreating them pixel-perfect with PHP, a React admin SPA, custom wp_pricing_* tables, and WooCommerce sync via WP REST API.
+    truth: false
+    rationale: Overview + Architecture. The WordPress-plugin framing is superseded by the GroLabs-native model (Articles 1, 2, 9).
+  - id: R-2
+    statement: The module presents six screens — Overview (dashboard), Providers, Policies (charm pricing, category margins, max change %), the Price Changes Worksheet (the main workspace), Violations, and Sync — with a reserved 300px right Agent panel on the worksheet.
+    truth: unverified
+    rationale: §"screens/views". UI/workflow inventory retained as input; the agent-panel reservation echoes the dashboard brief. See [[dashboard]].
+  - id: R-3
+    statement: Violation detection runs server-side on batch-item create/update — fetch new cost, calculate charm price, apply manual overrides, query applicable MAP rules (brand + provider), check final price/margin/max-change, populate status_reasons, and set status by most-severe violation. Batch states go draft(borrador) → ready(listo) → synced(sincronizado, immutable).
+    truth: unverified
+    rationale: §"violation detection" + status transitions. The most critical business logic; retained as domain input.
+  - id: R-4
+    statement: All user-facing strings are Spanish and wrapped for i18n; the UI targets tablets (min-width 768px, mobile not required), modern browsers, and WCAG 2.1 AA keyboard-navigable tables.
+    truth: unverified
+    rationale: '§"notes for developer". UI constraints from the superseded handoff. (Note: GroLabs core deliberately has no i18n in the designer tool, but this doc targets the WC plugin context.)'
+  - id: R-5
+    statement: This handoff is SUPERSEDED — its plugin-with-own-tables framing contradicts ratified Constitution Articles 1, 2, and 9; the authoritative sources are module-map.md §5 (GroLabs-native Pricing) and the backlog pricing-parity entry. Do not implement without reconciling first.
+    truth: false
+    rationale: Superseded banner. See [[backlog]].
+
+useCases:
+  - id: T-1
+    title: Import a provider price list into a batch
+    given: A provider's CSV/Excel cost sheet
+    when: The user runs the import wizard (upload → map columns → select provider → effective date → review → import)
+    then: A PriceList + PriceListItems are created and the user is redirected to a new batch worksheet
+    verifies: [R-2, R-3]
+  - id: T-2
+    title: Worksheet flags a margin/MAP violation on edit
+    given: A batch item whose final price is edited below a MAP minimum or category margin
+    when: The server-side detector re-runs on the update
+    then: It populates status_reasons and sets the item status to warning/critical, surfacing it in the violation banners and the Violations view
+    verifies: [R-3]
+---
+
 > **⚠️ SUPERSEDED**
 >
 > This document is preserved for historical reference only. Its framing (pricing as a WordPress plugin with its own MySQL tables) directly contradicts ratified Constitution Articles 1, 2, and 9.

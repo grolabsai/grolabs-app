@@ -1,3 +1,66 @@
+---
+application: core-app
+module: Pricing
+title: "Pricing Module Data Model"
+status: Draft
+owner: "Tuncho"
+scope: "SUPERSEDED — historical pricing domain model (Provider, Brand, PriceList, MAPRule, PriceBatch, etc.) framed as a WordPress plugin with its own MySQL tables. The framing contradicts ratified Constitution Articles 1, 2, 9; the domain thinking is retained as input for the pricing-parity Discussion."
+audience: "Anyone running the pricing-parity Discussion (docs/backlog.md), who can mine the entities/relationships here but must reconcile with module-map.md §5 (GroLabs-native Pricing) before implementing."
+
+actors:
+  - name: Provider
+    type: integration
+    definition: Legal entity that supplies products (distributor/importer); has many PriceLists, many Brands (through ProviderBrands), and provider-specific MAPRules.
+  - name: Brand
+    type: integration
+    definition: Product manufacturer/trademark; has many Products and manufacturer-mandated MAPRules; sold by one or more Providers.
+  - name: ProductVariant
+    type: system
+    definition: A specific sellable SKU (size/flavor/config), named "variant" in the data model for precision though the UI calls it a "product"; has historical PriceListItems and one CurrentPrice in WooCommerce.
+  - name: Pricing user
+    type: human
+    definition: Imports cost price lists, preps PriceBatches (the change worksheet), reviews charm prices and margins, and resolves MAP/margin/price-change violations before syncing to WooCommerce.
+
+integrations:
+  - name: WooCommerce
+    kind: external-service
+    target: ProductVariant.CurrentPrice
+    direction: out
+    purpose: Receives the final selling price per variation (mapped via SKU). In the superseded framing the plugin owned its own tables and pushed prices to WC — contradicts the GroLabs-native model.
+
+rules:
+  - id: R-1
+    statement: A provider can supply multiple brands and a brand can be sold by multiple providers (ProviderBrands join, with an active flag); the "current cost" for a variant is the most recent PriceListItem from any active provider.
+    truth: unverified
+    rationale: Provider/Brand/PriceListItem domain entities. Retained as input to the pricing-parity Discussion, not an implemented schema.
+  - id: R-2
+    statement: A MAPRule is polymorphic — rule_type (MAP_min / max_price / custom) and source_type (brand or provider) + source_id, optionally variant-scoped; multiple rules can apply to one variant and the most restrictive wins.
+    truth: unverified
+    rationale: MAPRule entity. Domain thinking retained; not implemented as-is.
+  - id: R-3
+    statement: A PriceBatch is a change worksheet (draft → ready → synced) of PriceBatchItems, each computing margin_percent = (final_price − new_cost)/final_price·100 and a status (neutral/warning/critical) with a status_reasons array (below_map, low_margin, price_change_exceeds_5%, ...) by checking MAP rules, category margin, and max price-change %.
+    truth: unverified
+    rationale: PriceBatch/PriceBatchItem entities + violation logic. Useful domain model; the batch/violation concept may return in GroLabs-native Pricing.
+  - id: R-4
+    statement: This document's framing — pricing as a WordPress plugin with its own MySQL tables — is SUPERSEDED and contradicts ratified Constitution Articles 1 (industry-agnostic; pet-shop examples), 2 (one core codebase, plugins separate), and 9 (GroLabs-native pricing). Do not implement anything here without reconciling with module-map.md §5 and the backlog pricing-parity entry first.
+    truth: false
+    rationale: Superseded banner. The authoritative sources are docs/module-map.md §5 and docs/backlog.md "Pricing parity with WooCommerce". See [[backlog]].
+
+useCases:
+  - id: T-1
+    title: Resolve the current cost for a variant
+    given: A variant supplied by one or more active providers
+    when: The current cost is requested
+    then: The most recent PriceListItem for that variant (latest import_date, any active provider) is used, displayed as "Brand (Provider)" so the source is clear
+    verifies: [R-1]
+  - id: T-2
+    title: Most-restrictive MAP rule wins
+    given: A variant with both a brand-level MAP and a provider-specific max-price rule
+    when: A batch item's final_price is validated
+    then: All applicable active rules are fetched (brand + provider, variant-specific or source-wide) and the most restrictive determines the violation status
+    verifies: [R-2, R-3]
+---
+
 > **⚠️ SUPERSEDED**
 >
 > This document is preserved for historical reference only. Its framing (pricing as a WordPress plugin with its own MySQL tables) directly contradicts ratified Constitution Articles 1, 2, and 9.

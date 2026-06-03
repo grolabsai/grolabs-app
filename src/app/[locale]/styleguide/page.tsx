@@ -1239,8 +1239,6 @@ function NavDemo() {
       {items.map((it) => (
         <a
           key={it.label}
-          href="#"
-          onClick={(e) => e.preventDefault()}
           style={{
             display: "flex",
             alignItems: "center",

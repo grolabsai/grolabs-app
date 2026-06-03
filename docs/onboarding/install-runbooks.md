@@ -1,3 +1,141 @@
+---
+application: core-app
+module: Onboarding
+title: "GroLabs WordPress Plugin Install Runbooks"
+status: Draft
+audience: "GroLabs operators and engineering colleagues installing the GroLabs plugin suite on a WordPress + WooCommerce test or production site."
+scope: "Install + configure runbooks for three of the four GroLabs WordPress plugins (GA4, Login, Search). Excludes the future Events plugin, tenant onboarding, MeiliSearch project setup, and plugin PR review — each owned by a separate document."
+actors:
+  - name: GroLabs operator
+    type: human
+    definition: "Operator or engineering colleague performing the install, configuring each plugin, and running the verify steps on a WordPress + WooCommerce site."
+  - name: GA4 plugin
+    type: plugin
+    definition: "GroLabs WordPress GA4 plugin. Standalone storefront ecommerce tracking to a GA4 property; client-side gtag.js events plus a server-side purchase via Measurement Protocol. No grolabs-core dependency."
+  - name: Login plugin
+    type: plugin
+    definition: "GroLabs WordPress Login plugin (v1.1.0). Google SSO at WooCommerce checkout to reduce friction; creates/matches the WC customer and pre-fills checkout. Supports block-based and classic checkout."
+  - name: Search plugin
+    type: plugin
+    definition: "GroLabs WordPress Search plugin (v0.3.0). Search-box overlay replacing WooCommerce native search, plus click-event tracking. Depends on a deployed grolabs-core and an operational MeiliSearch Cloud project."
+  - name: Events plugin
+    type: plugin
+    definition: "Future GroLabs WordPress Events plugin emitting user-behavior events to PostHog. Not yet built; gets its own runbook when implemented."
+  - name: grolabs-core
+    type: system
+    definition: "The deployed core app the Search plugin calls (/api/v1/search and /api/v1/events/token). Holds the instance config, MeiliSearch credentials, and the search index."
+  - name: Customer browser
+    type: human
+    definition: "Storefront shopper whose browsing, search, clicks, and checkout the plugins observe end-to-end during verification."
+integrations:
+  - name: Google Analytics 4
+    kind: external-service
+    target: "GA4 property / Web Data Stream"
+    direction: out
+    purpose: "GA4 plugin sends standard ecommerce events client-side (gtag.js) and a server-side purchase copy via the Measurement Protocol so it survives ad blockers."
+  - name: Google OAuth
+    kind: external-service
+    target: "Google Cloud OAuth client"
+    direction: both
+    purpose: "Login plugin redirects the customer to Google sign-in and exchanges the auth code for tokens server-side, returning the user profile to pre-fill checkout."
+  - name: MeiliSearch Cloud
+    kind: external-service
+    target: "scout-production project"
+    direction: both
+    purpose: "Search index queried by grolabs-core; the plugin also POSTs click events to MeiliSearch /events using a short-lived tenant token, feeding CTR and avg-click-position analytics."
+  - name: grolabs-core search API
+    kind: internal-module
+    target: "POST /api/v1/search, POST /api/v1/events/token"
+    direction: both
+    purpose: "Search plugin proxies queries through grolabs-core (which forwards to MeiliSearch with Meili-Include-Metadata) and mints a tenant token per result click."
+  - name: WordPress + WooCommerce
+    kind: external-service
+    target: "merchant storefront (WP 6.0+, PHP 8.0+, WooCommerce active)"
+    direction: both
+    purpose: "Host platform required by all three plugins; supplies checkout hooks, the product catalog, and the storefront pages the plugins augment."
+credentials:
+  - name: GA4 Measurement ID
+    location: "GA4 Admin → Data Streams → stream details; pasted into GA4 plugin settings"
+    scope: "Identifies the GA4 web stream (format G-XXXXXXXXXX)"
+    rotation: "Re-create the data stream to change"
+  - name: GA4 MP API Secret
+    location: "GA4 Admin → Data Streams → stream → Measurement Protocol API secrets; pasted into GA4 plugin settings"
+    scope: "Authorizes server-side purchase events via Measurement Protocol; shown once at creation"
+    rotation: "Create a new secret and replace; old one can be deleted"
+  - name: Google OAuth Client ID + Secret
+    location: "Google Cloud Console → APIs & Services → Credentials; pasted into Login plugin settings"
+    scope: "Authorizes the Login plugin's OAuth exchange with Google"
+    rotation: "Rotate from the Cloud Console credentials page"
+  - name: OAuth Authorized Redirect URI
+    location: "Read from the Login plugin settings page; pasted into Google Cloud Console (pattern ?grolabs_wordpress_login_cb=<provider>)"
+    scope: "Must match identically in both places or Google returns redirect_uri_mismatch"
+    rotation: "n/a — derived from the site URL"
+  - name: MeiliSearch master key
+    location: "MeiliSearch Cloud dashboard → project → API Keys; set as a grolabs-core env var (never in the plugin)"
+    scope: "grolabs-core-side credential for MeiliSearch; the plugin only receives short-lived tenant tokens"
+    rotation: "Rotate in MeiliSearch Cloud and update grolabs-core env vars"
+  - name: grolabs-core Instance ID
+    location: "grolabs-core admin → Instances; pasted into Search plugin settings"
+    scope: "Numeric instance identifier binding the storefront to its grolabs-core tenant config"
+    rotation: "n/a"
+rules:
+  - id: R-1
+    statement: "GroLabs ships as four separate single-purpose WordPress plugins, installed in order (GA4 → Login → Search → Events) so any install breakage is easy to isolate."
+    truth: true
+    rationale: "Overview section and the install-order table."
+  - id: R-2
+    statement: "The GA4 plugin is fully standalone — it sends events directly to Google Analytics and has no integration with grolabs-core."
+    truth: true
+    rationale: "Runbook A 'What this installs': events go directly to GA; install independently."
+  - id: R-3
+    statement: "The Login plugin's OAuth redirect/callback URL must be configured identically in Google Cloud Console and the plugin settings; the exact URL is read from the plugin's settings page, not guessed."
+    truth: true
+    rationale: "Runbook B Step 5 and the redirect_uri_mismatch common issue; callback URL is the most error-prone setting."
+  - id: R-4
+    statement: "The Search plugin depends on grolabs-core being deployed and operational, an operational MeiliSearch Cloud project (scout-production), an active instance with the storefront hostname in storefront_domains, and a backfilled catalog; without these it installs but search won't work."
+    truth: true
+    rationale: "Runbook C 'Prerequisites specific to this plugin' and install dependency map."
+  - id: R-5
+    statement: "All three plugins require WooCommerce installed and active, WordPress 6.0+ and PHP 8.0+."
+    truth: true
+    rationale: "Prerequisites section."
+  - id: R-6
+    statement: "White-label is non-negotiable: vendor names never appear in plugin UI or storefront output; console messages are namespaced GroLabs: rather than vendor-specific."
+    truth: true
+    rationale: "Disclosure to merchant section, tied to Constitution Article 4."
+  - id: R-7
+    statement: "Per Constitution Article 4, plugin settings pages and the storefront privacy policy must disclose that search queries, result clicks, and interactions are recorded and stored in GroLabs infrastructure."
+    truth: true
+    rationale: "Disclosure to merchant section quotes the standard disclosure language."
+  - id: R-8
+    statement: "The MeiliSearch events.add action constant must be validated against the live cluster once during deployment; if it returns invalid_api_key_actions, change the action to search in grolabs-core source before the plugin reaches production."
+    truth: unverified
+    rationale: "Runbook C 'Critical pre-deployment validation' — explicitly flagged as unverified during implementation; fix is a one-line change in meilisearch-client.ts."
+  - id: R-9
+    statement: "The Events plugin (PostHog) is future work and out of scope for this runbook; it gets its own runbook when its spec is implemented."
+    truth: unverified
+    rationale: "Overview table footnote and 'What's not in this document'."
+useCases:
+  - id: T-1
+    title: "Verify GA4 tracking end-to-end"
+    given: "GA4 plugin installed with a valid Measurement ID and MP API Secret"
+    when: "An operator browses the storefront as a customer (view product, add to cart, complete a test purchase) and opens GA4 Realtime"
+    then: "Within 30-60s the events page_view, view_item, add_to_cart, begin_checkout, and purchase appear, including the server-side purchase copy"
+    verifies: [R-2, R-5]
+  - id: T-2
+    title: "Verify Google SSO at checkout"
+    given: "Login plugin configured, OAuth redirect URI matching in both places, and a Google test user added"
+    when: "A customer in an incognito window reaches checkout and clicks Sign in with Google"
+    then: "Google OAuth completes and the customer is redirected back with the checkout form pre-filled (name, email); no redirect_uri_mismatch occurs"
+    verifies: [R-3, R-5]
+  - id: T-3
+    title: "Verify search results and click-event tracking"
+    given: "grolabs-core deployed, MeiliSearch operational, instance active with storefront_domains, and catalog backfilled"
+    when: "A customer searches the storefront and clicks a result while DevTools Network is open"
+    then: "POST /api/v1/search returns 200 with metadata.queryUid populated, the click mints a token via /api/v1/events/token and POSTs to MeiliSearch /events, and the event appears in MeiliSearch analytics (CTR, avg click position)"
+    verifies: [R-4, R-8]
+---
+
 # GroLabs WordPress Plugin Install Runbooks
 
 **Audience:** GroLabs operators and engineering colleagues installing the GroLabs plugin suite on a WordPress + WooCommerce test or production site.

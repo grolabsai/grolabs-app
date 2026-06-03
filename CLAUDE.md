@@ -476,6 +476,8 @@ Items here are intentional shortcuts or pre-rename artifacts that need follow-up
 
 - **Funnel shared-table writes via service-role** — mutations to `funnel_flow`, `funnel_stage`, `funnel_transition`, `funnel_friction_point` go through the service-role client (RLS allows only `service_role`). There is no app-level admin gate yet — any authenticated user calling a shared-write server action will succeed. Add an admin/owner role check in those actions when role taxonomy lands. Affected actions live in `src/lib/actions/funnel.ts` and reference this section in their TODO comments.
 
+- **Admin surface gate is default-granted (SEC-001)** — the `(admin)` route group (`admin.grolabs.ai`: blog, prospects, style-guide) is reachable by *any authenticated user*. `src/lib/auth/admin.ts` `isGroLabsAdmin(user)` returns `true` for everyone, and `src/app/[locale]/(admin)/layout.tsx` only enforces authentication (`redirect("/login")`) plus that always-true checkpoint. Host routing in `src/middleware.ts` separates surfaces but does NOT authorize — a non-GroLabs user who reaches an admin URL on the admin host is served, not 404'd. This is the deliberate Phase-1 default (Constitution Article 7: build models without enforcement; `docs/policy/rre-admin-split.md` §5 / §8). When the role taxonomy lands, flip `isGroLabsAdmin` to a real check (GroLabs template-tenant / instance 0 membership, per the `tenant.kind = 'template_owner'` model in `docs/policy/tenant-model.md`) so non-admin authenticated users get `notFound()`. Tracked as proposed registry id SEC-001 in `docs/policy/backlog-registry.md` §4.
+
 ---
 
 ## 18. Policy documents

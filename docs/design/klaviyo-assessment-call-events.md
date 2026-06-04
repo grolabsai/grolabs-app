@@ -4,7 +4,7 @@ module: Design
 title: "Cal.com → Klaviyo — Assessment-Call Lead Events (v1)"
 status: Draft
 owner: "Tuncho"
-scope: "Capture every assessment-call booking made through Cal.com as a Klaviyo event (`Booked Assessment Call`) on GroLabs's own corporate Klaviyo account, creating the profile if it does not yet exist. Confirms (feasibility only) that Klaviyo's API can later serve segment/list membership queries from admin.grolabs.ai."
+scope: "Capture every assessment-call booking-lifecycle event from Cal.com (requested / created / rescheduled / cancelled / rejected) as a past-tense Klaviyo event on GroLabs's own corporate Klaviyo account, creating the profile if it does not yet exist. Confirms (feasibility only) that Klaviyo's API can later serve segment/list membership queries from admin.grolabs.ai."
 audience: "Claude Code (primary), future GroLabs contributors (secondary)"
 
 actors:
@@ -13,25 +13,25 @@ actors:
     definition: A potential GroLabs customer who books an assessment call. Becomes (or maps to) a Klaviyo profile keyed by email.
   - name: Cal.com
     type: integration
-    definition: External scheduling platform where assessment calls are booked. Emits a BOOKING_CREATED webhook to GroLabs on each booking.
+    definition: External scheduling platform where assessment calls are booked. Emits booking-lifecycle webhooks (BOOKING_REQUESTED / BOOKING_CREATED / BOOKING_RESCHEDULED / BOOKING_CANCELLED / BOOKING_REJECTED) to GroLabs.
   - name: Webhook receiver
     type: system
     definition: A new public, HMAC-verified route handler in the GroLabs core app that receives the Cal.com webhook and forwards it to Klaviyo.
   - name: Klaviyo
     type: integration
-    definition: GroLabs's single corporate marketing/CRM account. System of record for lead events. Receives the `Booked Assessment Call` event via the server-side Events API and auto-creates/updates the profile.
+    definition: GroLabs's single corporate marketing/CRM account. System of record for lead events. Receives the booking-lifecycle events (`Booking Created`, etc.) via the server-side Events API and auto-creates/updates the profile.
 
 integrations:
   - name: Cal.com Webhooks
     kind: external-service
     target: calcom
     direction: in
-    purpose: BOOKING_CREATED (and optionally BOOKING_RESCHEDULED / BOOKING_CANCELLED) events delivered to the GroLabs webhook receiver. Signed with HMAC-SHA256.
+    purpose: The five booking-lifecycle triggers (requested / created / rescheduled / cancelled / rejected) delivered to the GroLabs webhook receiver. Signed with HMAC-SHA256.
   - name: Klaviyo Events API
     kind: external-service
     target: klaviyo
     direction: out
-    purpose: POST /api/events/ creates the `Booked Assessment Call` event and upserts the profile (create-if-absent) in one call. Server-side, private key.
+    purpose: POST /api/events/ creates the per-trigger event (`Booking Created`, etc.) and upserts the profile (create-if-absent) in one call. Server-side, private key.
   - name: Klaviyo Profiles/Segments/Lists API
     kind: external-service
     target: klaviyo
@@ -60,13 +60,29 @@ credentials:
   (GroLabs selling to merchants), not per-merchant data. Credentials are global
   (env vars), **not** the per-instance `integrations_config` + Vault pattern used
   by Algolia/GA4. This integration is effectively instance-agnostic / instance-0.
-- **Event name is past tense:** `Booked Assessment Call`. This is the GroLabs
-  standard for all Klaviyo metric names.
+- **Event names are past tense.** This is the GroLabs standard for all Klaviyo
+  metric names. The receiver maps each subscribed Cal.com booking-lifecycle
+  trigger to its own metric:
+
+  Metric names mirror the Cal.com trigger labels 1:1 (they are already past
+  tense, so they comply with the GroLabs standard):
+
+  | Cal.com `triggerEvent` | Klaviyo metric |
+  | --- | --- |
+  | `BOOKING_REQUESTED` | `Booking Requested` |
+  | `BOOKING_CREATED` | `Booking Created` |
+  | `BOOKING_RESCHEDULED` | `Booking Rescheduled` |
+  | `BOOKING_CANCELLED` | `Booking Cancelled` |
+  | `BOOKING_REJECTED` | `Booking Rejected` |
+
+  A verified delivery whose trigger is **not** in this map is acknowledged
+  (`200`) but recorded as an `ignored_trigger` row in `backend_operation`, so a
+  renamed or unexpected trigger surfaces instead of vanishing silently.
 - **Create-if-absent, never dedupe the person.** The Klaviyo Events API upserts
   the profile from the email in one call: existing profile → event appended; no
   profile → profile created, then event appended. A single profile may hold many
-  events, including many `Booked Assessment Call` events (someone can book more
-  than once). We do **not** suppress repeat events.
+  events, including many of the same metric (someone can book more than once,
+  or cancel and re-book). We do **not** suppress repeat events.
 - **The webhook receiver lives in the GroLabs core app** (Constitution Art. 2 —
   one core codebase). Cal.com → server-to-server webhook → core app route handler
   → Klaviyo. The Cal.com booking *widget* may be embedded on the landing site;
@@ -84,18 +100,21 @@ flowchart TD
   W["Core-app webhook receiver<br/>POST /api/v1/integrations/cal/booking<br/>(public, HMAC-verified)"]
   V{"X-Cal-Signature-256<br/>valid?"}
   M["Map Cal.com payload →<br/>Klaviyo profile + event props"]
-  K["Klaviyo Events API<br/>POST /api/events/<br/>metric: 'Booked Assessment Call'"]
+  K["Klaviyo Events API<br/>POST /api/events/<br/>metric per trigger (past tense)"]
   PR{"Profile exists<br/>for email?"}
   EX["Append event to existing profile"]
   NEW["Create profile, then append event"]
   R["200 OK to Cal.com"]
   X["401 / reject<br/>(do not forward)"]
+  IG["200 ignored<br/>(record ignored_trigger)"]
 
   P --> C
-  C -->|BOOKING_CREATED webhook| W
+  C -->|"booking-lifecycle webhook<br/>(requested / created / rescheduled /<br/>cancelled / rejected)"| W
   W --> V
   V -- no --> X
-  V -- yes --> M --> K
+  V -- yes --> MAP{"trigger in<br/>TRIGGER_TO_METRIC?"}
+  MAP -- no --> IG
+  MAP -- yes --> M --> K
   K --> PR
   PR -- yes --> EX
   PR -- no --> NEW
@@ -116,7 +135,7 @@ profile upsert and the event creation:
     "type": "event",
     "attributes": {
       "metric": { "data": { "type": "metric",
-        "attributes": { "name": "Booked Assessment Call" } } },
+        "attributes": { "name": "Booking Created" } } },  // per trigger; see table above
       "profile": { "data": { "type": "profile",
         "attributes": {
           "email": "<prospect email>",
@@ -147,17 +166,19 @@ profile upsert and the event creation:
 - **Profile identity = email** (minimum identifier). If the email matches an
   existing profile, Klaviyo associates the event with it; otherwise it creates a
   new profile. No separate "create profile" call is needed.
-- **`unique_id` = Cal.com booking uid** makes the call idempotent: if Cal.com
-  retries the webhook, re-POSTing the same `unique_id` for the same
-  profile+metric is discarded, so we don't double-count a single booking. Two
-  *different* bookings (different uids) correctly produce two events on the same
-  profile.
-- **Past-tense metric name** `Booked Assessment Call` is created automatically on
-  first use; reused thereafter.
+- **`unique_id` = `<triggerEvent>:<Cal.com booking uid>`** makes each call
+  idempotent *per lifecycle event*: if Cal.com retries a delivery, re-POSTing the
+  same `unique_id` is discarded, so we don't double-count. Scoping by trigger is
+  deliberate — one booking legitimately produces several events over its life
+  (requested → created → rescheduled → cancelled), and each must record. Two
+  *different* bookings (different uids) correctly produce distinct events.
+- **Past-tense metric names** are created automatically on first use; reused
+  thereafter. A `trigger` property is also written on every event for filtering.
 
-**Optional later events (same pattern, past tense):** `Rescheduled Assessment
-Call`, `Cancelled Assessment Call` — driven by the corresponding Cal.com webhook
-triggers. Not in v1 unless wanted.
+**All five booking-lifecycle triggers are implemented** (see the trigger→metric
+table in *Summary of decisions*). Trigger-specific fields are forwarded when
+present: `cancellation_reason` (cancelled), `rejection_reason` (rejected),
+`reschedule_from_uid` (rescheduled), and `booking_status`.
 
 ## Webhook receiver — outline
 
@@ -166,7 +187,9 @@ triggers. Not in v1 unless wanted.
 - **Auth:** verify Cal.com's `X-Cal-Signature-256` HMAC-SHA256 over the raw body
   using `CALCOM_WEBHOOK_SECRET`. Reject (401) on mismatch *before* calling
   Klaviyo. Constant-time compare.
-- **Trigger filter:** act only on `triggerEvent === "BOOKING_CREATED"` in v1.
+- **Trigger filter:** map `triggerEvent` through `TRIGGER_TO_METRIC` (the five
+  booking-lifecycle triggers). Unmapped-but-verified triggers are acknowledged
+  `200` and recorded as an `ignored_trigger` row, never silently dropped.
 - **Mapping:** pull attendee email/name/timezone, booking uid, event-type title,
   start/end, location, and intake `responses` from the Cal.com payload.
 - **Forward:** call the Klaviyo Events API as above. On Klaviyo failure, return a
@@ -222,7 +245,7 @@ own spec.
 ## ERD for bold tables
 
 **ERD: N/A — no GroLabs DB tables.** Klaviyo is the system of record for both the
-profiles and the `Booked Assessment Call` events; v1 persists nothing in
+profiles and the booking-lifecycle events; v1 persists nothing in
 Supabase. (If we later want a local audit/idempotency trail of received webhooks
 — e.g. a `calcom_webhook_event` table — that is an explicit additive decision,
 not part of v1; flagged in the plan as optional.)
@@ -308,12 +331,15 @@ Each prompt is independently executable; "Depends on" lists prerequisites.
   work before relying on Klaviyo as the lead system of record.
 - **Depends on:** Prompts 1–3.
 
-### Prompt 5 (optional, not v1) — Reschedule/cancel events
-- **What:** Extend the receiver to also handle `BOOKING_RESCHEDULED` /
-  `BOOKING_CANCELLED`, emitting `Rescheduled Assessment Call` /
-  `Cancelled Assessment Call` (past tense).
+### Prompt 5 — Full booking lifecycle ✅ DONE
+- **What:** Receiver maps all five subscribed triggers (`BOOKING_REQUESTED`,
+  `BOOKING_CREATED`, `BOOKING_RESCHEDULED`, `BOOKING_CANCELLED`,
+  `BOOKING_REJECTED`) to 1:1 past-tense metrics (`Booking Requested`,
+  `Booking Created`, `Booking Rescheduled`, `Booking Cancelled`,
+  `Booking Rejected`). `unique_id` is scoped `<trigger>:<uid>`; verified-but-
+  unmapped triggers are acknowledged `200` and recorded as `ignored_trigger`.
 - **Where:** `web-apps/app` (same route).
-- **Why:** Fuller lifecycle in Klaviyo for segmentation. Only if wanted.
+- **Why:** Fuller lifecycle in Klaviyo for segmentation (drop-off signals).
 - **Depends on:** Prompt 3.
 
 ### Prompt 6 (separate spec, deferred) — admin.grolabs.ai segment/list query

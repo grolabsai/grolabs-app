@@ -49,11 +49,11 @@ export const dynamic = "force-dynamic";
  * surfaces instead of vanishing.
  */
 const TRIGGER_TO_METRIC: Record<string, string> = {
-  BOOKING_REQUESTED: "Requested Assessment Call",
-  BOOKING_CREATED: "Booked Assessment Call",
-  BOOKING_RESCHEDULED: "Rescheduled Assessment Call",
-  BOOKING_CANCELLED: "Cancelled Assessment Call",
-  BOOKING_REJECTED: "Rejected Assessment Call",
+  BOOKING_REQUESTED: "Booking Requested",
+  BOOKING_CREATED: "Booking Created",
+  BOOKING_RESCHEDULED: "Booking Rescheduled",
+  BOOKING_CANCELLED: "Booking Cancelled",
+  BOOKING_REJECTED: "Booking Rejected",
 };
 
 /** GroLabs corporate. The assessment-call funnel is instance-agnostic; the

@@ -197,6 +197,61 @@ present: `cancellation_reason` (cancelled), `rejection_reason` (rejected),
   guard keeps retries safe.
 - **Instance-agnostic:** no `instance_id` resolution — this is GroLabs corporate.
 
+## Test scenarios
+
+Two layers verify "every trigger is generated and recorded": an automated test
+that runs in CI on every PR, and a live script for hitting a deployed endpoint
+on purpose.
+
+### Automated (CI) — `tests/unit/integrations/calcom-booking.test.ts`
+
+Runs with `npm test` (no external services — Klaviyo and the `backend_operation`
+recorder are mocked, so it writes nothing and pollutes no Klaviyo account). It
+signs a payload for every case and asserts the response **and** the recorded
+operation:
+
+| Scenario | Sent | Expect HTTP | Expect Klaviyo | Expect `backend_operation` |
+|---|---|---|---|---|
+| Each mapped trigger (×5) | signed `BOOKING_*` | `200 {recorded:true}` | `trackEvent` w/ the 1:1 metric, `unique_id = <trigger>:<uid>` | `klaviyo_event` / `succeeded` |
+| Unmapped trigger | signed `PING` | `200 {ignored:"PING"}` | not called | `calcom_webhook_inbound` / `succeeded`, `ignored_trigger:"PING"` |
+| Bad / missing signature | tampered or absent sig | `401` | not called | `calcom_webhook_inbound` / `failed`, `invalid_signature` |
+| Secret not configured | env unset | `500` | not called | — |
+| Mapped trigger, no email | signed, empty attendees | `200` | not called | `calcom_webhook_inbound` / `failed`, `no_attendee_email` |
+| Klaviyo upstream error | `trackEvent` throws `KlaviyoApiError` | `502` (Cal.com retries) | called | `klaviyo_event` / `failed` |
+| Klaviyo key missing | `trackEvent` throws `KlaviyoConfigError` | `500` | called | `klaviyo_event` / `failed` |
+
+The trigger→metric map is intentionally duplicated in the test so it acts as an
+independent spec: if the route's map drifts, the test fails.
+
+### Live — `scripts/calcom-webhook-smoke.mjs` (`npm run smoke:calcom`)
+
+Fires real, correctly-signed deliveries for all five triggers (+ `PING` + a
+tampered-signature negative case) at a deployed URL and checks each HTTP status.
+
+> ⚠️ Hitting a deployment writes **real** events to GroLabs's corporate Klaviyo
+> account (one per mapped trigger), using labeled test emails
+> (`webhook-smoke+<trigger>@grolabs.test`). The script **refuses any
+> non-localhost URL unless `--yes-prod` is passed**, to prevent accidental CRM
+> pollution.
+
+```bash
+# local (against `npm run dev`):
+CALCOM_WEBHOOK_SECRET=$SECRET npm run smoke:calcom
+# production (writes real Klaviyo test events — opt in explicitly):
+CALCOM_WEBHOOK_SECRET=$SECRET node scripts/calcom-webhook-smoke.mjs \
+  --url https://app.grolabs.ai/api/v1/integrations/cal/booking --yes-prod
+```
+
+Then confirm the durable rows in Supabase (project `scout`,
+ref `ixbbhwtpnebrhquunege`):
+
+```sql
+select operation_type, status, error_message, payload_summary, target_id, started_at
+from backend_operation
+where started_at > now() - interval '15 minutes'
+order by started_at desc;
+```
+
 ## Deployment & runtime (decided)
 
 **The receiver is a Next.js route handler in the core app, deployed on Vercel

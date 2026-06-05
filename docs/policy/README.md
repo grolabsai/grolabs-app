@@ -80,6 +80,13 @@ rather than working around it.
   on `instance_member` enforces a matching active `tenant_member`
   row. Backfills 3 (tenant, user) pairs from existing instance
   memberships. Owner: Tuncho.
+- **user-management.md** — Admin-provisioned accounts. GroLabs staff
+  create a customer (tenant + `domain` + first instance + first Tenant
+  Admin); that Admin creates Admins/Members for their tenant. Adds
+  Google + Microsoft SSO (GroLabs-styled, pre-created emails only), a
+  forced first-login password change, a real `isGroLabsAdmin` gate
+  (closes SEC-001), and a GroLabs-staff cross-tenant switcher. Implements
+  Constitution Article 3 (tenant identity = domain). Owner: Tuncho.
 - **blog.md** — Multi-tenant blog surface (admin at `/content/posts`,
   public at `/blog/[slug]`). Single `post` table; markdown in v1,
   Tiptap JSONB in v2. Public reading anonymous via RLS on

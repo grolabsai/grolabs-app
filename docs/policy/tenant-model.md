@@ -63,6 +63,10 @@ rules:
   - id: R-6
     statement: During deprecation an instance INSERT/UPDATE trigger keeps instance.kind in sync with the parent tenant's kind (template_owner→'template', customer→'customer').
     truth: true
+  - id: R-7
+    statement: A tenant's identity is its domain (Constitution Article 3). tenant.domain is a unique (case-insensitive, lowercased) column; customer tenants populate it and the same domain joins the existing tenant rather than duplicating it. tenant_id remains the physical surrogate PK; domain is the logical identity key.
+    truth: true
+    rationale: Added by user-management.md, which closes the unmodeled domain-identity decision flagged in docs/state/in-flight.md. The full create-customer / collaborator behavior lives in that doc.
 
 useCases:
   - id: T-1
@@ -85,6 +89,7 @@ A **tenant** is the legal/organizational owner of one or more GroLabs instances.
 - An instance belongs to exactly one tenant via `instance.tenant_id`.
 - A tenant can own many instances (Wazú will eventually have a production instance, a staging instance, and short-lived test instances — all under one Wazú tenant).
 - A tenant carries a `kind`: either `template_owner` or `customer`.
+- A tenant is **identified by its `domain`** (Constitution Article 3) — see §10.
 
 Tenants are an **organizational/ownership** layer, not a security layer. The security perimeter remains `instance_member` and Postgres RLS keyed on `instance_id`. Cross-instance access is still gated by membership, never by tenant.
 
@@ -193,3 +198,24 @@ ORDER BY t.tenant_id, i.instance_id;
 ```
 
 Expected: two tenant rows; three instance rows all with non-null `tenant_id`; the join shows instance 0 under GroLabs (template/template_owner) and instances 1, 3 under Wazú (customer/customer).
+
+## 10. Tenant domain — the identity key (added by `user-management.md`)
+
+Constitution **Article 3** mandates that *"tenant identity is keyed by domain; email is unique per user, not per tenant."* The original tenant layer (this doc's v1) shipped keyed on `slug` with **no `domain` column** — an unmodeled constitutional requirement flagged in Review 1 and tracked as an open architectural decision in `docs/state/in-flight.md`.
+
+[`user-management.md`](user-management.md) closes that gap by adding:
+
+```sql
+alter table public.tenant
+  add column domain text;            -- lowercased; unique index, case-insensitive
+create unique index uq_tenant_domain on public.tenant (lower(domain));
+```
+
+Decisions (locked there, summarized here):
+
+- **`domain` is the logical identity key; `tenant_id` stays the physical PK.** `instance.tenant_id` and `tenant_member.tenant_id` already FK to the bigserial `tenant_id`. We honor "keyed by domain" via a unique constraint rather than a destructive PK/FK rewrite. Making `domain` the literal PK is a separate, larger migration if ever wanted.
+- **`customer` tenants must have a domain.** The create-customer action requires it. The `template_owner` tenant (GroLabs) gets `grolabs.ai`. The column is added nullable for backfill safety, then required at the application layer for customers.
+- **Resolve-or-create by domain.** Creating a customer looks up the tenant by `lower(domain)`; if it exists, **reuse** it (Article 3 T-3 — same domain joins the existing tenant); else insert a new `customer` tenant. This is the Article-3 anti-duplication rule.
+- **Email-per-user / collaborator seam.** Because email is globally unique, provisioning a user whose email already exists **attaches** a new `tenant_member` to that existing identity instead of creating a duplicate auth user. The full create/attach logic lives in `user-management.md` §2.3.
+
+The tenant **branding** layer (logo, colors, fonts) remains out of scope here (§8) — `domain` is identity, not branding.

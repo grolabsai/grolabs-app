@@ -234,7 +234,7 @@ CREATE POLICY tenant_member_select_self ON public.tenant_member
 
 `tenant_member` INSERT/UPDATE/DELETE: `service_role` only (no policy defined for `authenticated`, so writes from the user role are blocked by default). Tenant membership writes go through `SECURITY DEFINER` RPCs in future PRs (signup, invite, role change). This keeps the surface area for membership manipulation tight while the role/admin model matures.
 
-Cross-user visibility (e.g. "list everyone in my tenant") is intentionally **not** addressed by RLS in v1. It will be exposed through admin-gated RPCs when that screen lands.
+Cross-user visibility (e.g. "list everyone in my tenant") is intentionally **not** addressed by RLS in v1. It will be exposed through admin-gated RPCs when that screen lands — **that screen is now specced in [`user-management.md`](user-management.md)** (the RRE "Equipo" surface for Tenant Admins, plus the admin-surface "Clientes" surface for GroLabs staff). The `admin | member` role semantics in §2 are the source of truth those surfaces operate on; `user-management.md` adds the `is_tenant_admin()` helper that gates the member-management actions.
 
 ## 6. Future scenarios this enables
 
@@ -254,7 +254,7 @@ Cross-user visibility (e.g. "list everyone in my tenant") is intentionally **not
 
 ## 7. Out of scope (explicitly)
 
-- **Tenant role enforcement in application code.** The `role` column and CHECK constraint exist; readers (admin gates, billing gates) come in later PRs as those screens are built.
+- **Tenant role enforcement in application code.** The `role` column and CHECK constraint exist; readers (admin gates, billing gates) come in later PRs as those screens are built. **First reader landed:** [`user-management.md`](user-management.md) enforces `admin | member` via `is_tenant_admin()` on the user-management actions. `billing` remains unsurfaced.
 - **`instance_member.role` CHECK constraint** and the explicit instance-level role taxonomy — see §2.
 - **UI changes.** The New Instance UI, invite UI, and tenant-switcher UI live in separate prompts.
 - **Billing logic.** `tenant.billing_config` is unrelated to `tenant_member.role = 'billing'` for now; binding them is a billing-policy doc concern.

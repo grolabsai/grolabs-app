@@ -131,6 +131,14 @@ Constitution Article 2 (one core codebase, one schema, one deployable)
 and the prior explicit decision that **admin is a route group inside the
 single app, not a separate `web-apps/admin` folder**.
 
+> **Note (added with [`user-management.md`](user-management.md)):** the
+> admin surface gains a third section beyond blog + prospects — a
+> **"Clientes"** screen where GroLabs staff provision customers (create a
+> tenant + `domain` + first instance + first Tenant Admin). It lives in
+> the same `(admin)` group and is gated by the now-real `isGroLabsAdmin()`
+> (see §5). The shared `/login` also gains Google + Microsoft SSO buttons
+> per that spec; `/login` remains shared across both hosts (§4).
+
 ---
 
 ## 2. Current-state map
@@ -373,6 +381,16 @@ user**. admin.grolabs.ai requires login (same as RRE); the
 `isGroLabsAdmin(user)` checkpoint sits in `(admin)/layout.tsx`
 default-granted, ready to flip on when role taxonomy lands. No hard
 restriction in Phase 1.
+
+> **Superseded by [`user-management.md`](user-management.md) §8 (PR 2).**
+> That spec flips `isGroLabsAdmin(user)` to a **real** check — true only
+> for active `tenant_member`s of the GroLabs template-owner tenant (owns
+> instance 0) — so non-staff authenticated users get `notFound()` on the
+> admin host. This **closes SEC-001**. The "any authenticated user"
+> default above is the pre-flip state; once that PR lands, the admin host
+> is GroLabs-staff-only. The flip is required there because the new admin
+> **"Clientes"** surface (create customers, see cross-tenant data) cannot
+> safely run under an open gate.
 
 ---
 

@@ -70,6 +70,12 @@ default-granted in Phase 1 — and today it would land as one more bullet
 in `CLAUDE.md §17` + `in-flight.md`. You cannot currently ask "show me
 every open security item" or "what's deferred until role taxonomy lands."
 
+> **SEC-001 is now scheduled for closure.** [`user-management.md`](user-management.md)
+> §8 (PR 2) flips `isGroLabsAdmin()` to a real template-tenant membership
+> check. When that PR lands, the corresponding registry item (once the
+> registry is built) should ship `status: closed` with a `closed:` date,
+> per §6. This is also the worked example used in §4 below.
+
 ## 2. Goal
 
 One **structured, version-controlled registry** of deferred work, typed

@@ -224,6 +224,19 @@ secret value itself is never a column.
 
 See also: GA4, Instance
 
+## Single sign-on (SSO)
+
+Sign-in to the GroLabs app/admin via an external identity provider — **Google**
+(`provider: 'google'`) and **Microsoft** (`provider: 'azure'`, covering Microsoft
+365 / Exchange-hosted domains) — through Supabase `signInWithOAuth`. Specced in
+`docs/policy/user-management.md`: **sign-in only, never provisioning** — a sign-in
+whose email has no already-provisioned account is rejected. Buttons are styled in
+GroLabs `--gl-*` tokens with monochrome provider glyphs, **not** vendor brand
+colors. Distinct from the merchant-site social-login plugin ([[Module 17]] /
+Login Experience), which is a separate WordPress codebase.
+
+See also: Tenant, Instance
+
 ## Template
 
 An instance with `instance_id = 0`: shared template/vertical data visible only
@@ -237,9 +250,13 @@ See also: Instance, Row-Level Security
 The account layer above [[Instance]] (`tenant` + `tenant_member`), added on
 2026-05-13/14 with `kind` in (`template_owner`, `customer`). A trigger requires
 an active `tenant_member` before any `instance_member` insert. Distinct from the
-original `tenant` table, which was renamed to `instance`.
+original `tenant` table, which was renamed to `instance`. A tenant's **identity
+is its `domain`** (Constitution Article 3) — `tenant.domain` (unique, lowercased)
+is added by `docs/policy/user-management.md`; the same domain joins the existing
+tenant rather than duplicating it, and email is unique per user (the collaborator
+model), not per tenant.
 
-See also: Instance, Row-Level Security
+See also: Instance, Row-Level Security, Single sign-on (SSO)
 
 ## Variant axis
 

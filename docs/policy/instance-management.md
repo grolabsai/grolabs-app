@@ -76,6 +76,10 @@ rules:
   - id: R-9
     statement: The is_current partial unique index also resolves the pre-existing .maybeSingle() ambiguity where multiple is_active=true rows produced undefined behavior.
     truth: true
+  - id: R-10
+    statement: GroLabs staff (isGroLabsAdmin) see EVERY tenant's instances in the switcher, displayed as "domain — instance"; non-staff see only their own active memberships (unchanged). On a cross-tenant switch, switchToInstance upserts an instance_member row for the staff user so current_instance_id() and RLS keep working. Specced in user-management.md §7.
+    truth: true
+    rationale: Extension added by user-management.md; this v1 doc's membership-only switcher is unchanged for non-staff.
 
 useCases:
   - id: T-1
@@ -279,3 +283,13 @@ These have been resolved through Tuncho's direction (2026-05-09):
 3. **`is_current` column on `instance_member`**, partial unique index, server action to flip — not cookie-based or JWT-based.
 4. **Anyone can create an instance**, becomes its owner. No permission gate in v1.
 5. **Empty seeding** in v1; template seeding is a separate future feature.
+
+## 12. Extension — GroLabs-staff cross-tenant switching (`user-management.md`)
+
+The v1 switcher above lists only the user's **own** active memberships. [`user-management.md`](user-management.md) §7 extends it for **GroLabs staff** (members of the template-owner tenant, gated by the now-real `isGroLabsAdmin()`):
+
+- When `isGroLabsAdmin()` is true, the switcher lists **every** instance joined to its `tenant`, displayed as **`tenant.domain — instance.name`**, grouped/sorted by domain. For non-staff the switcher is **unchanged**.
+- `switchToInstance()` keeps strict membership validation for non-staff. For staff switching into an instance they don't belong to, it **upserts** an `instance_member` row (`is_active`, `is_current`) so `current_instance_id()` and all existing RLS continue to work unchanged — no impersonation/JWT-claim path needed.
+- Display strings come from DB values (`tenant.domain`, `instance.name`) — no hardcoding (CLAUDE.md §5).
+
+Login itself also gains **Google + Microsoft SSO** buttons on the shared `/login` (both hosts) per `user-management.md` §5 — orthogonal to the switcher but part of the same account-management feature.

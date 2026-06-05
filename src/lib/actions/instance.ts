@@ -120,12 +120,53 @@ export async function switchToInstance(instanceId: number): Promise<SwitchResult
   if (lookupErr) {
     return { ok: false, error: "save_failed", message: lookupErr.message };
   }
-  if (!membership) return { ok: false, error: "not_a_member" };
 
   // Service-role for the cross-row update (clearing is_current on rows the user
   // could otherwise see via RLS, but using service role keeps the two updates
   // atomic and isolated from policy edge cases).
   const admin = createServiceRoleClient();
+
+  if (!membership) {
+    // GroLabs staff may switch into ANY tenant's instance (user-management.md
+    // §7). Ensure a membership row so current_instance_id() + RLS keep working
+    // unchanged. Non-staff get the strict "not a member" rejection.
+    const { data: isStaff } = await sb.rpc("is_grolabs_admin");
+    if (isStaff !== true) return { ok: false, error: "not_a_member" };
+
+    const { data: existing } = await admin
+      .from("instance_member")
+      .select("instance_member_id")
+      .eq("user_id", user.id)
+      .eq("instance_id", instanceId)
+      .maybeSingle();
+    if (!existing) {
+      // tenant_member must exist before instance_member (trigger contract).
+      const { data: inst } = await admin
+        .from("instance")
+        .select("tenant_id")
+        .eq("instance_id", instanceId)
+        .maybeSingle();
+      const tenantId = (inst as { tenant_id: number } | null)?.tenant_id;
+      if (tenantId != null) {
+        const { data: tm } = await admin
+          .from("tenant_member")
+          .select("tenant_member_id")
+          .eq("tenant_id", tenantId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!tm) {
+          const { error: tmErr } = await admin
+            .from("tenant_member")
+            .insert({ tenant_id: tenantId, user_id: user.id, role: "admin", is_active: true });
+          if (tmErr) return { ok: false, error: "save_failed", message: tmErr.message };
+        }
+      }
+      const { error: imErr } = await admin
+        .from("instance_member")
+        .insert({ instance_id: instanceId, user_id: user.id, role: "admin", is_active: true });
+      if (imErr) return { ok: false, error: "save_failed", message: imErr.message };
+    }
+  }
 
   const { error: clearErr } = await admin
     .from("instance_member")

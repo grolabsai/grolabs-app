@@ -102,9 +102,12 @@ So the current live schema has **four identity tables**: `tenant`, `tenant_membe
 | `name` | text | NOT NULL |
 | `slug` | text | NOT NULL UNIQUE |
 | `kind` | text | NOT NULL, CHECK in (`template_owner`, `customer`) |
+| `domain` | text | **Applied** (`20260605000001`, [`user-management.md`](../policy/user-management.md) PR 1) — unique partial index on `lower(domain)`; the Article-3 tenant identity key; `tenant_id` stays the physical PK. GroLabs tenant backfilled to `grolabs.ai`. |
 | `created_at` / `updated_at` | timestamptz | default now() |
 
 Seed: GroLabs (`template_owner`) owns instance 0; Wazú (`customer`) owns instances 1 and 3. RLS: SELECT for authenticated users with membership in an owned instance; INSERT/UPDATE/DELETE service_role only.
+
+> **Identity change applied** (`user-management.md`, migrations `20260605000001`–`000004`): `tenant.domain` (unique, lowercased) is the Article-3 tenant identity. Helper functions `is_tenant_admin(bigint)`, `is_grolabs_admin()`, `get_auth_user_id_by_email(text)`; new `signup_allowlist` table + `before_user_created_restrict(jsonb)` auth hook (shipped, enabled manually). No other schema change — `must_change_password` lives in Supabase `user_metadata`, and the `admin | member` roles reuse the existing `tenant_member.role` CHECK.
 
 ### `tenant_member` (new, `20260514000001_add_tenant_member.sql`)
 | Column | Type | Notes |

@@ -113,11 +113,14 @@ export function Sidebar({
   instanceName: _instanceName,
   instances,
   currentInstanceId,
+  isTenantAdmin = false,
 }: {
   variant?: "rre" | "admin";
   instanceName: string;
   instances: InstanceListItem[];
   currentInstanceId: number | null;
+  // Tenant Admins see the RRE "Equipo" nav item (user-management.md §4).
+  isTenantAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
@@ -126,7 +129,7 @@ export function Sidebar({
   const t = useTranslations();
 
   const NAV: NavGroup[] =
-    variant === "admin" ? buildAdminNav(t) : buildRreNav(t);
+    variant === "admin" ? buildAdminNav(t) : buildRreNav(t, { isTenantAdmin });
 
   // Single active href across all NAV. Longest matching href wins so
   // parent rows (e.g. /prospects) don't light up alongside their

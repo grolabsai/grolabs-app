@@ -208,9 +208,9 @@ flowchart TB
 
 **Owns:**
 - Tenant settings page
-- User invitation flow
+- User invitation flow *(v1 specced in [`docs/policy/user-management.md`](policy/user-management.md): admin-surface "Clientes" create-customer + RRE "Equipo" team management; `admin | member` roles; `tenant.domain` identity)*
 - Role assignment UI
-- Collaborator management (granting users access to other tenants)
+- Collaborator management (granting users access to other tenants) *(v1 = GroLabs-staff cross-tenant switcher only, per `user-management.md`; self-serve collaborator grants are future)*
 - Per-member `financial_data_visible` toggle UI
 - Entitlement display (when Phase 2 entitlement enforcement ships)
 
@@ -469,7 +469,7 @@ flowchart TB
 
 **Owns:**
 - Top-level navigation across all Admin UI modules
-- Authentication flows (sign-up, sign-in, password reset, OAuth)
+- Authentication flows (sign-up, sign-in, password reset, OAuth) *(GroLabs-app sign-in + Google/Microsoft SSO buttons + forced first-login password change specced in [`docs/policy/user-management.md`](policy/user-management.md) §5–6; distinct from Module 17's plugin-side SSO on the merchant's WC site)*
 - Onboarding wizards (tenant creation, plugin install flow, integration connection flow)
 - Global notification center
 - Account / billing pages (billing integration deferred per Article 7)

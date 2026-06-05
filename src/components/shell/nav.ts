@@ -33,6 +33,8 @@ import {
   Wrench,
   Activity,
   FileText,
+  Users,
+  Building,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,7 +75,30 @@ type T = (key: string) => string;
  * admin sections (Contenido, Prospectos) and the Sistema → Estilo style-guide
  * link — those live in the admin nav only.
  */
-export function buildRreNav(t: T): NavGroup[] {
+export function buildRreNav(
+  t: T,
+  opts?: { isTenantAdmin?: boolean },
+): NavGroup[] {
+  // The "Equipo" (team management) item is visible only to Tenant Admins —
+  // the screen itself re-checks is_tenant_admin server-side. Per
+  // docs/policy/user-management.md §4.
+  const configurationItems: NavItem[] = [
+    { href: "/configuration/search" as Route, label: t("configuration.search.navLabel"), icon: Telescope, useIconWrapper: true },
+    { href: "/configuration/algolia" as Route, label: t("configuration.algolia.navLabel"), icon: Search },
+    { href: "/configuration/woocommerce" as Route, label: t("nav.woocommerce"), icon: ShoppingBag },
+    { href: "/configuration/ga4" as Route, label: t("configuration.ga4.navLabel"), icon: LineChart, useIconWrapper: true },
+    { href: "/configuration/system-health" as Route, label: t("configuration.systemHealth.navLabel"), icon: Activity, useIconWrapper: true },
+    { href: null, label: t("nav.storeSettings"), icon: Settings },
+  ];
+  if (opts?.isTenantAdmin) {
+    configurationItems.push({
+      href: "/configuration/equipo" as Route,
+      label: t("nav.team"),
+      icon: Users,
+      useIconWrapper: true,
+    });
+  }
+
   return [
     {
       key: "dashboard",
@@ -141,14 +166,7 @@ export function buildRreNav(t: T): NavGroup[] {
       key: "configuration",
       title: t("nav.configuration"),
       icon: Wrench,
-      items: [
-        { href: "/configuration/search" as Route, label: t("configuration.search.navLabel"), icon: Telescope, useIconWrapper: true },
-        { href: "/configuration/algolia" as Route, label: t("configuration.algolia.navLabel"), icon: Search },
-        { href: "/configuration/woocommerce" as Route, label: t("nav.woocommerce"), icon: ShoppingBag },
-        { href: "/configuration/ga4" as Route, label: t("configuration.ga4.navLabel"), icon: LineChart, useIconWrapper: true },
-        { href: "/configuration/system-health" as Route, label: t("configuration.systemHealth.navLabel"), icon: Activity, useIconWrapper: true },
-        { href: null, label: t("nav.storeSettings"), icon: Settings },
-      ],
+      items: configurationItems,
     },
   ];
 }
@@ -178,6 +196,14 @@ export function buildAdminNav(t: T): NavGroup[] {
       flat: true,
       items: [
         { href: "/prospects" as Route, label: t("nav.prospects"), icon: UserRound, useIconWrapper: true },
+      ],
+    },
+    {
+      key: "accounts",
+      title: t("nav.accounts"),
+      icon: Building,
+      items: [
+        { href: "/clientes" as Route, label: t("nav.clients"), icon: Users, useIconWrapper: true },
       ],
     },
     {

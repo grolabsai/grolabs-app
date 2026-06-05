@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { loadSwitcherInstances } from "@/lib/shell/switcher";
+import { isCurrentTenantAdmin } from "@/lib/auth/roles";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { AgentPanel } from "@/components/shell/AgentPanel";
@@ -7,12 +9,14 @@ import { AgentLogProvider } from "@/components/shell/AgentLogContext";
 import { FieldHintProvider } from "@/components/shell/FieldHintContext";
 import { MissingTranslationListener } from "@/components/i18n/MissingTranslationListener";
 import { NewInstanceBanner } from "@/components/shell/NewInstanceBanner";
+import { NoAccess } from "@/components/auth/NoAccess";
 
 /**
  * Protected app layout. Every route under `(app)/` inherits this:
  *   - Auth gate (unauthenticated → /login)
- *   - Sidebar
- *   - Topbar with search + user avatar
+ *   - Forced first-login password change (user-management.md §6)
+ *   - No-access gate for orphan accounts (user-management.md §5.2)
+ *   - Sidebar (with the Tenant-Admin "Equipo" item) + Topbar
  *
  * The `(app)` parentheses mean this segment does NOT appear in the URL —
  * `/catalog/products` is still `/catalog/products`, not `/app/catalog/products`.
@@ -31,34 +35,26 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Pull every active membership for the user. We need the full set so the
-  // topbar dropdown can list all instances; the current one is the row with
-  // is_current=true (the partial unique index guarantees at most one).
-  // Supabase types the joined `instance` relation as an array; in practice a
-  // membership row has exactly one instance, so we normalize at the boundary.
-  const { data: memberships } = await supabase
-    .from("instance_member")
-    .select("instance_id, is_current, instance:instance_id(name, slug, kind)")
-    .eq("user_id", user.id)
-    .eq("is_active", true);
+  // Forced first-login password change — block the app until the generated
+  // password is replaced. SSO users never carry this flag.
+  if (user.user_metadata?.must_change_password === true) {
+    redirect("/cambiar-contrasena");
+  }
 
-  type InstanceRel = { name: string; slug: string; kind: string } | null;
-  const normalized = (memberships ?? []).map((m) => {
-    const rel = m.instance as InstanceRel | InstanceRel[] | null | undefined;
-    const obj: InstanceRel = Array.isArray(rel) ? rel[0] ?? null : rel ?? null;
-    return {
-      instanceId: m.instance_id as number,
-      name: obj?.name ?? "",
-      isCurrent: !!m.is_current,
-    };
-  });
-  const instances = normalized
-    .filter((i) => i.name.length > 0)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const currentInstance = instances.find((i) => i.isCurrent) ?? null;
+  // Instance switcher list. GroLabs staff get every tenant's instances
+  // ("domain — instance"); everyone else gets their own active memberships.
+  const { instances, currentInstanceId } = await loadSwitcherInstances(user.id);
+
+  // No active membership → orphan account (e.g. an SSO sign-in that slipped
+  // through). Sign them out; nothing in the app is reachable.
+  if (instances.length === 0) {
+    return <NoAccess />;
+  }
+
+  const isTenantAdmin = await isCurrentTenantAdmin();
+  const currentInstance =
+    instances.find((i) => i.instanceId === currentInstanceId) ?? null;
   const instanceName = currentInstance?.name ?? "";
-
-  // User initials for the topbar avatar — from email local part if no name.
   const initials = (user.email ?? "").slice(0, 2).toUpperCase();
 
   return (
@@ -69,15 +65,14 @@ export default async function AppLayout({
         <Sidebar
           instanceName={instanceName}
           instances={instances}
-          currentInstanceId={currentInstance?.instanceId ?? null}
+          currentInstanceId={currentInstanceId}
+          isTenantAdmin={isTenantAdmin}
         />
         <main className="s-main">
           <TopBar initials={initials} userEmail={user.email ?? ""} />
           <div className="s-shell-body">
             <div className="s-shell-content">
-              <NewInstanceBanner
-                currentInstanceId={currentInstance?.instanceId ?? null}
-              />
+              <NewInstanceBanner currentInstanceId={currentInstanceId} />
               {children}
             </div>
             <AgentPanel />

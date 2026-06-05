@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SsoButtons } from "@/components/auth/SsoButtons";
 
 /**
  * Login page. Public route (not inside the `(app)` protected group).
@@ -101,6 +102,10 @@ export default async function LoginPage({
             Ingresar
           </button>
         </form>
+
+        {/* Google + Microsoft SSO — GroLabs-styled, pre-created emails only.
+            See docs/policy/user-management.md §5. */}
+        <SsoButtons />
 
         <p className="s-auth-footnote">GroLabs · {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
         <div

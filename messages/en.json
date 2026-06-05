@@ -38,7 +38,10 @@
     "prospects": "Prospects",
     "prospectsList": "List",
     "prospectsRubric": "Rubric",
-    "prospectsBenchmarks": "Benchmarks"
+    "prospectsBenchmarks": "Benchmarks",
+    "team": "Team",
+    "accounts": "Accounts",
+    "clients": "Customers"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -2400,10 +2403,11 @@
       },
       "table": {
         "url": "Site",
+        "contact": "Contact",
         "platform": "Platform",
-        "engine": "Search engine",
-        "traffic": "Est. traffic",
-        "updated": "Updated"
+        "lastScore": "Last score",
+        "lastUplift": "Last uplift",
+        "lastScanned": "Last scanned"
       },
       "prospectsTitle": "Diagnosed prospects",
       "recentRunsTitle": "Recent diagnostics",
@@ -2415,14 +2419,6 @@
         "uplift": "Est. uplift",
         "started": "Started",
         "completed": "Completed"
-      },
-      "table": {
-        "url": "Site",
-        "contact": "Contact",
-        "platform": "Platform",
-        "lastScore": "Last score",
-        "lastUplift": "Last uplift",
-        "lastScanned": "Last scanned"
       },
       "form": {
         "title": "New diagnostic",
@@ -2753,6 +2749,86 @@
         "delete": "Delete",
         "confirmDelete": "Delete this benchmark?"
       }
+    }
+  },
+  "auth": {
+    "ssoDivider": "or",
+    "google": "Continue with Google",
+    "microsoft": "Continue with Microsoft",
+    "redirecting": "Redirecting…",
+    "noAccess": {
+      "title": "No access",
+      "body": "Your account is not associated with any instance. Ask an administrator to grant you access.",
+      "signOut": "Sign out"
+    },
+    "changePassword": {
+      "title": "Change your password",
+      "sub": "Before continuing, set a new password for your account.",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm password",
+      "minHint": "At least {min} characters.",
+      "mismatch": "Passwords do not match.",
+      "errorSave": "Could not save the password. Try again.",
+      "submitting": "Saving…",
+      "submit": "Save password"
+    }
+  },
+  "clientes": {
+    "title": "Customers",
+    "subtitle": "Create a new account: domain, instance, and first admin user.",
+    "newTitle": "New customer",
+    "domainLabel": "Domain",
+    "tenantNameLabel": "Company name",
+    "instanceNameLabel": "Instance name",
+    "emailLabel": "Admin email",
+    "passwordLabel": "Temporary password",
+    "regenerate": "Regenerate",
+    "create": "Create customer",
+    "creating": "Creating…",
+    "created": "Customer created",
+    "attached": "Existing user added",
+    "copied": "Password copied",
+    "copy": "Copy",
+    "oneTimeNote": "Temporary password for {email} — shown only once. Copy it now; the user will change it on first login.",
+    "listTitle": "Existing customers",
+    "empty": "No customers yet.",
+    "colDomain": "Domain",
+    "colName": "Name",
+    "colInstances": "Instances",
+    "colMembers": "Users",
+    "errors": {
+      "invalidDomain": "Enter a valid domain (e.g. company.com).",
+      "invalidEmail": "Enter a valid email.",
+      "invalidName": "Enter a valid instance name.",
+      "unauthorized": "You are not allowed to create customers.",
+      "saveFailed": "Could not create the customer. Try again."
+    }
+  },
+  "equipo": {
+    "title": "Team",
+    "subtitle": "Create and manage your account users.",
+    "newTitle": "New user",
+    "emailLabel": "Email",
+    "roleLabel": "Role",
+    "roleMember": "Member",
+    "roleAdmin": "Admin",
+    "passwordLabel": "Temporary password",
+    "regenerate": "Regenerate",
+    "create": "Create user",
+    "creating": "Creating…",
+    "created": "User created",
+    "attached": "Existing user added",
+    "copied": "Password copied",
+    "copy": "Copy",
+    "oneTimeNote": "Temporary password for {email} — shown only once. Copy it now; the user will change it on first login.",
+    "listTitle": "Users",
+    "empty": "No users yet.",
+    "deactivate": "Deactivate",
+    "inactive": "Inactive",
+    "errors": {
+      "invalidEmail": "Enter a valid email.",
+      "unauthorized": "You are not allowed to manage users.",
+      "saveFailed": "Could not save. Try again."
     }
   }
 }

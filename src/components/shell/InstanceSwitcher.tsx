@@ -20,6 +20,9 @@ export type InstanceListItem = {
   instanceId: number;
   name: string;
   isCurrent: boolean;
+  // Optional display label. GroLabs staff see "domain — instance" across all
+  // tenants (user-management.md §7); non-staff see the bare instance name.
+  label?: string;
 };
 
 /**
@@ -47,7 +50,7 @@ export function InstanceSwitcher({
 
   const current =
     instances.find((i) => i.instanceId === currentInstanceId) ?? null;
-  const triggerLabel = current?.name ?? t("noInstance");
+  const triggerLabel = current?.label ?? current?.name ?? t("noInstance");
 
   function handleSwitch(instanceId: number) {
     if (instanceId === currentInstanceId) {
@@ -133,7 +136,7 @@ export function InstanceSwitcher({
                 <span className="flex h-3 w-3 items-center justify-center">
                   {isCurrent ? <Icon icon={Check} size={12} /> : null}
                 </span>
-                <span className="flex-1 truncate">{inst.name}</span>
+                <span className="flex-1 truncate">{inst.label ?? inst.name}</span>
               </DropdownMenuItem>
             );
           })}

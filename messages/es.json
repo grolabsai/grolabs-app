@@ -38,7 +38,10 @@
     "prospects": "Prospectos",
     "prospectsList": "Lista",
     "prospectsRubric": "Rúbrica",
-    "prospectsBenchmarks": "Benchmarks"
+    "prospectsBenchmarks": "Benchmarks",
+    "team": "Equipo",
+    "accounts": "Cuentas",
+    "clients": "Clientes"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -2400,10 +2403,11 @@
       },
       "table": {
         "url": "Sitio",
+        "contact": "Contacto",
         "platform": "Plataforma",
-        "engine": "Buscador",
-        "traffic": "Tráfico estimado",
-        "updated": "Actualizado"
+        "lastScore": "Último score",
+        "lastUplift": "Último uplift",
+        "lastScanned": "Último escaneo"
       },
       "prospectsTitle": "Prospectos diagnosticados",
       "recentRunsTitle": "Diagnósticos recientes",
@@ -2415,14 +2419,6 @@
         "uplift": "Uplift estimado",
         "started": "Iniciado",
         "completed": "Completado"
-      },
-      "table": {
-        "url": "Sitio",
-        "contact": "Contacto",
-        "platform": "Plataforma",
-        "lastScore": "Último score",
-        "lastUplift": "Último uplift",
-        "lastScanned": "Último escaneo"
       },
       "form": {
         "title": "Nuevo diagnóstico",
@@ -2753,6 +2749,86 @@
         "delete": "Eliminar",
         "confirmDelete": "¿Eliminar este benchmark?"
       }
+    }
+  },
+  "auth": {
+    "ssoDivider": "o",
+    "google": "Continuar con Google",
+    "microsoft": "Continuar con Microsoft",
+    "redirecting": "Redirigiendo…",
+    "noAccess": {
+      "title": "Sin acceso",
+      "body": "Tu cuenta no está asociada a ninguna instancia. Pedí a un administrador que te dé acceso.",
+      "signOut": "Cerrar sesión"
+    },
+    "changePassword": {
+      "title": "Cambiá tu contraseña",
+      "sub": "Antes de continuar, definí una contraseña nueva para tu cuenta.",
+      "newLabel": "Contraseña nueva",
+      "confirmLabel": "Confirmar contraseña",
+      "minHint": "Mínimo {min} caracteres.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "errorSave": "No se pudo guardar la contraseña. Intentá de nuevo.",
+      "submitting": "Guardando…",
+      "submit": "Guardar contraseña"
+    }
+  },
+  "clientes": {
+    "title": "Clientes",
+    "subtitle": "Creá una cuenta nueva: dominio, instancia y primer usuario administrador.",
+    "newTitle": "Nuevo cliente",
+    "domainLabel": "Dominio",
+    "tenantNameLabel": "Nombre de la empresa",
+    "instanceNameLabel": "Nombre de la instancia",
+    "emailLabel": "Email del administrador",
+    "passwordLabel": "Contraseña temporal",
+    "regenerate": "Regenerar",
+    "create": "Crear cliente",
+    "creating": "Creando…",
+    "created": "Cliente creado",
+    "attached": "Usuario existente agregado",
+    "copied": "Contraseña copiada",
+    "copy": "Copiar",
+    "oneTimeNote": "Contraseña temporal para {email} — se muestra una sola vez. Copiala ahora; el usuario la cambiará al iniciar sesión.",
+    "listTitle": "Clientes existentes",
+    "empty": "Todavía no hay clientes.",
+    "colDomain": "Dominio",
+    "colName": "Nombre",
+    "colInstances": "Instancias",
+    "colMembers": "Usuarios",
+    "errors": {
+      "invalidDomain": "Ingresá un dominio válido (ej. empresa.com).",
+      "invalidEmail": "Ingresá un email válido.",
+      "invalidName": "Ingresá un nombre de instancia válido.",
+      "unauthorized": "No tenés permiso para crear clientes.",
+      "saveFailed": "No se pudo crear el cliente. Intentá de nuevo."
+    }
+  },
+  "equipo": {
+    "title": "Equipo",
+    "subtitle": "Creá y administrá los usuarios de tu cuenta.",
+    "newTitle": "Nuevo usuario",
+    "emailLabel": "Email",
+    "roleLabel": "Rol",
+    "roleMember": "Miembro",
+    "roleAdmin": "Administrador",
+    "passwordLabel": "Contraseña temporal",
+    "regenerate": "Regenerar",
+    "create": "Crear usuario",
+    "creating": "Creando…",
+    "created": "Usuario creado",
+    "attached": "Usuario existente agregado",
+    "copied": "Contraseña copiada",
+    "copy": "Copiar",
+    "oneTimeNote": "Contraseña temporal para {email} — se muestra una sola vez. Copiala ahora; el usuario la cambiará al iniciar sesión.",
+    "listTitle": "Usuarios",
+    "empty": "Todavía no hay usuarios.",
+    "deactivate": "Desactivar",
+    "inactive": "Inactivo",
+    "errors": {
+      "invalidEmail": "Ingresá un email válido.",
+      "unauthorized": "No tenés permiso para administrar usuarios.",
+      "saveFailed": "No se pudo guardar. Intentá de nuevo."
     }
   }
 }

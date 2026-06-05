@@ -33,14 +33,22 @@ const ADMIN_HOST = "admin.grolabs.ai";
  * Path prefixes (locale-stripped) owned by the `(admin)` group. Reachable
  * only on ADMIN_HOST; they 404 on every other host.
  */
-const ADMIN_PREFIXES = ["/content", "/prospects"];
+const ADMIN_PREFIXES = ["/content", "/prospects", "/clientes"];
 
 /**
  * Public, host-agnostic surfaces — reachable on every host (no auth gate, or
  * shared backend). Everything that is neither admin nor public is the RRE
  * `(app)` surface, reachable on every host EXCEPT the admin host.
  */
-const PUBLIC_PREFIXES = ["/login", "/blog", "/diagnostics", "/legal", "/styleguide"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/auth", // OAuth callback (/auth/callback) — reachable unauthenticated, both hosts
+  "/cambiar-contrasena", // forced first-login password change — both hosts
+  "/blog",
+  "/diagnostics",
+  "/legal",
+  "/styleguide",
+];
 const PUBLIC_ROOT_FILES = ["/rss.xml", "/llms.txt", "/robots.txt", "/sitemap.xml"];
 
 function hostFromRequest(request: NextRequest): string {

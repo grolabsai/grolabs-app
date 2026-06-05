@@ -1,21 +1,25 @@
-import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Authorization checkpoint for the GroLabs admin surface (admin.grolabs.ai,
  * the `(admin)` route group).
  *
- * Per Constitution Article 7 ("Phase 1 builds models without enforcement")
- * and the ratified decision in docs/policy/rre-admin-split.md §5/§8, this is
- * DEFAULT-GRANTED in Phase 1: any authenticated user may reach the admin
- * surface. The distinction is modeled here so it can be flipped on without
- * touching call sites when role taxonomy lands.
+ * REAL CHECK (docs/policy/user-management.md §8): true iff the current auth
+ * user is an active `tenant_member` of the GroLabs template-owner tenant (the
+ * tenant that owns instance 0). This replaces the Phase-1 default-granted stub
+ * and CLOSES SEC-001 — a non-GroLabs authenticated user reaching an admin URL
+ * now gets `notFound()` from the (admin) layout.
  *
- * TODO (Article 7 — deferred enforcement, tracked as SEC-001): when role
- * taxonomy / the GroLabs template-tenant membership check lands, gate this to
- * GroLabs staff (members of the template tenant / instance 0, per
- * tenant-model.md). Tracked in CLAUDE.md §17 ("Admin surface gate is
- * default-granted (SEC-001)") and docs/policy/backlog-registry.md §4.
+ * Backed by the SQL mirror `public.is_grolabs_admin()` (SECURITY DEFINER), so
+ * RLS/RPCs can reuse the same predicate. Reads auth.uid() server-side, so it
+ * needs no `user` argument.
  */
-export function isGroLabsAdmin(_user: User): boolean {
-  return true;
+export async function isGroLabsAdmin(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_grolabs_admin");
+  if (error) {
+    console.error("[isGroLabsAdmin] is_grolabs_admin RPC failed:", error);
+    return false;
+  }
+  return data === true;
 }

@@ -609,6 +609,107 @@ async function findInputBySelectors(
 }
 
 /**
+ * Dismiss any overlay (popup, cookie banner, welcome modal) that might be
+ * blocking interaction with the page. Acts like a human would:
+ *
+ *   1. Press Escape — closes most modal implementations.
+ *   2. Spatially find the close button: look for any large overlay element
+ *      (covering >30% of the viewport), then within it find the interactive
+ *      element closest to its top-right corner that looks like a dismiss
+ *      button (text ×/X/Close/Dismiss, aria-label, or close-like class).
+ *   3. Click it; repeat up to `maxPasses` times for stacked popups.
+ *
+ * This is intentionally site-agnostic — no hardcoded class names or IDs.
+ */
+async function dismissOverlays(page: Page, maxPasses = 3): Promise<void> {
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.waitForTimeout(400).catch(() => {});
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    // Run entirely in the browser context — finds the spatially closest
+    // close-button in the top-right corner of any large overlay.
+    const clicked = await page.evaluate(() => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Candidate overlay: any element that covers a large chunk of the
+      // viewport and is actually visible on screen.
+      const overlays = Array.from(document.querySelectorAll("*")).filter((el) => {
+        const r = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return (
+          r.width > vw * 0.3 &&
+          r.height > vh * 0.3 &&
+          r.top < vh && r.bottom > 0 &&
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          parseFloat(style.opacity) > 0.1 &&
+          (parseInt(style.zIndex) > 10 ||
+            style.position === "fixed" ||
+            style.position === "sticky")
+        );
+      });
+      if (overlays.length === 0) return false;
+
+      // Close-button heuristic: interactive elements inside an overlay
+      // that look like a dismiss button, scored by their distance from
+      // the overlay's top-right corner (lower = closer = better candidate).
+      const CLOSE_TEXTS = new Set(["×", "✕", "✖", "x", "close", "dismiss", "cerrar", "no thanks", "no, thanks", "skip"]);
+      let bestEl: Element | null = null;
+      let bestScore = Infinity;
+
+      for (const overlay of overlays) {
+        const or = overlay.getBoundingClientRect();
+        const topRight = { x: or.right, y: or.top };
+
+        const candidates = Array.from(
+          overlay.querySelectorAll("button, a, [role='button'], input[type='checkbox'], span, div"),
+        ).filter((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return false;
+          const style = window.getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden") return false;
+          // Must be in the top half of the overlay and right 60% of it
+          return r.top < or.top + or.height * 0.5 && r.right > or.left + or.width * 0.4;
+        });
+
+        for (const el of candidates) {
+          const r = el.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const dist = Math.hypot(cx - topRight.x, cy - topRight.y);
+
+          const text = ((el as HTMLElement).innerText || el.getAttribute("aria-label") || el.className || "")
+            .trim().toLowerCase();
+          const looksLikeClose =
+            CLOSE_TEXTS.has(text) ||
+            text.length <= 3 ||                          // short text → likely ×
+            el.className.toLowerCase().includes("close") ||
+            el.className.toLowerCase().includes("dismiss") ||
+            (el.getAttribute("aria-label") || "").toLowerCase().includes("close");
+
+          // Score: distance from top-right corner, penalised if not close-like
+          const score = dist * (looksLikeClose ? 1 : 3);
+          if (score < bestScore) {
+            bestScore = score;
+            bestEl = el;
+          }
+        }
+      }
+
+      if (bestEl && bestScore < vw * 0.8) {
+        (bestEl as HTMLElement).click();
+        return true;
+      }
+      return false;
+    }).catch(() => false);
+
+    if (!clicked) break; // no overlay found — done
+    await page.waitForTimeout(500).catch(() => {});
+  }
+}
+
+/**
  * Tries to expose a search input even when it isn't visible by
  * default. Some themes (Squarespace, custom CMS templates) hide the
  * input behind a magnifying-glass icon — clicking the icon reveals
@@ -687,39 +788,10 @@ async function locateOrOpenSearchInput(
     };
   }
 
-  // 3.5) Dismiss any overlays (cookie banners, welcome popups, exit-intent
-  //   modals) that may cover the trigger. Press Escape first (catches most
-  //   modal implementations), then try common close-button selectors.
-  await page.keyboard.press("Escape").catch(() => {});
-  await page.waitForTimeout(300).catch(() => {});
-  const overlayCloseSelectors = [
-    // Generic close/dismiss patterns
-    '[class*="popup"] [class*="close"]',
-    '[class*="modal"] [class*="close"]',
-    '[class*="overlay"] [class*="close"]',
-    '[class*="dismiss"]',
-    // Cookie consent
-    'button[class*="accept"]',
-    'button[class*="cookie"]',
-    '[id*="cookie"] button',
-    // WP-specific popup plugins (Popup Maker, OptinMonster, etc.)
-    '.pum-close',
-    '.om-close',
-    '[class*="popup-close"]',
-    // grolabs.io specific: welcome/exit popups use checkbox dismiss
-    '#welcome_dismiss_show',
-    '#exit_dismiss_show',
-  ];
-  for (const sel of overlayCloseSelectors) {
-    try {
-      const el = await page.$(sel);
-      if (el && await el.isVisible().catch(() => false)) {
-        await el.click({ timeout: 800 }).catch(() => {});
-        await page.waitForTimeout(300).catch(() => {});
-        break;
-      }
-    } catch { /* ignore */ }
-  }
+  // 3.5) Dismiss overlays — acts like a human: press Escape, then look for
+  //   the X / close button in the top-right corner of any large overlay.
+  //   Runs up to 3 times so stacked popups are cleared one by one.
+  await dismissOverlays(page);
 
   // 4) Click and wait for either the input to appear or the page to
   //    navigate to a search-style URL.

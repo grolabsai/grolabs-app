@@ -1,31 +1,32 @@
 /**
- * Prospectos v5 — optional browser-backed HTML fetch for the FETCH evidence path.
+ * Prospectos v5 — browser-backed HTML fetch for the FETCH evidence path.
  *
- * When PROSPECTOS_FETCH_VIA_BROWSER=1 (and Browserless credentials are present),
- * `fetchHtmlViaBrowser` renders the page in a real Chromium via Playwright over
- * CDP. This bypasses bot-protection and JS-gated content that plain `fetch()`
- * can't reach (Cloudflare challenges, 429 rate-limits on the homepage, etc.).
+ * Strategy: plain fetch first, Browserless retry on `na`.
+ *   1. Every HTML fetch (site homepage for OG tags, discovery homepage) starts
+ *      with a plain `fetch()` — fast, cheap, works for most sites.
+ *   2. If the result is `na` or `error` (bot-protection, Cloudflare challenge,
+ *      network timeout) AND Browserless credentials are configured, we
+ *      automatically retry the same URL in a real Chromium via Playwright CDP.
+ *   3. The Browserless result replaces the failed plain-fetch result.
  *
- * When the flag is off, or when credentials are absent, all callers fall back
- * to the existing plain-fetch path transparently — no behaviour change.
+ * This means:
+ *   - Most sites: one fast plain fetch, no Browserless cost.
+ *   - Bot-protected sites: plain fetch fails (~8 s timeout) → Browserless retry
+ *     (~10 s render) → real results instead of `na`.
+ *   - No Browserless credentials: always plain fetch, same as before.
  *
- * Flag:  PROSPECTOS_FETCH_VIA_BROWSER=1  (off by default)
- * Deps:  BROWSERLESS_HOST + BROWSERLESS_TOKEN  (same vars as browser-probe.ts)
- *        Playwright must be installed (it already is — browser-probe.ts uses it)
- *
- * Usage:
- *   import { fetchHtmlViaBrowser, BROWSER_FETCH_ENABLED } from "./browser-fetch";
- *   const result = await fetchHtmlViaBrowser(url);  // { ok, body, status }
+ * Deps (all optional — graceful no-op when absent):
+ *   BROWSERLESS_HOST   e.g. "production-sfo.browserless.io"
+ *   BROWSERLESS_TOKEN  from your Browserless dashboard
+ *   Playwright         already installed (browser-probe.ts uses it)
  */
 
-const BROWSER_FETCH_ENABLED =
-  process.env.PROSPECTOS_FETCH_VIA_BROWSER === "1";
 const BROWSERLESS_HOST = process.env.BROWSERLESS_HOST;
 const BROWSERLESS_TOKEN = process.env.BROWSERLESS_TOKEN;
 
-/** Whether the browser-fetch path is active (flag on + credentials present). */
-export const FETCH_VIA_BROWSER =
-  BROWSER_FETCH_ENABLED && !!BROWSERLESS_HOST && !!BROWSERLESS_TOKEN;
+/** True when Browserless credentials are present (retry path is available). */
+export const BROWSERLESS_AVAILABLE =
+  !!BROWSERLESS_HOST && !!BROWSERLESS_TOKEN;
 
 /** Result shape — mirrors the plain-fetch path for easy substitution. */
 export type BrowserFetchResult =
@@ -41,11 +42,11 @@ function buildWsUrl(): string | null {
 const PAGE_TIMEOUT_MS = 20_000; // 20 s — generous for slow e-commerce sites
 
 /**
- * Render `url` in a real Chromium (via Browserless CDP or local launch) and
- * return the page's serialised HTML. Falls back gracefully on any error.
+ * Render `url` in a real Chromium (via Browserless CDP, or local launch as a
+ * dev fallback) and return the page's serialised HTML.
  *
- * Only call this when FETCH_VIA_BROWSER is true — the caller is responsible
- * for checking.
+ * Called only when plain fetch returned `na`/`error` AND `BROWSERLESS_AVAILABLE`
+ * is true. Never throws — returns a typed error result on any failure.
  */
 export async function fetchHtmlViaBrowser(
   url: string,
@@ -53,7 +54,7 @@ export async function fetchHtmlViaBrowser(
   let playwright;
   try {
     playwright = await import("playwright");
-  } catch (e) {
+  } catch {
     return { ok: false, status: null, note: "playwright_unavailable", url };
   }
 
@@ -64,7 +65,7 @@ export async function fetchHtmlViaBrowser(
     if (wsUrl) {
       browser = await playwright.chromium.connectOverCDP(wsUrl);
     } else {
-      // Local dev fallback when credentials aren't set yet
+      // Local dev fallback — no credentials needed, but not viable on Vercel
       browser = await playwright.chromium.launch({ headless: true });
       weLaunched = true;
     }
@@ -88,9 +89,7 @@ export async function fetchHtmlViaBrowser(
         if (resp.url() === url || resp.url().startsWith(url.replace(/\/$/, ""))) {
           httpStatus = resp.status();
         }
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
     });
 
     try {
@@ -100,7 +99,7 @@ export async function fetchHtmlViaBrowser(
       });
     } catch (e) {
       // Timeout or navigation error — still try to grab whatever loaded
-      console.warn(`[browser-fetch] goto timeout/error for ${url}:`, String(e).slice(0, 120));
+      console.warn(`[browser-fetch] goto timeout for ${url}:`, String(e).slice(0, 100));
     }
 
     const body = await page.content();
@@ -112,15 +111,12 @@ export async function fetchHtmlViaBrowser(
 
     return { ok: true, body, status: httpStatus ?? 200, url };
   } catch (e) {
-    const note = `browser_fetch_failed:${String(e).slice(0, 120)}`;
+    const note = `browser_fetch_failed:${String(e).slice(0, 100)}`;
     console.warn(`[browser-fetch] ${url}:`, note);
     return { ok: false, status: null, note, url };
   } finally {
     try {
-      if (browser && weLaunched) await browser.close();
-      else if (browser && !weLaunched) await (browser as import("playwright").Browser).close().catch(() => {});
-    } catch {
-      /* ignore */
-    }
+      if (weLaunched && browser) await browser.close();
+    } catch { /* ignore */ }
   }
 }

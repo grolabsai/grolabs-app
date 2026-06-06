@@ -34,7 +34,7 @@ import { probeSiteWide } from "../site-checks";
 import type { SiteWideContext } from "../types";
 import { scanSiteSignals, type SiteSignals } from "@/lib/ase";
 import {
-  FETCH_VIA_BROWSER,
+  BROWSERLESS_AVAILABLE,
   fetchHtmlViaBrowser,
 } from "./scorers/browser-fetch";
 import type {
@@ -111,26 +111,41 @@ export function browserProbeEnabled(): boolean {
 }
 
 /**
- * Browser-backed fetch shim for the discovery homepage fetch.
- * Only active when PROSPECTOS_FETCH_VIA_BROWSER=1 + Browserless is configured.
- * Returns a Response-compatible object so it can replace `fetchImpl: fetch`.
+ * Plain-fetch-first with automatic Browserless retry on network failure.
+ *
+ * Strategy: try the standard global `fetch` first (fast, cheap). If the
+ * response has a null status (network error / timeout — indicating the server
+ * was unreachable, not just unhappy), AND Browserless credentials are present,
+ * retry the same URL through a real Chromium. A real HTTP response (even 4xx
+ * or 5xx) means the server IS reachable so we keep that result — a 429 counts
+ * as "site is up" for discovery purposes and the individual scorer decides what
+ * to do with a 429 on its specific artifact.
  */
-async function browserFetchImpl(
+async function fetchWithBrowserFallback(
   url: string,
+  init?: RequestInit,
 ): Promise<Response> {
-  const r = await fetchHtmlViaBrowser(url);
-  const status = r.ok ? r.status : (r.status ?? 0);
-  const body = r.ok ? r.body : "";
-  return new Response(body, { status });
+  try {
+    const res = await fetch(url, init);
+    // Got a real HTTP response → keep it (even 4xx/5xx).
+    return res;
+  } catch {
+    // Network-level failure (timeout, DNS miss, connection refused).
+    if (!BROWSERLESS_AVAILABLE) throw new Error("network_error");
+    console.info(`[v5/discovery] plain fetch failed for ${url} — retrying via Browserless`);
+    const r = await fetchHtmlViaBrowser(url);
+    const status = r.ok ? r.status : (r.status ?? 0);
+    const body = r.ok ? r.body : "";
+    return new Response(body, { status });
+  }
 }
 
 function defaultDeps(): DiscoveryDeps {
   return {
-    // When browser-fetch is enabled, use the Playwright-backed fetch for the
-    // homepage so bot-protected sites register as reachable during discovery.
-    fetchImpl: FETCH_VIA_BROWSER
-      ? (browserFetchImpl as unknown as typeof fetch)
-      : fetch,
+    // Use the plain-fetch-first + Browserless-fallback shim so bot-protected
+    // sites register as reachable during discovery without always paying the
+    // Browserless cost.
+    fetchImpl: fetchWithBrowserFallback as unknown as typeof fetch,
     discoverSamples,
     probeSiteWide: async (rootUrl) => {
       try {

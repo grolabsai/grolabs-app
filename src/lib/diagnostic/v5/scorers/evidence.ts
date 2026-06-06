@@ -34,7 +34,7 @@ import { fetchWithTimeout } from "../../site-checks";
 import { scanPdpSignals, type PdpSignals } from "@/lib/ase";
 import type { V5RunContext } from "../types";
 import {
-  FETCH_VIA_BROWSER,
+  BROWSERLESS_AVAILABLE,
   fetchHtmlViaBrowser,
 } from "./browser-fetch";
 
@@ -191,11 +191,38 @@ export function siteFileFor(ctx: V5RunContext, path: string): Promise<FileEviden
   return p;
 }
 
+/**
+ * Convert a BrowserFetchResult to FileEvidence shape.
+ */
+function browserResultToFile(r: Awaited<ReturnType<typeof fetchHtmlViaBrowser>>): FileEvidence {
+  if (r.ok) {
+    return { ok: true, body: r.body, httpStatus: r.status, url: r.url };
+  }
+  return {
+    ok: false,
+    status: r.status === null ? "error" : "missing",
+    httpStatus: r.status,
+    note: r.note,
+    url: r.url,
+  };
+}
+
+/**
+ * True when a FileEvidence result is effectively unmeasured — plain fetch was
+ * blocked (bot-protection, timeout, DNS miss). A real non-2xx (404, 403, 429)
+ * means the server responded and we have a signal; only null/network-error
+ * status warrants a Browserless retry.
+ */
+function isUnmeasured(e: FileEvidence): boolean {
+  return !e.ok && (e.status === "na" || e.status === "error");
+}
+
 /** Fetch the SITE_WIDE page HTML itself (for OG meta tags), memoized.
  *
- * When PROSPECTOS_FETCH_VIA_BROWSER=1 + Browserless credentials are present,
- * renders the page in a real Chromium to bypass bot-protection / JS-gating.
- * Falls back to the plain-fetch path transparently otherwise.
+ * Strategy: plain fetch first; if the result is `na`/`error` (bot-protection
+ * or network failure) AND Browserless credentials are configured, automatically
+ * retry with a real Chromium render. This means most sites pay only the cost of
+ * a fast plain fetch; bot-protected sites fall back to Browserless transparently.
  */
 export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const site = resolveSiteUrl(ctx);
@@ -207,28 +234,15 @@ export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const existing = cache.files.get(key);
   if (existing) return existing;
 
-  // Use browser rendering when the flag is on; plain fetch otherwise.
-  const p: Promise<FileEvidence> = FETCH_VIA_BROWSER
-    ? fetchHtmlViaBrowser(site.url).then((r) => {
-        if (r.ok) {
-          return {
-            ok: true as const,
-            body: r.body,
-            httpStatus: r.status,
-            url: r.url,
-          };
-        }
-        return {
-          ok: false as const,
-          status: (r.status === null ? "error" : "missing") as
-            | "error"
-            | "missing",
-          httpStatus: r.status,
-          note: r.note,
-          url: r.url,
-        };
-      })
-    : loadFile(site.url);
+  const p = loadFile(site.url).then(async (plainResult) => {
+    // Plain fetch succeeded or got a real HTTP response → use it.
+    if (!isUnmeasured(plainResult)) return plainResult;
+    // Plain fetch was blocked / timed out — retry with Browserless if available.
+    if (!BROWSERLESS_AVAILABLE) return plainResult;
+    console.info(`[v5/evidence] plain fetch na for ${site.url} — retrying via Browserless`);
+    const browserResult = await fetchHtmlViaBrowser(site.url);
+    return browserResultToFile(browserResult);
+  });
 
   cache.files.set(key, p);
   return p;

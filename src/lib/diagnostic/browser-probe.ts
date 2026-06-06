@@ -687,18 +687,57 @@ async function locateOrOpenSearchInput(
     };
   }
 
+  // 3.5) Dismiss any overlays (cookie banners, welcome popups, exit-intent
+  //   modals) that may cover the trigger. Press Escape first (catches most
+  //   modal implementations), then try common close-button selectors.
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.waitForTimeout(300).catch(() => {});
+  const overlayCloseSelectors = [
+    // Generic close/dismiss patterns
+    '[class*="popup"] [class*="close"]',
+    '[class*="modal"] [class*="close"]',
+    '[class*="overlay"] [class*="close"]',
+    '[class*="dismiss"]',
+    // Cookie consent
+    'button[class*="accept"]',
+    'button[class*="cookie"]',
+    '[id*="cookie"] button',
+    // WP-specific popup plugins (Popup Maker, OptinMonster, etc.)
+    '.pum-close',
+    '.om-close',
+    '[class*="popup-close"]',
+    // grolabs.io specific: welcome/exit popups use checkbox dismiss
+    '#welcome_dismiss_show',
+    '#exit_dismiss_show',
+  ];
+  for (const sel of overlayCloseSelectors) {
+    try {
+      const el = await page.$(sel);
+      if (el && await el.isVisible().catch(() => false)) {
+        await el.click({ timeout: 800 }).catch(() => {});
+        await page.waitForTimeout(300).catch(() => {});
+        break;
+      }
+    } catch { /* ignore */ }
+  }
+
   // 4) Click and wait for either the input to appear or the page to
   //    navigate to a search-style URL.
   const beforeUrl = page.url();
   try {
     await trigger.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {});
-    await trigger.click({ timeout: 2500 });
+    await trigger.click({ timeout: 3500 });
   } catch {
-    return {
-      handle: null,
-      discovery: "missing",
-      note: "Found a search trigger but clicking it threw an error.",
-    };
+    // One more attempt: force-click bypasses interactability checks
+    try {
+      await trigger.click({ force: true, timeout: 2000 });
+    } catch {
+      return {
+        handle: null,
+        discovery: "missing",
+        note: "Found a search trigger but clicking it threw an error.",
+      };
+    }
   }
   await page
     .waitForLoadState("domcontentloaded", { timeout: 5000 })

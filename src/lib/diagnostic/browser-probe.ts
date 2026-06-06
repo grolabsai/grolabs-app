@@ -596,8 +596,11 @@ async function findInputBySelectors(
   page: Page,
 ): Promise<import("playwright").ElementHandle | null> {
   for (const sel of INPUT_SELECTORS) {
-    const handle = await page.$(sel);
-    if (handle) {
+    // Use $$ to check ALL matching elements — not just the first.
+    // A selector can match both a hidden mobile-menu input and a visible
+    // header input; page.$() would stop at the first (hidden) one.
+    const handles = await page.$$(sel);
+    for (const handle of handles) {
       const visible = await handle.isVisible().catch(() => false);
       if (visible) return handle;
     }

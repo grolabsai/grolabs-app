@@ -317,7 +317,10 @@ export async function runV5Diagnostic(
       browserProbeResult = await runBrowserProbe({
         rootUrl: probeRootUrl,
         synonymPairs: [],
-        emptyStateQueries: [],
+        // Always run one empty-state test so we get at least one real search
+        // even when product name discovery fails. A gibberish query that won't
+        // match any product guarantees a "no results" page for graceful-handling.
+        emptyStateQueries: ["xyzzy9q2w3notaproduct"],
         testEntries,
       }).catch((e) => {
         console.warn("[v5/probe] runBrowserProbe threw:", e instanceof Error ? e.message : String(e));

@@ -127,6 +127,8 @@ register("search.typo.tolerance", async (_check, ctx) => {
         : `${depth} error${depth > 1 ? "s" : ""} / ${wordLen} chars = ${tolerancePct}% tolerance (${classification})`,
       tested: sorted.map((v) => ({
         query: v.query_text,
+        // [brackets] mark the changed characters — bold these in the report
+        highlighted: v.highlighted ?? v.query_text,
         level: v.variant_type,
         errors: parseInt(v.variant_type.replace("typo_", "").replace("typo", "1")),
         found: v.confidence >= 60,

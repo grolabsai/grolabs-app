@@ -75,6 +75,14 @@ export type RunV5DiagnosticOk = {
   report: RenderedReport;
   findingsInserted: number;
   categoryScoresUpserted: number;
+  /** Temporary debug field — probe internals for diagnosing search detection. */
+  probeDebug?: {
+    search_box_found: boolean | null;
+    notes: string[];
+    product_names_discovered: string[];
+    rootUrl: string;
+    pdpProductName: string | null;
+  };
 };
 
 export type RunV5DiagnosticResult = RunV5DiagnosticOk | { error: string };
@@ -297,14 +305,32 @@ export async function runV5Diagnostic(
           ]
         : []; // fallback B: probe discovers product names from homepage automatically
 
+      const probeRootUrl = new URL(entryUrl).origin;
+      console.info("[v5/probe] starting probe", {
+        rootUrl: probeRootUrl,
+        pdpProductName,
+        testEntryCount: testEntries.length,
+        browserlessHost: process.env.BROWSERLESS_HOST ?? "(unset)",
+        probeEnabled: true,
+      });
+
       browserProbeResult = await runBrowserProbe({
-        rootUrl: new URL(entryUrl).origin,
-        synonymPairs: [],          // no synonym pairs for anonymous runs
-        emptyStateQueries: [],     // probe generates a gibberish query itself
+        rootUrl: probeRootUrl,
+        synonymPairs: [],
+        emptyStateQueries: [],
         testEntries,
       }).catch((e) => {
-        console.warn("runV5Diagnostic: browser probe failed:", e instanceof Error ? e.message : e);
+        console.warn("[v5/probe] runBrowserProbe threw:", e instanceof Error ? e.message : String(e));
         return null;
+      });
+
+      // Log full probe outcome so it appears in Vercel function logs
+      console.info("[v5/probe] result", {
+        search_box_found: browserProbeResult?.search_box_found ?? null,
+        notes: browserProbeResult?.notes ?? ["probe_returned_null"],
+        product_names_discovered: browserProbeResult?.product_names_discovered ?? [],
+        brands_discovered: browserProbeResult?.brands_discovered ?? [],
+        engine_network_fingerprint: browserProbeResult?.engine_network_fingerprint ?? null,
       });
     }
 
@@ -368,6 +394,13 @@ export async function runV5Diagnostic(
       report,
       findingsInserted: persistResult.findingsInserted,
       categoryScoresUpserted: persistResult.categoryScoresUpserted,
+      probeDebug: {
+        search_box_found: browserProbeResult?.search_box_found ?? null,
+        notes: browserProbeResult?.notes ?? ["probe_not_run"],
+        product_names_discovered: browserProbeResult?.product_names_discovered ?? [],
+        rootUrl: new URL(entryUrl).origin,
+        pdpProductName,
+      },
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

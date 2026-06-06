@@ -45,11 +45,22 @@ function graded(score: number, evidence?: ScoreResult["evidence"]): ScoreResult 
 
 // ── Pure graders (exported for unit tests) ───────────────────────────────────
 
-/** aeo.llms_txt.present — a non-empty /llms.txt exists. */
+/**
+ * aeo.llms_txt.present — a real /llms.txt exists.
+ *
+ * WordPress and similar CMSes serve their 404 "page not found" HTML with
+ * HTTP 200 (soft 404). We guard against this by requiring the body to look
+ * like plain text / markdown, not HTML. An llms.txt should NOT start with
+ * `<!DOCTYPE` or `<html` — if it does, it's a CMS 404 page, not the file.
+ */
 export function gradeLlmsTxtPresent(body: string): ScoreResult {
-  const present = body.trim().length > 0;
-  const evidence = { byte_length: body.length };
-  return present ? PASS(evidence) : FAIL(evidence);
+  const trimmed = body.trim();
+  if (trimmed.length === 0) return FAIL({ byte_length: 0, note: "empty_file" });
+  // Soft-404 detection: body looks like HTML (CMS 404 page served with HTTP 200)
+  if (/^<!doctype\s/i.test(trimmed) || /^<html[\s>]/i.test(trimmed)) {
+    return FAIL({ byte_length: trimmed.length, note: "soft_404_html_response" });
+  }
+  return PASS({ byte_length: trimmed.length });
 }
 
 /**
@@ -82,13 +93,18 @@ export function gradeLlmsTxtQuality(body: string): ScoreResult {
 
 /**
  * aeo.robots.ai_policy — graded from the AI-bot stance in robots.txt:
- *   explicit allow → 100 (pass); unmentioned / no robots → 50 (partial,
- *   neutral: not blocked but not explicitly welcomed); explicit block → 0 (fail).
- * `body` is null when robots.txt is absent (404) — treated as unmentioned.
+ *   explicit allow → 100 (pass)
+ *   explicit block → 0 (fail)
+ *   unmentioned    → 0 (fail) — no AI policy = not optimised for AI discoverability
+ *
+ * "Unmentioned" used to score 50 (partial / neutral) but that gives false
+ * credit to stores that simply haven't thought about AI crawlers. A store
+ * that hasn't added an AI policy has done nothing — it should not score above 0.
+ * `body` is null when robots.txt is absent — treated as unmentioned (fail).
  */
 export function gradeRobotsAiPolicy(body: string | null): ScoreResult {
   const policy = detectAiBotPolicy(body);
-  const score = policy === "allow" ? 100 : policy === "block" ? 0 : 50;
+  const score = policy === "allow" ? 100 : 0; // block OR unmentioned → 0
   return graded(score, { ai_bot_policy: policy, robots_present: body !== null });
 }
 

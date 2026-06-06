@@ -112,7 +112,20 @@ register("search.typo.tolerance", async (_check, ctx) => {
       tolerancePct <= 33 ? "moderate" :
                            "strong";
 
-    const score = total > 0 ? Math.round((depth / total) * 100) : 0;
+    // Binary grade: do they have typo tolerance or not?
+    // The depth/percentage lives in evidence for the tooltip — not in the grade.
+    // Industry benchmarks for context:
+    //   0%      → none     (vanilla WooCommerce — most stores)
+    //   ≤17%    → weak     (1 error in 6+ chars — basic plugin)
+    //   18-33%  → moderate (Meilisearch default, some plugins) — ACCEPTABLE
+    //   >33%    → strong   (Algolia, enterprise search) — EXCELLENT
+    const benchmarks: Record<string, string> = {
+      none:     "No tolerance — any typo returns 0 results (default for most stores)",
+      weak:     "Basic tolerance (1 char in 6+) — catches simple mistakes",
+      moderate: "Good tolerance (~28%) — comparable to Meilisearch / Algolia standard",
+      strong:   "Excellent tolerance (>33%) — enterprise-level fuzzy search",
+    };
+
     const evidence = {
       word: searchWord,
       word_length: wordLen,
@@ -121,13 +134,12 @@ register("search.typo.tolerance", async (_check, ctx) => {
       tolerance_chars: depth,
       tolerance_pct: tolerancePct,
       classification,
-      // Human-readable rule: "2 errors / 7 chars = 28% tolerance"
+      benchmark: benchmarks[classification] ?? "",
       rule: depth === 0
-        ? "no typo tolerance detected"
+        ? "No typo tolerance detected"
         : `${depth} error${depth > 1 ? "s" : ""} / ${wordLen} chars = ${tolerancePct}% tolerance (${classification})`,
       tested: sorted.map((v) => ({
         query: v.query_text,
-        // [brackets] mark the changed characters — bold these in the report
         highlighted: v.highlighted ?? v.query_text,
         level: v.variant_type,
         errors: parseInt(v.variant_type.replace("typo_", "").replace("typo", "1")),
@@ -135,8 +147,8 @@ register("search.typo.tolerance", async (_check, ctx) => {
         confidence: v.confidence,
       })),
     };
-    if (depth === total) return PASS(evidence);
-    if (depth > 0)       return PARTIAL(score, evidence);
+    // Binary: has it → pass, doesn't → fail. No partial.
+    if (depth > 0) return PASS(evidence);
     return FAIL(evidence);
   }
 

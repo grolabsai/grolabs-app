@@ -74,8 +74,11 @@ function rootOf(url: string): string {
 function resolvePdpUrl(ctx: V5RunContext): { url: string } | { na: string } {
   if (ctx.pages) {
     const p = ctx.pages.PDP;
-    if (!p || !p.found || !p.url) return { na: "pdp_page_unavailable" };
-    return { url: p.url };
+    // Use the discovered PDP URL when confirmed; otherwise fall back to ctx.url
+    // (the user submitted it as a PDP URL directly). Individual fetchers and
+    // the ASE call handle their own errors — don't prematurely return na here.
+    if (p?.found && p.url) return { url: p.url };
+    return { url: ctx.url };
   }
   return { url: ctx.url };
 }
@@ -87,8 +90,12 @@ function resolvePdpUrl(ctx: V5RunContext): { url: string } | { na: string } {
 function resolveSiteUrl(ctx: V5RunContext): { url: string } | { na: string } {
   if (ctx.pages) {
     const p = ctx.pages.SITE_WIDE;
-    if (!p || !p.found) return { na: "site_wide_page_unavailable" };
-    return { url: p.url ?? rootOf(ctx.url) };
+    // Use the discovered SITE_WIDE URL when confirmed; otherwise fall back to
+    // rootOf(ctx.url). Discovery may have been blocked by bot-protection or
+    // rate-limiting — the individual artifact fetches (sitemap.xml, robots.txt,
+    // etc.) often succeed even when the homepage fetch doesn't.
+    if (p?.found) return { url: p.url ?? rootOf(ctx.url) };
+    return { url: rootOf(ctx.url) };
   }
   return { url: rootOf(ctx.url) };
 }

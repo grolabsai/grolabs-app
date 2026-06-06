@@ -435,8 +435,16 @@ export async function discoverPages(
     browserEngineFingerprint: deps.browserEngineFingerprint,
   });
 
+  // A non-null HTTP status means the site responded (even 429 rate-limit or
+  // 403 bot-protection counts — the server is there). Only treat as unreachable
+  // when home.status is null (network failure / timeout / DNS miss). Previously
+  // this required home.ok (2xx only), which caused all FETCH-based scorers to
+  // return `na` when a site had bot-protection or rate-limited the discovery
+  // fetch — even though the individual artifact fetches (sitemap.xml, etc.)
+  // would have succeeded.
   const siteReachable =
     home.ok ||
+    home.status !== null ||
     !!siteWide?.llmsTxt.present ||
     !!siteWide?.robotsTxt.present ||
     !!siteWide?.sitemap.present;

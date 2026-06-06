@@ -137,3 +137,86 @@ export type Scorer = (
   check: AtomicCheck,
   ctx: V5RunContext,
 ) => Promise<ScoreResult>;
+
+// ─────────────────────────────────────────────────────────────────────────
+// Prompt 3 — scoring-engine result types (additive).
+//
+// The engine (engine.ts) walks loaded `AtomicCheck`s in dependency order,
+// scores each via the registry, applies the blocked/na rules, and rolls the
+// results up into categories and stages (rollup.ts). Everything below is the
+// in-memory shape that walk produces — no IO. persist.ts maps it onto the
+// `finding` + `run_category_score` tables.
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * One check after the engine has scored or gated it.
+ *
+ * `status` semantics (locked):
+ *   - `na`      → excluded from BOTH numerator and denominator (no scorer,
+ *                 page not discovered, or the scorer judged the concept absent
+ *                 and not expected). `score` is null.
+ *   - `blocked` → a prerequisite was unmet, so this dependent earns 0 credit
+ *                 but is INCLUDED in the denominator. `score` is 0.
+ *   - `pass`/`partial`/`fail` → the scorer ran; `score` is the earned credit
+ *                 (0–100, may be fractional for graded checks).
+ */
+export type CheckScore = {
+  check: AtomicCheck;
+  score: number | null;
+  status: ResultStatus;
+  evidence?: Evidence;
+  note?: string;
+};
+
+/**
+ * One contribution edge for a derived category
+ * (`diagnostic_category_contribution`): the score of `sourceCheckId` feeds the
+ * derived category's score with the given `weight`.
+ */
+export type CategoryContribution = {
+  sourceCheckId: number;
+  weight: number;
+  leverOverride?: RevenueLever | null;
+};
+
+/**
+ * A derived category (`diagnostic_category.is_derived = true`, e.g.
+ * `returns_risk`) plus its contribution edges. Loaded from the DB by the
+ * caller (Prompt 6) — derived categories own no checks, so they never appear
+ * in the loaded `AtomicCheck[]` set and must be supplied here.
+ */
+export type DerivedCategoryInput = {
+  category: AtomicCategory; // isDerived === true
+  contributions: CategoryContribution[];
+};
+
+/** A scored category. `checks` is empty for derived categories. */
+export type ScoredCategory = {
+  category: AtomicCategory;
+  /**
+   * 0–100 integer, or null when every member was `na` — a null-scored category
+   * is excluded from its stage rollup (it had nothing measurable).
+   */
+  score: number | null;
+  isDerived: boolean;
+  checks: CheckScore[];
+};
+
+/** A scored stage: the weighted roll-up of its categories. */
+export type ScoredStage = {
+  stage: AtomicStage;
+  score: number | null;
+  categories: ScoredCategory[];
+};
+
+/** The full in-memory scored tree for one run (produced by the engine, no IO). */
+export type ScoredRun = {
+  /** Every check, in dependency order. */
+  checks: CheckScore[];
+  /** Every category (non-derived + derived), flat. */
+  categories: ScoredCategory[];
+  /** Every stage, flat. */
+  stages: ScoredStage[];
+  /** Mean of the non-null stage scores, or null when no stage scored. */
+  overall: number | null;
+};

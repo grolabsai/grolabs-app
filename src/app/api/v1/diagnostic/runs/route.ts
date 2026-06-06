@@ -88,19 +88,12 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Rate limit (per-IP sliding window) — always enforced before any scoring.
-  const ip = getClientIp(req);
+  // Rate limiting removed from the anonymous diagnostic path.
+  // IP-based limiting blocks shared IPs (offices, carriers) and is trivially
+  // bypassed by VPN — wrong tool for a public landing page. If abuse becomes
+  // a problem, switch to email-based limiting (1 scan / email / day) wired
+  // through the email field the user already provides in the form.
   const service = createServiceRoleClient();
-  const { data: allowed, error: rlErr } = await service.rpc(
-    "record_diagnostic_request",
-    { p_ip: ip },
-  );
-  if (rlErr) {
-    return json(500, { error: "rate_limit_check_failed", detail: rlErr.message });
-  }
-  if (!allowed) {
-    return json(429, { error: "rate_limited", retry_after_seconds: 3600 });
-  }
 
   const verticalId =
     typeof body.vertical_id === "number"

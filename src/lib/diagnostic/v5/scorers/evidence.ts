@@ -33,6 +33,10 @@
 import { fetchWithTimeout } from "../../site-checks";
 import { scanPdpSignals, type PdpSignals } from "@/lib/ase";
 import type { V5RunContext } from "../types";
+import {
+  BROWSERLESS_AVAILABLE,
+  fetchHtmlViaBrowser,
+} from "./browser-fetch";
 
 // ── Result shapes ────────────────────────────────────────────────────────────
 
@@ -74,8 +78,11 @@ function rootOf(url: string): string {
 function resolvePdpUrl(ctx: V5RunContext): { url: string } | { na: string } {
   if (ctx.pages) {
     const p = ctx.pages.PDP;
-    if (!p || !p.found || !p.url) return { na: "pdp_page_unavailable" };
-    return { url: p.url };
+    // Use the discovered PDP URL when confirmed; otherwise fall back to ctx.url
+    // (the user submitted it as a PDP URL directly). Individual fetchers and
+    // the ASE call handle their own errors — don't prematurely return na here.
+    if (p?.found && p.url) return { url: p.url };
+    return { url: ctx.url };
   }
   return { url: ctx.url };
 }
@@ -87,8 +94,12 @@ function resolvePdpUrl(ctx: V5RunContext): { url: string } | { na: string } {
 function resolveSiteUrl(ctx: V5RunContext): { url: string } | { na: string } {
   if (ctx.pages) {
     const p = ctx.pages.SITE_WIDE;
-    if (!p || !p.found) return { na: "site_wide_page_unavailable" };
-    return { url: p.url ?? rootOf(ctx.url) };
+    // Use the discovered SITE_WIDE URL when confirmed; otherwise fall back to
+    // rootOf(ctx.url). Discovery may have been blocked by bot-protection or
+    // rate-limiting — the individual artifact fetches (sitemap.xml, robots.txt,
+    // etc.) often succeed even when the homepage fetch doesn't.
+    if (p?.found) return { url: p.url ?? rootOf(ctx.url) };
+    return { url: rootOf(ctx.url) };
   }
   return { url: rootOf(ctx.url) };
 }
@@ -180,7 +191,39 @@ export function siteFileFor(ctx: V5RunContext, path: string): Promise<FileEviden
   return p;
 }
 
-/** Fetch the SITE_WIDE page HTML itself (for OG meta tags), memoized. */
+/**
+ * Convert a BrowserFetchResult to FileEvidence shape.
+ */
+function browserResultToFile(r: Awaited<ReturnType<typeof fetchHtmlViaBrowser>>): FileEvidence {
+  if (r.ok) {
+    return { ok: true, body: r.body, httpStatus: r.status, url: r.url };
+  }
+  return {
+    ok: false,
+    status: r.status === null ? "error" : "missing",
+    httpStatus: r.status,
+    note: r.note,
+    url: r.url,
+  };
+}
+
+/**
+ * True when a FileEvidence result is effectively unmeasured — plain fetch was
+ * blocked (bot-protection, timeout, DNS miss). A real non-2xx (404, 403, 429)
+ * means the server responded and we have a signal; only null/network-error
+ * status warrants a Browserless retry.
+ */
+function isUnmeasured(e: FileEvidence): boolean {
+  return !e.ok && (e.status === "na" || e.status === "error");
+}
+
+/** Fetch the SITE_WIDE page HTML itself (for OG meta tags), memoized.
+ *
+ * Strategy: plain fetch first; if the result is `na`/`error` (bot-protection
+ * or network failure) AND Browserless credentials are configured, automatically
+ * retry with a real Chromium render. This means most sites pay only the cost of
+ * a fast plain fetch; bot-protected sites fall back to Browserless transparently.
+ */
 export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const site = resolveSiteUrl(ctx);
   if ("na" in site) {
@@ -190,7 +233,17 @@ export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const key = `__html__:${site.url}`;
   const existing = cache.files.get(key);
   if (existing) return existing;
-  const p = loadFile(site.url);
+
+  const p = loadFile(site.url).then(async (plainResult) => {
+    // Plain fetch succeeded or got a real HTTP response → use it.
+    if (!isUnmeasured(plainResult)) return plainResult;
+    // Plain fetch was blocked / timed out — retry with Browserless if available.
+    if (!BROWSERLESS_AVAILABLE) return plainResult;
+    console.info(`[v5/evidence] plain fetch na for ${site.url} — retrying via Browserless`);
+    const browserResult = await fetchHtmlViaBrowser(site.url);
+    return browserResultToFile(browserResult);
+  });
+
   cache.files.set(key, p);
   return p;
 }

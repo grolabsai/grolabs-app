@@ -21,7 +21,7 @@ import { register } from "../registry";
 import type { ScoreResult } from "../types";
 import type { PdpSignals } from "@/lib/ase";
 import { detectAiBotPolicy } from "../../site-checks";
-import { pdpSignalsFor, siteFileFor } from "./evidence";
+import { pdpSignalsFor, pdpHtmlFor, siteFileFor } from "./evidence";
 
 // ── Shared helpers (mirror seo.ts conventions) ───────────────────────────────
 
@@ -167,15 +167,59 @@ register("aeo.robots.ai_policy", async (_check, ctx) => {
   return NA(file.note);
 });
 
-// FAQ schema + answerable content (ASE_PDP, PDP).
+// FAQ schema + answerable content.
+// Primary: ASE pdp-signals. Fallback: parse raw PDP HTML directly (avoids
+// false-NA when the ASE is unreachable or the site blocks its User-Agent).
+
+/** Extract FAQ schema presence directly from raw HTML (no ASE needed). */
+function gradeFaqSchemaFromHtml(html: string): ScoreResult {
+  // FAQPage / QAPage JSON-LD
+  const hasFaqSchema = /"@type"\s*:\s*"FAQPage"/i.test(html)
+    || /"@type"\s*:\s*"QAPage"/i.test(html);
+  // Inline FAQ content heuristic: question/answer markup patterns
+  const hasFaqContent = html.includes('itemtype="https://schema.org/Question"')
+    || /<(details|summary|div)[^>]*(?:faq|question|accordion)[^>]*>/i.test(html);
+  const evidence = {
+    has_faqpage_schema: hasFaqSchema,
+    has_faq_content: hasFaqContent,
+    source: "html_parse",
+  };
+  return hasFaqSchema ? PASS(evidence) : FAIL(evidence);
+}
+
+/** Extract answerable signals from raw HTML when ASE is unavailable. */
+function gradeAnswerableFromHtml(html: string): ScoreResult {
+  const hasFaqSchema = /"@type"\s*:\s*"FAQPage"/i.test(html);
+  const hasFaqContent = html.includes('itemtype="https://schema.org/Question"')
+    || /<(details|summary)[^>]*>/i.test(html);
+  // Word count heuristic: rough body text length
+  const bodyText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const wordCount = bodyText.trim().split(/\s+/).length;
+  const descCredit = Math.min(40, Math.round((wordCount / ANSWERABLE_FULL_DESC_WORDS) * 40));
+  const score = (hasFaqContent ? 35 : 0) + (hasFaqSchema ? 25 : 0) + descCredit;
+  return graded(score, {
+    has_faq: hasFaqContent,
+    has_faqpage_schema: hasFaqSchema,
+    word_count_estimate: wordCount,
+    desc_credit: descCredit,
+    source: "html_parse",
+  });
+}
+
 register("aeo.faq_schema.present", async (_check, ctx) => {
+  // Try ASE first (richer signals)
   const e = await pdpSignalsFor(ctx);
-  if (!e.ok) return NA(e.note);
-  return gradeFaqSchema(e.signals);
+  if (e.ok) return gradeFaqSchema(e.signals);
+  // Fallback: parse PDP HTML directly
+  const html = await pdpHtmlFor(ctx);
+  if (html.ok) return gradeFaqSchemaFromHtml(html.body);
+  return NA(`ase: ${e.note} | html: ${html.note}`);
 });
 
 register("aeo.answerable.structure", async (_check, ctx) => {
   const e = await pdpSignalsFor(ctx);
-  if (!e.ok) return NA(e.note);
-  return gradeAnswerable(e.signals);
+  if (e.ok) return gradeAnswerable(e.signals);
+  const html = await pdpHtmlFor(ctx);
+  if (html.ok) return gradeAnswerableFromHtml(html.body);
+  return NA(`ase: ${e.note} | html: ${html.note}`);
 });

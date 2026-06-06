@@ -56,10 +56,29 @@ import "./scorers";
  *   1/3 → basic                                 → partial 40
  *   0/3 → none (native WC default)              → fail 0
  */
-function generateTypoVariants(word: string): Array<{ variant_id: number; variant_type: string; query_text: string }> {
+/**
+ * Mark characters that differ between original and variant with [brackets]
+ * so the report can bold them: "Wh[ih]skas" shows the transposed pair.
+ */
+export function highlightDiff(original: string, variant: string): string {
+  let result = "";
+  let inDiff = false;
+  for (let i = 0; i < variant.length; i++) {
+    const differs = i >= original.length || variant[i] !== original[i];
+    if (differs && !inDiff)  { result += "["; inDiff = true; }
+    if (!differs && inDiff)  { result += "]"; inDiff = false; }
+    result += variant[i];
+  }
+  if (inDiff) result += "]";
+  // Also mark chars dropped at end (variant is shorter than original)
+  if (variant.length < original.length) result += "[−" + (original.length - variant.length) + "]";
+  return result;
+}
+
+function generateTypoVariants(word: string): Array<{ variant_id: number; variant_type: string; query_text: string; highlighted: string }> {
   if (word.length < 4) return [
-    { variant_id: 1, variant_type: "canonical", query_text: word },
-    { variant_id: 2, variant_type: "typo",      query_text: word + "x" },
+    { variant_id: 1, variant_type: "canonical", query_text: word,      highlighted: word },
+    { variant_id: 2, variant_type: "typo",      query_text: word + "x", highlighted: word + "[x]" },
   ];
 
   function swapAt(s: string, i: number): string {
@@ -72,10 +91,10 @@ function generateTypoVariants(word: string): Array<{ variant_id: number; variant
   const t3 = t2.slice(0, -1);                                        // drop last char
 
   return [
-    { variant_id: 1, variant_type: "canonical", query_text: word },
-    { variant_id: 2, variant_type: "typo",      query_text: t1 },
-    { variant_id: 3, variant_type: "typo_2",    query_text: t2 },
-    { variant_id: 4, variant_type: "typo_3",    query_text: t3 },
+    { variant_id: 1, variant_type: "canonical", query_text: word, highlighted: word },
+    { variant_id: 2, variant_type: "typo",      query_text: t1,   highlighted: highlightDiff(word, t1) },
+    { variant_id: 3, variant_type: "typo_2",    query_text: t2,   highlighted: highlightDiff(word, t2) },
+    { variant_id: 4, variant_type: "typo_3",    query_text: t3,   highlighted: highlightDiff(word, t3) },
   ];
 }
 

@@ -101,6 +101,8 @@ export type EntryVariantResult = {
   variant_id: number;
   variant_type: "canonical" | "typo" | "synonym" | "plural" | "partial" | string;
   query_text: string;
+  /** Diff-highlighted version of the query e.g. "Wh[ih]skas" — chars in [] were changed. */
+  highlighted?: string;
   results_returned: boolean;
   result_count_estimate: number | null;
   top_result_names: string[];
@@ -133,6 +135,8 @@ export type TestEntryInput = {
     variant_id: number;
     variant_type: string;
     query_text: string;
+    /** Pre-computed diff highlight e.g. "Wh[ih]skas" — chars in [] were changed. */
+    highlighted?: string;
   }>;
 };
 
@@ -401,6 +405,7 @@ export async function runBrowserProbe(
           variant_id: variant.variant_id,
           variant_type: variant.variant_type,
           query_text: variant.query_text,
+          highlighted: variant.highlighted,
           results_returned: res.resultsPresent,
           result_count_estimate: res.estimate,
           top_result_names: res.topResultNames.slice(0, 5),

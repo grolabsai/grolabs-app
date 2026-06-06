@@ -88,12 +88,22 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Rate limiting removed from the anonymous diagnostic path.
-  // IP-based limiting blocks shared IPs (offices, carriers) and is trivially
-  // bypassed by VPN — wrong tool for a public landing page. If abuse becomes
-  // a problem, switch to email-based limiting (1 scan / email / day) wired
-  // through the email field the user already provides in the form.
+  // Soft rate limit — generous enough for real use and testing, tight enough
+  // to slow down runaway scrapers. The RPC defaults (5/hr, 20/day) were too
+  // aggressive for a public landing page; 100/hr and 500/day gives headroom.
+  // TODO: replace with email-based limiting once results-to-email is wired up.
+  const ip = getClientIp(req);
   const service = createServiceRoleClient();
+  const { data: allowed, error: rlErr } = await service.rpc(
+    "record_diagnostic_request",
+    { p_ip: ip, p_hour_limit: 100, p_day_limit: 500 },
+  );
+  if (rlErr) {
+    return json(500, { error: "rate_limit_check_failed", detail: rlErr.message });
+  }
+  if (!allowed) {
+    return json(429, { error: "rate_limited", retry_after_seconds: 3600 });
+  }
 
   const verticalId =
     typeof body.vertical_id === "number"

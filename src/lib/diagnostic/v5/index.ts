@@ -56,3 +56,24 @@ export {
   type PageTypeRef,
   type PersistDiscoveryInput,
 } from "./discovery";
+export {
+  loadRunCopy,
+  lookupCopy,
+  renderRunReport,
+  type CopyRow,
+  type CopyIndex,
+  type RenderedReport,
+  type RenderedStage,
+  type RenderedCategory,
+  type RenderedFinding,
+  type RenderedFix,
+  type FixesByCheckId,
+  type CategoryUpliftByCode,
+} from "./copy";
+export {
+  runV5Diagnostic,
+  type RunV5DiagnosticInput,
+  type RunV5DiagnosticDeps,
+  type RunV5DiagnosticResult,
+  type RunV5DiagnosticOk,
+} from "./run";

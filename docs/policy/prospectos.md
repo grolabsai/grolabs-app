@@ -617,18 +617,30 @@ The v5 profile-driven runner loads the new checks via `diagnostic_profile_check`
 not `is_active`. Flip to active only at the legacy **cutover** (a later prompt),
 once the per-check scorers exist.
 
+**API routing (Prompt 6):** `POST /api/v1/diagnostic/runs` now accepts an
+optional `"version": "v5"` body param (or `PROSPECTOS_V5_ENABLED=1` env flag).
+When present, the route runs `runV5Diagnostic` (`src/lib/diagnostic/v5/run.ts`)
+in addition to the legacy runner — both execute, the response includes the legacy
+fields unchanged plus a top-level `"v5": { stages, categories, profile, run_id }`
+extension. Rate-limit check happens before either runner is invoked. `GET
+/diagnostics/[runId]` now also queries `run_category_score` and renders a v5
+category-scores section when rows exist (additive, legacy view unchanged).
+
 Open / TBD: per-check `scoring_rubric` JSONB, full es/en `diagnostic_copy`,
 weight tuning, and the legacy-check cutover (old checks stay active until then).
 
-**Backend build = 6 prompts** (then probes, then cutover):
+**Backend build = 6 prompts (COMPLETE):**
 1. ✅ **DONE** — apply + verify the v5 migrations on **live** (branching is
    broken; applied directly via MCP, see Status above); regenerated types.
-2. atomic check loader + scorer registry on the new `check_code`s.
-3. scoring engine — dependency-ordered, credit-from-zero, category/stage rollup,
-   persist `run_category_score`.
-4. PDP-first navigation + page discovery (engine-ID finding; missing pages → na).
-5. fetch-based scorers (`seo.*`, `aeo.*`) for real end-to-end signal.
-6. public API + `diagnostic_copy` rendering (profile-driven run, category scores).
+2. ✅ **DONE** — atomic check loader + scorer registry.
+3. ✅ **DONE** — scoring engine: dependency-ordered, credit-from-zero,
+   category/stage rollup, `persistScoredRun`.
+4. ✅ **DONE** — PDP-first navigation + page discovery (engine-ID; missing pages → na).
+5. ✅ **DONE** — fetch-based scorers (`seo.*`, `aeo.*`) for real end-to-end signal.
+6. ✅ **DONE** — public API + `diagnostic_copy` rendering (profile-driven run,
+   category scores). Branch: `feat/prospectos-v5-api`.
 
-After #6 the landing widget can be unhidden against a real contract. Follow-ons:
-ASE scorers, browser/PSI scorers, then the legacy cutover.
+**v5 backend complete (Prompts 1–6).** The landing widget can be unhidden against
+the v5 contract pending real scorer coverage for `perf.*`, `search.*`, `pdp.*`,
+and `auth.*` (currently return `na` stubs). Follow-ons: ASE scorers,
+browser/PSI scorers, then the legacy cutover.

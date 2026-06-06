@@ -40,14 +40,43 @@ import { pdpSignalsFor } from "./scorers/evidence";
 // Side effect: ensures scorer registry is populated before any run.
 import "./scorers";
 
-/** Swap two adjacent mid-word characters to simulate a realistic typo. */
-function typoMutate(term: string): string {
-  const words = term.split(/\s+/);
-  const longest = words.reduce((a, b) => (b.length > a.length ? b : a), "");
-  if (longest.length < 4) return term + "x"; // too short to swap safely
-  const mid = Math.floor(longest.length / 2);
-  const mutated = longest.slice(0, mid - 1) + longest[mid] + longest[mid - 1] + longest.slice(mid + 1);
-  return term.replace(longest, mutated);
+/**
+ * Generate three progressively worse typo variants of a single word.
+ * Using one word ensures no other words "save" the search — the store's
+ * typo engine has to handle the error on its own merit.
+ *
+ * Levels:
+ *   1 typo  — swap 2 adjacent chars near the start  ("Whiskas" → "Whsikas")
+ *   2 typos — also swap 2 chars near the end         ("Whsikas" → "Whsiaks")
+ *   3 typos — also drop the last character           ("Whsiaks" → "Whisiak")
+ *
+ * Testing all three lets us score typo tolerance depth:
+ *   3/3 → excellent (Algolia/Meilisearch-level) → pass 100
+ *   2/3 → good                                  → partial 70
+ *   1/3 → basic                                 → partial 40
+ *   0/3 → none (native WC default)              → fail 0
+ */
+function generateTypoVariants(word: string): Array<{ variant_id: number; variant_type: string; query_text: string }> {
+  if (word.length < 4) return [
+    { variant_id: 1, variant_type: "canonical", query_text: word },
+    { variant_id: 2, variant_type: "typo",      query_text: word + "x" },
+  ];
+
+  function swapAt(s: string, i: number): string {
+    if (i < 0 || i >= s.length - 1) return s;
+    return s.slice(0, i) + s[i + 1] + s[i] + s.slice(i + 2);
+  }
+
+  const t1 = swapAt(word, Math.floor(word.length * 0.25));          // near start
+  const t2 = swapAt(t1,   Math.floor(word.length * 0.65));          // near end
+  const t3 = t2.slice(0, -1);                                        // drop last char
+
+  return [
+    { variant_id: 1, variant_type: "canonical", query_text: word },
+    { variant_id: 2, variant_type: "typo",      query_text: t1 },
+    { variant_id: 3, variant_type: "typo_2",    query_text: t2 },
+    { variant_id: 4, variant_type: "typo_3",    query_text: t3 },
+  ];
 }
 
 export type RunV5DiagnosticInput = {
@@ -303,10 +332,7 @@ export async function runV5Diagnostic(
             {
               entry_id: 1,
               intent_label: shortTerm,
-              variants: [
-                { variant_id: 1, variant_type: "canonical", query_text: shortTerm },
-                { variant_id: 2, variant_type: "typo",      query_text: typoMutate(shortTerm) },
-              ],
+              variants: generateTypoVariants(shortTerm),
             } satisfies import("../browser-probe").TestEntryInput,
           ]
         : []; // fallback B: probe discovers product names from homepage automatically

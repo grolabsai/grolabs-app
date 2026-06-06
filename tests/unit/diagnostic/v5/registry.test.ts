@@ -105,8 +105,10 @@ describe("v5 scorer registry", () => {
     expect(getScorer("does.not.exist")).toBeUndefined();
   });
 
-  it("every stub returns a not-measured (na) result", async () => {
-    const r = await getScorer("seo.jsonld.present")!(fakeCheck, fakeCtx);
+  it("a still-stubbed follow-on check returns a not-measured (na) result", async () => {
+    // seo.* / aeo.* are real scorers (Prompt 5); perf.*/search.*/pdp.*/auth.*
+    // remain `notImplemented` stubs until their follow-on prompts.
+    const r = await getScorer("perf.cwv.lcp")!(fakeCheck, fakeCtx);
     expect(r).toEqual({ score: null, status: "na", note: "not_implemented" });
   });
 

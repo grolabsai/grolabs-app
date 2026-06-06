@@ -10,7 +10,7 @@ import type { SiteWideContext } from "./types";
 const USER_AGENT = "Mozilla/5.0 (compatible; SiteAuditBot/1.0)";
 const TIMEOUT_MS = 8000;
 
-async function fetchWithTimeout(
+export async function fetchWithTimeout(
   url: string,
   init?: RequestInit,
 ): Promise<{ ok: boolean; status: number | null; body: string | null }> {
@@ -47,7 +47,7 @@ function normalizeRootUrl(url: string): string {
   }
 }
 
-function detectAiBotPolicy(
+export function detectAiBotPolicy(
   robotsBody: string | null,
 ): "allow" | "block" | "unmentioned" {
   if (!robotsBody) return "unmentioned";

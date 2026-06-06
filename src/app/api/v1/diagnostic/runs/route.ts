@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { startAnonymousDiagnostic } from "@/lib/diagnostic/runner";
+import { runV5Diagnostic } from "@/lib/diagnostic/v5";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,11 @@ export const runtime = "nodejs";
  * Used by the landing-page diagnostic widget and any third-party caller.
  * The RRE admin UI continues to call the runner directly via server
  * action (startDiagnostic), not through this route.
+ *
+ * v5 routing: pass "version": "v5" in the request body, or set
+ * PROSPECTOS_V5_ENABLED=1 in the environment. When active, runs the v5
+ * atomic-rubric stack alongside legacy scoring and extends the response with a
+ * "v5" field. The legacy response shape is preserved unchanged (additive only).
  */
 
 const CORS_HEADERS = {
@@ -40,10 +46,10 @@ type Body = {
   display_name?: unknown;
   vertical_id?: unknown;
   contact_email?: unknown;
+  version?: unknown;
 };
 
 function getClientIp(req: NextRequest): string {
-  // Vercel + standard reverse-proxy headers.
   const xff = req.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0]!.trim();
   const realIp = req.headers.get("x-real-ip");
@@ -56,6 +62,11 @@ function json(status: number, body: Record<string, unknown>): NextResponse {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
+}
+
+function isV5Requested(body: Body): boolean {
+  if (process.env.PROSPECTOS_V5_ENABLED === "1") return true;
+  return body.version === "v5";
 }
 
 export async function POST(req: NextRequest) {
@@ -77,7 +88,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Rate limit (per-IP sliding window).
+  // Rate limit (per-IP sliding window) — always enforced before any scoring.
   const ip = getClientIp(req);
   const service = createServiceRoleClient();
   const { data: allowed, error: rlErr } = await service.rpc(
@@ -98,22 +109,50 @@ export async function POST(req: NextRequest) {
         ? Number(body.vertical_id) || null
         : null;
 
-  const result = await startAnonymousDiagnostic({
+  const sharedInput = {
     url,
     pdpUrl: typeof body.pdp_url === "string" ? body.pdp_url : null,
     categoryUrl: typeof body.category_url === "string" ? body.category_url : null,
     prospectName: typeof body.display_name === "string" ? body.display_name : null,
     verticalId,
     contactEmail: typeof body.contact_email === "string" ? body.contact_email : null,
-  });
+  };
 
-  if ("error" in result) {
-    return json(500, { error: "diagnostic_failed", detail: result.error });
+  // Legacy run (always executed — the bridge keeps both paths active).
+  const legacyResult = await startAnonymousDiagnostic(sharedInput);
+  if ("error" in legacyResult) {
+    return json(500, { error: "diagnostic_failed", detail: legacyResult.error });
   }
 
-  return json(201, {
-    run_id: result.runId,
-    report_url: `/diagnostics/${result.runId}`,
+  const response: Record<string, unknown> = {
+    run_id: legacyResult.runId,
+    report_url: `/diagnostics/${legacyResult.runId}`,
     status: "completed",
-  });
+  };
+
+  // v5 run (additive — only when requested or feature-flagged).
+  if (isV5Requested(body)) {
+    const v5Result = await runV5Diagnostic(
+      {
+        ...sharedInput,
+        instanceId: null,
+      },
+      { supabase: service },
+    );
+
+    if ("ok" in v5Result && v5Result.ok) {
+      response.v5 = {
+        profile: v5Result.report.profile,
+        overall: v5Result.report.overall,
+        stages: v5Result.report.stages,
+        categories: v5Result.report.categories,
+        run_id: v5Result.runId,
+      };
+    } else if ("error" in v5Result) {
+      // v5 error is non-fatal: legacy result is still returned.
+      response.v5_error = v5Result.error;
+    }
+  }
+
+  return json(201, response);
 }

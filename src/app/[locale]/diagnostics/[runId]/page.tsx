@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { EvidenceScreenshot } from "@/components/diagnostic/EvidenceScreenshot";
+import { loadRunCopy, lookupCopy } from "@/lib/diagnostic/v5/copy";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ type Finding = {
   finding_id: number;
   diagnostic_check_id: number;
   score: number | null;
-  result_status: "pass" | "fail" | "partial" | "na" | "error";
+  result_status: "pass" | "fail" | "partial" | "na" | "error" | "blocked";
   evidence: Record<string, unknown> | null;
   notes: string | null;
 };
@@ -58,11 +59,25 @@ type Fix = {
   impact: string;
 };
 
+type V5CategoryScore = {
+  score: number | null;
+  est_annual_uplift_usd: number | null;
+  category_code: string;
+  stage_code: string;
+  stage_name: string;
+  category_label: string | null;
+  category_summary: string | null;
+};
+
 /**
  * Public report page for anonymous diagnostic runs. Reachable by anyone
  * who has the run_id UUID. Authenticated-instance runs render their
  * report under /prospects/runs/[runId] instead — this page hard-rejects
  * those (the route is *only* for anon runs).
+ *
+ * v5: when run_category_score rows exist for this run_id (v5 was used),
+ * renders a category-scores section above the legacy findings view.
+ * Additive — no legacy view is removed.
  */
 export default async function PublicReportPage({
   params,
@@ -71,9 +86,6 @@ export default async function PublicReportPage({
 }) {
   const { runId } = await params;
 
-  // SUPABASE_SERVICE_ROLE_KEY isn't set on every preview deploy. Treat
-  // missing env as "report not available" rather than crashing the
-  // server component with an uncaught throw.
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     notFound();
   }
@@ -91,34 +103,88 @@ export default async function PublicReportPage({
   if (!runRaw || runRaw.instance_id !== null) notFound();
   const run = runRaw as Run;
 
-  const { data: prospectRaw } = await supabase
-    .from("prospect")
-    .select("prospect_id, url, display_name, platform_detected, engine_detected")
-    .eq("prospect_id", run.prospect_id)
-    .maybeSingle();
+  const [
+    { data: prospectRaw },
+    { data: stagesRaw },
+    { data: checksRaw },
+    { data: findingsRaw },
+    { data: v5ScoresRaw },
+  ] = await Promise.all([
+    supabase
+      .from("prospect")
+      .select("prospect_id, url, display_name, platform_detected, engine_detected")
+      .eq("prospect_id", run.prospect_id)
+      .maybeSingle(),
+    supabase
+      .from("diagnostic_stage")
+      .select("diagnostic_stage_id, stage_code, stage_name, sort_order")
+      .order("sort_order"),
+    supabase
+      .from("diagnostic_check")
+      .select("diagnostic_check_id, check_code, check_name, diagnostic_stage_id")
+      .eq("instance_id", 0),
+    supabase
+      .from("finding")
+      .select("finding_id, diagnostic_check_id, score, result_status, evidence, notes")
+      .eq("run_id", runId),
+    // v5: load run_category_score joined to diagnostic_category + diagnostic_stage
+    supabase
+      .from("run_category_score")
+      .select(
+        "score, est_annual_uplift_usd, diagnostic_category:diagnostic_category_id ( category_code, name, diagnostic_stage:diagnostic_stage_id ( stage_code, stage_name ) )",
+      )
+      .eq("run_id", runId),
+  ]);
+
   const prospect = prospectRaw as Prospect | null;
-
-  const [{ data: stagesRaw }, { data: checksRaw }, { data: findingsRaw }] =
-    await Promise.all([
-      supabase
-        .from("diagnostic_stage")
-        .select("diagnostic_stage_id, stage_code, stage_name, sort_order")
-        .order("sort_order"),
-      supabase
-        .from("diagnostic_check")
-        .select("diagnostic_check_id, check_code, check_name, diagnostic_stage_id")
-        .eq("instance_id", 0),
-      supabase
-        .from("finding")
-        .select(
-          "finding_id, diagnostic_check_id, score, result_status, evidence, notes",
-        )
-        .eq("run_id", runId),
-    ]);
-
   const stages: Stage[] = (stagesRaw ?? []) as Stage[];
   const checks: Check[] = (checksRaw ?? []) as Check[];
   const findings: Finding[] = (findingsRaw ?? []) as Finding[];
+
+  // v5 category scores — present only for v5 runs.
+  const v5Categories: V5CategoryScore[] = [];
+  for (const row of (v5ScoresRaw ?? []) as unknown[]) {
+    const r = row as {
+      score: number | null;
+      est_annual_uplift_usd: number | null;
+      diagnostic_category:
+        | {
+            category_code: string;
+            name: string;
+            diagnostic_stage:
+              | { stage_code: string; stage_name: string }
+              | { stage_code: string; stage_name: string }[]
+              | null;
+          }
+        | null;
+    };
+    const cat = Array.isArray(r.diagnostic_category)
+      ? r.diagnostic_category[0]
+      : r.diagnostic_category;
+    if (!cat) continue;
+    const stage = Array.isArray(cat.diagnostic_stage)
+      ? cat.diagnostic_stage[0]
+      : cat.diagnostic_stage;
+    v5Categories.push({
+      score: r.score,
+      est_annual_uplift_usd: r.est_annual_uplift_usd,
+      category_code: cat.category_code,
+      stage_code: stage?.stage_code ?? "",
+      stage_name: stage?.stage_name ?? "",
+      category_label: null,
+      category_summary: null,
+    });
+  }
+
+  // Load v5 copy to get category labels (only when v5 categories exist).
+  if (v5Categories.length > 0) {
+    const copy = await loadRunCopy(supabase, "es");
+    for (const cat of v5Categories) {
+      const row = lookupCopy(copy, "category", cat.category_code, "es");
+      if (row?.label) cat.category_label = row.label;
+      if (row?.summary) cat.category_summary = row.summary;
+    }
+  }
 
   const findingIds = findings.map((f) => f.finding_id);
   let fixes: Fix[] = [];
@@ -131,27 +197,29 @@ export default async function PublicReportPage({
       .in("finding_id", findingIds)
       .order("priority");
     fixes = (fixesRaw ?? [])
-      .map((row: {
-        finding_id: number;
-        priority: number;
-        fix_recommendation:
-          | { fix_recommendation_id: number; fix_title: string; fix_body_md: string; effort: string; impact: string }
-          | { fix_recommendation_id: number; fix_title: string; fix_body_md: string; effort: string; impact: string }[]
-          | null;
-      }) => {
-        const fr = Array.isArray(row.fix_recommendation)
-          ? row.fix_recommendation[0]
-          : row.fix_recommendation;
-        if (!fr) return null;
-        return {
-          finding_id: row.finding_id,
-          fix_recommendation_id: fr.fix_recommendation_id,
-          fix_title: fr.fix_title,
-          fix_body_md: fr.fix_body_md,
-          effort: fr.effort,
-          impact: fr.impact,
-        };
-      })
+      .map(
+        (row: {
+          finding_id: number;
+          priority: number;
+          fix_recommendation:
+            | { fix_recommendation_id: number; fix_title: string; fix_body_md: string; effort: string; impact: string }
+            | { fix_recommendation_id: number; fix_title: string; fix_body_md: string; effort: string; impact: string }[]
+            | null;
+        }) => {
+          const fr = Array.isArray(row.fix_recommendation)
+            ? row.fix_recommendation[0]
+            : row.fix_recommendation;
+          if (!fr) return null;
+          return {
+            finding_id: row.finding_id,
+            fix_recommendation_id: fr.fix_recommendation_id,
+            fix_title: fr.fix_title,
+            fix_body_md: fr.fix_body_md,
+            effort: fr.effort,
+            impact: fr.impact,
+          };
+        },
+      )
       .filter((x): x is Fix => x !== null);
   }
 
@@ -169,6 +237,14 @@ export default async function PublicReportPage({
     const arr = fixesByFinding.get(fix.finding_id) ?? [];
     arr.push(fix);
     fixesByFinding.set(fix.finding_id, arr);
+  }
+
+  // Group v5 categories by stage for rendering.
+  const v5ByStage = new Map<string, V5CategoryScore[]>();
+  for (const cat of v5Categories) {
+    const arr = v5ByStage.get(cat.stage_code) ?? [];
+    arr.push(cat);
+    v5ByStage.set(cat.stage_code, arr);
   }
 
   return (
@@ -250,6 +326,41 @@ export default async function PublicReportPage({
         >
           The diagnostic failed: {run.error_message}
         </div>
+      )}
+
+      {/* v5 category scores — additive section, shown only for v5 runs */}
+      {v5Categories.length > 0 && (
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 14px" }}>
+            Category scores
+          </h2>
+          {[...v5ByStage.entries()].map(([stageCode, cats]) => (
+            <div key={stageCode} style={{ marginBottom: 20 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#888",
+                  marginBottom: 8,
+                }}
+              >
+                {cats[0].stage_name || stageCode}
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {cats.map((cat) => (
+                  <V5CategoryCard key={cat.category_code} cat={cat} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
       )}
 
       {stages.map((stage) => {
@@ -347,6 +458,31 @@ function Stat({ label, value, mono }: { label: string; value: React.ReactNode; m
   );
 }
 
+function V5CategoryCard({ cat }: { cat: V5CategoryScore }) {
+  const score = cat.score;
+  const scoreColor =
+    score == null ? "#888" : score >= 70 ? "#0a7d3c" : score >= 40 ? "#996b00" : "#b03030";
+  return (
+    <div
+      style={{
+        border: "1px solid #e5e5e5",
+        borderRadius: 8,
+        padding: "12px 14px",
+      }}
+    >
+      <div style={{ fontSize: 11, color: "#888", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {cat.category_label ?? cat.category_code}
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 600, color: scoreColor, fontVariantNumeric: "tabular-nums" }}>
+        {score != null ? `${score}/100` : "—"}
+      </div>
+      {cat.category_summary && (
+        <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{cat.category_summary}</div>
+      )}
+    </div>
+  );
+}
+
 function FindingRow({
   finding,
   checkName,
@@ -362,6 +498,7 @@ function FindingRow({
     pass: "#0a7d3c",
     partial: "#996b00",
     fail: "#b03030",
+    blocked: "#b03030",
     na: "#888",
     error: "#b03030",
   };

@@ -1,0 +1,79 @@
+/**
+ * Prospectos v5 — atomic-rubric module (BRIDGE mode, additive).
+ *
+ * Public entry point. Importing from here guarantees the scorer registry is
+ * populated (the `./scorers` barrel runs its `register(...)` side effects).
+ *
+ * Wiring into a running diagnostic happens in Prompt 6 — nothing here is on a
+ * live path yet. Prompt 3 adds the scoring engine on top of `loadAtomicChecks`
+ * + `getScorer` (`scoreRun` → `persistScoredRun`); Prompts 4–5 add navigation
+ * and real scorers.
+ */
+
+import "./scorers"; // side effect: registers all check-code scorers
+
+export * from "./types";
+export {
+  loadAtomicChecks,
+  DEFAULT_PROFILE_CODE,
+  type LoadAtomicChecksOptions,
+} from "./loader";
+export {
+  getScorer,
+  register,
+  registeredCheckCodes,
+  notImplemented,
+} from "./registry";
+export { orderChecksByDependency } from "./ordering";
+export {
+  creditFromZero,
+  weightedAverage,
+  rollupCategory,
+  rollupStage,
+  computeDerivedCategory,
+  type WeightedItem,
+} from "./rollup";
+export {
+  scoreRun,
+  type Dispatch,
+  type ScoreRunInput,
+} from "./engine";
+export {
+  persistScoredRun,
+  type CheckUpliftFn,
+  type PersistScoredRunInput,
+  type PersistScoredRunResult,
+} from "./persist";
+export {
+  discoverPages,
+  detectSearchEngine,
+  pageTypesFromChecks,
+  persistDiscoveredPages,
+  browserProbeEnabled,
+  type DiscoverPagesInput,
+  type DiscoveryResult,
+  type DiscoveryDeps,
+  type PageTypeRef,
+  type PersistDiscoveryInput,
+} from "./discovery";
+export {
+  loadRunCopy,
+  lookupCopy,
+  renderRunReport,
+  type CopyRow,
+  type CopyIndex,
+  type RenderedReport,
+  type RenderedStage,
+  type RenderedCategory,
+  type RenderedFinding,
+  type RenderedFix,
+  type FixesByCheckId,
+  type CategoryUpliftByCode,
+} from "./copy";
+export {
+  runV5Diagnostic,
+  type RunV5DiagnosticInput,
+  type RunV5DiagnosticDeps,
+  type RunV5DiagnosticResult,
+  type RunV5DiagnosticOk,
+} from "./run";

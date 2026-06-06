@@ -182,6 +182,10 @@ export type V5RunContext = {
   readonly pages?: Readonly<DiscoveredPages>;
   /** The identified storefront search engine (Prompt 4). */
   readonly searchEngine?: SearchEngineId;
+  /** Browser probe result (search UX checks). null when probe disabled or failed. */
+  readonly browserProbeResult?: import("../browser-probe").BrowserProbeResult | null;
+  /** Product name extracted from the PDP (used to seed search test queries). */
+  readonly pdpProductName?: string | null;
 };
 
 /** A per-check scorer: measures one check against the run context. */

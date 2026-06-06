@@ -35,8 +35,20 @@ import {
 } from "./copy";
 import type { AtomicCheck } from "./types";
 import type { DiscoveryDeps } from "./discovery";
+import { runBrowserProbe, type BrowserProbeResult } from "../browser-probe";
+import { pdpSignalsFor } from "./scorers/evidence";
 // Side effect: ensures scorer registry is populated before any run.
 import "./scorers";
+
+/** Swap two adjacent mid-word characters to simulate a realistic typo. */
+function typoMutate(term: string): string {
+  const words = term.split(/\s+/);
+  const longest = words.reduce((a, b) => (b.length > a.length ? b : a), "");
+  if (longest.length < 4) return term + "x"; // too short to swap safely
+  const mid = Math.floor(longest.length / 2);
+  const mutated = longest.slice(0, mid - 1) + longest[mid] + longest[mid - 1] + longest.slice(mid + 1);
+  return term.replace(longest, mutated);
+}
 
 export type RunV5DiagnosticInput = {
   url: string;
@@ -256,12 +268,54 @@ export async function runV5Diagnostic(
       ),
     );
 
+    // f.5. Browser probe for search UX checks (gated on env var).
+    //   Option A: seed from PDP product_name (ASE signal already fetched during
+    //   scoring — we resolve it early here so the probe has a real keyword).
+    //   Option B: probe discovers keywords from the homepage automatically.
+    //   Both paths run in parallel with the rest; probe failure is non-fatal.
+    const probeEnabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
+    let browserProbeResult: BrowserProbeResult | null = null;
+    let pdpProductName: string | null = null;
+
+    if (probeEnabled) {
+      // Attempt Option A: get product name from ASE signals for better keywords.
+      const pdpEv = await pdpSignalsFor({ url: entryUrl, instanceId, pages: discovery.pages, searchEngine: discovery.searchEngine } as Parameters<typeof pdpSignalsFor>[0]);
+      if (pdpEv.ok) pdpProductName = (pdpEv.signals as { product_name?: string }).product_name ?? null;
+
+      // Build test entries: if we have a product name, create exact + typo variant.
+      // Build test entries from product name (Option A) — must match TestEntryInput shape.
+      const testEntries = pdpProductName
+        ? [
+            {
+              entry_id: 1,
+              intent_label: pdpProductName,
+              variants: [
+                { variant_id: 1, variant_type: "canonical", query_text: pdpProductName },
+                { variant_id: 2, variant_type: "typo",      query_text: typoMutate(pdpProductName) },
+              ],
+            } satisfies import("../browser-probe").TestEntryInput,
+          ]
+        : []; // fallback B: probe discovers product names from homepage automatically
+
+      browserProbeResult = await runBrowserProbe({
+        rootUrl: new URL(entryUrl).origin,
+        synonymPairs: [],          // no synonym pairs for anonymous runs
+        emptyStateQueries: [],     // probe generates a gibberish query itself
+        testEntries,
+      }).catch((e) => {
+        console.warn("runV5Diagnostic: browser probe failed:", e instanceof Error ? e.message : e);
+        return null;
+      });
+    }
+
     // g. Score the run (pure, no IO)
     const ctx = {
       url: entryUrl,
       instanceId,
       pages: discovery.pages,
       searchEngine: discovery.searchEngine,
+      browserProbeResult,
+      pdpProductName,
     };
     const scored = await scoreRun({
       checks,

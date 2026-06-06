@@ -628,85 +628,86 @@ async function dismissOverlays(page: Page, maxPasses = 3): Promise<void> {
   await page.waitForTimeout(400).catch(() => {});
 
   for (let pass = 0; pass < maxPasses; pass++) {
-    // Run entirely in the browser context — finds the spatially closest
-    // close-button in the top-right corner of any large overlay.
     const clicked = await page.evaluate(() => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
-      // Candidate overlay: any element that covers a large chunk of the
-      // viewport and is actually visible on screen.
+      // Find large visible overlays (fixed/sticky, covering >30% viewport)
       const overlays = Array.from(document.querySelectorAll("*")).filter((el) => {
         const r = el.getBoundingClientRect();
         const style = window.getComputedStyle(el);
         return (
-          r.width > vw * 0.3 &&
-          r.height > vh * 0.3 &&
+          r.width > vw * 0.3 && r.height > vh * 0.3 &&
           r.top < vh && r.bottom > 0 &&
-          style.display !== "none" &&
-          style.visibility !== "hidden" &&
+          style.display !== "none" && style.visibility !== "hidden" &&
           parseFloat(style.opacity) > 0.1 &&
-          (parseInt(style.zIndex) > 10 ||
-            style.position === "fixed" ||
-            style.position === "sticky")
+          (parseInt(style.zIndex) > 10 || style.position === "fixed" || style.position === "sticky")
         );
       });
       if (overlays.length === 0) return false;
 
-      // Close-button heuristic: interactive elements inside an overlay
-      // that look like a dismiss button, scored by their distance from
-      // the overlay's top-right corner (lower = closer = better candidate).
-      const CLOSE_TEXTS = new Set(["×", "✕", "✖", "x", "close", "dismiss", "cerrar", "no thanks", "no, thanks", "skip"]);
-      let bestEl: Element | null = null;
-      let bestScore = Infinity;
-
       for (const overlay of overlays) {
+        // ── Step 1: check "don't show again" checkbox FIRST so the popup
+        // won't reappear on subsequent navigations within this session.
+        const dontShowPhrases = ["don't show", "dont show", "no mostrar", "not again", "hide this", "remember"];
+        const checkboxes = Array.from(overlay.querySelectorAll("input[type='checkbox']"));
+        for (const cb of checkboxes as HTMLInputElement[]) {
+          const label = document.querySelector(`label[for="${cb.id}"]`);
+          const text = ((label as HTMLElement)?.innerText || cb.closest("label")?.innerText || "").toLowerCase();
+          if (dontShowPhrases.some((p) => text.includes(p)) && !cb.checked) {
+            cb.click();
+            break;
+          }
+        }
+
+        // ── Step 2: find and click the close button (X in top-right corner)
         const or = overlay.getBoundingClientRect();
         const topRight = { x: or.right, y: or.top };
+        const CLOSE_TEXTS = new Set(["×", "✕", "✖", "x", "close", "dismiss", "cerrar", "no thanks", "no, thanks", "skip"]);
 
         const candidates = Array.from(
-          overlay.querySelectorAll("button, a, [role='button'], input[type='checkbox'], span, div"),
+          overlay.querySelectorAll("button, a, [role='button'], span, div"),
         ).filter((el) => {
           const r = el.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) return false;
           const style = window.getComputedStyle(el);
           if (style.display === "none" || style.visibility === "hidden") return false;
-          // Must be in the top half of the overlay and right 60% of it
           return r.top < or.top + or.height * 0.5 && r.right > or.left + or.width * 0.4;
         });
 
+        let bestEl: Element | null = null;
+        let bestScore = Infinity;
         for (const el of candidates) {
           const r = el.getBoundingClientRect();
-          const cx = r.left + r.width / 2;
-          const cy = r.top + r.height / 2;
-          const dist = Math.hypot(cx - topRight.x, cy - topRight.y);
-
-          const text = ((el as HTMLElement).innerText || el.getAttribute("aria-label") || el.className || "")
-            .trim().toLowerCase();
-          const looksLikeClose =
-            CLOSE_TEXTS.has(text) ||
-            text.length <= 3 ||                          // short text → likely ×
-            el.className.toLowerCase().includes("close") ||
-            el.className.toLowerCase().includes("dismiss") ||
+          const dist = Math.hypot(r.left + r.width / 2 - topRight.x, r.top + r.height / 2 - topRight.y);
+          const text = ((el as HTMLElement).innerText || el.getAttribute("aria-label") || el.className || "").trim().toLowerCase();
+          const looksLikeClose = CLOSE_TEXTS.has(text) || text.length <= 3 ||
+            el.className.toLowerCase().includes("close") || el.className.toLowerCase().includes("dismiss") ||
             (el.getAttribute("aria-label") || "").toLowerCase().includes("close");
-
-          // Score: distance from top-right corner, penalised if not close-like
           const score = dist * (looksLikeClose ? 1 : 3);
-          if (score < bestScore) {
-            bestScore = score;
-            bestEl = el;
-          }
+          if (score < bestScore) { bestScore = score; bestEl = el; }
         }
-      }
-
-      if (bestEl && bestScore < vw * 0.8) {
-        (bestEl as HTMLElement).click();
-        return true;
+        if (bestEl && bestScore < vw * 0.8) {
+          (bestEl as HTMLElement).click();
+          return true;
+        }
       }
       return false;
     }).catch(() => false);
 
-    if (!clicked) break; // no overlay found — done
+    // ── Also dismiss cookie consent banners (separate from main overlay)
+    await page.evaluate(() => {
+      const ACCEPT_TEXTS = ["accept", "accept cookies", "accept all", "agree", "aceptar", "i accept"];
+      const buttons = Array.from(document.querySelectorAll("button, a, [role='button']"));
+      for (const btn of buttons as HTMLElement[]) {
+        const style = window.getComputedStyle(btn);
+        if (style.display === "none" || style.visibility === "hidden") continue;
+        const text = (btn.innerText || btn.getAttribute("aria-label") || "").trim().toLowerCase();
+        if (ACCEPT_TEXTS.some(t => text.includes(t))) { btn.click(); break; }
+      }
+    }).catch(() => {});
+
+    if (!clicked) break;
     await page.waitForTimeout(500).catch(() => {});
   }
 }

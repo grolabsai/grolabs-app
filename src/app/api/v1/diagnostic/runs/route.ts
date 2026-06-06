@@ -147,6 +147,8 @@ export async function POST(req: NextRequest) {
         stages: v5Result.report.stages,
         categories: v5Result.report.categories,
         run_id: v5Result.runId,
+        // Temporary debug field — remove once search detection is stable
+        probe_debug: v5Result.probeDebug,
       };
     } else if ("error" in v5Result) {
       // v5 error is non-fatal: legacy result is still returned.

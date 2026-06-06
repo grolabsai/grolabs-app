@@ -44,3 +44,15 @@ export {
   type PersistScoredRunInput,
   type PersistScoredRunResult,
 } from "./persist";
+export {
+  discoverPages,
+  detectSearchEngine,
+  pageTypesFromChecks,
+  persistDiscoveredPages,
+  browserProbeEnabled,
+  type DiscoverPagesInput,
+  type DiscoveryResult,
+  type DiscoveryDeps,
+  type PageTypeRef,
+  type PersistDiscoveryInput,
+} from "./discovery";

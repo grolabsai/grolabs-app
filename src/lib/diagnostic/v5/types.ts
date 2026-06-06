@@ -116,20 +116,72 @@ export type AtomicCheck = {
   evidenceSources: AtomicEvidenceSource[];
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// Prompt 4 — page discovery + search-engine identification (additive).
+//
+// The discovery module (discovery.ts) turns the submitted PDP URL into the set
+// of pages the engine can actually score, plus an identification of the
+// storefront search engine. These types are the contract between discovery and
+// both the engine (which consumes the found page codes) and the future search.*
+// scorers (Prompt 5, which read `searchEngine`).
+// ─────────────────────────────────────────────────────────────────────────
+
+/** One page the navigator tried to locate from the entry PDP (`page_type`). */
+export type DiscoveredPage = {
+  /** True when the page was located and is reachable for scoring. */
+  found: boolean;
+  /** The resolved URL (or, for a search, the results endpoint). */
+  url?: string;
+  /** How it was found / why it wasn't — for the report and debugging. */
+  evidence?: Evidence;
+};
+
 /**
- * Run context handed to every scorer. Intentionally minimal for now — Prompt 4
- * (navigation/discovery) and Prompt 5 (real probing) will populate `pages`
- * with per-page evidence. Stub scorers ignore it entirely. The shape of probe
- * evidence is deliberately left open (`unknown`) so later prompts can refine it
- * without breaking this contract.
+ * Discovery output keyed by `page_type.page_code` (e.g. `PDP`, `HOME`,
+ * `SITE_WIDE`, `SEARCH_RESULTS`, `CATEGORY`, `LOGIN`). A code absent from this
+ * map, or present with `found:false`, makes the engine score that page's checks
+ * `na` (excluded, not blocked). Assignable to `V5RunContext['pages']`.
+ */
+export type DiscoveredPages = Record<string, DiscoveredPage>;
+
+/**
+ * Identification of the storefront's search engine. `engine` is a small
+ * canonical bucket the search.* scorers branch on; `raw` keeps the precise
+ * fingerprint (e.g. `woocommerce_native`, `klevu`). These names are INTERNAL
+ * measurement plumbing and must never reach report copy.
+ */
+export type SearchEngine =
+  | "algolia"
+  | "meilisearch"
+  | "typesense"
+  | "native"
+  | "other"
+  | "unknown";
+
+export type SearchEngineId = {
+  engine: SearchEngine;
+  /** Precise fingerprint name before bucketing, or null when unknown. */
+  raw: string | null;
+  /** Where the signal came from. */
+  source: "browser_network" | "ase_site_signals" | "homepage_html" | "none";
+  /** How much to trust it (network XHR > ASE static > homepage scan). */
+  confidence: "high" | "medium" | "low" | "none";
+};
+
+/**
+ * Run context handed to every scorer. Prompt 4 (navigation/discovery) populates
+ * `pages` (per-page evidence + reachability) and `searchEngine`; Prompt 5 (real
+ * probing) refines per-page evidence. Stub scorers ignore it entirely.
  */
 export type V5RunContext = {
   /** The submitted entry URL (PDP-first navigation starts here). */
   readonly url: string;
   /** Resolved instance for the run; null = anonymous (instance-0 rubric). */
   readonly instanceId: number | null;
-  /** Per-page probe evidence keyed by `page_type.code`. Empty until Prompt 4. */
-  readonly pages?: Readonly<Record<string, unknown>>;
+  /** Per-page evidence keyed by `page_type.code`. Populated by Prompt 4. */
+  readonly pages?: Readonly<DiscoveredPages>;
+  /** The identified storefront search engine (Prompt 4). */
+  readonly searchEngine?: SearchEngineId;
 };
 
 /** A per-check scorer: measures one check against the run context. */

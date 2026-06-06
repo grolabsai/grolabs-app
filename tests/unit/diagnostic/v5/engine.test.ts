@@ -83,6 +83,50 @@ describe("scoreRun — blocked propagation", () => {
     expect(run.categories[0].score).toBe(0);
   });
 
+  it("blocks only the failing anchor's subtree, not independent siblings in the same category", async () => {
+    // Mixed internal_search category: search.box.present fails, so the checks
+    // that DEPEND on it are blocked — but facet.*, search.image.present, and
+    // nav.* declare no dependency on it (per the live seed) and must still
+    // score. Propagation follows dependency EDGES, never whole categories.
+    const search = makeCategory({ code: "internal_search", weight: 100 });
+    const checks = [
+      makeCheck({ id: 10, code: "search.box.present", category: search, weight: 12 }),
+      makeCheck({ id: 11, code: "search.typo.tolerance", category: search, weight: 10, dependsOn: 10 }),
+      // Independent siblings — no dependsOn search.box.present.
+      makeCheck({ id: 14, code: "facet.present", category: search, weight: 8 }),
+      makeCheck({ id: 15, code: "facet.depth", category: search, weight: 5, dependsOn: 14 }),
+      makeCheck({ id: 16, code: "search.image.present", category: search, weight: 2 }),
+      makeCheck({ id: 17, code: "reco.home.present", category: search, weight: 3 }),
+      makeCheck({ id: 18, code: "nav.category.usability", category: search, weight: 6 }),
+    ];
+    const dispatch = dispatchFrom({
+      "search.box.present": FAIL,
+      "search.typo.tolerance": graded(90), // gated to blocked — must NOT run
+      "facet.present": PASS,
+      "facet.depth": PASS,
+      "search.image.present": PASS,
+      "reco.home.present": graded(40),
+      "nav.category.usability": graded(80),
+    });
+
+    const run = await scoreRun({ checks, dispatch, ctx: CTX });
+
+    // The search.box subtree is gated.
+    expect(byCode(run.checks, "search.box.present").status).toBe("fail");
+    expect(byCode(run.checks, "search.typo.tolerance").status).toBe("blocked");
+    // Independent siblings still score normally — NOT blocked, NOT na.
+    expect(byCode(run.checks, "facet.present").status).toBe("pass");
+    expect(byCode(run.checks, "facet.depth").status).toBe("pass"); // parent facet.present met
+    expect(byCode(run.checks, "search.image.present").status).toBe("pass");
+    expect(byCode(run.checks, "reco.home.present").status).toBe("partial");
+    expect(byCode(run.checks, "nav.category.usability").status).toBe("partial");
+
+    // denom = 12+10+8+5+2+3+6 = 46; earned = 0+0 + 100·8 + 100·5 + 100·2 +
+    // 40·3 + 80·6 = 2100 → 2100/46 = 45.65 → 46. (A category-wide block would
+    // have wrongly produced 0.)
+    expect(run.categories[0].score).toBe(46);
+  });
+
   it("does NOT block a dependent when the prerequisite is merely partial", async () => {
     const search = makeCategory({ code: "internal_search", weight: 100 });
     const checks = [

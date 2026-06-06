@@ -471,6 +471,10 @@ export async function runBrowserProbe(
 
 async function safeGoto(page: Page, url: string) {
   await page.goto(url, { waitUntil: "domcontentloaded" });
+  // Give JS-heavy pages (Elementor, React storefronts) a moment to finish
+  // rendering interactive elements like search toggles. networkidle can be
+  // too slow on ad-heavy sites so we use a short fixed wait instead.
+  await page.waitForTimeout(1200).catch(() => {});
 }
 
 async function discoverFromHomepage(
@@ -634,6 +638,10 @@ async function locateOrOpenSearchInput(
     "[class*='search-icon']",
     "[class*='SearchIcon']",
     '[data-action*="search" i]',
+    // Drawer / off-canvas pattern (e.g. GeneratePress + Elementor)
+    '[data-toggle-target*="search" i]',
+    '[data-target*="search" i]',
+    '[data-micromodal-trigger*="search" i]',
   ];
   let trigger: import("playwright").ElementHandle | null = null;
   for (const sel of triggerSelectors) {

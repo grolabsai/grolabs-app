@@ -272,8 +272,10 @@ export async function runBrowserProbe(
     // Only the first typo's screenshot is captured as evidence (one
     // representative moment per finding; multi-screenshot evidence
     // is a future iteration).
+    // Limit to 1 product name to keep total queries within the 60s budget.
+    // Each re-navigation (load + popup dismiss + trigger click) takes ~20s.
     const typoResults: TypoTestResult[] = [];
-    for (const [idx, name] of productNames.slice(0, 2).entries()) {
+    for (const [idx, name] of productNames.slice(0, 1).entries()) {
       const mutated = mutateOneChar(name);
       const res = await runSearchQuery(page, context, input.rootUrl, mutated);
       typoResults.push({

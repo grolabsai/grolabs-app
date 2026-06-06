@@ -84,25 +84,54 @@ register("search.typo.tolerance", async (_check, ctx) => {
     const sorted = [...entryTypos].sort((a, b) =>
       a.variant_type.localeCompare(b.variant_type),
     );
-    // Count how many consecutive levels passed (stop at first failure)
+    // Count consecutive passes (stop at first failure — depth = tolerance ceiling)
     let depth = 0;
     for (const v of sorted) {
       if (v.confidence >= 60) depth++;
-      else break; // stop — if level N fails, deeper levels don't count
+      else break;
     }
     const total = sorted.length;
-    // depth/total → score: 3/3=100 (pass), 2/3=70 (partial), 1/3=40 (partial), 0=fail
+
+    // Characterise the tolerance rule:
+    //   depth = how many error levels passed (1, 2, or 3 char errors)
+    //   word  = the single word that was tested
+    //   rate  = depth / word_length → "X errors per Y chars"
+    //
+    // Reference benchmarks:
+    //   0 errors          → none (vanilla WooCommerce)
+    //   1/6+ chars (≤17%) → weak (basic plugin or native with config)
+    //   2/6-7 chars (~28%)→ moderate (Meilisearch default, some plugins)
+    //   3/6-7 chars (~43%)→ strong (Algolia, enterprise search)
+    const searchWord = ctx.pdpProductName?.split(/\s+/)[0] ?? "";
+    const wordLen = searchWord.length || 1;
+    const tolerancePct = Math.round((depth / wordLen) * 100);
+
+    const classification =
+      depth === 0   ? "none" :
+      tolerancePct <= 17 ? "weak" :
+      tolerancePct <= 33 ? "moderate" :
+                           "strong";
+
     const score = total > 0 ? Math.round((depth / total) * 100) : 0;
     const evidence = {
+      word: searchWord,
+      word_length: wordLen,
+      depth_passed: depth,
+      total_levels: total,
+      tolerance_chars: depth,
+      tolerance_pct: tolerancePct,
+      classification,
+      // Human-readable rule: "2 errors / 7 chars = 28% tolerance"
+      rule: depth === 0
+        ? "no typo tolerance detected"
+        : `${depth} error${depth > 1 ? "s" : ""} / ${wordLen} chars = ${tolerancePct}% tolerance (${classification})`,
       tested: sorted.map((v) => ({
         query: v.query_text,
         level: v.variant_type,
+        errors: parseInt(v.variant_type.replace("typo_", "").replace("typo", "1")),
         found: v.confidence >= 60,
         confidence: v.confidence,
       })),
-      depth,
-      total,
-      product_name: ctx.pdpProductName ?? undefined,
     };
     if (depth === total) return PASS(evidence);
     if (depth > 0)       return PARTIAL(score, evidence);

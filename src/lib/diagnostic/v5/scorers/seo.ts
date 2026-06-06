@@ -3,7 +3,8 @@
  *
  * Real scorers (Prompt 5). Primary evidence is DB-as-truth (the seed's
  * `diagnostic_check_source`):
- *   - ASE_PDP : seo.jsonld.* , seo.canonical.present  → ASE /tools/pdp-signals
+ *   - ASE_PDP : seo.jsonld.*                           → ASE /tools/pdp-signals
+ *   - FETCH   : seo.canonical.present (PDP HTML)      → RRE HTTP fetch (PDP)
  *   - FETCH   : seo.sitemap.* , seo.og.*              → RRE HTTP fetch (SITE_WIDE)
  *
  * Grading thresholds live IN THIS FILE for now. The per-check `scoring_rubric`
@@ -21,6 +22,7 @@ import type { ScoreResult } from "../types";
 import type { PdpSignals } from "@/lib/ase";
 import {
   pdpSignalsFor,
+  pdpHtmlFor,
   siteFileFor,
   siteHtmlFor,
   type FileEvidence,
@@ -119,12 +121,29 @@ export function gradeJsonldBonus(signals: PdpSignals): ScoreResult {
   return graded(score, { present, fields });
 }
 
-/** seo.canonical.present — a canonical URL is declared. */
+/** seo.canonical.present — a canonical URL is declared (ASE-based, kept for unit tests). */
 export function gradeCanonical(signals: PdpSignals): ScoreResult {
   const canonical = (signals.canonical_url ?? "").trim();
   const present = canonical.length > 0;
   const evidence = { canonical_url: canonical || null };
   return present ? PASS(evidence) : FAIL(evidence);
+}
+
+/**
+ * seo.canonical.present — parse the canonical `<link>` tag directly from PDP
+ * HTML. Tolerant of attribute order. Returns the canonical URL and whether it
+ * is self-referencing (same as the PDP URL, ignoring trailing slashes).
+ */
+export function gradeCanonicalFromHtml(html: string, pdpUrl: string): ScoreResult {
+  // Match <link rel="canonical" href="…"> in either attribute order.
+  const match =
+    html.match(/<link\s[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ??
+    html.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i);
+  if (!match) return FAIL({ note: "canonical_tag_missing" });
+  const canonicalUrl = match[1].trim();
+  const isSelf =
+    canonicalUrl.replace(/\/$/, "") === pdpUrl.replace(/\/$/, "");
+  return PASS({ canonical_url: canonicalUrl, self_referencing: isSelf });
 }
 
 /**
@@ -210,6 +229,16 @@ register("seo.jsonld.bonus", async (_check, ctx) => {
 });
 
 register("seo.canonical.present", async (_check, ctx) => {
+  // Use FETCH-based PDP HTML instead of ASE — the canonical tag is static HTML
+  // in <head> and doesn't require JS. This avoids ASE bot-protection failures
+  // (ASE's UA gets blocked by some sites, causing false FAIL when canonical IS
+  // present). If the HTML fetch fails we fall back to ASE for resilience.
+  const html = await pdpHtmlFor(ctx);
+  if (html.ok) {
+    const pdpUrl = ctx.pages?.PDP?.url ?? ctx.url;
+    return gradeCanonicalFromHtml(html.body, pdpUrl);
+  }
+  // HTML fetch unmeasured (blocked/error) — fall back to ASE signals.
   const e = await pdpSignalsFor(ctx);
   if (!e.ok) return NA(e.note);
   return gradeCanonical(e.signals);

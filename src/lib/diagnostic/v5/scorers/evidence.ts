@@ -247,3 +247,35 @@ export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   cache.files.set(key, p);
   return p;
 }
+
+/**
+ * Fetch the PDP page HTML itself (for canonical tag parsing), memoized.
+ *
+ * Canonical is a static `<link>` tag in `<head>` — no JS execution required.
+ * Strategy: plain fetch first; if blocked, retry via Browserless (same pattern
+ * as `siteHtmlFor`). This avoids the ASE Python service entirely, which gets
+ * blocked by bot-protection on some sites (e.g. grolabs.io).
+ */
+export function pdpHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
+  const target = resolvePdpUrl(ctx);
+  if ("na" in target) {
+    return Promise.resolve({ ok: false, status: "na", note: target.na });
+  }
+  const cache = cacheFor(ctx);
+  const key = `__pdphtml__:${target.url}`;
+  const existing = cache.files.get(key);
+  if (existing) return existing;
+
+  const p = loadFile(target.url).then(async (plainResult) => {
+    // Plain fetch succeeded or got a real HTTP response → use it.
+    if (!isUnmeasured(plainResult)) return plainResult;
+    // Plain fetch was blocked / timed out — retry with Browserless if available.
+    if (!BROWSERLESS_AVAILABLE) return plainResult;
+    console.info(`[v5/evidence] plain fetch na for PDP ${target.url} — retrying via Browserless`);
+    const browserResult = await fetchHtmlViaBrowser(target.url);
+    return browserResultToFile(browserResult);
+  });
+
+  cache.files.set(key, p);
+  return p;
+}

@@ -928,6 +928,14 @@ async function runSearchQuery(
         /* ignore */
       });
 
+    // Detect single-result redirect: some platforms (WooCommerce, Shopify)
+    // redirect directly to the PDP when only one product matches the query.
+    // This IS a positive result for typo/search scoring — the store found
+    // the product — even though there's no "results listing" to measure.
+    const currentUrl = page.url();
+    const pdpRedirectPattern = /\/(product|products|p|item|shop)\/[^?#]+/i;
+    const wasPdpRedirect = pdpRedirectPattern.test(currentUrl) && !currentUrl.includes(rootUrl.replace(/^https?:\/\//, "").split("/")[0] + "/?s=");
+
     // Capture the screenshot now — after results have settled and
     // before we read the DOM. The DOM read itself doesn't disturb the
     // page, but doing screenshot first means timing-sensitive sites
@@ -1098,13 +1106,21 @@ async function runSearchQuery(
       };
     });
 
+    // If the platform redirected straight to a PDP, treat it as 1 result found.
+    // WooCommerce/Shopify do this when a search matches exactly one product —
+    // it IS typo-tolerant, it IS returning a result, just not a results page.
+    const effectiveEstimate = wasPdpRedirect ? 1 : domResult.estimate;
+    const effectiveTopNames = wasPdpRedirect
+      ? [currentUrl.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "product"]
+      : domResult.topResultNames;
+
     const verdict = classifyResults({
       query,
       variantType,
-      estimate: domResult.estimate,
-      hasNoResultsCopy: domResult.hasNoResultsCopy,
-      matchedNoResultsPhrase: domResult.matchedNoResultsPhrase,
-      topResultNames: domResult.topResultNames,
+      estimate: effectiveEstimate,
+      hasNoResultsCopy: wasPdpRedirect ? false : domResult.hasNoResultsCopy,
+      matchedNoResultsPhrase: wasPdpRedirect ? null : domResult.matchedNoResultsPhrase,
+      topResultNames: effectiveTopNames,
       currentUrl: domResult.currentUrl,
     });
 

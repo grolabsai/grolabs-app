@@ -292,14 +292,20 @@ export async function runV5Diagnostic(
 
       // Build test entries: if we have a product name, create exact + typo variant.
       // Build test entries from product name (Option A) — must match TestEntryInput shape.
-      const testEntries = pdpProductName
+      // Use the first word of the product name as the search term.
+      // A full product name often matches exactly one product → the platform
+      // redirects straight to the PDP instead of showing a results listing.
+      // A single prominent word (e.g. "Whiskas") matches multiple products →
+      // gives a proper results page for scoring typo tolerance and relevance.
+      const shortTerm = pdpProductName ? pdpProductName.split(/\s+/)[0] : null;
+      const testEntries = shortTerm
         ? [
             {
               entry_id: 1,
-              intent_label: pdpProductName,
+              intent_label: shortTerm,
               variants: [
-                { variant_id: 1, variant_type: "canonical", query_text: pdpProductName },
-                { variant_id: 2, variant_type: "typo",      query_text: typoMutate(pdpProductName) },
+                { variant_id: 1, variant_type: "canonical", query_text: shortTerm },
+                { variant_id: 2, variant_type: "typo",      query_text: typoMutate(shortTerm) },
               ],
             } satisfies import("../browser-probe").TestEntryInput,
           ]

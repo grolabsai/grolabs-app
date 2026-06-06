@@ -72,24 +72,40 @@ register("search.typo.tolerance", async (_check, ctx) => {
   const guard = probeGuard(probe);
   if (guard) return guard;
 
-  // Option A: entry-based variants seeded from PDP product name (run.ts)
+  // Option A: entry-based progressive typo variants (typo, typo_2, typo_3)
+  // seeded from the first word of the PDP product name. We score on DEPTH —
+  // how many severity levels the store handles — not just pass/fail.
+  // This uses a single word so other query terms can't accidentally save it.
   const entryTypos = (probe!.entry_results ?? []).flatMap((e) =>
-    e.variant_results.filter((v) => v.variant_type === "typo"),
+    e.variant_results.filter((v) => v.variant_type.startsWith("typo")),
   );
   if (entryTypos.length > 0) {
-    const passed = entryTypos.filter((v) => v.confidence >= 60).length;
-    const ratio = passed / entryTypos.length;
-    const score = Math.round(ratio * 100);
+    // Sort by severity: typo < typo_2 < typo_3
+    const sorted = [...entryTypos].sort((a, b) =>
+      a.variant_type.localeCompare(b.variant_type),
+    );
+    // Count how many consecutive levels passed (stop at first failure)
+    let depth = 0;
+    for (const v of sorted) {
+      if (v.confidence >= 60) depth++;
+      else break; // stop — if level N fails, deeper levels don't count
+    }
+    const total = sorted.length;
+    // depth/total → score: 3/3=100 (pass), 2/3=70 (partial), 1/3=40 (partial), 0=fail
+    const score = total > 0 ? Math.round((depth / total) * 100) : 0;
     const evidence = {
-      tested: entryTypos.map((v) => ({
+      tested: sorted.map((v) => ({
         query: v.query_text,
+        level: v.variant_type,
         found: v.confidence >= 60,
         confidence: v.confidence,
       })),
+      depth,
+      total,
       product_name: ctx.pdpProductName ?? undefined,
     };
-    if (ratio >= 0.99) return PASS(evidence);
-    if (ratio >= 0.5)  return PARTIAL(score, evidence);
+    if (depth === total) return PASS(evidence);
+    if (depth > 0)       return PARTIAL(score, evidence);
     return FAIL(evidence);
   }
 

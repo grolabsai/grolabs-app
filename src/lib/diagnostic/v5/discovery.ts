@@ -33,6 +33,10 @@ import { discoverSamples, type DiscoveredSamples } from "../sample-discovery";
 import { probeSiteWide } from "../site-checks";
 import type { SiteWideContext } from "../types";
 import { scanSiteSignals, type SiteSignals } from "@/lib/ase";
+import {
+  FETCH_VIA_BROWSER,
+  fetchHtmlViaBrowser,
+} from "./scorers/browser-fetch";
 import type {
   AtomicCheck,
   DiscoveredPage,
@@ -106,9 +110,27 @@ export function browserProbeEnabled(): boolean {
   );
 }
 
+/**
+ * Browser-backed fetch shim for the discovery homepage fetch.
+ * Only active when PROSPECTOS_FETCH_VIA_BROWSER=1 + Browserless is configured.
+ * Returns a Response-compatible object so it can replace `fetchImpl: fetch`.
+ */
+async function browserFetchImpl(
+  url: string,
+): Promise<Response> {
+  const r = await fetchHtmlViaBrowser(url);
+  const status = r.ok ? r.status : (r.status ?? 0);
+  const body = r.ok ? r.body : "";
+  return new Response(body, { status });
+}
+
 function defaultDeps(): DiscoveryDeps {
   return {
-    fetchImpl: fetch,
+    // When browser-fetch is enabled, use the Playwright-backed fetch for the
+    // homepage so bot-protected sites register as reachable during discovery.
+    fetchImpl: FETCH_VIA_BROWSER
+      ? (browserFetchImpl as unknown as typeof fetch)
+      : fetch,
     discoverSamples,
     probeSiteWide: async (rootUrl) => {
       try {

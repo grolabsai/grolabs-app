@@ -33,6 +33,10 @@
 import { fetchWithTimeout } from "../../site-checks";
 import { scanPdpSignals, type PdpSignals } from "@/lib/ase";
 import type { V5RunContext } from "../types";
+import {
+  FETCH_VIA_BROWSER,
+  fetchHtmlViaBrowser,
+} from "./browser-fetch";
 
 // ── Result shapes ────────────────────────────────────────────────────────────
 
@@ -187,7 +191,12 @@ export function siteFileFor(ctx: V5RunContext, path: string): Promise<FileEviden
   return p;
 }
 
-/** Fetch the SITE_WIDE page HTML itself (for OG meta tags), memoized. */
+/** Fetch the SITE_WIDE page HTML itself (for OG meta tags), memoized.
+ *
+ * When PROSPECTOS_FETCH_VIA_BROWSER=1 + Browserless credentials are present,
+ * renders the page in a real Chromium to bypass bot-protection / JS-gating.
+ * Falls back to the plain-fetch path transparently otherwise.
+ */
 export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const site = resolveSiteUrl(ctx);
   if ("na" in site) {
@@ -197,7 +206,30 @@ export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const key = `__html__:${site.url}`;
   const existing = cache.files.get(key);
   if (existing) return existing;
-  const p = loadFile(site.url);
+
+  // Use browser rendering when the flag is on; plain fetch otherwise.
+  const p: Promise<FileEvidence> = FETCH_VIA_BROWSER
+    ? fetchHtmlViaBrowser(site.url).then((r) => {
+        if (r.ok) {
+          return {
+            ok: true as const,
+            body: r.body,
+            httpStatus: r.status,
+            url: r.url,
+          };
+        }
+        return {
+          ok: false as const,
+          status: (r.status === null ? "error" : "missing") as
+            | "error"
+            | "missing",
+          httpStatus: r.status,
+          note: r.note,
+          url: r.url,
+        };
+      })
+    : loadFile(site.url);
+
   cache.files.set(key, p);
   return p;
 }

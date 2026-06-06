@@ -1,8 +1,8 @@
 ---
 application: core-app
 module: Policy
-title: "Prospectos — policy"
-status: Active
+title: "Prospectos — policy — WORKING DRAFT (funnel reconciliation)"
+status: Draft
 owner: "Tuncho"
 scope: "Prospectos — internet-wide ecommerce diagnostic that scores prospect storefronts by uplift opportunity. Lives in RRE (Next.js) + ASE (Agentic Services Engine — Python, formerly GLPIM)."
 audience: "Anyone touching `/prospects`, `/diagnostics`, `/api/v1/diagnostic/*`, the `prospect`/`diagnostic_run`/`finding` tables, ASE's `tools/pdp_scanner.py` + `tools/site_scanner.py`, or `src/lib/diagnostic/**`."
@@ -131,21 +131,6 @@ rules:
   - id: R-11
     statement: Vertical classification picks a keyword winner when its top score ≥ 3 and beats #2 by ≥ 25%; the Haiku tie-breaker fires only when keywords are inconclusive and ANTHROPIC_API_KEY is set.
     truth: true
-  - id: R-12
-    statement: 'v5 atomic model — one diagnostic_check (check_code) yields one finding per run, one fix, and one progress series; composites decompose to the level of a distinct fix. Hierarchy is Stage → Category(scored) → Page → Item.'
-    truth: unverified
-  - id: R-13
-    statement: 'v5 scoring is credit-from-zero — a score accrues earned credit up to a weighted full potential and never starts at 100 then deducts; item weights sum to 100 per stage.'
-    truth: unverified
-  - id: R-14
-    statement: 'v5 dependencies are first-class (diagnostic_check.depends_on_check_id); an unmet prerequisite scores the dependent 0 with status blocked, distinct from na which is excluded from the average.'
-    truth: unverified
-  - id: R-15
-    statement: 'v5 separates measurement from communication — diagnostic_check measures, diagnostic_copy carries localized label/summary/grading_note, fix_recommendation carries remediation.'
-    truth: unverified
-  - id: R-16
-    statement: 'v5 bridges (does not unify) the funnel object — diagnostic_* stays independent and funnel_* FKs are deferred.'
-    truth: unverified
 
 useCases:
   - id: T-1
@@ -178,21 +163,17 @@ useCases:
     when: A run executes
     then: The PDP and site-signal scorers degrade to result_status='error' while other scorers proceed
     verifies: [R-3]
-  - id: T-6
-    title: Dependency-gated check scores zero, not na
-    given: A check whose prerequisite fails (e.g. llms.txt quality when llms.txt is absent)
-    when: The run scores it
-    then: It is recorded blocked with score 0, while genuinely-not-applicable checks remain na and are excluded
-    verifies: [R-13, R-14]
-  - id: T-7
-    title: Landing profile selects which checks run
-    given: The anonymous_landing_audit profile
-    when: A run executes under it
-    then: Only its member checks run and the Cart and Checkout stages are skipped
-    verifies: [R-12]
 ---
 
 # Prospectos — policy
+
+> ⚠️ **WORKING DRAFT — not the source of truth.** This is a scratch copy of
+> `prospectos.md` for an in-progress design discussion: the landing-page
+> assessment rework and its reconciliation with the existing **funnel object**.
+> Nothing here is committed. Approved changes fold back into `prospectos.md`;
+> until then read the original as authoritative. New/under-discussion material
+> is concentrated in the **"Relationship to the funnel object"** section at the
+> end.
 
 A diagnostic that takes a URL, scores the storefront against a
 DB-driven rubric, computes annual revenue uplift, and surfaces a report
@@ -203,9 +184,7 @@ runner.
 This doc covers v1 (shipped: schema + catalog UI), v2 (shipped: public
 API + Playwright + test vocab + revenue formula), v3 (shipped: vertical
 auto-detection + sample auto-discovery + CWV + returns + locale-aware
-tests + brand/synonym DOM extraction), and v4 (shipped: page-centric model).
-**v5 (in progress): the atomic-rubric refactor — see §13.** The roadmap is at
-the bottom.
+tests + brand/synonym DOM extraction). The roadmap is at the bottom.
 
 ---
 
@@ -546,36 +525,339 @@ browser-based scorers just report `result_status='na'` with reason
 
 ---
 
-## 13. v5 — Atomic rubric (current model)
+## Relationship to the funnel object (draft — under discussion)
 
-v5 refactors the rubric to an **atomic** model. The **seed migrations are the
-source of truth for the 55 checks + weights** (DB-as-truth, Constitution
-Art. 10): `supabase/migrations/20260605000001_prospectos_v5_atomic_rubric.sql`
-(schema) + `…_seed.sql`. Detailed working notes + the per-stage weighted tables
-live in `prospectos.draft.md`.
+> Status: **proposal, not decided.** This section reconciles the diagnostic /
+> prospectos stack with the pre-existing `funnel_*` object. The current-state
+> facts are verified from the migrations; the bridge is a proposal.
 
-**Principles (locked):**
+### The finding
 
-- **Atomic unit** — one `diagnostic_check` (`check_code`) → one `finding` per
-  run → one `fix` → one progress series. Hierarchy **Stage → Category(scored) →
-  Page → Item**.
-- **Credit-from-zero** — scores accrue earned credit to a weighted full
-  potential (item weights sum to 100 per stage); never start-at-100-and-deduct.
-- **Dependencies** — `depends_on_check_id`; an unmet prerequisite scores the
-  dependent `0` (`blocked`), distinct from `na` (excluded from the average).
-- **Measure / explain / fix** — `diagnostic_check` measures; `diagnostic_copy`
-  (localized) explains (label / summary / grading_note); `fix_recommendation`
-  remediates. `check_code`s never reach the report.
-- **Bridge, not unify** — `diagnostic_*` stays independent of `funnel_*`; FKs
-  deferred to a later bridge migration.
+The app already has a **funnel object** (`funnel_*` tables, migration
+`20260430000001_funnel_schema.sql`) that independently implements the exact
+mechanics the landing-assessment rework needs:
 
-**Schema (additive, bridge mode).** New: `diagnostic_category`, `page_type`,
-`evidence_source`, `diagnostic_check_source`, `diagnostic_category_contribution`
-(derived `returns_risk`), `diagnostic_copy`, `diagnostic_profile(+_check)`,
-`run_category_score`. New `diagnostic_check` columns: `diagnostic_category_id`,
-`page_type_id`, `depends_on_check_id`, `metric_kind`, `scoring_rubric`,
-`capability_tier`, `finding_class`, `revenue_lever_kind`. Plus
-`diagnostic_run.profile_id` and `finding_status += 'blocked'`.
+- **Industry defaults → learned instance numbers:**
+  `funnel_dataset_transition_value.source_type` is an enum
+  (`benchmark` → `customer_actual` → `api_extraction`, plus `manual_estimate`).
+  The same row's provenance evolves as we learn — "default rate now, real rate
+  later" without changing the criteria.
+- **Different stages per specificity:** `funnel_flow` → `funnel_stage`. Each
+  flow is its own stage structure; a `funnel_short_electronics` flow already
+  exists.
+- **Per-subject model with revenue inputs:** `funnel_instance` carries
+  `monthly_traffic`, `average_order_value`, `average_cart_skus`; its
+  `funnel_instance_type` enum is already `template | customer | scenario`.
+- **Catalog vs observed:** `funnel_friction_point` (catalog) /
+  `funnel_friction_finding` (observed), instance-0 fallthrough, severity +
+  evidence.
+
+**The problem:** the diagnostic stack rebuilds all of this in parallel, with
+**no foreign key linking the two**. They model the same domain twice:
+
+| Concept | Funnel object | Diagnostic / prospectos | Linked? |
+|---|---|---|---|
+| Funnel stage | `funnel_stage` | `diagnostic_stage` | none |
+| Catalog of problems | `funnel_friction_point` | `diagnostic_check` | none |
+| Observed problem | `funnel_friction_finding` | `finding` | none |
+| Default → learned rates | `funnel_dataset_transition_value` (`source_type`) | `vertical_benchmark` (`baseline_cr`, `delta_rate`) | none |
+| Subject + traffic/AOV | `funnel_instance` | `prospect` | none |
+
+So the north star — "project funnels and predictions from the assessment, same
+infrastructure benchmark→real in monitoring, criteria never change" — is
+currently unreachable: the funnel-projection engine and the evidence engine
+don't know about each other.
+
+### Current state — two disconnected stacks
+
+```mermaid
+erDiagram
+  funnel_flow ||--o{ funnel_stage : "has"
+  funnel_flow ||--o{ funnel_transition : "has"
+  funnel_stage ||--o{ funnel_friction_point : "catalog"
+  funnel_flow ||--o{ funnel_instance : "instantiated"
+  funnel_instance ||--o{ funnel_dataset : "active"
+  funnel_dataset ||--o{ funnel_dataset_transition_value : "holds"
+  funnel_transition ||--o{ funnel_dataset_transition_value : "rate"
+  funnel_dataset_transition_value ||--o{ funnel_benchmark_source : "cited_by"
+  funnel_instance ||--o{ funnel_friction_finding : "observes"
+  funnel_friction_point ||--o{ funnel_friction_finding : "seen_as"
+  diagnostic_stage ||--o{ diagnostic_check : "groups"
+  diagnostic_check ||--o{ fix_recommendation : "fixed_by"
+  vertical ||--o{ vertical_benchmark : "calibrates"
+  diagnostic_check ||--o{ vertical_benchmark : "delta"
+  diagnostic_stage ||--o{ vertical_benchmark : "share"
+  vertical ||--o{ prospect : "classifies"
+  prospect ||--o{ diagnostic_run : "has"
+  diagnostic_run ||--o{ run_sample : "pages"
+  diagnostic_run ||--o{ finding : "produces"
+  diagnostic_check ||--o{ finding : "scored_as"
+  run_sample ||--o{ finding : "on"
+  finding ||--o{ finding_fix : "suggests"
+  fix_recommendation ||--o{ finding_fix : "materialized"
+```
+
+_Two clusters, no edge between them — the funnel object (left) and the diagnostic stack (right) model the same domain with zero shared keys._
+
+### Proposed bridge (option B) — add the missing edges, keep both stacks
+
+Keep the shipped prospectos stack; add the edges that let diagnostic evidence
+drive funnel projection. A diagnostic check **is** a friction point on a stage;
+a diagnostic run materializes a `scenario` `funnel_instance` for the prospect,
+writes `funnel_friction_finding`s, and seeds its transition values as
+`benchmark` — which monitoring later flips to `customer_actual` on the same
+funnel. The new `diagnostic_profile` selects *which* checks run in a given
+context (landing vs monitoring), scoped to a flow (the stage structure).
+
+```mermaid
+erDiagram
+  diagnostic_stage ||--o{ diagnostic_check : "groups"
+  diagnostic_check ||--o{ finding : "scored_as"
+  diagnostic_run ||--o{ finding : "produces"
+  prospect ||--o{ diagnostic_run : "has"
+  funnel_flow ||--o{ funnel_stage : "has"
+  funnel_stage ||--o{ funnel_friction_point : "catalog"
+  funnel_friction_point ||--o{ funnel_friction_finding : "seen_as"
+  funnel_instance ||--o{ funnel_friction_finding : "observes"
+  diagnostic_stage }o--|| funnel_stage : "BRIDGE_maps_to"
+  diagnostic_check }o--|| funnel_friction_point : "BRIDGE_is_a"
+  finding }o--|| funnel_friction_finding : "BRIDGE_materializes"
+  prospect ||--o| funnel_instance : "BRIDGE_scenario"
+  diagnostic_run }o--|| diagnostic_profile : "ran_under"
+  funnel_flow ||--o{ diagnostic_profile : "scopes"
+  diagnostic_profile ||--o{ diagnostic_profile_check : "selects"
+  diagnostic_check ||--o{ diagnostic_profile_check : "in_profile"
+```
+
+_Edges labelled `BRIDGE_*` are the proposed additions; `diagnostic_profile` /
+`diagnostic_profile_check` are new. The profile selects which checks run in a
+context (landing / monitoring), scoped to a `funnel_flow`; pure membership for v1._
+
+### Open decision
+
+- **B (bridge)** — recommended: reuse the funnel projection engine, no rewrite
+  of the live diagnostic runner.
+- **C (unify)** — fold `diagnostic_check`→`funnel_friction_point` and
+  `finding`→`funnel_friction_finding`, retire the duplicates. Cleanest, but a
+  heavy refactor of shipped code.
+- Secondary: does the **landing audit** create a `scenario` `funnel_instance`
+  per prospect from day one (funnel projection drives the "revenue you're
+  losing" number), or keep the landing number on the simpler `vertical_benchmark`
+  formula for v1 and bridge later?
+
+---
+
+## Atomic evaluation rubric (check → finding → fix → progress)
+
+> Status: **draft / under discussion.** Replaces the coarse "uploaded table".
+> Grain principle: **one atomic `check_code` = one row = one `finding` per run =
+> one `fix` = one progress series.** No composites in a box. **Scoring is
+> credit-from-zero** (see below). Quality is split from presence via a real
+> `depends_on` relation — if the prerequisite isn't met, the dependent **earns 0
+> credit** (it is *not* `na`/excluded). `returns_risk` is a *derived* score over
+> existing findings, not new rows (see end).
+
+**Traceability chain (already in the schema):**
+`diagnostic_check (check_code)` → `finding` (one per check per run) →
+`fix_recommendation` (triggered by finding status) → `finding_fix` → **progress**
+= the same `check_code` re-measured across `diagnostic_run`s.
+
+**`check_code` convention:** dotted + stable — `category.subject[.aspect]`.
+**Class:** `leak` / `ux` / `vp` (value_prop); lever in parens when not
+conversion (`traffic` / `AOV` / `returns`). **Scale:** `Y/N` or `1–10`.
+**Depends:** the prerequisite `check_code` — a `depends_on` self-FK on
+`diagnostic_check`. If it isn't satisfied, the dependent **scores 0** (credit not
+earned) and isn't probed. Distinct from genuine `na` (the check doesn't apply to
+this entity — e.g. a variant selector on a single-variant product → excluded,
+not zeroed).
+**Source:** `ASE-PDP` / `ASE-SITE` / `BROWSER` / `FETCH` / `PSI` / `LLM` / `DB`.
+
+Hierarchy: **Stage → Category (scored) → Page → atomic Item.**
+
+### Scoring model — credit-from-zero
+
+Every metric **starts at 0 and accrues credit** toward its full potential — it is
+never "start at 100 and deduct." A category's 100 is the sum of its atomic
+checks' earned credits (weighted); absent/missing ⇒ credit simply not earned ⇒
+that slice is 0 (not a penalty). Dependencies are a **first-class relation**
+(`diagnostic_check.depends_on_check_id`, self-FK):
+
+- A failed prerequisite **zeroes its dependents** — e.g. no `search.box.present`
+  ⇒ every `search.*` check is 0 (the whole search opportunity is unrealized);
+  no `aeo.llms_txt.present` ⇒ `aeo.llms_txt.quality` is 0.
+- `na` is reserved for **does-not-apply** (entity lacks the concept, page absent,
+  probe disabled) and is the **only** status excluded from the average — so it
+  never drags the score.
+- Uplift is unchanged: `(1 − score/100) × max` per finding, so a 0 carries full
+  headroom = full recoverable opportunity.
+
+### Discovery › `seo`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `seo.jsonld.present` | PDP | Product JSON-LD present | leak (traffic) | Y/N | — | ASE-PDP | present → 100/0 |
+| `seo.jsonld.required_complete` | PDP | JSON-LD required fields complete | leak (traffic) | 1–10 | `seo.jsonld.present` | ASE-PDP | 5 required fields, pro-rata |
+| `seo.jsonld.bonus` | PDP | JSON-LD bonus fields | vp (traffic) | 1–10 | `seo.jsonld.present` | ASE-PDP | 3 bonus fields, pro-rata |
+| `seo.sitemap.present` | SITE_WIDE | sitemap.xml present | leak (traffic) | Y/N | — | FETCH | present → 100/0 |
+| `seo.sitemap.valid` | SITE_WIDE | sitemap valid + fresh | leak (traffic) | 1–10 | `seo.sitemap.present` | FETCH | well-formed + recent lastmod *(TBD)* |
+| `seo.og.title` | SITE_WIDE/PDP | og:title present | leak (traffic) | Y/N | — | FETCH/ASE-PDP | present → 100/0 |
+| `seo.og.description` | SITE_WIDE/PDP | og:description present | leak (traffic) | Y/N | — | FETCH/ASE-PDP | present → 100/0 |
+| `seo.og.image` | SITE_WIDE/PDP | og:image present | leak (traffic) | Y/N | — | FETCH/ASE-PDP | present → 100/0 |
+| `seo.canonical.present` | PDP | canonical tag present + self-referential | leak (traffic) | Y/N | — | ASE-PDP | present+self → 100/0 |
+
+### Discovery › `aeo`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `aeo.llms_txt.present` | SITE_WIDE | llms.txt present | leak (traffic) | Y/N | — | FETCH | present → 100/0 |
+| `aeo.llms_txt.quality` | SITE_WIDE | llms.txt quality (coverage/structure/freshness) | leak (traffic) | 1–10 | `aeo.llms_txt.present` | FETCH+LLM | rubric *(TBD)* |
+| `aeo.robots.ai_policy` | SITE_WIDE | robots AI-bot policy | leak (traffic) | 1–10 | — | FETCH | allow major AI crawlers 40 / unmentioned 10 / block 0 |
+| `aeo.faq_schema.present` | SITE_WIDE/PDP | FAQ / Q&A schema present | vp (traffic) | Y/N | — | ASE-PDP | present → 100/0 |
+| `aeo.answerable.structure` | PDP | answer-structured content | vp (traffic) | 1–10 | — | ASE-PDP+LLM | *(TBD)* |
+
+### Discovery › `page_performance`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `perf.cwv.lcp` | PDP | Largest Contentful Paint | leak (traffic) | 1–10 | — | PSI | good/NI/poor vs Google thresholds |
+| `perf.cwv.inp` | PDP | Interaction to Next Paint | leak (traffic) | 1–10 | — | PSI | good/NI/poor |
+| `perf.cwv.cls` | PDP | Cumulative Layout Shift | leak (traffic) | 1–10 | — | PSI | good/NI/poor |
+
+### Internal search › `internal_search`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `search.box.present` | HOME | search box present/visible | ux | Y/N | — | ASE-SITE | present → 100/0 |
+| `search.speed.latency` | HOME | search response latency | leak | 1–10 | `search.box.present` | BROWSER | latency buckets *(TBD)* |
+| `search.typo.tolerance` | HOME | typo tolerance | leak | 1–10 | `search.box.present` | BROWSER+DB | % mutated queries returning results; pass ≥99 / partial ≥50 |
+| `search.synonym.coverage` | HOME | synonym coverage | leak | 1–10 | `search.box.present` | BROWSER+DB | overlap: 50 both return, +30 >0, +20 ≥3 |
+| `search.autocomplete.present` | HOME | autocomplete present | leak | Y/N | `search.box.present` | BROWSER | present → 100/0 |
+| `search.autocomplete.quality` | HOME | autocomplete relevance | vp | 1–10 | `search.autocomplete.present` | BROWSER | *(TBD)* |
+| `search.semantic.present` | HOME | semantic search capability | vp | Y/N | `search.box.present` | BROWSER+LLM | detection *(TBD)* |
+| `search.conversational.present` | HOME | conversational search | vp | Y/N | `search.box.present` | BROWSER | *(TBD)* |
+| `search.image.present` | HOME | image-based search | vp | Y/N | — | ASE-SITE/BROWSER | present → 100/0 |
+| `search.recent.persistence` | HOME | recent-search persistence | vp | Y/N | `search.box.present` | BROWSER | present → 100/0 |
+| `search.empty_state` | SEARCH_RESULTS | empty-state handling | leak | 1–10 | `search.box.present` | BROWSER+DB | graceful 50 + fallback content 50 |
+| `search.brand_relevance` | SEARCH_RESULTS | brand-query relevance | leak | 1–10 | `search.box.present` | BROWSER | results 50 + brand in top-3 50 |
+| `facet.present` | SEARCH_RESULTS | facet filtering present | ux | Y/N | — | ASE-SITE | present → 100/0 |
+| `facet.depth` | SEARCH_RESULTS | facet depth/usefulness | ux | 1–10 | `facet.present` | ASE-SITE | # useful facets *(TBD)* |
+| `nav.category.usability` | CATEGORY | category-nav usability | ux | 1–10 | — | ASE-SITE/BROWSER | *(TBD)* |
+| `nav.tags.present` | PDP | product tags present | ux | Y/N | — | ASE-PDP | present → 100/0 |
+| `nav.breadcrumb.present` | PDP | breadcrumb present | ux | Y/N | — | ASE-PDP | present → 100/0 |
+| `reco.home.present` | HOME | product recommendations present | vp | Y/N | — | ASE-SITE/PDP | present → 100/0 |
+| `reco.home.quality` | HOME | recommendation relevance | vp | 1–10 | `reco.home.present` | ASE+LLM | *(TBD)* |
+
+### Decision › `pdp_quality`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `pdp.images.present` | PDP | has product images | leak | Y/N | — | ASE-PDP | ≥1 → 100/0 |
+| `pdp.images.count` | PDP | sufficient image count | leak | 1–10 | `pdp.images.present` | ASE-PDP | ≥N images *(TBD)* |
+| `pdp.images.alt_quality` | PDP | image alt-text quality | leak | 1–10 | `pdp.images.present` | ASE-PDP | alt coverage/quality |
+| `pdp.variants.present` | PDP | variant selector present | leak | Y/N | — | ASE-PDP | present → 100/0 (na if single-variant) |
+| `pdp.variants.clarity` | PDP | variant clarity | leak | 1–10 | `pdp.variants.present` | ASE-PDP | *(TBD)* |
+| `pdp.description.present` | PDP | descriptive paragraph present | leak | Y/N | — | ASE-PDP | present → 100/0 |
+| `pdp.description.quality` | PDP | description richness | leak | 1–10 | `pdp.description.present` | ASE-PDP+LLM | length/structure *(TBD)* |
+| `pdp.reviews.present` | PDP | reviews present | leak | Y/N | — | ASE-PDP | present → 100/0 |
+| `pdp.stock.clarity` | PDP | stock + delivery clarity | leak | 1–10 | — | ASE-PDP | *(TBD)* |
+| `pdp.crosssell.present` | PDP | cross-sell present | vp (AOV) | Y/N | — | ASE-PDP | present → 100/0 |
+| `pdp.upsell.present` | PDP | upsell present | vp (AOV) | Y/N | — | ASE-PDP | present → 100/0 |
+
+### Decision › `data_completeness`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `pdp.attributes.present` | PDP | structured attribute table present | leak | Y/N | — | ASE-PDP | present → 100/0 |
+| `pdp.attributes.completeness` | PDP | expected-attribute coverage | leak | 1–10 | — | ASE-PDP+DB | weighted coverage of `vertical_expected_attribute`; pass ≥80 / partial ≥50 |
+
+### Cart / Checkout
+
+_Canonical stages — **not evaluated in the landing profile** (can't transact
+anonymously). Present in the model; excluded by the Anonymous Landing Audit
+profile._
+
+### Authentication › `authentication`
+
+| check_code | Page | Item | Class | Scale | Depends | Source | Grading |
+|---|---|---|---|---|---|---|---|
+| `auth.sso.google` | LOGIN | SSO Google present | leak | Y/N | — | ASE-SITE/BROWSER | present → 100/0 |
+| `auth.sso.microsoft` | LOGIN | SSO Microsoft present | leak | Y/N | — | ASE-SITE/BROWSER | present → 100/0 |
+| `auth.sso.apple` | LOGIN | SSO Apple present | leak | Y/N | — | ASE-SITE/BROWSER | present → 100/0 |
+| `auth.sso.meta` | LOGIN | SSO Meta present | leak | Y/N | — | ASE-SITE/BROWSER | present → 100/0 |
+| `auth.mobile.login_overlay` | LOGIN | mobile login button not obscured by keyboard | leak | Y/N | — | BROWSER (mobile) | visible → 100 / obscured → 0 |
+| `auth.gating.browse` | SITE_WIDE | does **not** force login before browsing/buying | leak | Y/N | — | BROWSER | open → 100 / gated → 0 |
+
+### Return risk › `returns_risk` (derived — no new rows)
+
+`returns_risk` is a **derived score**, not measured rows. It re-weights existing
+atomic findings through the **returns lever**:
+
+| Contributing finding (reused) | Weight |
+|---|---|
+| `pdp.description.quality` | *(TBD)* |
+| `pdp.images.alt_quality` | *(TBD)* |
+| `pdp.attributes.completeness` | *(TBD)* |
+
+This avoids probing the same PDP DOM twice and double-counting loss.
+
+### Open grain calibrations
+
+- OG split **per tag** (title/description/image) — keep, or collapse to one
+  `seo.og.complete`?
+- JSON-LD split `present` / `required_complete` / `bonus` — right grain?
+- `returns_risk` as a derived roll-up (above) — agreed, vs separate measured checks?
+
+---
+
+## Robust data structure (atomic rubric schema)
+
+> Status: **proposal.** Extends the shipped catalog/run tables to carry the
+> atomic rubric: categories, page types, evidence sources, **dependencies**,
+> credit-from-zero scoring, **derived** categories, profiles, and normalized
+> score rollups. All catalog tables keep the prompt_template pattern
+> (per-instance rows + instance-0 fallthrough). "exists" = already shipped;
+> "new" / "+col" = proposed.
+
+### Catalog (rubric definition)
+
+| Table | Change | Purpose |
+|---|---|---|
+| `diagnostic_stage` | exists, + rows | add Cart, Checkout, Authentication → the full 7-stage funnel |
+| `diagnostic_category` | **new** | the **scored** category. Cols: `category_code`, `name`, `diagnostic_stage_id` FK, `default_finding_class`, `default_revenue_lever`, `icon_name`, `color`, `is_derived`, `weight`, `sort_order`. Seeds: seo, aeo, page_performance, internal_search, pdp_quality, data_completeness, returns_risk, authentication, site_trust |
+| `page_type` | **new** lookup | SITE_WIDE · HOME · SEARCH_RESULTS · CATEGORY · PDP · LOGIN · CART · CHECKOUT — *where* a check runs + how the runner discovers that page |
+| `evidence_source` | **new** lookup | ASE_PDP · ASE_SITE · BROWSER · FETCH · PSI · LLM · DB — *how* a check is measured |
+| `diagnostic_check` | exists, + cols | **new:** `diagnostic_category_id` FK, `page_type_id` FK, **`depends_on_check_id` self-FK**, `metric_kind` (binary/graded/derived), `scoring_rubric` JSONB (credit components, sum→100), `capability_tier` (1–3), `finding_class`. **existing:** `weight`, `revenue_lever` (→ enum traffic/conversion/aov/returns), `default_delta_rate` (max recoverable), `evidence_schema` |
+| `diagnostic_check_source` | **new** M2M | check ↔ `evidence_source` (a check can draw on several, e.g. OG = FETCH + ASE_PDP) |
+| `diagnostic_category_contribution` | **new** | **derived** categories: `(category_id, source_check_id, weight, lever_override)` — models `returns_risk` reusing PDP findings, **no duplicate rows** |
+| `diagnostic_copy` | **new** | **report-facing, localized, editable** copy — `(instance_id, scope[stage\|category\|check], ref_code, locale, label, summary, grading_note, result_band?)`. Separates *communicating* from *measuring*; instance-0 fallback |
+| `fix_recommendation` | exists | per-check fixes (remediation), `trigger_condition` JSONB |
+
+### Run layer & profile
+
+| Table | Change | Purpose |
+|---|---|---|
+| `finding` | exists, + status | add `result_status='blocked'` — prerequisite unmet → score **0**, fix the prereq first; distinct from `fail` (probed) and `na` (excluded) |
+| `run_category_score` | **new** | normalized per-category rollup `(run_id, category_id, score, est_uplift, confidence)` — queryable SEO/AEO/… scores across prospects + over time (progress) |
+| `diagnostic_profile` | **new** | context bundle (Anonymous Landing Audit, Continuous Monitoring): `anonymous`, `interactive`, `cadence`, `data_source` |
+| `diagnostic_profile_check` | **new** M2M | which checks run in a profile (pure membership, v1) |
+| `diagnostic_run` | exists, + col | `profile_id` FK (which profile executed); `category_scores` move to `run_category_score` |
+
+### Communication layer — measure / explain / fix
+
+The rubric tables above **measure** — codes + numbers, no prose. Report copy is a
+separate, **localized (es/en), editable** layer (prompt_template pattern), so the
+internal `check_code` (`aeo.llms_txt.present`) never reaches the report:
+
+- **Measure** → `diagnostic_check` (+ `scoring_rubric`) — the score.
+- **Explain** → `diagnostic_copy` — per stage/category/check: `label` (display
+  name), `summary` (what it measures / why it matters), `grading_note` (what the
+  score means + what full credit looks like). Localized, instance-0 fallback.
+- **Fix** → `fix_recommendation` — the remediation, triggered by result band.
+
+Result-band narrative ("you're invisible to AI answer engines") rides on the
+`fix_recommendation` trigger or a `diagnostic_copy` row scoped to a `result_band`.
+
+### ERD — the atomic rubric schema
 
 ```mermaid
 erDiagram
@@ -588,30 +870,37 @@ erDiagram
   diagnostic_category ||--o{ diagnostic_category_contribution : "derived_from"
   diagnostic_check ||--o{ diagnostic_category_contribution : "contributes"
   diagnostic_check ||--o{ fix_recommendation : "fixed_by"
-  diagnostic_check ||--o{ diagnostic_copy : "explained_by"
+  vertical ||--o{ vertical_benchmark : "calibrates"
+  diagnostic_check ||--o{ vertical_benchmark : "delta_override"
   prospect ||--o{ diagnostic_run : "has"
   diagnostic_profile ||--o{ diagnostic_run : "ran_under"
+  diagnostic_run ||--o{ run_sample : "pages"
   diagnostic_run ||--o{ finding : "produces"
   diagnostic_check ||--o{ finding : "scored_as"
+  run_sample ||--o{ finding : "on"
   finding ||--o{ finding_fix : "suggests"
+  fix_recommendation ||--o{ finding_fix : "materialized"
   diagnostic_run ||--o{ run_category_score : "rolls_up"
   diagnostic_category ||--o{ run_category_score : "scored_in"
   diagnostic_profile ||--o{ diagnostic_profile_check : "selects"
   diagnostic_check ||--o{ diagnostic_profile_check : "in_profile"
 ```
 
-**Status:** migrations **drafted, not applied**. Open / TBD: per-check
-`scoring_rubric` JSONB, full es/en `diagnostic_copy`, weight tuning, and the
-legacy-check **cutover** (old checks stay active until the new scorers exist).
+### Dependency seed edges (`depends_on_check_id`)
 
-**Backend build = 6 prompts** (then probes, then cutover):
-1. apply + verify the v5 migrations on a Supabase branch; regenerate types.
-2. atomic check loader + scorer registry on the new `check_code`s.
-3. scoring engine — dependency-ordered, credit-from-zero, category/stage rollup,
-   persist `run_category_score`.
-4. PDP-first navigation + page discovery (engine-ID finding; missing pages → na).
-5. fetch-based scorers (`seo.*`, `aeo.*`) for real end-to-end signal.
-6. public API + `diagnostic_copy` rendering (profile-driven run, category scores).
+- `*.quality → *.present` — llms.txt, autocomplete, reco, images alt, description, facet depth, sitemap valid, jsonld required/bonus
+- `search.* → search.box.present`
+- `pdp.images.{count,alt_quality} → pdp.images.present`
+- `pdp.variants.clarity → pdp.variants.present`
 
-After #6 the landing widget can be unhidden against a real contract. Follow-ons:
-ASE scorers, browser/PSI scorers, then the legacy cutover.
+### Open reconciliations
+
+- `page_type` / `evidence_source` as **lookup tables** (extensible) vs the
+  existing `diagnostic_probe_type` / `sample_type` enums, which conflate
+  *page* with *probe*. Recommend migrating to the lookups.
+- Normalize scores (`run_category_score`) vs today's `diagnostic_run.stage_scores`
+  JSONB. Recommend normalize for queryability + progress tracking.
+- `blocked` finding status vs reusing `fail` with score 0.
+- How this set bridges/unifies with the `funnel_*` object — **B vs C still open**
+  (see "Relationship to the funnel object" above). `diagnostic_category` ≈
+  another grouping under `funnel_stage`; `depends_on` has no funnel equivalent.

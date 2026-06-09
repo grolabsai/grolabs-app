@@ -145,7 +145,9 @@ function defaultDeps(): DiscoveryDeps {
     // Use the plain-fetch-first + Browserless-fallback shim so bot-protected
     // sites register as reachable during discovery without always paying the
     // Browserless cost.
-    fetchImpl: fetchWithBrowserFallback as unknown as typeof fetch,
+    // Use plain fetch only — Browserless fallback adds 30-45s per call
+    // and pushes past Cloudflare's 100s proxy timeout.
+    fetchImpl: fetch,
     discoverSamples,
     probeSiteWide: async (rootUrl) => {
       try {

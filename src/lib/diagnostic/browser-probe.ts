@@ -33,35 +33,6 @@ const BROWSERLESS_HOST = process.env.BROWSERLESS_HOST; // e.g. "production-sfo.b
 const BROWSERLESS_TOKEN = process.env.BROWSERLESS_TOKEN;
 
 /**
- * Create a Browserless persistent session.
- * Cookies, localStorage, and cache survive across connections for TTL ms.
- * Allows subsequent probe runs on the same site to reuse a pre-warmed
- * browser context where overlays have already been dismissed.
- *
- * Returns the WebSocket debugger URL or null on failure.
- */
-async function createPersistentSession(ttlMs = 180_000): Promise<string | null> {
-  if (!BROWSERLESS_HOST || !BROWSERLESS_TOKEN) return null;
-  const host = BROWSERLESS_HOST.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  try {
-    const res = await fetch(
-      `https://${host}/session?token=${encodeURIComponent(BROWSERLESS_TOKEN)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ttl: ttlMs }),
-        signal: AbortSignal.timeout(10_000),
-      },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as { webSocketDebuggerUrl?: string };
-    return data.webSocketDebuggerUrl ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Build the wss:// CDP endpoint from configured host + token. Returns
  * null when either piece is missing — the caller falls back to a local
  * Chromium launch (dev) or surfaces the misconfig (prod). The protocol
@@ -222,16 +193,10 @@ export async function runBrowserProbe(
   const notes: string[] = [];
   const screenshots: ProbeScreenshot[] = [];
   try {
-    // Try a persistent session first — cookies/localStorage survive across
-    // connections so popups dismissed in a previous run stay dismissed.
-    const persistentWsUrl = await createPersistentSession();
-    const wsUrl = persistentWsUrl ?? buildBrowserlessWsUrl();
+    const wsUrl = buildBrowserlessWsUrl();
     if (wsUrl) {
       browser = await playwright.chromium.connectOverCDP(wsUrl);
-      notes.push(persistentWsUrl
-        ? "browser_source:browserless_persistent"
-        : "browser_source:browserless",
-      );
+      notes.push("browser_source:browserless");
     } else {
       browser = await playwright.chromium.launch({ headless: true });
       weLaunchedIt = true;
@@ -931,72 +896,6 @@ async function captureScreenshot(page: Page): Promise<Buffer | null> {
   }
 }
 
-/** Shared result evaluation — called by both the standard and fast paths. */
-async function evaluateSearchResults(page: Page, query: string, variantType: string) {
-  const currentUrl = page.url();
-  const pdpRedirectPattern = /\/(product|products|p|item|shop)\/[^?#]+/i;
-  const wasPdpRedirect = pdpRedirectPattern.test(currentUrl) && currentUrl.includes("/product/");
-  const screenshot = await captureScreenshot(page);
-  const domResult = await (page.evaluate as Page["evaluate"])(() => {
-    const bodyText = document.body.innerText.toLowerCase();
-    const noResultsPhrases = ["no results","no resultados","0 results","no products found","nothing found","we couldn't find","we could not find","your search returned no"];
-    const hasNoResultsCopy = noResultsPhrases.some((p) => bodyText.includes(p));
-    const resultSelectors = ["ul.products li.product",".products .product","[data-search-result]",".search-result","ul.products li.type-product"];
-    let estimate = 0;
-    let resultEls: Element[] = [];
-    for (const sel of resultSelectors) {
-      try { const els = Array.from(document.querySelectorAll(sel)); if (els.length > estimate) { estimate = els.length; resultEls = els; } } catch {}
-    }
-    const names: string[] = [];
-    for (const el of resultEls.slice(0,10)) {
-      const titleEl = el.querySelector(".product-title, h2, h3") as HTMLElement | null;
-      const t = titleEl?.innerText?.trim(); if (t && t.length > 2) names.push(t);
-    }
-    return { estimate: estimate > 0 ? estimate : null, hasFallbackContent: document.body.innerText.length > 600 && !hasNoResultsCopy, hasNoResultsCopy, matchedNoResultsPhrase: noResultsPhrases.find(p => bodyText.includes(p)) ?? null, topResultNames: names, currentUrl: window.location.href };
-  });
-  return { domResult, screenshot, wasPdpRedirect, currentUrl };
-}
-
-/** Build a SearchOutcome from evaluation results (used by fast path). */
-function buildOutcome(
-  eval_: Awaited<ReturnType<typeof evaluateSearchResults>>,
-  _screenshot: Buffer | null,
-  query: string,
-  variantType?: string,
-  _opts?: { discovery?: string },
-): SearchOutcome {
-  const { domResult, screenshot, wasPdpRedirect } = eval_;
-  const effectiveEstimate = wasPdpRedirect ? 1 : domResult.estimate;
-  const effectiveTopNames = wasPdpRedirect ? [eval_.currentUrl.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "product"] : domResult.topResultNames;
-  const verdict = classifyResults({ query, variantType, estimate: effectiveEstimate, hasNoResultsCopy: wasPdpRedirect ? false : domResult.hasNoResultsCopy, matchedNoResultsPhrase: wasPdpRedirect ? null : domResult.matchedNoResultsPhrase, topResultNames: effectiveTopNames, currentUrl: domResult.currentUrl });
-  return { resultsPresent: verdict.resultsPresent, estimate: domResult.estimate, hasFallbackContent: domResult.hasFallbackContent, hardError: false, topResultNames: effectiveTopNames, screenshot, confidence: verdict.confidence, verdictReason: verdict.reason };
-}
-
-/**
- * Derive a direct search results URL from the root URL and a query.
- * After the first search we capture the pattern and reuse it — this skips
- * the homepage navigation + popup dismiss + trigger click (~15s saved per query).
- * Returns null when the URL can't be reliably constructed.
- */
-function buildDirectSearchUrl(rootUrl: string, query: string): string | null {
-  try {
-    const u = new URL(rootUrl);
-    // WooCommerce / WordPress: /?s=query&post_type=product
-    u.pathname = "/";
-    u.searchParams.set("s", query);
-    u.searchParams.set("post_type", "product");
-    return u.toString();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Per-run cache: after the first successful search we know the URL pattern works.
- * Key = rootUrl, value = confirmed search URL template.
- */
-const confirmedSearchUrls = new WeakMap<Page, string>();
-
 async function runSearchQuery(
   page: Page,
   context: BrowserContext,
@@ -1005,22 +904,7 @@ async function runSearchQuery(
   variantType?: string,
 ): Promise<SearchOutcome> {
   try {
-    // Fast path: if we've already confirmed the direct search URL works for
-    // this page/session, navigate there directly — skips homepage + popup + trigger.
-    const cachedBase = confirmedSearchUrls.get(page);
-    if (cachedBase) {
-      const directUrl = buildDirectSearchUrl(rootUrl, query);
-      if (directUrl) {
-        await page.goto(directUrl, { waitUntil: "domcontentloaded", timeout: NAV_TIMEOUT_MS });
-        await page.waitForTimeout(800).catch(() => {});
-        // Jump straight to result evaluation (skip input/submit flow below)
-        const screenshot = await captureScreenshot(page);
-        const domResult = await evaluateSearchResults(page, query, variantType ?? "");
-        return buildOutcome(domResult, screenshot, query, variantType, { discovery: "direct_url" });
-      }
-    }
-
-    // Standard path: navigate to root, find search box, submit.
+    // Always re-navigate to root to get a clean state.
     await safeGoto(page, rootUrl);
     const located = await locateOrOpenSearchInput(page, rootUrl);
     const input = located.handle;
@@ -1259,12 +1143,6 @@ async function runSearchQuery(
       finalConfidence = Math.max(0, finalConfidence - 10);
       finalReason =
         `UX issue: the homepage has no search input — clicking the search icon navigated to a dedicated search page first. ${finalReason}`;
-    }
-
-    // Mark this page as having a working direct search URL so subsequent
-    // queries skip the homepage + popup + trigger flow entirely.
-    if (!confirmedSearchUrls.has(page)) {
-      confirmedSearchUrls.set(page, rootUrl);
     }
 
     return {

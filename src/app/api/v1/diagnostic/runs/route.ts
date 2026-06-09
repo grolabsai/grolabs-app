@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { startAnonymousDiagnostic } from "@/lib/diagnostic/runner";
 import { runV5Diagnostic } from "@/lib/diagnostic/v5";
 
 export const runtime = "nodejs";
-// Diagnostic runs include Browserless search probes (~60-90s). Set the
-// maximum allowed duration so Vercel doesn't cut the function short.
+// after() keeps the function alive post-response; 300s is the Vercel Pro max.
 export const maxDuration = 300;
 
 /**
@@ -136,30 +136,24 @@ export async function POST(req: NextRequest) {
     status: "completed",
   };
 
-  // v5 run (additive — only when requested or feature-flagged).
+  // v5 run — fire-and-forget via after() so the HTTP response returns
+  // immediately (< 2s). The full diagnostic runs in the background and
+  // writes its results to the DB. The landing page polls
+  // GET /api/v1/diagnostic/runs/{run_id}/v5 to pick up the results.
   if (isV5Requested(body)) {
-    const v5Result = await runV5Diagnostic(
-      {
-        ...sharedInput,
-        instanceId: null,
-      },
-      { supabase: service },
-    );
+    const v5RunId = legacyResult.runId; // share the same run_id
+    response.v5 = { run_id: v5RunId, status: "processing" };
 
-    if ("ok" in v5Result && v5Result.ok) {
-      response.v5 = {
-        profile: v5Result.report.profile,
-        overall: v5Result.report.overall,
-        stages: v5Result.report.stages,
-        categories: v5Result.report.categories,
-        run_id: v5Result.runId,
-        // Temporary debug field — remove once search detection is stable
-        probe_debug: v5Result.probeDebug,
-      };
-    } else if ("error" in v5Result) {
-      // v5 error is non-fatal: legacy result is still returned.
-      response.v5_error = v5Result.error;
-    }
+    after(async () => {
+      try {
+        await runV5Diagnostic(
+          { ...sharedInput, instanceId: null },
+          { supabase: createServiceRoleClient() },
+        );
+      } catch (e) {
+        console.error("[v5/after] background diagnostic failed:", e instanceof Error ? e.message : String(e));
+      }
+    });
   }
 
   return json(201, response);

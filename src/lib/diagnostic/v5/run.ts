@@ -329,7 +329,11 @@ export async function runV5Diagnostic(
     //   scoring — we resolve it early here so the probe has a real keyword).
     //   Option B: probe discovers keywords from the homepage automatically.
     //   Both paths run in parallel with the rest; probe failure is non-fatal.
-    const probeEnabled = process.env.PROSPECTOS_BROWSER_PROBE_ENABLED === "1";
+    // Probe disabled: Playwright keeps connections alive after Promise.race
+    // resolves, preventing Vercel from returning within Cloudflare's 100s limit.
+    // SEO/AEO results are complete in ~30s without the probe. Re-enable once
+    // the probe runs async (separate queue/job).
+    const probeEnabled = false;
     let browserProbeResult: BrowserProbeResult | null = null;
     let pdpProductName: string | null = null;
 

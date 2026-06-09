@@ -24,9 +24,13 @@
 const BROWSERLESS_HOST = process.env.BROWSERLESS_HOST;
 const BROWSERLESS_TOKEN = process.env.BROWSERLESS_TOKEN;
 
-/** True when Browserless credentials are present (retry path is available). */
-export const BROWSERLESS_AVAILABLE =
-  !!BROWSERLESS_HOST && !!BROWSERLESS_TOKEN;
+/** True when Browserless credentials are present (retry path is available).
+ * Disabled for evidence fetches — using Browserless for 3 evidence calls
+ * (homepage HTML, PDP HTML, discovery) adds 30-45s and pushes the total
+ * diagnostic past Cloudflare's ~100s proxy timeout. Plain HTTP already
+ * works for most sites' static artifacts. The probe itself still uses
+ * Browserless for interactive search testing. */
+export const BROWSERLESS_AVAILABLE = false;
 
 /** Result shape — mirrors the plain-fetch path for easy substitution. */
 export type BrowserFetchResult =

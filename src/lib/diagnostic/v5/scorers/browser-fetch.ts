@@ -39,7 +39,9 @@ function buildWsUrl(): string | null {
   return `wss://${host}?token=${encodeURIComponent(BROWSERLESS_TOKEN)}`;
 }
 
-const PAGE_TIMEOUT_MS = 20_000; // 20 s — generous for slow e-commerce sites
+// 8 s — tight but enough for static HTML. Cloudflare cuts the whole
+// Vercel function at ~100s so every Browserless call must be short.
+const PAGE_TIMEOUT_MS = 8_000;
 
 /**
  * Render `url` in a real Chromium (via Browserless CDP, or local launch as a

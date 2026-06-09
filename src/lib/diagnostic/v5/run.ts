@@ -365,18 +365,26 @@ export async function runV5Diagnostic(
         probeEnabled: true,
       });
 
-      browserProbeResult = await runBrowserProbe({
+      // Hard 55s cap on the probe. Cloudflare kills the Vercel function at
+      // ~100s; discovery + SEO/AEO scoring takes ~30s, leaving 55s for the
+      // probe. If it runs over, search scores are na but the full SEO/AEO
+      // result is still returned — no silent empty response.
+      const probePromise = runBrowserProbe({
         rootUrl: probeRootUrl,
         synonymPairs: [],
-        // Always run one empty-state test so we get at least one real search
-        // even when product name discovery fails. A gibberish query that won't
-        // match any product guarantees a "no results" page for graceful-handling.
         emptyStateQueries: ["xyzzy9q2w3notaproduct"],
         testEntries,
       }).catch((e) => {
         console.warn("[v5/probe] runBrowserProbe threw:", e instanceof Error ? e.message : String(e));
-        return null;
+        return null as BrowserProbeResult | null;
       });
+      const probeDeadline = new Promise<null>((res) =>
+        setTimeout(() => {
+          console.warn("[v5/probe] 55s deadline reached — returning without search scores");
+          res(null);
+        }, 55_000),
+      );
+      browserProbeResult = await Promise.race([probePromise, probeDeadline]);
 
       // Log full probe outcome so it appears in Vercel function logs
       console.info("[v5/probe] result", {

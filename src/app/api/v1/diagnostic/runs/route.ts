@@ -4,6 +4,9 @@ import { startAnonymousDiagnostic } from "@/lib/diagnostic/runner";
 import { runV5Diagnostic } from "@/lib/diagnostic/v5";
 
 export const runtime = "nodejs";
+// Diagnostic runs include Browserless search probes (~60-90s). Set the
+// maximum allowed duration so Vercel doesn't cut the function short.
+export const maxDuration = 300;
 
 /**
  * POST /api/v1/diagnostic/runs

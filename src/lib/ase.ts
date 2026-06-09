@@ -231,6 +231,10 @@ export type SiteSignals = {
  * Call ASE's static-HTML PDP signal extractor. Returns raw extracted
  * signals — RRE scores them against the diagnostic_check rubric.
  */
+// 15s timeout on all ASE calls — prevents hanging forever when ASE is
+// slow or unreachable, which would block the entire diagnostic run.
+const ASE_TIMEOUT_MS = 15_000;
+
 export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
   const url = `${ensureBaseUrl()}/tools/pdp-signals`;
   const res = await fetch(url, {
@@ -238,6 +242,7 @@ export async function scanPdpSignals(targetUrl: string): Promise<PdpSignals> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url: targetUrl }),
     cache: "no-store",
+    signal: AbortSignal.timeout(ASE_TIMEOUT_MS),
   });
   if (!res.ok) throw await aseError(res, "pdp-signals");
   return (await res.json()) as PdpSignals;
@@ -259,6 +264,7 @@ export async function scanSiteSignals(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     cache: "no-store",
+    signal: AbortSignal.timeout(ASE_TIMEOUT_MS),
   });
   if (!res.ok) throw await aseError(res, "site-signals");
   return (await res.json()) as SiteSignals;

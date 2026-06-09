@@ -237,8 +237,12 @@ export function siteHtmlFor(ctx: V5RunContext): Promise<FileEvidence> {
   const p = loadFile(site.url).then(async (plainResult) => {
     // Plain fetch succeeded or got a real HTTP response → use it.
     if (!isUnmeasured(plainResult)) return plainResult;
-    // Plain fetch was blocked / timed out — retry with Browserless if available.
+    // Skip Browserless retry for evidence — it adds 15-30s per call and
+    // pushes the total diagnostic past Cloudflare's ~100s proxy timeout.
+    // The probe itself uses Browserless for interactive search testing.
     if (!BROWSERLESS_AVAILABLE) return plainResult;
+    // Also skip if we're already deep into the request (>35s uptime risk)
+    if (process.uptime && process.uptime() > 35) return plainResult;
     console.info(`[v5/evidence] plain fetch na for ${site.url} — retrying via Browserless`);
     const browserResult = await fetchHtmlViaBrowser(site.url);
     return browserResultToFile(browserResult);

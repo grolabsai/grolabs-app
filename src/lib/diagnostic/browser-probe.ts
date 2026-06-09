@@ -44,9 +44,12 @@ function buildBrowserlessWsUrl(): string | null {
   const host = BROWSERLESS_HOST.replace(/^wss?:\/\//, "").replace(/\/+$/, "");
   return `wss://${host}?token=${encodeURIComponent(BROWSERLESS_TOKEN)}`;
 }
-const MAX_QUERIES = 6; // safety cap so a wide vocabulary doesn't blow the budget
-const PER_QUERY_TIMEOUT_MS = 12_000;
-const NAV_TIMEOUT_MS = 20_000;
+// Cloudflare's proxy timeout is ~100s. Discovery + SEO/AEO scoring takes
+// ~25-30s leaving ~55s for the probe. Tightening query timeouts so
+// 2-3 queries finish in ~25s total.
+const MAX_QUERIES = 3; // was 6
+const PER_QUERY_TIMEOUT_MS = 8_000; // was 12s
+const NAV_TIMEOUT_MS = 12_000; // was 20s
 
 export type TypoTestResult = {
   source_query: string;
@@ -481,7 +484,7 @@ async function safeGoto(page: Page, url: string) {
   // Give JS-heavy pages (Elementor, React storefronts) a moment to finish
   // rendering interactive elements like search toggles. networkidle can be
   // too slow on ad-heavy sites so we use a short fixed wait instead.
-  await page.waitForTimeout(1200).catch(() => {});
+  await page.waitForTimeout(600).catch(() => {});
 }
 
 async function discoverFromHomepage(

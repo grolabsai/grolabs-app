@@ -603,7 +603,10 @@
         "week": "7 días",
         "month": "30 días"
       },
-      "withFilterText": "{n}/{total} con filtro"
+      "withFilterText": "{n}/{total} con filtro",
+      "analyticsAclNotice": "Las analíticas de búsqueda requieren una clave de Algolia con el permiso «analytics». Tu Search API Key no lo tiene — agrega tu Write (Admin) API Key, u otórgale el ACL «analytics» a tu Search Key en Algolia.",
+      "analyticsErrorNotice": "No se pudieron cargar las analíticas de búsqueda de Algolia en este momento. Revisa la conexión e inténtalo de nuevo.",
+      "synonymsDisabledNote": "Ver analíticas funciona con tu Search Key. Agregar sinónimos requiere la Write (Admin) API Key — aún no está configurada para esta instancia."
     },
     "catalogAlerts": {
       "title": "Alertas del catálogo",
@@ -617,7 +620,8 @@
       "save": "Guardar sinónimo",
       "cancel": "Cancelar",
       "toastSuccess": "Sinónimo añadido: {query} ↔ {synonym}",
-      "toastFailed": "No se pudo guardar el sinónimo"
+      "toastFailed": "No se pudo guardar el sinónimo",
+      "requiresWriteKey": "Requiere la Write (Admin) API Key"
     }
   },
   "analytics": {

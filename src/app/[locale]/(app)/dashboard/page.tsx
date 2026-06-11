@@ -78,11 +78,15 @@ export default async function DashboardPage({
     app_id?: string;
     region?: string;
     primary_index?: string;
+    search_api_key?: string;
   };
   const algolia: AlgoliaConfig =
     (instanceRow?.integrations_config as { algolia?: AlgoliaConfig })
       ?.algolia ?? {};
 
+  // The dashboard renders as soon as the search config is present — it does
+  // NOT require the Write (Admin) key. Reading analytics needs a key with
+  // Algolia's `analytics` ACL; writing synonyms needs the Write key.
   const isConfigured = !!(
     algolia.app_id &&
     algolia.region &&
@@ -97,12 +101,18 @@ export default async function DashboardPage({
     adminKey = (key as string | null) ?? null;
   }
 
-  const fullyConfigured = isConfigured && !!adminKey;
+  // Synonyms (writes) require the admin key. Analytics (reads) need any key
+  // carrying the `analytics` ACL — prefer the admin key (always has it), else
+  // fall back to the search key (works only if the merchant granted it that ACL).
+  const canAddSynonyms = !!adminKey;
+  const analyticsKey = adminKey ?? algolia.search_api_key ?? null;
 
   let noResults: NoResultRow[] = [];
   let hasMore = false;
+  // null = ok; "acl" = key lacks the analytics ACL; "generic" = other failure.
+  let analyticsError: "acl" | "generic" | null = null;
 
-  if (fullyConfigured) {
+  if (isConfigured && analyticsKey) {
     const host = analyticsHost(algolia.region!);
     const { startDate, endDate } = dateRange(timeWindow);
     const url =
@@ -117,7 +127,7 @@ export default async function DashboardPage({
       const res = await fetch(url, {
         headers: {
           "x-algolia-application-id": algolia.app_id!,
-          "x-algolia-api-key": adminKey!,
+          "x-algolia-api-key": analyticsKey,
           accept: "application/json",
         },
         cache: "no-store",
@@ -129,10 +139,18 @@ export default async function DashboardPage({
           (row) => row.search !== "<empty search>" && row.search !== ""
         );
         hasMore = raw.length === 50;
+      } else if (res.status === 401 || res.status === 403) {
+        // The provided key is missing the `analytics` ACL.
+        analyticsError = "acl";
+      } else {
+        analyticsError = "generic";
       }
     } catch {
-      // Network errors are non-fatal; the empty state renders below.
+      analyticsError = "generic";
     }
+  } else if (isConfigured) {
+    // Configured for search but no key at all that could read analytics.
+    analyticsError = "acl";
   }
 
   return (
@@ -149,7 +167,7 @@ export default async function DashboardPage({
             <CardDescription>{t("noResults.description")}</CardDescription>
           </CardHeader>
           <CardContent>
-            {!fullyConfigured ? (
+            {!isConfigured ? (
               <div
                 style={{
                   textAlign: "center",
@@ -175,6 +193,8 @@ export default async function DashboardPage({
                 timeWindow={timeWindow}
                 offset={offset}
                 hasMore={hasMore}
+                canAddSynonyms={canAddSynonyms}
+                analyticsError={analyticsError}
               />
             )}
           </CardContent>

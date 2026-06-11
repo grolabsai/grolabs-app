@@ -14,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LocaleSwitcher } from "./LocaleSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { cn } from "@/lib/utils";
 
@@ -114,9 +113,8 @@ export function TopBar({
           </kbd>
         </div>
 
-        {/* Right cluster: locale + theme + avatar */}
+        {/* Right cluster: theme + avatar (locale switcher removed — EN-only) */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LocaleSwitcher />
           <ThemeSwitcher />
 
           <DropdownMenu open={open} onOpenChange={setOpen}>

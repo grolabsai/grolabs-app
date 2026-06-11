@@ -5,18 +5,24 @@ import { createNavigation } from "next-intl/navigation";
  * i18n routing configuration.
  *
  * Architecture decisions (see CLAUDE.md for rationale):
- *   - defaultLocale: 'es'  — Spanish is the product language; 'es' URLs have
- *     no prefix (/catalog/products, not /es/catalog/products).
- *   - locales: ['es', 'en'] — English planned; not active until messages are
- *     fully populated and UI is validated.
- *   - localePrefix: 'as-needed' — default locale gets clean URLs; non-default
- *     locales get a prefix (/en/catalog/products).
+ *   - defaultLocale: 'en'  — English is the official product language; 'en'
+ *     URLs have no prefix (/catalog/products, not /en/catalog/products).
+ *   - locales: ['en']      — English-only for now. The locale switcher is
+ *     removed from the UI. Spanish is fully translated (messages/es.json) and
+ *     parked, ready to re-enable later.
+ *   - localePrefix: 'as-needed' — the default locale gets clean URLs.
  *   - Canonical paths are English-ASCII slugs (catalog, products, settings)
- *     regardless of active locale. No /es/catalogo URL ever exists.
+ *     regardless of active locale.
+ *
+ * To re-enable Spanish later:
+ *   1. Add 'es' back to `locales` below.
+ *   2. Re-mount <LocaleSwitcher /> in src/components/shell/TopBar.tsx
+ *      (the component is kept, just unused).
+ *   3. Restore the bilingual switch affordance in src/app/[locale]/error.tsx.
  */
 export const routing = defineRouting({
-  locales: ["es", "en"],
-  defaultLocale: "es",
+  locales: ["en"],
+  defaultLocale: "en",
   localePrefix: "as-needed",
 });
 

@@ -2756,6 +2756,15 @@
     "google": "Continue with Google",
     "microsoft": "Continue with Microsoft",
     "redirecting": "Redirecting…",
+    "login": {
+      "title": "Sign in to your catalog",
+      "sub": "Multi-tenant e-commerce catalog management.",
+      "error": "We couldn't sign you in. Check your email and password.",
+      "email": "Email",
+      "password": "Password",
+      "signIn": "Sign in",
+      "emailDivider": "or with email"
+    },
     "noAccess": {
       "title": "No access",
       "body": "Your account is not associated with any instance. Ask an administrator to grant you access.",
@@ -2796,12 +2805,35 @@
     "colName": "Name",
     "colInstances": "Instances",
     "colMembers": "Users",
+    "colOpen": "Open",
+    "backToList": "Back to customers",
+    "untitledTenant": "Untitled customer",
+    "kindTemplate": "Template",
+    "instanceCount": "{count, plural, one {# instance} other {# instances}}",
+    "usersTitle": "Users",
+    "noUsers": "This customer has no users yet.",
+    "nameLabel": "Name",
+    "saveName": "Save name",
+    "nameSaved": "Name updated",
+    "roleLabel": "Role",
+    "roleAdmin": "Admin",
+    "roleMember": "Member",
+    "roleSaved": "Role updated",
+    "resetPassword": "Reset password",
+    "passwordReset": "Password reset",
+    "ssoNoPassword": "Signs in with {provider}; no password.",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "activate": "Activate",
+    "activated": "User activated",
+    "deactivate": "Deactivate",
+    "deactivated": "User deactivated",
     "errors": {
       "invalidDomain": "Enter a valid domain (e.g. company.com).",
       "invalidEmail": "Enter a valid email.",
       "invalidName": "Enter a valid instance name.",
       "unauthorized": "You are not allowed to create customers.",
-      "saveFailed": "Could not create the customer. Try again."
+      "saveFailed": "Could not save the change. Try again."
     }
   },
   "equipo": {

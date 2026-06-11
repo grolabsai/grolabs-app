@@ -278,6 +278,31 @@ New `(admin)` route group screen (e.g. `src/app/[locale]/(admin)/clientes/`), in
   5. Insert `instance_member(is_active, is_current)`.
   6. Return the one-time password (only when newly created).
 
+### 3.1 Detail — per-tenant user management
+
+Each tenant row in the list links to `/clientes/[tenantId]`
+(`(admin)/clientes/[tenantId]/`), where GroLabs staff manage that tenant's
+existing users. Loaded by `getTenantDetailForAdmin(tenantId)`; every mutation is
+re-gated by `is_grolabs_admin()` **and** re-verifies that `(tenantId, userId)` is
+a real `tenant_member` (so an operator can only touch users of the tenant they
+opened). These are the staff-side, tenant-parameterized analogues of the §4
+Tenant-Admin actions:
+
+- `adminUpdateUserName(tenantId, userId, fullName)` — sets
+  `user_metadata.full_name` + `name` (merge-preserves the rest of the metadata).
+- `adminResetUserPassword(tenantId, userId)` — sets a fresh strong password +
+  `must_change_password=true`, returns the one-time password to show once.
+  Disabled in the UI for SSO accounts (`app_metadata.provider !== 'email'`),
+  which have no password.
+- `adminSetTenantUserRole(tenantId, userId, role)` — `admin | member`, cascaded
+  to the tenant's `instance_member` rows.
+- `adminSetTenantUserActive(tenantId, userId, active)` — toggles
+  `tenant_member.is_active` + the tenant's `instance_member` rows (clears
+  `is_current` on deactivate).
+
+Email change is intentionally **out of scope** here — email is the Article-3
+identity key; changing it is a separate, higher-risk flow.
+
 ## 4. Surface 2 — RRE "Equipo" (Tenant Admin)
 
 New `(app)` screen under `/configuration` (e.g. `/configuration/equipo`), in `buildRreNav` under Configuración, **visible only to Tenant Admins** (`is_tenant_admin` for the current instance's tenant).
@@ -298,10 +323,17 @@ Two buttons on the shared `src/app/[locale]/login/page.tsx`:
 
 Both `redirectTo` a new `/auth/callback` route that exchanges the code for a session, then routes to the locale root. All strings via `t()`.
 
+**Layout (login page):** SSO is the **primary** path and leads the card (Google
+then Microsoft), with an "or with email" divider beneath it; email + password is
+the **secondary** fallback below the divider. Its submit button (`LoginForm`,
+client) stays muted (`s-btn-secondary`) until a password is typed, then turns
+yellow (`s-btn-primary`) — so the email form doesn't pull focus from SSO until
+the user commits to it. All login strings live under the `auth.login` namespace.
+
 ### 5.1 Styling (R-10)
 Both buttons use the **GroLabs design system**, not vendor branding:
 - shadcn `Button` (outline/ghost), `--gl-surface` canvas + our border + our text tokens; **no** vendor brand colors, **no** official Google/Microsoft button.
-- A small **monochrome** provider glyph (inline `<svg>`, explicit `width`/`height` per §3, `currentColor`) purely for recognition.
+- A small **monochrome** provider glyph (inline `<svg>`, explicit `width`/`height` per §3, `currentColor`) purely for recognition. Both glyphs fill their box to the same optical weight (the Google mark's `viewBox` is tightened to its content bounds so it isn't visually smaller than Microsoft's).
 - (Accepted deviation: a monochrome Google mark is off Google's brand guidelines.)
 
 ### 5.2 Access — pre-created emails only (R-9)

@@ -2756,6 +2756,15 @@
     "google": "Continuar con Google",
     "microsoft": "Continuar con Microsoft",
     "redirecting": "Redirigiendo…",
+    "login": {
+      "title": "Ingresá a tu catálogo",
+      "sub": "Administración multi-tenant de catálogos de e-commerce.",
+      "error": "No pudimos iniciar sesión. Verificá tu correo y contraseña.",
+      "email": "Email",
+      "password": "Contraseña",
+      "signIn": "Ingresar",
+      "emailDivider": "o con email"
+    },
     "noAccess": {
       "title": "Sin acceso",
       "body": "Tu cuenta no está asociada a ninguna instancia. Pedí a un administrador que te dé acceso.",
@@ -2796,12 +2805,35 @@
     "colName": "Nombre",
     "colInstances": "Instancias",
     "colMembers": "Usuarios",
+    "colOpen": "Abrir",
+    "backToList": "Volver a clientes",
+    "untitledTenant": "Cliente sin nombre",
+    "kindTemplate": "Plantilla",
+    "instanceCount": "{count, plural, one {# instancia} other {# instancias}}",
+    "usersTitle": "Usuarios",
+    "noUsers": "Este cliente todavía no tiene usuarios.",
+    "nameLabel": "Nombre",
+    "saveName": "Guardar nombre",
+    "nameSaved": "Nombre actualizado",
+    "roleLabel": "Rol",
+    "roleAdmin": "Administrador",
+    "roleMember": "Miembro",
+    "roleSaved": "Rol actualizado",
+    "resetPassword": "Restablecer contraseña",
+    "passwordReset": "Contraseña restablecida",
+    "ssoNoPassword": "Inicia sesión con {provider}; no usa contraseña.",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "activate": "Activar",
+    "activated": "Usuario activado",
+    "deactivate": "Desactivar",
+    "deactivated": "Usuario desactivado",
     "errors": {
       "invalidDomain": "Ingresá un dominio válido (ej. empresa.com).",
       "invalidEmail": "Ingresá un email válido.",
       "invalidName": "Ingresá un nombre de instancia válido.",
       "unauthorized": "No tenés permiso para crear clientes.",
-      "saveFailed": "No se pudo crear el cliente. Intentá de nuevo."
+      "saveFailed": "No se pudo guardar el cambio. Intentá de nuevo."
     }
   },
   "equipo": {

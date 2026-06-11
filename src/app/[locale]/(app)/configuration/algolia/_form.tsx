@@ -16,7 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { testAlgoliaConnection, saveAlgoliaConfig } from "./actions";
+import {
+  testAlgoliaConnection,
+  testAlgoliaSearch,
+  saveAlgoliaConfig,
+} from "./actions";
 
 /** Returns a short relative time string: "12s", "5m", "2h", "3d", or a date. */
 function timeAgo(iso: string): string {
@@ -95,7 +99,40 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
 
   const [isPending, startTransition] = useTransition();
 
-  // ── Test only (no save) ─────────────────────────────────────────────────────
+  // ── Test the SEARCH path (search key only — what the storefront uses) ───────
+  function handleTestSearch() {
+    if (!appId || !searchApiKey || !primaryIndex) {
+      logToPanel(
+        "error",
+        t("toast.searchTestFailed"),
+        t("errors.missingForSearchTest")
+      );
+      return;
+    }
+    startTransition(async () => {
+      const result = await testAlgoliaSearch(appId, searchApiKey, primaryIndex);
+      if (result.ok) {
+        const detail =
+          result.count != null
+            ? t("errors.searchOk", {
+                latency: result.latencyMs,
+                count: result.count,
+              })
+            : `HTTP ${result.status} · ${result.latencyMs}ms`;
+        toast.success(t("toast.searchTestSuccess"), { description: detail });
+        logToPanel("success", t("toast.searchTestSuccess"), detail);
+      } else {
+        logToPanel(
+          "error",
+          t("toast.searchTestFailed"),
+          result.message ?? `HTTP ${result.status}`,
+          result
+        );
+      }
+    });
+  }
+
+  // ── Test the WRITE/ADMIN path (requires the Write/Admin key) ────────────────
   function handleTest() {
     if (!appId || (!replacingKey && !hasAdminKey) || (replacingKey && !adminApiKey)) {
       logToPanel(
@@ -350,9 +387,17 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
           type="button"
           variant="outline"
           disabled={isPending}
+          onClick={handleTestSearch}
+        >
+          {t("actions.testSearch")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending}
           onClick={handleTest}
         >
-          {t("actions.test")}
+          {t("actions.testWrite")}
         </Button>
         <Button
           type="button"

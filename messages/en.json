@@ -1205,20 +1205,26 @@
         "test": "Test connection",
         "save": "Save",
         "showKey": "Show key",
-        "hideKey": "Hide key"
+        "hideKey": "Hide key",
+        "testSearch": "Test search",
+        "testWrite": "Test write key"
       },
       "toast": {
         "testSuccess": "Connection successful",
         "testFailed": "Connection failed",
         "saveSuccess": "Configuration saved",
-        "saveFailed": "Could not save configuration"
+        "saveFailed": "Could not save configuration",
+        "searchTestSuccess": "Search OK",
+        "searchTestFailed": "Search test failed"
       },
       "errors": {
         "missingForTest": "Enter App ID and Write (Admin) API Key before testing.",
         "unknown": "Unknown error. Check the server console.",
         "savedAndVerified": "Saved and verified · HTTP {status} · {latency}ms.",
         "savedNotVerified": "Saved, but verification failed · HTTP {status}. Check the credentials.",
-        "savedNoKey": "Saved. Add a Write (Admin) API Key to verify the connection."
+        "savedNoKey": "Saved. Add a Write (Admin) API Key to verify the connection.",
+        "missingForSearchTest": "Enter App ID, Search API Key and Primary Index before testing search.",
+        "searchOk": "Index reachable · {count, number} records · {latency}ms."
       }
     },
     "woocommerce": {

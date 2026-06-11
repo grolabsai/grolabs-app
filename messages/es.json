@@ -1205,20 +1205,26 @@
         "test": "Probar conexión",
         "save": "Guardar",
         "showKey": "Mostrar clave",
-        "hideKey": "Ocultar clave"
+        "hideKey": "Ocultar clave",
+        "testSearch": "Probar búsqueda",
+        "testWrite": "Probar clave de escritura"
       },
       "toast": {
         "testSuccess": "Conexión exitosa",
         "testFailed": "Error de conexión",
         "saveSuccess": "Configuración guardada",
-        "saveFailed": "No se pudo guardar"
+        "saveFailed": "No se pudo guardar",
+        "searchTestSuccess": "Búsqueda OK",
+        "searchTestFailed": "Falló la prueba de búsqueda"
       },
       "errors": {
         "missingForTest": "Completa App ID y Clave de Escritura (Admin) antes de probar.",
         "unknown": "Error desconocido. Revisa la consola del servidor.",
         "savedAndVerified": "Guardado y verificado · HTTP {status} · {latency}ms.",
         "savedNotVerified": "Guardado, pero la verificación falló · HTTP {status}. Revisa las credenciales.",
-        "savedNoKey": "Guardado. Agrega una Clave de Escritura (Admin) para verificar la conexión."
+        "savedNoKey": "Guardado. Agrega una Clave de Escritura (Admin) para verificar la conexión.",
+        "missingForSearchTest": "Completa App ID, Search API Key e Índice principal antes de probar la búsqueda.",
+        "searchOk": "Índice alcanzable · {count, number} registros · {latency}ms."
       }
     },
     "woocommerce": {

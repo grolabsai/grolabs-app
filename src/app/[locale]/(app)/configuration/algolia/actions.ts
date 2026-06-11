@@ -8,10 +8,13 @@ export type TestResult = {
   status: number;
   latencyMs: number;
   message?: string;
+  /** Record count in the index — set by the search probe on success. */
+  count?: number;
 };
 
 /**
- * Test an Algolia connection by hitting the /1/keys endpoint.
+ * Test the ADMIN/WRITE path by hitting the /1/keys endpoint. This validates
+ * the Write (Admin) API key — search keys do not have access here.
  * Pure HTTP probe — no DB side-effects.
  */
 export async function testAlgoliaConnection(
@@ -30,6 +33,61 @@ export async function testAlgoliaConnection(
       signal: AbortSignal.timeout(10_000),
     });
     return { ok: res.ok, status: res.status, latencyMs: Date.now() - start };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Network error";
+    return { ok: false, status: 0, latencyMs: Date.now() - start, message };
+  }
+}
+
+/**
+ * Test the SEARCH/READ path with just the Search API key — the credentials the
+ * storefront actually uses. Runs a zero-hit query against the primary index
+ * (`POST /1/indexes/{index}/query`), which a search-only key is allowed to do.
+ *
+ * A 200 means the App ID + Search key + index name all line up. A 404 means
+ * the index doesn't exist; a 403 means the key can't search it. Pure HTTP
+ * probe — no DB side-effects.
+ */
+export async function testAlgoliaSearch(
+  appId: string,
+  searchKey: string,
+  indexName: string
+): Promise<TestResult> {
+  const url = `https://${appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(
+    indexName
+  )}/query`;
+  const start = Date.now();
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-Algolia-Application-Id": appId,
+        "X-Algolia-API-Key": searchKey,
+        "Content-Type": "application/json",
+      },
+      // Empty query, zero hits — cheapest possible probe that still exercises
+      // the read path and index existence.
+      body: JSON.stringify({ query: "", hitsPerPage: 0 }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const detail = (await res.json().catch(() => null)) as
+      | { message?: string; nbHits?: number }
+      | null;
+    if (!res.ok) {
+      // Algolia returns { message, status } on error — surface it verbatim.
+      return {
+        ok: false,
+        status: res.status,
+        latencyMs: Date.now() - start,
+        message: detail?.message ?? `HTTP ${res.status}`,
+      };
+    }
+    return {
+      ok: true,
+      status: res.status,
+      latencyMs: Date.now() - start,
+      count: detail?.nbHits,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";
     return { ok: false, status: 0, latencyMs: Date.now() - start, message };

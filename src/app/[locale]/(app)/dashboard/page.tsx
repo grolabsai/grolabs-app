@@ -102,17 +102,21 @@ export default async function DashboardPage({
   }
 
   // Synonyms (writes) require the admin key. Analytics (reads) need any key
-  // carrying the `analytics` ACL — prefer the admin key (always has it), else
-  // fall back to the search key (works only if the merchant granted it that ACL).
+  // carrying the `analytics` ACL. Try the admin key first (always has it when
+  // present), then fall back to the search key — which works only if the
+  // merchant granted it the analytics ACL. This lets an analytics-enabled
+  // search key drive the dashboard even when the saved Write key can't.
   const canAddSynonyms = !!adminKey;
-  const analyticsKey = adminKey ?? algolia.search_api_key ?? null;
+  const analyticsKeys = [...new Set(
+    [adminKey, algolia.search_api_key].filter((k): k is string => !!k)
+  )];
 
   let noResults: NoResultRow[] = [];
   let hasMore = false;
-  // null = ok; "acl" = key lacks the analytics ACL; "generic" = other failure.
+  // null = ok; "acl" = no key has the analytics ACL; "generic" = other failure.
   let analyticsError: "acl" | "generic" | null = null;
 
-  if (isConfigured && analyticsKey) {
+  if (isConfigured && analyticsKeys.length > 0) {
     const host = analyticsHost(algolia.region!);
     const { startDate, endDate } = dateRange(timeWindow);
     const url =
@@ -123,30 +127,40 @@ export default async function DashboardPage({
       `&limit=50` +
       `&offset=${offset}`;
 
-    try {
-      const res = await fetch(url, {
-        headers: {
-          "x-algolia-application-id": algolia.app_id!,
-          "x-algolia-api-key": analyticsKey,
-          accept: "application/json",
-        },
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const raw: NoResultRow[] = data.searches ?? [];
-        noResults = raw.filter(
-          (row) => row.search !== "<empty search>" && row.search !== ""
-        );
-        hasMore = raw.length === 50;
-      } else if (res.status === 401 || res.status === 403) {
-        // The provided key is missing the `analytics` ACL.
-        analyticsError = "acl";
-      } else {
+    let succeeded = false;
+    let sawAclFailure = false;
+    for (const key of analyticsKeys) {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "x-algolia-application-id": algolia.app_id!,
+            "x-algolia-api-key": key,
+            accept: "application/json",
+          },
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const raw: NoResultRow[] = data.searches ?? [];
+          noResults = raw.filter(
+            (row) => row.search !== "<empty search>" && row.search !== ""
+          );
+          hasMore = raw.length === 50;
+          succeeded = true;
+          break;
+        } else if (res.status === 401 || res.status === 403) {
+          sawAclFailure = true; // this key lacks the ACL — try the next one
+        } else {
+          analyticsError = "generic";
+          break;
+        }
+      } catch {
         analyticsError = "generic";
+        break;
       }
-    } catch {
-      analyticsError = "generic";
+    }
+    if (!succeeded && !analyticsError) {
+      analyticsError = sawAclFailure ? "acl" : "generic";
     }
   } else if (isConfigured) {
     // Configured for search but no key at all that could read analytics.

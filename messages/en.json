@@ -1228,7 +1228,11 @@
         "savedNotVerified": "Saved, but verification failed · HTTP {status}. Check the credentials.",
         "savedNoKey": "Saved. Add a Write (Admin) API Key to verify the connection.",
         "missingForSearchTest": "Enter App ID, Search API Key and Primary Index before testing search.",
-        "searchOk": "Index reachable · {count, number} records · {latency}ms."
+        "searchOk": "Index reachable · {count, number} records · {latency}ms.",
+        "analyticsNoAcl": "Analytics: this key is missing the “analytics” ACL — searches & no-results can’t be read. Grant it in Algolia, or use the Admin key.",
+        "analyticsError": "Analytics: couldn’t read — {message}.",
+        "analyticsNoData": "Analytics: ACL OK, but 0 searches recorded in the last 7 days — Algolia has no data to show yet.",
+        "analyticsAclOk": "Analytics: ACL OK · {count, number} searches in the last 7 days."
       }
     },
     "woocommerce": {

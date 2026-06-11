@@ -39,20 +39,90 @@ export async function testAlgoliaConnection(
   }
 }
 
+/** Algolia analytics host for a given app region (only `us` and `de` exist). */
+function analyticsHost(region: string): string {
+  return region === "eu" || region === "de"
+    ? "analytics.de.algolia.com"
+    : "analytics.us.algolia.com";
+}
+
+/**
+ * Result of probing Algolia's Analytics API with a key:
+ *   - hasAcl: the key carries the `analytics` ACL (no 401/403).
+ *   - ok: the probe returned data.
+ *   - searchCount: total searches recorded in the probe window — 0 means the
+ *     ACL is fine but Algolia simply has no search traffic for this index, so
+ *     the dashboard will be empty regardless of keys.
+ */
+export type AnalyticsProbe = {
+  hasAcl: boolean;
+  ok: boolean;
+  searchCount?: number;
+  message?: string;
+};
+
+export type SearchTestResult = TestResult & { analytics: AnalyticsProbe };
+
+/** Probe the Analytics API (`/2/searches/count`, last 7 days) to verify the
+ *  `analytics` ACL and detect whether any search traffic exists. */
+async function probeAnalytics(
+  appId: string,
+  key: string,
+  indexName: string,
+  region: string
+): Promise<AnalyticsProbe> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - 7);
+  const url =
+    `https://${analyticsHost(region)}/2/searches/count` +
+    `?index=${encodeURIComponent(indexName)}` +
+    `&startDate=${start.toISOString().slice(0, 10)}` +
+    `&endDate=${end.toISOString().slice(0, 10)}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "X-Algolia-Application-Id": appId,
+        "X-Algolia-API-Key": key,
+        accept: "application/json",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (res.status === 401 || res.status === 403) {
+      return { hasAcl: false, ok: false };
+    }
+    const data = (await res.json().catch(() => null)) as
+      | { count?: number; message?: string }
+      | null;
+    if (!res.ok) {
+      return { hasAcl: true, ok: false, message: data?.message ?? `HTTP ${res.status}` };
+    }
+    return { hasAcl: true, ok: true, searchCount: data?.count ?? 0 };
+  } catch (err) {
+    return {
+      hasAcl: false,
+      ok: false,
+      message: err instanceof Error ? err.message : "Network error",
+    };
+  }
+}
+
 /**
  * Test the SEARCH/READ path with just the Search API key — the credentials the
  * storefront actually uses. Runs a zero-hit query against the primary index
- * (`POST /1/indexes/{index}/query`), which a search-only key is allowed to do.
+ * (`POST /1/indexes/{index}/query`), then ALSO probes the Analytics API so the
+ * caller can tell whether the same key can read searches/no-results (the
+ * `analytics` ACL) and whether any analytics data exists at all.
  *
- * A 200 means the App ID + Search key + index name all line up. A 404 means
- * the index doesn't exist; a 403 means the key can't search it. Pure HTTP
- * probe — no DB side-effects.
+ * A 200 on the query means App ID + Search key + index line up. The analytics
+ * probe reports the ACL status separately. Pure HTTP probe — no DB side-effects.
  */
 export async function testAlgoliaSearch(
   appId: string,
   searchKey: string,
-  indexName: string
-): Promise<TestResult> {
+  indexName: string,
+  region: string
+): Promise<SearchTestResult> {
   const url = `https://${appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(
     indexName
   )}/query`;
@@ -80,17 +150,26 @@ export async function testAlgoliaSearch(
         status: res.status,
         latencyMs: Date.now() - start,
         message: detail?.message ?? `HTTP ${res.status}`,
+        analytics: { hasAcl: false, ok: false },
       };
     }
+    const analytics = await probeAnalytics(appId, searchKey, indexName, region);
     return {
       ok: true,
       status: res.status,
       latencyMs: Date.now() - start,
       count: detail?.nbHits,
+      analytics,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";
-    return { ok: false, status: 0, latencyMs: Date.now() - start, message };
+    return {
+      ok: false,
+      status: 0,
+      latencyMs: Date.now() - start,
+      message,
+      analytics: { hasAcl: false, ok: false },
+    };
   }
 }
 

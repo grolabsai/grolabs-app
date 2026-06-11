@@ -110,25 +110,53 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
       return;
     }
     startTransition(async () => {
-      const result = await testAlgoliaSearch(appId, searchApiKey, primaryIndex);
-      if (result.ok) {
-        const detail =
-          result.count != null
-            ? t("errors.searchOk", {
-                latency: result.latencyMs,
-                count: result.count,
-              })
-            : `HTTP ${result.status} · ${result.latencyMs}ms`;
-        toast.success(t("toast.searchTestSuccess"), { description: detail });
-        logToPanel("success", t("toast.searchTestSuccess"), detail);
-      } else {
+      const result = await testAlgoliaSearch(
+        appId,
+        searchApiKey,
+        primaryIndex,
+        region
+      );
+      if (!result.ok) {
         logToPanel(
           "error",
           t("toast.searchTestFailed"),
           result.message ?? `HTTP ${result.status}`,
           result
         );
+        return;
       }
+
+      // Search works. Build a two-line report: the search probe, then what the
+      // same key can (or can't) do on the Analytics API.
+      const searchLine =
+        result.count != null
+          ? t("errors.searchOk", {
+              latency: result.latencyMs,
+              count: result.count,
+            })
+          : `HTTP ${result.status} · ${result.latencyMs}ms`;
+
+      const a = result.analytics;
+      let analyticsLine: string;
+      let kind: AgentMessage["kind"] = "success";
+      if (!a.hasAcl) {
+        analyticsLine = t("errors.analyticsNoAcl");
+        kind = "warning";
+      } else if (!a.ok) {
+        analyticsLine = t("errors.analyticsError", {
+          message: a.message ?? "error",
+        });
+        kind = "warning";
+      } else if ((a.searchCount ?? 0) === 0) {
+        analyticsLine = t("errors.analyticsNoData");
+        kind = "warning";
+      } else {
+        analyticsLine = t("errors.analyticsAclOk", { count: a.searchCount ?? 0 });
+      }
+
+      const body = `${searchLine}\n${analyticsLine}`;
+      toast.success(t("toast.searchTestSuccess"), { description: searchLine });
+      logToPanel(kind, t("toast.searchTestSuccess"), body, result);
     });
   }
 

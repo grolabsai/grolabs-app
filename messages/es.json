@@ -1228,7 +1228,11 @@
         "savedNotVerified": "Guardado, pero la verificación falló · HTTP {status}. Revisa las credenciales.",
         "savedNoKey": "Guardado. Agrega una Clave de Escritura (Admin) para verificar la conexión.",
         "missingForSearchTest": "Completa App ID, Search API Key e Índice principal antes de probar la búsqueda.",
-        "searchOk": "Índice alcanzable · {count, number} registros · {latency}ms."
+        "searchOk": "Índice alcanzable · {count, number} registros · {latency}ms.",
+        "analyticsNoAcl": "Analíticas: esta clave no tiene el ACL «analytics» — no se pueden leer búsquedas ni sin-resultados. Otórgalo en Algolia, o usa la Admin Key.",
+        "analyticsError": "Analíticas: no se pudo leer — {message}.",
+        "analyticsNoData": "Analíticas: ACL OK, pero 0 búsquedas registradas en los últimos 7 días — Algolia aún no tiene datos.",
+        "analyticsAclOk": "Analíticas: ACL OK · {count, number} búsquedas en los últimos 7 días."
       }
     },
     "woocommerce": {

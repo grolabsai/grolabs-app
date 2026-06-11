@@ -39,72 +39,92 @@ export async function testAlgoliaConnection(
   }
 }
 
-/** Algolia analytics host for a given app region (only `us` and `de` exist). */
-function analyticsHost(region: string): string {
-  return region === "eu" || region === "de"
-    ? "analytics.de.algolia.com"
-    : "analytics.us.algolia.com";
-}
+/**
+ * Algolia's two analytics regions. The analytics region is a per-application
+ * setting that is INDEPENDENT of the search/DSN region the user picks in our
+ * form — so we can't derive it from `algolia.region`. We probe both and use
+ * whichever actually holds the data. (Confirmed in the field: an app whose
+ * search region was "us" had all its analytics in "de".)
+ */
+const ANALYTICS_HOSTS = [
+  "analytics.us.algolia.com",
+  "analytics.de.algolia.com",
+] as const;
 
 /**
  * Result of probing Algolia's Analytics API with a key:
  *   - hasAcl: the key carries the `analytics` ACL (no 401/403).
  *   - ok: the probe returned data.
  *   - searchCount: total searches recorded in the probe window — 0 means the
- *     ACL is fine but Algolia simply has no search traffic for this index, so
- *     the dashboard will be empty regardless of keys.
+ *     ACL is fine but Algolia simply has no search traffic for this index.
+ *   - region: which analytics region the data was found in ("us" | "de").
  */
 export type AnalyticsProbe = {
   hasAcl: boolean;
   ok: boolean;
   searchCount?: number;
+  region?: string;
   message?: string;
 };
 
 export type SearchTestResult = TestResult & { analytics: AnalyticsProbe };
 
-/** Probe the Analytics API (`/2/searches/count`, last 7 days) to verify the
- *  `analytics` ACL and detect whether any search traffic exists. */
+/** Probe the Analytics API (`/2/searches/count`, last 7 days) across BOTH
+ *  regions to verify the `analytics` ACL and find where the data lives. */
 async function probeAnalytics(
   appId: string,
   key: string,
-  indexName: string,
-  region: string
+  indexName: string
 ): Promise<AnalyticsProbe> {
   const end = new Date();
   const start = new Date(end);
   start.setDate(start.getDate() - 7);
-  const url =
-    `https://${analyticsHost(region)}/2/searches/count` +
+  const qs =
     `?index=${encodeURIComponent(indexName)}` +
     `&startDate=${start.toISOString().slice(0, 10)}` +
     `&endDate=${end.toISOString().slice(0, 10)}`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "X-Algolia-Application-Id": appId,
-        "X-Algolia-API-Key": key,
-        accept: "application/json",
-      },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (res.status === 401 || res.status === 403) {
-      return { hasAcl: false, ok: false };
+
+  let hasAcl = false;
+  let best: { count: number; region: string } | null = null;
+  let lastMessage: string | undefined;
+
+  for (const host of ANALYTICS_HOSTS) {
+    try {
+      const res = await fetch(`https://${host}/2/searches/count${qs}`, {
+        headers: {
+          "X-Algolia-Application-Id": appId,
+          "X-Algolia-API-Key": key,
+          accept: "application/json",
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+      // ACL is a property of the key, not the host: a 401/403 anywhere means
+      // the key lacks the analytics ACL.
+      if (res.status === 401 || res.status === 403) continue;
+      hasAcl = true;
+      const data = (await res.json().catch(() => null)) as
+        | { count?: number; message?: string }
+        | null;
+      if (!res.ok) {
+        lastMessage = data?.message ?? `HTTP ${res.status}`;
+        continue;
+      }
+      const count = data?.count ?? 0;
+      const region = host.includes(".de.") ? "de" : "us";
+      if (!best || count > best.count) best = { count, region };
+    } catch (err) {
+      lastMessage = err instanceof Error ? err.message : "Network error";
     }
-    const data = (await res.json().catch(() => null)) as
-      | { count?: number; message?: string }
-      | null;
-    if (!res.ok) {
-      return { hasAcl: true, ok: false, message: data?.message ?? `HTTP ${res.status}` };
-    }
-    return { hasAcl: true, ok: true, searchCount: data?.count ?? 0 };
-  } catch (err) {
-    return {
-      hasAcl: false,
-      ok: false,
-      message: err instanceof Error ? err.message : "Network error",
-    };
   }
+
+  if (!hasAcl) return { hasAcl: false, ok: false, message: lastMessage };
+  return {
+    hasAcl: true,
+    ok: true,
+    searchCount: best?.count ?? 0,
+    region: best?.region,
+    message: lastMessage,
+  };
 }
 
 /**
@@ -120,8 +140,7 @@ async function probeAnalytics(
 export async function testAlgoliaSearch(
   appId: string,
   searchKey: string,
-  indexName: string,
-  region: string
+  indexName: string
 ): Promise<SearchTestResult> {
   const url = `https://${appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(
     indexName
@@ -153,7 +172,7 @@ export async function testAlgoliaSearch(
         analytics: { hasAcl: false, ok: false },
       };
     }
-    const analytics = await probeAnalytics(appId, searchKey, indexName, region);
+    const analytics = await probeAnalytics(appId, searchKey, indexName);
     return {
       ok: true,
       status: res.status,

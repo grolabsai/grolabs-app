@@ -110,12 +110,7 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
       return;
     }
     startTransition(async () => {
-      const result = await testAlgoliaSearch(
-        appId,
-        searchApiKey,
-        primaryIndex,
-        region
-      );
+      const result = await testAlgoliaSearch(appId, searchApiKey, primaryIndex);
       if (!result.ok) {
         logToPanel(
           "error",

@@ -13,20 +13,14 @@ import { NoResultsTable, type NoResultRow } from "./_no-results-table";
 
 type TimeWindow = "24h" | "7d" | "30d";
 
-// TODO: verify correct analytics subdomains for regions:
-// in, sg, au, br, ca, za, uae, uk, jp, hk
-function analyticsHost(region: string): string {
-  switch (region) {
-    case "us":
-      return "analytics.us.algolia.com";
-    case "eu":
-      return "analytics.de.algolia.com";
-    case "de":
-      return "analytics.de.algolia.com";
-    default:
-      return "analytics.us.algolia.com";
-  }
-}
+// Algolia has exactly two analytics regions. The analytics region is a
+// per-application setting independent of the search/DSN region the user picks,
+// so we can't derive it — we probe both and use whichever holds the data.
+// (Field-confirmed: an app configured "us" for search had its analytics in "de".)
+const ANALYTICS_HOSTS = [
+  "analytics.us.algolia.com",
+  "analytics.de.algolia.com",
+] as const;
 
 function dateRange(tw: TimeWindow): { startDate: string; endDate: string } {
   const today = new Date();
@@ -117,50 +111,65 @@ export default async function DashboardPage({
   let analyticsError: "acl" | "generic" | null = null;
 
   if (isConfigured && analyticsKeys.length > 0) {
-    const host = analyticsHost(algolia.region!);
     const { startDate, endDate } = dateRange(timeWindow);
-    const url =
-      `https://${host}/2/searches/noResults` +
+    const path =
+      `/2/searches/noResults` +
       `?index=${encodeURIComponent(algolia.primary_index!)}` +
       `&startDate=${startDate}` +
       `&endDate=${endDate}` +
       `&limit=50` +
       `&offset=${offset}`;
 
-    let succeeded = false;
+    // Try both analytics regions × both keys. Prefer the first combo that
+    // returns actual data; an empty 200 means the key/ACL is fine but that
+    // region has no data (likely the wrong region) — keep looking.
+    let foundData = false;
+    let sawEmptyOk = false;
     let sawAclFailure = false;
-    for (const key of analyticsKeys) {
-      try {
-        const res = await fetch(url, {
-          headers: {
-            "x-algolia-application-id": algolia.app_id!,
-            "x-algolia-api-key": key,
-            accept: "application/json",
-          },
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const raw: NoResultRow[] = data.searches ?? [];
-          noResults = raw.filter(
-            (row) => row.search !== "<empty search>" && row.search !== ""
-          );
-          hasMore = raw.length === 50;
-          succeeded = true;
-          break;
-        } else if (res.status === 401 || res.status === 403) {
-          sawAclFailure = true; // this key lacks the ACL — try the next one
-        } else {
+
+    outer: for (const host of ANALYTICS_HOSTS) {
+      for (const key of analyticsKeys) {
+        try {
+          const res = await fetch(`https://${host}${path}`, {
+            headers: {
+              "x-algolia-application-id": algolia.app_id!,
+              "x-algolia-api-key": key,
+              accept: "application/json",
+            },
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const raw: NoResultRow[] = data.searches ?? [];
+            const filtered = raw.filter(
+              (row) => row.search !== "<empty search>" && row.search !== ""
+            );
+            if (raw.length > 0) {
+              noResults = filtered;
+              hasMore = raw.length === 50;
+              foundData = true;
+              break outer;
+            }
+            // 200 but empty — this key works; try the other region for data.
+            sawEmptyOk = true;
+            break; // no point trying the other key on this same host
+          } else if (res.status === 401 || res.status === 403) {
+            sawAclFailure = true; // this key lacks the ACL — try the next key
+          } else {
+            analyticsError = "generic";
+            break outer;
+          }
+        } catch {
           analyticsError = "generic";
-          break;
+          break outer;
         }
-      } catch {
-        analyticsError = "generic";
-        break;
       }
     }
-    if (!succeeded && !analyticsError) {
-      analyticsError = sawAclFailure ? "acl" : "generic";
+
+    if (!foundData && !analyticsError) {
+      // No data anywhere. If a key worked (empty 200) it's genuinely empty —
+      // render the empty table. Only flag "acl" if NO key ever got through.
+      if (!sawEmptyOk && sawAclFailure) analyticsError = "acl";
     }
   } else if (isConfigured) {
     // Configured for search but no key at all that could read analytics.

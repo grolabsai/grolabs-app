@@ -278,6 +278,31 @@ New `(admin)` route group screen (e.g. `src/app/[locale]/(admin)/clientes/`), in
   5. Insert `instance_member(is_active, is_current)`.
   6. Return the one-time password (only when newly created).
 
+### 3.1 Detail — per-tenant user management
+
+Each tenant row in the list links to `/clientes/[tenantId]`
+(`(admin)/clientes/[tenantId]/`), where GroLabs staff manage that tenant's
+existing users. Loaded by `getTenantDetailForAdmin(tenantId)`; every mutation is
+re-gated by `is_grolabs_admin()` **and** re-verifies that `(tenantId, userId)` is
+a real `tenant_member` (so an operator can only touch users of the tenant they
+opened). These are the staff-side, tenant-parameterized analogues of the §4
+Tenant-Admin actions:
+
+- `adminUpdateUserName(tenantId, userId, fullName)` — sets
+  `user_metadata.full_name` + `name` (merge-preserves the rest of the metadata).
+- `adminResetUserPassword(tenantId, userId)` — sets a fresh strong password +
+  `must_change_password=true`, returns the one-time password to show once.
+  Disabled in the UI for SSO accounts (`app_metadata.provider !== 'email'`),
+  which have no password.
+- `adminSetTenantUserRole(tenantId, userId, role)` — `admin | member`, cascaded
+  to the tenant's `instance_member` rows.
+- `adminSetTenantUserActive(tenantId, userId, active)` — toggles
+  `tenant_member.is_active` + the tenant's `instance_member` rows (clears
+  `is_current` on deactivate).
+
+Email change is intentionally **out of scope** here — email is the Article-3
+identity key; changing it is a separate, higher-risk flow.
+
 ## 4. Surface 2 — RRE "Equipo" (Tenant Admin)
 
 New `(app)` screen under `/configuration` (e.g. `/configuration/equipo`), in `buildRreNav` under Configuración, **visible only to Tenant Admins** (`is_tenant_admin` for the current instance's tenant).

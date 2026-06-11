@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { currentTenantId } from "@/lib/auth/roles";
 import { deriveSlug } from "@/lib/instanceSlug";
+import { generateStrongPassword } from "@/lib/auth/password";
 
 /**
  * Server actions for admin-provisioned user & account management.
@@ -518,4 +519,278 @@ export async function listTenantMembers(): Promise<
     }))
     .sort((a, b) => a.email.localeCompare(b.email));
   return { ok: true, members: out };
+}
+
+// ---------------------------------------------------------------------------
+// PR4b — admin "Clientes" detail: GroLabs staff view + edit a tenant's users
+//
+// These mirror the Tenant-Admin "Equipo" actions but are gated by
+// is_grolabs_admin (not is_tenant_admin) and take an explicit tenantId so a
+// GroLabs operator can manage any tenant's users from admin.grolabs.ai. Every
+// mutation re-verifies that (tenant, user) is a real tenant_member so an
+// operator can only touch users that actually belong to the tenant they opened.
+// Per docs/policy/user-management.md §3 / §8.
+// ---------------------------------------------------------------------------
+
+export type AdminTenantUser = {
+  userId: string;
+  email: string;
+  fullName: string | null;
+  role: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  provider: string; // 'email' | 'google' | 'azure' | …
+  lastSignInAt: string | null;
+};
+
+export type TenantDetail = {
+  tenantId: number;
+  name: string;
+  domain: string | null;
+  kind: string;
+  instances: { instanceId: number; name: string }[];
+};
+
+export type AdminUserMutateResult =
+  | { ok: true }
+  | {
+      ok: false;
+      error: "unauthorized" | "not_found" | "invalid" | "save_failed";
+      message?: string;
+    };
+
+export type AdminResetPasswordResult =
+  | { ok: true; password: string }
+  | {
+      ok: false;
+      error: "unauthorized" | "not_found" | "save_failed";
+      message?: string;
+    };
+
+/** Gate: caller is GroLabs staff. Returns a service-role client on success. */
+async function gateGroLabsAdmin(): Promise<
+  { ok: true; admin: AdminClient } | { ok: false }
+> {
+  const sb = await createClient();
+  const { data: isAdmin, error } = await sb.rpc("is_grolabs_admin");
+  if (error || isAdmin !== true) return { ok: false };
+  return { ok: true, admin: createServiceRoleClient() };
+}
+
+/**
+ * Verify the target user is a member of the given tenant. Prevents an operator
+ * who opened tenant A from mutating a user that only belongs to tenant B by
+ * passing a mismatched (tenantId, userId).
+ */
+async function userBelongsToTenant(
+  admin: AdminClient,
+  tenantId: number,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await admin
+    .from("tenant_member")
+    .select("tenant_member_id")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data != null;
+}
+
+/**
+ * Load one tenant's header info + its users (email, name, role, status), for
+ * the admin Clientes detail screen. GroLabs staff only.
+ */
+export async function getTenantDetailForAdmin(tenantId: number): Promise<
+  { ok: true; tenant: TenantDetail; users: AdminTenantUser[] } | { ok: false; error: string }
+> {
+  const gate = await gateGroLabsAdmin();
+  if (!gate.ok) return { ok: false, error: "unauthorized" };
+  const admin = gate.admin;
+
+  const { data: tenant, error: tErr } = await admin
+    .from("tenant")
+    .select("tenant_id, name, domain, kind")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (tErr) return { ok: false, error: tErr.message };
+  if (!tenant) return { ok: false, error: "not_found" };
+  const t = tenant as { tenant_id: number; name: string | null; domain: string | null; kind: string | null };
+
+  const { data: instRows } = await admin
+    .from("instance")
+    .select("instance_id, name")
+    .eq("tenant_id", tenantId)
+    .order("instance_id");
+
+  const { data: memberRows, error: mErr } = await admin
+    .from("tenant_member")
+    .select("user_id, role, is_active")
+    .eq("tenant_id", tenantId);
+  if (mErr) return { ok: false, error: mErr.message };
+
+  const members = (memberRows ?? []) as { user_id: string; role: string; is_active: boolean }[];
+  const users: AdminTenantUser[] = await Promise.all(
+    members.map(async (m) => {
+      const { data } = await admin.auth.admin.getUserById(m.user_id);
+      const u = data?.user;
+      const meta = (u?.user_metadata ?? {}) as Record<string, unknown>;
+      const fullName =
+        (typeof meta.full_name === "string" && meta.full_name) ||
+        (typeof meta.name === "string" && meta.name) ||
+        null;
+      return {
+        userId: m.user_id,
+        email: u?.email ?? "",
+        fullName,
+        role: m.role,
+        isActive: m.is_active,
+        mustChangePassword: meta.must_change_password === true,
+        provider: (u?.app_metadata?.provider as string | undefined) ?? "email",
+        lastSignInAt: u?.last_sign_in_at ?? null,
+      };
+    }),
+  );
+  users.sort((a, b) => a.email.localeCompare(b.email));
+
+  return {
+    ok: true,
+    tenant: {
+      tenantId: t.tenant_id,
+      name: t.name ?? "",
+      domain: t.domain,
+      kind: t.kind ?? "customer",
+      instances: ((instRows ?? []) as { instance_id: number; name: string | null }[]).map((i) => ({
+        instanceId: i.instance_id,
+        name: i.name ?? "",
+      })),
+    },
+    users,
+  };
+}
+
+/** Update a user's display name (user_metadata.full_name + name). */
+export async function adminUpdateUserName(
+  tenantId: number,
+  userId: string,
+  fullName: string,
+): Promise<AdminUserMutateResult> {
+  const gate = await gateGroLabsAdmin();
+  if (!gate.ok) return { ok: false, error: "unauthorized" };
+  const admin = gate.admin;
+  if (!(await userBelongsToTenant(admin, tenantId, userId))) {
+    return { ok: false, error: "not_found" };
+  }
+
+  const name = fullName.trim();
+  if (name.length > NAME_MAX_LEN) return { ok: false, error: "invalid" };
+
+  // Merge semantics: setting these keys preserves the rest of user_metadata.
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    user_metadata: { full_name: name || null, name: name || null },
+  });
+  if (error) return { ok: false, error: "save_failed", message: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Reset a user's password to a fresh strong temporary one and force a change on
+ * next login. Returns the one-time password to surface once in the UI.
+ */
+export async function adminResetUserPassword(
+  tenantId: number,
+  userId: string,
+): Promise<AdminResetPasswordResult> {
+  const gate = await gateGroLabsAdmin();
+  if (!gate.ok) return { ok: false, error: "unauthorized" };
+  const admin = gate.admin;
+  if (!(await userBelongsToTenant(admin, tenantId, userId))) {
+    return { ok: false, error: "not_found" };
+  }
+
+  const password = generateStrongPassword();
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password,
+    user_metadata: { must_change_password: true },
+  });
+  if (error) return { ok: false, error: "save_failed", message: error.message };
+  return { ok: true, password };
+}
+
+/** Change a user's tenant role (admin | member) + cascade to instance rows. */
+export async function adminSetTenantUserRole(
+  tenantId: number,
+  userId: string,
+  role: TenantRole,
+): Promise<AdminUserMutateResult> {
+  const gate = await gateGroLabsAdmin();
+  if (!gate.ok) return { ok: false, error: "unauthorized" };
+  if (role !== "admin" && role !== "member") return { ok: false, error: "invalid" };
+  const admin = gate.admin;
+  if (!(await userBelongsToTenant(admin, tenantId, userId))) {
+    return { ok: false, error: "not_found" };
+  }
+
+  const { error } = await admin
+    .from("tenant_member")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId);
+  if (error) return { ok: false, error: "save_failed", message: error.message };
+
+  // Keep instance memberships in step (admin → admin, member → member).
+  const { data: instances } = await admin
+    .from("instance")
+    .select("instance_id")
+    .eq("tenant_id", tenantId);
+  const ids = ((instances ?? []) as { instance_id: number }[]).map((r) => r.instance_id);
+  if (ids.length > 0) {
+    await admin
+      .from("instance_member")
+      .update({ role, updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .in("instance_id", ids);
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Activate or deactivate a user across the tenant + its instances. */
+export async function adminSetTenantUserActive(
+  tenantId: number,
+  userId: string,
+  active: boolean,
+): Promise<AdminUserMutateResult> {
+  const gate = await gateGroLabsAdmin();
+  if (!gate.ok) return { ok: false, error: "unauthorized" };
+  const admin = gate.admin;
+  if (!(await userBelongsToTenant(admin, tenantId, userId))) {
+    return { ok: false, error: "not_found" };
+  }
+
+  const { error: tmErr } = await admin
+    .from("tenant_member")
+    .update({ is_active: active, updated_at: new Date().toISOString() })
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId);
+  if (tmErr) return { ok: false, error: "save_failed", message: tmErr.message };
+
+  const { data: instances } = await admin
+    .from("instance")
+    .select("instance_id")
+    .eq("tenant_id", tenantId);
+  const ids = ((instances ?? []) as { instance_id: number }[]).map((r) => r.instance_id);
+  if (ids.length > 0) {
+    await admin
+      .from("instance_member")
+      .update({
+        is_active: active,
+        ...(active ? {} : { is_current: false }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .in("instance_id", ids);
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { ChevronRight } from "lucide-react";
+import { Link } from "@/i18n/routing";
+import { Icon } from "@/components/ui/icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Button } from "@/components/ui/button";
@@ -218,18 +221,20 @@ export function ClientesScreen({
           ) : (
             <div className="grid gap-1">
               <div
-                className="grid grid-cols-[2fr_2fr_1fr_1fr] gap-2 px-2 py-1 text-[11px] uppercase tracking-[0.06em]"
+                className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-2 px-2 py-1 text-[11px] uppercase tracking-[0.06em]"
                 style={{ color: "var(--gl-text-tertiary)" }}
               >
                 <span>{t("colDomain")}</span>
                 <span>{t("colName")}</span>
                 <span>{t("colInstances")}</span>
                 <span>{t("colMembers")}</span>
+                <span className="sr-only">{t("colOpen")}</span>
               </div>
               {initialTenants.map((tn) => (
-                <div
+                <Link
                   key={tn.tenantId}
-                  className="grid grid-cols-[2fr_2fr_1fr_1fr] gap-2 px-2 py-1.5 text-sm"
+                  href={`/clientes/${tn.tenantId}`}
+                  className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] items-center gap-2 px-2 py-1.5 text-sm transition-colors hover:bg-[var(--gl-surface-alt)]"
                   style={{
                     color: "var(--gl-text)",
                     borderTop: "0.5px solid var(--gl-border)",
@@ -239,7 +244,8 @@ export function ClientesScreen({
                   <span className="truncate">{tn.name}</span>
                   <span>{tn.instanceCount}</span>
                   <span>{tn.memberCount}</span>
-                </div>
+                  <Icon icon={ChevronRight} size={14} />
+                </Link>
               ))}
             </div>
           )}

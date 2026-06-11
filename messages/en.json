@@ -1215,10 +1215,10 @@
       },
       "errors": {
         "missingForTest": "Enter App ID and Write (Admin) API Key before testing.",
-        "missingFields": "Missing required fields: {fields}.",
         "unknown": "Unknown error. Check the server console.",
         "savedAndVerified": "Saved and verified · HTTP {status} · {latency}ms.",
-        "savedNotVerified": "Saved, but verification failed · HTTP {status}. Check the credentials."
+        "savedNotVerified": "Saved, but verification failed · HTTP {status}. Check the credentials.",
+        "savedNoKey": "Saved. Add a Write (Admin) API Key to verify the connection."
       }
     },
     "woocommerce": {

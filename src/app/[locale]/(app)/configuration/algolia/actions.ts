@@ -55,12 +55,17 @@ export type SaveResult = {
 };
 
 /**
- * Persist Algolia credentials, then test the connection and record the result.
+ * Persist Algolia credentials. Saving is NEVER blocked by incomplete data:
+ * the non-secret fields are always written, and the admin key is optional.
  *
- * When adminApiKey is omitted the existing Vault secret is re-used:
- * we fetch it via algolia_get_admin_key and pass it back into
- * algolia_save_credentials so non-secret fields are updated without
- * disrupting the stored key.
+ * Admin-key resolution:
+ *   - adminApiKey provided  → use it (and write it to Vault).
+ *   - omitted but on file   → re-use the stored Vault secret for verification.
+ *   - omitted and none on file → save config only; skip verification.
+ *
+ * When we end up with an admin key we also test the connection and record the
+ * result; without one, the save still succeeds and verification is simply
+ * skipped (verified: false, no httpStatus).
  */
 export async function saveAlgoliaConfig(
   payload: SavePayload
@@ -69,28 +74,21 @@ export async function saveAlgoliaConfig(
   const { instanceId, appId, region, searchApiKey, adminApiKey, primaryIndex } =
     payload;
 
-  // ── Resolve the admin key we'll use ────────────────────────────────────────
-  let effectiveAdminKey: string;
+  // ── Resolve the admin key we'll use (may be null — that's fine) ─────────────
+  let effectiveAdminKey: string | null = null;
 
   if (adminApiKey) {
     effectiveAdminKey = adminApiKey;
   } else {
-    // User kept the existing key — fetch from Vault before overwriting config.
-    const { data: storedKey, error: keyError } = await supabase.rpc(
-      "algolia_get_admin_key",
-      { p_instance_id: instanceId }
-    );
-    if (keyError || !storedKey) {
-      return {
-        ok: false,
-        verified: false,
-        error: keyError?.message ?? "No admin key on file — provide one to save",
-      };
-    }
-    effectiveAdminKey = storedKey as string;
+    // No new key supplied — re-use the stored one if there is any. A missing
+    // key never blocks the save; it only means we can't verify.
+    const { data: storedKey } = await supabase.rpc("algolia_get_admin_key", {
+      p_instance_id: instanceId,
+    });
+    effectiveAdminKey = (storedKey as string | null) ?? null;
   }
 
-  // ── Persist all fields ──────────────────────────────────────────────────────
+  // ── Persist all fields (admin key optional — RPC skips Vault when null) ──────
   const { error: saveError } = await supabase.rpc("algolia_save_credentials", {
     p_instance_id: instanceId,
     p_app_id: appId,
@@ -100,20 +98,25 @@ export async function saveAlgoliaConfig(
     p_index: primaryIndex,
   });
   if (saveError) {
+    // A genuine DB/RLS failure — not an "incomplete data" block.
     return { ok: false, verified: false, error: saveError.message };
   }
 
-  // ── Test connection ─────────────────────────────────────────────────────────
+  // ── No key → saved, verification skipped ────────────────────────────────────
+  if (!effectiveAdminKey) {
+    revalidatePath("/configuration/algolia");
+    return { ok: true, verified: false };
+  }
+
+  // ── Test connection + record verification ───────────────────────────────────
   const testResult = await testAlgoliaConnection(appId, effectiveAdminKey);
 
-  // ── Record verification result ──────────────────────────────────────────────
   await supabase.rpc("algolia_record_verification", {
     p_instance_id: instanceId,
     p_http_status: testResult.status,
     p_latency_ms: testResult.latencyMs,
   });
 
-  // ── Invalidate page cache ───────────────────────────────────────────────────
   revalidatePath("/configuration/algolia");
 
   return {

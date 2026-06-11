@@ -1215,10 +1215,10 @@
       },
       "errors": {
         "missingForTest": "Completa App ID y Clave de Escritura (Admin) antes de probar.",
-        "missingFields": "Faltan campos requeridos: {fields}.",
         "unknown": "Error desconocido. Revisa la consola del servidor.",
         "savedAndVerified": "Guardado y verificado · HTTP {status} · {latency}ms.",
-        "savedNotVerified": "Guardado, pero la verificación falló · HTTP {status}. Revisa las credenciales."
+        "savedNotVerified": "Guardado, pero la verificación falló · HTTP {status}. Revisa las credenciales.",
+        "savedNoKey": "Guardado. Agrega una Clave de Escritura (Admin) para verificar la conexión."
       }
     },
     "woocommerce": {

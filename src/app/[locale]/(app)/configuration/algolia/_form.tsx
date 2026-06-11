@@ -164,28 +164,9 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
   }
 
   // ── Save ────────────────────────────────────────────────────────────────────
+  // Saving is never blocked — partial/incomplete data is allowed. The admin key
+  // is optional; without it the data still saves and verification is skipped.
   function handleSave() {
-    // Validate before hitting the server so the user gets a precise reason
-    // instead of the cryptic "No admin key on file" fallback from the action.
-    const missing: string[] = [];
-    if (!appId) missing.push(t("fields.appId"));
-    if (!region) missing.push(t("fields.region"));
-    if (!searchApiKey) missing.push(t("fields.searchApiKey"));
-    if (!primaryIndex) missing.push(t("fields.primaryIndex"));
-    // A write key is required only when none is stored yet (or the user is
-    // replacing it). When a key is on file and not being replaced, it's reused.
-    if ((replacingKey || !hasAdminKey) && !adminApiKey) {
-      missing.push(t("fields.adminApiKey"));
-    }
-    if (missing.length > 0) {
-      logToPanel(
-        "error",
-        t("toast.saveFailed"),
-        t("errors.missingFields", { fields: missing.join(", ") })
-      );
-      return;
-    }
-
     startTransition(async () => {
       const result = await saveAlgoliaConfig({
         instanceId,
@@ -207,17 +188,29 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
       }
 
       toast.success(t("toast.saveSuccess"));
-      logToPanel(
-        result.verified ? "success" : "warning",
-        t("toast.saveSuccess"),
-        result.verified
-          ? t("errors.savedAndVerified", {
-              status: result.httpStatus ?? 0,
-              latency: result.latencyMs ?? 0,
-            })
-          : t("errors.savedNotVerified", { status: result.httpStatus ?? 0 }),
-        result
-      );
+      if (result.verified) {
+        logToPanel(
+          "success",
+          t("toast.saveSuccess"),
+          t("errors.savedAndVerified", {
+            status: result.httpStatus ?? 0,
+            latency: result.latencyMs ?? 0,
+          }),
+          result
+        );
+      } else if (result.httpStatus != null) {
+        // We had a key and tested it, but the connection check failed.
+        logToPanel(
+          "warning",
+          t("toast.saveSuccess"),
+          t("errors.savedNotVerified", { status: result.httpStatus }),
+          result
+        );
+      } else {
+        // No admin key → saved without verifying. Not an error.
+        logToPanel("info", t("toast.saveSuccess"), t("errors.savedNoKey"), result);
+      }
+
       setVerifiedAt(new Date().toISOString());
       setHttpStatus(result.httpStatus);
       setLatencyMs(result.latencyMs);

@@ -117,6 +117,10 @@ verification — Playwright is already installed, currently only used as a scrap
 lib in the diagnostic code; there is no E2E/page-test harness yet) and fix-or-drop
 the failing v5 diagnostic tests.
 
+**How to take it up again → [`docs/design/testing-approach.md`](../design/testing-approach.md)**
+(durable doc: full context + a step-by-step resume checklist; also indexed in
+CLAUDE.md §18 design explorations).
+
 ## Open architectural decisions
 
 - **Catalog template-fork pattern** — whether catalog adopts the funnel's `tenant_read` + template-fallthrough RLS for starter content on new-instance provisioning. Trigger to revisit: next new customer instance provisioned. (Now also relevant to `tenant-model.md`'s "create tenant + first instance" signup shape.)

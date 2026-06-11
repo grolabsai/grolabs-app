@@ -201,7 +201,7 @@ async function ensureInstanceMember(
 
   const { data: existing, error: selErr } = await admin
     .from("instance_member")
-    .select("instance_member_id")
+    .select("member_id")
     .eq("instance_id", instanceId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -215,10 +215,7 @@ async function ensureInstanceMember(
         ...(setCurrent ? { is_current: true } : {}),
         updated_at: new Date().toISOString(),
       })
-      .eq(
-        "instance_member_id",
-        (existing as { instance_member_id: number }).instance_member_id,
-      );
+      .eq("member_id", (existing as { member_id: number }).member_id);
     if (error) return { ok: false, message: error.message };
     return { ok: true };
   }

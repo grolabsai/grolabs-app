@@ -135,7 +135,7 @@ export async function switchToInstance(instanceId: number): Promise<SwitchResult
 
     const { data: existing } = await admin
       .from("instance_member")
-      .select("instance_member_id")
+      .select("member_id")
       .eq("user_id", user.id)
       .eq("instance_id", instanceId)
       .maybeSingle();

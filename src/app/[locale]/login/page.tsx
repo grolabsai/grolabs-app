@@ -1,19 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { SsoButtons } from "@/components/auth/SsoButtons";
+import { LoginForm } from "./LoginForm";
 
 /**
  * Login page. Public route (not inside the `(app)` protected group).
  *
  * Design note: this page is intentionally stripped of sidebar/topbar
- * chrome. It uses `s-auth-shell` for centered card layout.
- *
- * Phase 1 limitations:
- *   - Email + password only. Google / magic link deferred (D17 noted this).
- *   - No sign-up flow — users are provisioned out-of-band (for Wazu,
- *     Tuncho's account was seeded directly in `auth.users`). A public
- *     sign-up + claim_tenant flow comes later.
+ * chrome. It uses `s-auth-shell` for centered card layout. SSO (Google +
+ * Microsoft) is the primary path and leads; email + password is the
+ * secondary fallback below the divider.
  */
 
 async function login(formData: FormData) {
@@ -41,6 +39,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const t = await getTranslations("auth.login");
 
   // If already signed in, skip straight to the catalog.
   const supabase = await createClient();
@@ -56,56 +55,35 @@ export default async function LoginPage({
           <div className="s-brand-mark" />
           <span className="s-brand-name">GroLabs</span>
         </div>
-        <h1 className="s-auth-title">Ingresá a tu catálogo</h1>
-        <p className="s-auth-sub">
-          Administración multi-tenant de catálogos de e-commerce.
-        </p>
+        <h1 className="s-auth-title">{t("title")}</h1>
+        <p className="s-auth-sub">{t("sub")}</p>
 
-        {error ? (
-          <div className="s-auth-error">
-            No pudimos iniciar sesión. Verificá tu correo y contraseña.
-          </div>
-        ) : null}
+        {error ? <div className="s-auth-error">{t("error")}</div> : null}
 
-        <form action={login}>
-          <div className="s-field">
-            <label className="s-field-label" htmlFor="email">
-              Email
-            </label>
-            <input
-              className="s-input"
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-            />
-          </div>
-          <div className="s-field">
-            <label className="s-field-label" htmlFor="password">
-              Contraseña
-            </label>
-            <input
-              className="s-input"
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          <button
-            className="s-btn s-btn-primary"
-            type="submit"
-            style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
-          >
-            Ingresar
-          </button>
-        </form>
+        {/* SSO is the primary path — Google + Microsoft lead. GroLabs-styled,
+            pre-created emails only. See docs/policy/user-management.md §5. */}
+        <div style={{ marginTop: 16 }}>
+          <SsoButtons />
+        </div>
 
-        {/* Google + Microsoft SSO — GroLabs-styled, pre-created emails only.
-            See docs/policy/user-management.md §5. */}
-        <SsoButtons />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            margin: "16px 0",
+            color: "var(--gl-text-tertiary)",
+            fontSize: 11,
+          }}
+        >
+          <span style={{ flex: 1, height: 1, background: "var(--gl-border)" }} />
+          {t("emailDivider")}
+          <span style={{ flex: 1, height: 1, background: "var(--gl-border)" }} />
+        </div>
+
+        {/* Email + password — secondary fallback. The submit button stays
+            muted until a password is typed (see LoginForm). */}
+        <LoginForm action={login} />
 
         <p className="s-auth-footnote">GroLabs · {process.env.NEXT_PUBLIC_BUILD_SHA} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
         <div

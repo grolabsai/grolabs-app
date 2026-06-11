@@ -18,8 +18,11 @@ import { createClient } from "@/lib/supabase/client";
  */
 
 function GoogleGlyph() {
+  // viewBox tightened to the path's content bounds (~[4,20]) so the glyph
+  // fills the 16px box to the same optical weight as the Microsoft mark,
+  // which fills its own 0 0 16 16 box almost edge to edge.
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width="16" height="16" viewBox="3 3 18 18" aria-hidden="true">
       <path
         fill="currentColor"
         d="M12 10.9v3.1h4.4c-.2 1.2-1.5 3.4-4.4 3.4-2.7 0-4.9-2.2-4.9-5s2.2-5 4.9-5c1.5 0 2.5.6 3.1 1.2l2.1-2C15.9 4.4 14.2 3.7 12 3.7 7.7 3.7 4.2 7.2 4.2 11.5S7.7 19.3 12 19.3c4.4 0 7.4-3.1 7.4-7.5 0-.5 0-.8-.1-1.2H12z"
@@ -77,22 +80,7 @@ export function SsoButtons({ next = "/" }: { next?: string }) {
   }
 
   return (
-    <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          margin: "4px 0",
-          color: "var(--gl-text-tertiary)",
-          fontSize: 11,
-        }}
-      >
-        <span style={{ flex: 1, height: 1, background: "var(--gl-border)" }} />
-        {t("ssoDivider")}
-        <span style={{ flex: 1, height: 1, background: "var(--gl-border)" }} />
-      </div>
-
+    <div style={{ display: "grid", gap: 8 }}>
       <button
         type="button"
         style={BUTTON_STYLE}

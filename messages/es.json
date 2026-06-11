@@ -2756,6 +2756,15 @@
     "google": "Continuar con Google",
     "microsoft": "Continuar con Microsoft",
     "redirecting": "Redirigiendo…",
+    "login": {
+      "title": "Ingresá a tu catálogo",
+      "sub": "Administración multi-tenant de catálogos de e-commerce.",
+      "error": "No pudimos iniciar sesión. Verificá tu correo y contraseña.",
+      "email": "Email",
+      "password": "Contraseña",
+      "signIn": "Ingresar",
+      "emailDivider": "o con email"
+    },
     "noAccess": {
       "title": "Sin acceso",
       "body": "Tu cuenta no está asociada a ninguna instancia. Pedí a un administrador que te dé acceso.",

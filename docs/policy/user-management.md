@@ -323,10 +323,17 @@ Two buttons on the shared `src/app/[locale]/login/page.tsx`:
 
 Both `redirectTo` a new `/auth/callback` route that exchanges the code for a session, then routes to the locale root. All strings via `t()`.
 
+**Layout (login page):** SSO is the **primary** path and leads the card (Google
+then Microsoft), with an "or with email" divider beneath it; email + password is
+the **secondary** fallback below the divider. Its submit button (`LoginForm`,
+client) stays muted (`s-btn-secondary`) until a password is typed, then turns
+yellow (`s-btn-primary`) — so the email form doesn't pull focus from SSO until
+the user commits to it. All login strings live under the `auth.login` namespace.
+
 ### 5.1 Styling (R-10)
 Both buttons use the **GroLabs design system**, not vendor branding:
 - shadcn `Button` (outline/ghost), `--gl-surface` canvas + our border + our text tokens; **no** vendor brand colors, **no** official Google/Microsoft button.
-- A small **monochrome** provider glyph (inline `<svg>`, explicit `width`/`height` per §3, `currentColor`) purely for recognition.
+- A small **monochrome** provider glyph (inline `<svg>`, explicit `width`/`height` per §3, `currentColor`) purely for recognition. Both glyphs fill their box to the same optical weight (the Google mark's `viewBox` is tightened to its content bounds so it isn't visually smaller than Microsoft's).
 - (Accepted deviation: a monochrome Google mark is off Google's brand guidelines.)
 
 ### 5.2 Access — pre-created emails only (R-9)

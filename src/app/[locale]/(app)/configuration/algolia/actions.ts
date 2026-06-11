@@ -11,22 +11,32 @@ export type TestResult = {
 };
 
 /**
- * Test an Algolia connection by hitting the /1/keys endpoint.
+ * Test an Algolia connection with a read-only search probe.
+ *
+ * Hits the index query endpoint with the SEARCH key — never the write key.
+ * This proves we can reach the app and read the configured index without
+ * holding (or exercising) any write credential, which matters when a merchant
+ * hands us search-only keys. `hitsPerPage=0` keeps the response tiny.
  * Pure HTTP probe — no DB side-effects.
  */
 export async function testAlgoliaConnection(
   appId: string,
-  adminKey: string
+  searchKey: string,
+  primaryIndex: string
 ): Promise<TestResult> {
-  const url = `https://${appId}-dsn.algolia.net/1/keys/${adminKey}`;
+  const url = `https://${appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(
+    primaryIndex
+  )}/query`;
   const start = Date.now();
   try {
     const res = await fetch(url, {
-      method: "GET",
+      method: "POST",
       headers: {
         "X-Algolia-Application-Id": appId,
-        "X-Algolia-API-Key": adminKey,
+        "X-Algolia-API-Key": searchKey,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ params: "query=&hitsPerPage=0" }),
       signal: AbortSignal.timeout(10_000),
     });
     return { ok: res.ok, status: res.status, latencyMs: Date.now() - start };
@@ -103,8 +113,12 @@ export async function saveAlgoliaConfig(
     return { ok: false, verified: false, error: saveError.message };
   }
 
-  // ── Test connection ─────────────────────────────────────────────────────────
-  const testResult = await testAlgoliaConnection(appId, effectiveAdminKey);
+  // ── Test connection (read-only search probe, never the write key) ───────────
+  const testResult = await testAlgoliaConnection(
+    appId,
+    searchApiKey,
+    primaryIndex
+  );
 
   // ── Record verification result ──────────────────────────────────────────────
   await supabase.rpc("algolia_record_verification", {

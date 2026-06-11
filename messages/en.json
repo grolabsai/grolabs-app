@@ -1210,7 +1210,8 @@
         "testSuccess": "Connection successful",
         "testFailed": "Connection failed",
         "saveSuccess": "Configuration saved",
-        "saveFailed": "Could not save configuration"
+        "saveFailed": "Could not save configuration",
+        "testMissingFields": "Enter App ID, Search API Key, and index before testing."
       }
     },
     "woocommerce": {

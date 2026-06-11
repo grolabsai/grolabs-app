@@ -1210,7 +1210,8 @@
         "testSuccess": "Conexión exitosa",
         "testFailed": "Error de conexión",
         "saveSuccess": "Configuración guardada",
-        "saveFailed": "No se pudo guardar"
+        "saveFailed": "No se pudo guardar",
+        "testMissingFields": "Completa App ID, Search API Key e índice antes de probar."
       }
     },
     "woocommerce": {

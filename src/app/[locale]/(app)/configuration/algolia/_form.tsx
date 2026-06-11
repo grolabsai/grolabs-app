@@ -70,53 +70,32 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
   const [isPending, startTransition] = useTransition();
 
   // ── Test only (no save) ─────────────────────────────────────────────────────
+  // Read-only probe: needs App ID + Search API Key + index. The write key is
+  // never required to verify connectivity — a merchant may only hand us
+  // search-only credentials, and we should still be able to confirm we can read.
   function handleTest() {
-    if (!appId || (!replacingKey && !hasAdminKey) || (replacingKey && !adminApiKey)) {
+    if (!appId || !searchApiKey || !primaryIndex) {
       toast.error(t("toast.testFailed"), {
-        description: "Completa App ID y Admin API Key antes de probar.",
+        description: t("toast.testMissingFields"),
       });
       return;
     }
 
-    if (replacingKey) {
-      // Key is in the browser — test directly without touching DB
-      startTransition(async () => {
-        const result = await testAlgoliaConnection(appId, adminApiKey);
-        if (result.ok) {
-          toast.success(t("toast.testSuccess"), {
-            description: `HTTP ${result.status} · ${result.latencyMs}ms`,
-          });
-        } else {
-          toast.error(t("toast.testFailed"), {
-            description: result.message ?? `HTTP ${result.status}`,
-          });
-        }
-      });
-    } else {
-      // Key lives in Vault — delegate to saveAlgoliaConfig (no key replacement)
-      startTransition(async () => {
-        const result = await saveAlgoliaConfig({
-          instanceId,
-          appId,
-          region,
-          searchApiKey,
-          primaryIndex,
+    startTransition(async () => {
+      const result = await testAlgoliaConnection(appId, searchApiKey, primaryIndex);
+      setVerifiedAt(new Date().toISOString());
+      setHttpStatus(result.status);
+      setLatencyMs(result.latencyMs);
+      if (result.ok) {
+        toast.success(t("toast.testSuccess"), {
+          description: `HTTP ${result.status} · ${result.latencyMs}ms`,
         });
-        const now = new Date().toISOString();
-        setVerifiedAt(now);
-        setHttpStatus(result.httpStatus);
-        setLatencyMs(result.latencyMs);
-        if (result.verified) {
-          toast.success(t("toast.testSuccess"), {
-            description: `HTTP ${result.httpStatus} · ${result.latencyMs}ms`,
-          });
-        } else {
-          toast.error(t("toast.testFailed"), {
-            description: result.error ?? `HTTP ${result.httpStatus ?? 0}`,
-          });
-        }
-      });
-    }
+      } else {
+        toast.error(t("toast.testFailed"), {
+          description: result.message ?? `HTTP ${result.status}`,
+        });
+      }
+    });
   }
 
   // ── Save ────────────────────────────────────────────────────────────────────

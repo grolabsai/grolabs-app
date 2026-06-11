@@ -99,6 +99,24 @@ Selected local/remote branches observed via `git branch -a` (not exhaustive hist
 - Quantity-attribute dimension filtering in the variant editor — unchanged.
 - Funnel per-tenant / shared-table write policies lack app-level role gating — unchanged.
 
+## Testing approach — deferred (2026-06-11)
+
+The CI test suite is intentionally **disabled from auto-running**. `.github/workflows/test.yml`
+now triggers on `workflow_dispatch` only (the `pull_request` + `push` triggers are
+commented out, not deleted). Reason: the unit suite has been a mess — pre-existing
+prospectos v5 diagnostic failures (~11 tests) that block the `integration` job
+(`needs: unit`), turn every PR red, and force `--admin` merges. Rather than patch
+it piecemeal, the whole testing approach for the web app is to be **redesigned from
+scratch later**.
+
+Nothing was deleted: all 19 unit test files, the 1 integration test, the job/secrets
+wiring, and the `npm test` / `npm run test:integration` scripts are intact and still
+run locally + on manual dispatch. To re-enable CI gating, uncomment the two triggers
+in `test.yml`. When revisiting, decide the real approach (likely browser/page-level
+verification — Playwright is already installed, currently only used as a scraping
+lib in the diagnostic code; there is no E2E/page-test harness yet) and fix-or-drop
+the failing v5 diagnostic tests.
+
 ## Open architectural decisions
 
 - **Catalog template-fork pattern** — whether catalog adopts the funnel's `tenant_read` + template-fallthrough RLS for starter content on new-instance provisioning. Trigger to revisit: next new customer instance provisioned. (Now also relevant to `tenant-model.md`'s "create tenant + first instance" signup shape.)

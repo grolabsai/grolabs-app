@@ -359,7 +359,8 @@
     "copy": "Copiar respuesta",
     "copyHint": "Copiar la respuesta completa al portapapeles",
     "copied": "Respuesta copiada al portapapeles.",
-    "copyFailed": "No se pudo copiar al portapapeles."
+    "copyFailed": "No se pudo copiar al portapapeles.",
+    "resizeHint": "Arrastra para cambiar el ancho"
   },
   "activityStream": {
     "errorToastTitle": "Ocurrió un error",
@@ -1211,6 +1212,13 @@
         "testFailed": "Error de conexión",
         "saveSuccess": "Configuración guardada",
         "saveFailed": "No se pudo guardar"
+      },
+      "errors": {
+        "missingForTest": "Completa App ID y Clave de Escritura (Admin) antes de probar.",
+        "missingFields": "Faltan campos requeridos: {fields}.",
+        "unknown": "Error desconocido. Revisa la consola del servidor.",
+        "savedAndVerified": "Guardado y verificado · HTTP {status} · {latency}ms.",
+        "savedNotVerified": "Guardado, pero la verificación falló · HTTP {status}. Revisa las credenciales."
       }
     },
     "woocommerce": {

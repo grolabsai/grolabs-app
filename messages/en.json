@@ -359,7 +359,8 @@
     "copy": "Copy response",
     "copyHint": "Copy the full response to clipboard",
     "copied": "Response copied to clipboard.",
-    "copyFailed": "Couldn't copy to clipboard."
+    "copyFailed": "Couldn't copy to clipboard.",
+    "resizeHint": "Drag to resize"
   },
   "activityStream": {
     "errorToastTitle": "An error occurred",
@@ -1211,6 +1212,13 @@
         "testFailed": "Connection failed",
         "saveSuccess": "Configuration saved",
         "saveFailed": "Could not save configuration"
+      },
+      "errors": {
+        "missingForTest": "Enter App ID and Write (Admin) API Key before testing.",
+        "missingFields": "Missing required fields: {fields}.",
+        "unknown": "Unknown error. Check the server console.",
+        "savedAndVerified": "Saved and verified · HTTP {status} · {latency}ms.",
+        "savedNotVerified": "Saved, but verification failed · HTTP {status}. Check the credentials."
       }
     },
     "woocommerce": {

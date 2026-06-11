@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { useAgentLog } from "@/components/shell/AgentLogContext";
+import { useAgentPanel } from "@/components/shell/AgentPanelContext";
 import { useFieldHintState } from "@/components/shell/FieldHintContext";
 import { Icon } from "@/components/ui/icon";
 import type { AgentMessage } from "@/lib/import/types";
@@ -23,32 +24,28 @@ import type { AgentMessage } from "@/lib/import/types";
  * pusher is the import wizard; future features can push too without
  * touching this component.
  *
- * Collapsible to a 32px rail; user preference persists in localStorage.
- * When expanded, shows messages chronologically (oldest top, newest
- * bottom). Each message can carry a structured `raw` payload that the
- * user can copy verbatim — useful for sharing exact agent responses
- * back to support.
+ * Collapsible to a rail; the user's collapse state and dragged width both
+ * persist in localStorage (see `AgentPanelContext`). When expanded, shows
+ * messages chronologically (oldest top, newest bottom). Each message can
+ * carry a structured `raw` payload that the user can copy verbatim — useful
+ * for sharing exact agent responses back to support.
+ *
+ * The panel auto-opens whenever a new message is logged, so errors routed
+ * here (instead of to a fleeting toast) are never missed.
  */
 export function AgentPanel() {
   const t = useTranslations("agentPanel");
   const { messages, clear } = useAgentLog();
+  const { collapsed, mounted, width, toggle, open, setWidth } = useAgentPanel();
   const { active: fieldHint } = useFieldHintState();
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return true;
-    try {
-      const saved = localStorage.getItem("agent-panel-collapsed");
-      return saved !== null ? saved === "true" : true;
-    } catch {
-      return true;
-    }
-  });
-  const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-open the panel when a new message lands so it can't be missed.
+  const prevCount = useRef(messages.length);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
+    if (messages.length > prevCount.current && collapsed) open();
+    prevCount.current = messages.length;
+  }, [messages.length, collapsed, open]);
 
   // Auto-scroll to newest message on expand or when a message lands.
   useEffect(() => {
@@ -57,14 +54,34 @@ export function AgentPanel() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, collapsed]);
 
-  function toggle() {
-    const next = !collapsed;
-    setCollapsed(next);
-    try {
-      localStorage.setItem("agent-panel-collapsed", String(next));
-    } catch {
-      // localStorage unavailable
+  // ── Divider drag: resize the panel by dragging its left edge ───────────────
+  const dragging = useRef(false);
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!dragging.current) return;
+      // Panel hugs the right edge, so its width is the gap from the cursor
+      // to the viewport's right edge.
+      setWidth(window.innerWidth - e.clientX);
     }
+    function onUp() {
+      if (!dragging.current) return;
+      dragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [setWidth]);
+
+  function startDrag(e: React.MouseEvent) {
+    e.preventDefault();
+    dragging.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
   }
 
   // Avoid layout shift before localStorage is read
@@ -144,12 +161,39 @@ export function AgentPanel() {
   return (
     <div
       style={{
-        width: 384,
+        width,
         flexShrink: 0,
         padding: "24px 24px 24px 0",
         display: "flex",
+        position: "relative",
       }}
     >
+      {/* Drag handle — resize the panel by dragging its left edge. */}
+      <div
+        onMouseDown={startDrag}
+        title={t("resizeHint")}
+        style={{
+          position: "absolute",
+          left: -3,
+          top: 24,
+          bottom: 24,
+          width: 10,
+          cursor: "col-resize",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
+        }}
+      >
+        <span
+          style={{
+            width: 3,
+            height: 36,
+            borderRadius: 3,
+            background: "var(--gl-border)",
+          }}
+        />
+      </div>
     <div
       style={{
         flex: 1,

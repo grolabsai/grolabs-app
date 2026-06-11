@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Eye, EyeOff, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { useAgentLog } from "@/components/shell/AgentLogContext";
+import type { AgentMessage } from "@/lib/import/types";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +52,30 @@ const REGIONS = [
 
 export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
   const t = useTranslations("configuration.algolia");
+  const { append } = useAgentLog();
+
+  // ── Error/diagnostic surface ────────────────────────────────────────────────
+  // During this build stage every failure is written to the right-side
+  // Assistant panel (persistent + copyable) instead of a fleeting toast, so the
+  // exact reason a save/test failed can actually be read and shared.
+  function logToPanel(
+    kind: AgentMessage["kind"],
+    title: string,
+    body: string,
+    raw?: unknown
+  ) {
+    append({
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : String(Date.now() + Math.random()),
+      timestamp: Date.now(),
+      kind,
+      title,
+      body,
+      raw,
+    });
+  }
 
   // ── Field state ─────────────────────────────────────────────────────────────
   const [appId, setAppId] = useState(initialValues.appId);
@@ -72,9 +98,11 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
   // ── Test only (no save) ─────────────────────────────────────────────────────
   function handleTest() {
     if (!appId || (!replacingKey && !hasAdminKey) || (replacingKey && !adminApiKey)) {
-      toast.error(t("toast.testFailed"), {
-        description: "Completa App ID y Admin API Key antes de probar.",
-      });
+      logToPanel(
+        "error",
+        t("toast.testFailed"),
+        t("errors.missingForTest")
+      );
       return;
     }
 
@@ -86,10 +114,18 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
           toast.success(t("toast.testSuccess"), {
             description: `HTTP ${result.status} · ${result.latencyMs}ms`,
           });
+          logToPanel(
+            "success",
+            t("toast.testSuccess"),
+            `HTTP ${result.status} · ${result.latencyMs}ms`
+          );
         } else {
-          toast.error(t("toast.testFailed"), {
-            description: result.message ?? `HTTP ${result.status}`,
-          });
+          logToPanel(
+            "error",
+            t("toast.testFailed"),
+            result.message ?? `HTTP ${result.status}`,
+            result
+          );
         }
       });
     } else {
@@ -110,10 +146,18 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
           toast.success(t("toast.testSuccess"), {
             description: `HTTP ${result.httpStatus} · ${result.latencyMs}ms`,
           });
+          logToPanel(
+            "success",
+            t("toast.testSuccess"),
+            `HTTP ${result.httpStatus} · ${result.latencyMs}ms`
+          );
         } else {
-          toast.error(t("toast.testFailed"), {
-            description: result.error ?? `HTTP ${result.httpStatus ?? 0}`,
-          });
+          logToPanel(
+            "error",
+            t("toast.testFailed"),
+            result.error ?? `HTTP ${result.httpStatus ?? 0}`,
+            result
+          );
         }
       });
     }
@@ -121,6 +165,27 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
 
   // ── Save ────────────────────────────────────────────────────────────────────
   function handleSave() {
+    // Validate before hitting the server so the user gets a precise reason
+    // instead of the cryptic "No admin key on file" fallback from the action.
+    const missing: string[] = [];
+    if (!appId) missing.push(t("fields.appId"));
+    if (!region) missing.push(t("fields.region"));
+    if (!searchApiKey) missing.push(t("fields.searchApiKey"));
+    if (!primaryIndex) missing.push(t("fields.primaryIndex"));
+    // A write key is required only when none is stored yet (or the user is
+    // replacing it). When a key is on file and not being replaced, it's reused.
+    if ((replacingKey || !hasAdminKey) && !adminApiKey) {
+      missing.push(t("fields.adminApiKey"));
+    }
+    if (missing.length > 0) {
+      logToPanel(
+        "error",
+        t("toast.saveFailed"),
+        t("errors.missingFields", { fields: missing.join(", ") })
+      );
+      return;
+    }
+
     startTransition(async () => {
       const result = await saveAlgoliaConfig({
         instanceId,
@@ -132,11 +197,27 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
       });
 
       if (!result.ok) {
-        toast.error(t("toast.saveFailed"), { description: result.error });
+        logToPanel(
+          "error",
+          t("toast.saveFailed"),
+          result.error ?? t("errors.unknown"),
+          result
+        );
         return;
       }
 
       toast.success(t("toast.saveSuccess"));
+      logToPanel(
+        result.verified ? "success" : "warning",
+        t("toast.saveSuccess"),
+        result.verified
+          ? t("errors.savedAndVerified", {
+              status: result.httpStatus ?? 0,
+              latency: result.latencyMs ?? 0,
+            })
+          : t("errors.savedNotVerified", { status: result.httpStatus ?? 0 }),
+        result
+      );
       setVerifiedAt(new Date().toISOString());
       setHttpStatus(result.httpStatus);
       setLatencyMs(result.latencyMs);

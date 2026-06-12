@@ -8,6 +8,7 @@ import { CheckCircle2, XCircle, Eye, EyeOff, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { HintedInput } from "@/components/ui/hinted-field";
 import {
   saveWooCommerceConfig,
   testWooCommerceConnection,
@@ -145,28 +146,23 @@ export function WooCommerceForm({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
       {/* URL */}
-      <div>
-        <FloatingLabelInput
-          id="wc-site-url"
-          label={t("fields.siteUrl")}
-          placeholder="https://shop.example.com"
-          value={siteUrl}
-          onChange={(e) => setSiteUrl(e.target.value)}
-          disabled={pending}
-        />
-        <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", marginTop: 4 }}>
-          {t("fields.siteUrlHint")}
-        </p>
-      </div>
+      <HintedInput
+        id="wc-site-url"
+        label={t("fields.siteUrl")}
+        value={siteUrl}
+        onChange={(e) => setSiteUrl(e.target.value)}
+        disabled={pending}
+        hint={{ label: t("fields.siteUrl"), body: t("fields.siteUrlHint") }}
+      />
 
       {/* Consumer key */}
-      <FloatingLabelInput
+      <HintedInput
         id="wc-consumer-key"
         label={t("fields.consumerKey")}
-        placeholder="ck_..."
         value={consumerKey}
         onChange={(e) => setConsumerKey(e.target.value)}
         disabled={pending}
+        hint={{ label: t("fields.consumerKey"), body: t("fields.consumerSecretHint") }}
       />
 
       {/* Consumer secret */}
@@ -177,7 +173,6 @@ export function WooCommerceForm({
               id="wc-consumer-secret"
               label={t("fields.consumerSecret")}
               type={showSecret ? "text" : "password"}
-              placeholder="cs_..."
               value={consumerSecret}
               onChange={(e) => setConsumerSecret(e.target.value)}
               disabled={pending}

@@ -44,11 +44,11 @@ export function NoResultsTable({ rows, timeWindow, offset, hasMore }: Props) {
   const [isPending, startTransition] = useTransition();
 
   function handleWindowChange(value: string) {
-    router.push(`/dashboard?window=${value}&offset=0`);
+    router.push(`/dashboard/search?window=${value}&offset=0`);
   }
 
   function handleLoadMore() {
-    router.push(`/dashboard?window=${timeWindow}&offset=${offset + 50}`);
+    router.push(`/dashboard/search?window=${timeWindow}&offset=${offset + 50}`);
   }
 
   function openDialog(query: string) {

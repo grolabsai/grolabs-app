@@ -13,7 +13,7 @@ async function ensureMembership(): Promise<number | null> {
     .from("instance_member")
     .select("instance_id")
     .eq("user_id", user.id)
-    .eq("is_active", true)
+    .eq("is_current", true)
     .maybeSingle();
   return membership?.instance_id ?? null;
 }

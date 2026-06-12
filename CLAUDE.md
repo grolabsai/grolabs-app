@@ -40,7 +40,9 @@ Live routes (as of latest main):
 - `/catalog/products/[id]` — product detail (read-only, Phase 1)
 - `/catalog/categories` — category tree + attribute/variant accordion detail
 - `/configuration/algolia` — Algolia credentials + verification
-- `/dashboard` — no-results analytics (Algolia-sourced)
+- `/dashboard` — tabbed dashboard; redirects to the default `Traffic` tab
+- `/dashboard/traffic` — GA4 traffic insights (dark "insights" design: audience donuts, channel/device/page/geo tiles, trend area charts, alert tiles + inbox). Conversion-funnel and revenue tiles are styled `Próximamente` shells pending GA4 e-commerce tracking (`ga4-conversions.md`).
+- `/dashboard/search` — no-results analytics (Algolia-sourced)
 - `/import` — import method picker
 - `/import/text` — text-paste import (parser wired in CI-11)
 - `/login` — authentication

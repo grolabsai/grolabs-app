@@ -495,3 +495,27 @@ the bottom; the donut SVGs are sized to their ring; the coming-soon badge is gra
 right-side Assistant panel via a drop-in shim — import `toast` from
 `@/components/ui/agent-toast`, never from `sonner`. See
 [[feedback_errors_to_agent_panel]].
+
+## 15. OPEN — alert management is undecided (UI removed 2026-06-12)
+
+The **Alerts** section was removed from `/dashboard/traffic` (the three top-3
+alert tiles + the inbox). The dashboard restructured to: Row 1 = Sessions / Avg
+session duration / Page views per session; Row 2 = Engagement (line) / Users
+(line) / New-vs-returning donut; then Pages, then Acquisition (channels / geo /
+device). Coming-soon stays pinned at the bottom.
+
+**Why removed, and what must be decided:** §6 *specs* default thresholds (±15%
+sessions, −10pp engagement, >20pp share), but those were never ratified with
+Tuncho and there are **no agreed rules** for what should alert, at what
+threshold, with what baseline, how often, or how a merchant tunes them. Showing
+alert tiles with unvalidated thresholds is misleading. **Before re-adding any
+alerting UI we need to decide:**
+- which metrics actually warrant an alert (and per-merchant overrides);
+- the baseline + threshold for each (and whether "vs prior 7-day avg" is the
+  right comparison — it's what the dashboard deltas use today);
+- cadence + dedup/throttle + acknowledge/clear lifecycle (the `ga4_alert` table
+  and `getActiveAlerts`/`getAlertTiles` fetchers still exist, just unused);
+- delivery beyond in-app (email/SMS — see `notifications-channels.md`).
+
+Until that conversation happens, alerting stays out of the UI. The anomaly job
+and `ga4_alert` rows are untouched in the DB; this is purely a UI removal.

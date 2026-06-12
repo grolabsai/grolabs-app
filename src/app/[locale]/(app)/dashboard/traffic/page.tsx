@@ -4,8 +4,6 @@ import { Link } from "@/i18n/routing";
 import { createClient } from "@/lib/supabase/server";
 import { TIMESERIES_DAYS } from "@/lib/integrations/ga4/constants";
 import {
-  getActiveAlerts,
-  getAlertTiles,
   getAudienceSummary,
   getDeviceMix,
   getGa4Config,
@@ -20,10 +18,6 @@ import { DashboardTabs } from "../_dashboard-tabs";
 import { InsightsReveal } from "@/components/dashboard/insights/_reveal";
 import { RealtimeHeader } from "@/components/dashboard/insights/_realtime-header";
 import { DashboardPullButton } from "@/components/dashboard/insights/_pull-button";
-import {
-  AlertInbox,
-  type InboxItem,
-} from "@/components/dashboard/insights/_alert-inbox";
 import {
   AreaChartSvg,
   DeltaPill,
@@ -99,18 +93,16 @@ export default async function TrafficDashboardPage() {
     );
   }
 
-  const [cfg, audience, series, tiles, channels, landings, exits, geo, devices, alerts] =
+  const [cfg, audience, series, channels, landings, exits, geo, devices] =
     await Promise.all([
       getGa4Config(instanceId),
       getAudienceSummary(instanceId),
       getSessionTimeseries(instanceId),
-      getAlertTiles(instanceId),
       getTopChannels(instanceId, 5),
       getTopLandingPages(instanceId),
       getTopExitPages(instanceId),
       getGeoTop(instanceId),
       getDeviceMix(instanceId),
-      getActiveAlerts(instanceId),
     ]);
 
   // ── Data freshness: the dashboard only shows finalized days (through
@@ -166,42 +158,17 @@ export default async function TrafficDashboardPage() {
     value: g.sessions,
   }));
 
-  // ── Page tables ──
+  // ── Page tables ── ("/" renders as "Home" rather than a bare slash)
+  const prettyPath = (p: string) => (p === "/" || p === "" ? tt("tiles.homePage") : p);
   const landingRows: PtableRow[] = landings.map((p) => ({
-    path: p.page_path,
+    path: prettyPath(p.page_path),
     valueLabel: fmtInt(p.value),
     deltaPct: p.delta_pct,
   }));
   const exitRows: PtableRow[] = exits.map((p) => ({
-    path: p.page_path,
+    path: prettyPath(p.page_path),
     valueLabel: fmtInt(p.value),
     deltaPct: p.delta_pct,
-  }));
-
-  // ── Alert tiles ──
-  const tileMeta: Record<string, { label: string }> = {
-    sessions: { label: tt("alerts.tileSessions") },
-    engagement_rate: { label: tt("alerts.tileEngagement") },
-    traffic_share: { label: tt("alerts.tileTrafficShare") },
-  };
-
-  // ── Alert inbox items ──
-  const metricLabel: Record<string, string> = {
-    sessions: tt("alerts.metricSessions"),
-    engagement_rate: tt("alerts.metricEngagement"),
-    traffic_share: tt("alerts.metricTrafficShare"),
-  };
-  const inboxItems: InboxItem[] = alerts.map((a) => ({
-    id: a.alert_id,
-    title:
-      (metricLabel[a.metric] ?? a.metric) +
-      (a.dimension_key ? ` · ${a.dimension_key}` : ""),
-    sub: tt("alerts.observed", {
-      observed: Number(a.observed_value).toFixed(2),
-      baseline: Number(a.baseline_value).toFixed(2),
-      delta: Number(a.delta_pct).toFixed(1),
-    }),
-    acknowledged: a.status === "acknowledged",
   }));
 
   const emptyTile = (label: string, sub?: string) => (
@@ -227,13 +194,6 @@ export default async function TrafficDashboardPage() {
                 {cfg?.property_id ? `#${cfg.property_id}` : "—"}
               </span>
             </div>
-            <div className="head-divider" />
-            <div className="chip-row">
-              <span className="chip active">
-                {tt("header.windowDays", { n: TIMESERIES_DAYS })}
-              </span>
-              <span className="chip">{tt("header.windowBaseline")}</span>
-            </div>
           </div>
           <div className="head-right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <DashboardPullButton />
@@ -241,13 +201,17 @@ export default async function TrafficDashboardPage() {
           </div>
         </div>
 
-        {/* Data freshness — finalized through yesterday, plus last refresh time */}
+        {/* Data freshness — one continuous line (full grid width), never wraps. */}
         <div
           style={{
+            gridColumn: "span 12",
             fontSize: 11,
             color: "var(--t3)",
             margin: "0 0 8px",
             letterSpacing: "0.02em",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {updatedLabel
@@ -257,14 +221,109 @@ export default async function TrafficDashboardPage() {
 
         {/* ═══ AUDIENCIA ═══ */}
         <div className="sec-label">
-          <span className="txt">{tt("sections.audience")}</span>
+          <span className="txt">{tt("sections.keyMetrics")}</span>
           <span className="rule" />
-          <span className="meta">{tt("sections.audienceMeta")}</span>
+          <span className="meta">{tt("sections.keyMetricsMeta")}</span>
         </div>
 
         {audience.hasData ? (
           <>
-            {/* Users composition */}
+            {/* Row 1 — Sessions / Avg session duration / Page views per session.
+                Big number (yesterday) + delta (vs prior 7-day avg) + sparkline. */}
+            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+              <div className="chart-head">
+                <div>
+                  <span className="tile-label">{tt("kpi.sessions")}</span>
+                  <div className="chart-figure">
+                    <span className="v">{fmtInt(audience.sessions)}</span>
+                    <DeltaPill
+                      pct={audience.sessionsDeltaPct}
+                      label={fmtSignedPct(audience.sessionsDeltaPct)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <Sparkline values={sessionsSeries} color="var(--accent)" />
+            </div>
+
+            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+              <div className="chart-head">
+                <div>
+                  <span className="tile-label">{tt("kpi.avgDuration")}</span>
+                  <div className="chart-figure">
+                    <span className="v">{fmtDuration(audience.avgSessionDurationSec)}</span>
+                    <DeltaPill
+                      pct={audience.durationDeltaPct}
+                      label={fmtSignedPct(audience.durationDeltaPct)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <Sparkline values={durationSeries} color="var(--sage)" />
+            </div>
+
+            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+              <div className="chart-head">
+                <div>
+                  <span className="tile-label">{tt("kpi.viewsPerSession")}</span>
+                  <div className="chart-figure">
+                    <span className="v">{audience.viewsPerSession.toFixed(1)}</span>
+                    <DeltaPill
+                      pct={audience.viewsDeltaPct}
+                      label={fmtSignedPct(audience.viewsDeltaPct)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <Sparkline values={viewsSeries} color="var(--blue)" />
+            </div>
+
+            {/* Row 2 — Engagement over time / Users over time / New vs returning. */}
+            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+              <div className="chart-head">
+                <div>
+                  <span className="tile-label">
+                    {tt("trends.engagement", { n: TIMESERIES_DAYS })}
+                  </span>
+                  <div className="chart-figure">
+                    <span className="v">{fmtPct(audience.engagementRate)}</span>
+                    <DeltaPill
+                      pct={audience.engagementDeltaPp}
+                      label={`${audience.engagementDeltaPp >= 0 ? "+" : ""}${audience.engagementDeltaPp.toFixed(1)}pp`}
+                    />
+                  </div>
+                </div>
+              </div>
+              {engagementSeries.length > 0 ? (
+                <AreaChartSvg values={engagementSeries} color="var(--sage)" />
+              ) : (
+                <div className="tile-empty">{tt("empty")}</div>
+              )}
+            </div>
+
+            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+              <div className="chart-head">
+                <div>
+                  <span className="tile-label">
+                    {tt("trends.users", { n: TIMESERIES_DAYS })}
+                  </span>
+                  <div className="chart-figure">
+                    <span className="v">{fmtInt(audience.users)}</span>
+                    <DeltaPill
+                      pct={audience.usersDeltaPct}
+                      label={fmtSignedPct(audience.usersDeltaPct)}
+                    />
+                  </div>
+                </div>
+              </div>
+              {usersSeries.length > 0 ? (
+                <AreaChartSvg values={usersSeries} color="var(--blue)" />
+              ) : (
+                <div className="tile-empty">{tt("empty")}</div>
+              )}
+            </div>
+
+            {/* New vs returning users */}
             <div className="tile" data-col style={{ gridColumn: "span 4" }}>
               <div className="tile-head">
                 <span className="tile-label">{tt("tiles.usersComposition")}</span>
@@ -312,139 +371,12 @@ export default async function TrafficDashboardPage() {
                 </div>
               </div>
             </div>
-
-            {/* Sessions engagement */}
-            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-              <div className="tile-head">
-                <span className="tile-label">{tt("tiles.sessionsEngagement")}</span>
-                <span className="tile-sub">
-                  {tt("tiles.engagementRateSub", {
-                    pct: fmtPct(audience.engagementRate),
-                  })}
-                </span>
-              </div>
-              <div className="ringwrap">
-                <div className="ring">
-                  <DonutSplit
-                    frac={audience.engagementRate}
-                    colorA="var(--accent)"
-                    colorB="#5b5b63"
-                  />
-                  <div className="c">
-                    <span className="v">{fmtInt(audience.sessions)}</span>
-                    <span
-                      className={`cd ${audience.sessionsDeltaPct >= 0 ? "up" : "down"}`}
-                    >
-                      {fmtDelta(audience.sessionsDeltaPct)}
-                    </span>
-                  </div>
-                </div>
-                <div className="dleg">
-                  <div className="r">
-                    <span className="dot" style={{ background: "var(--accent)" }} />
-                    <span className="nm">{tt("tiles.engaged")}</span>
-                    <span className="vv">{fmtInt(audience.engagedSessions)}</span>
-                    <span className="pc">{fmtPct(audience.engagementRate, 0)}</span>
-                  </div>
-                  <div className="r">
-                    <span className="dot" style={{ background: "#5b5b63" }} />
-                    <span className="nm">{tt("tiles.nonEngaged")}</span>
-                    <span className="vv">{fmtInt(audience.nonEngagedSessions)}</span>
-                    <span className="pc">{fmtPct(1 - audience.engagementRate, 0)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Per-session depth */}
-            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-              <div className="tile-head">
-                <span className="tile-label">{tt("tiles.perSession")}</span>
-              </div>
-              <div className="depth">
-                <div className="drow">
-                  <div className="dtop">
-                    <span className="dname">{tt("tiles.avgDuration")}</span>
-                    <DeltaPill pct={audience.durationDeltaPct} />
-                  </div>
-                  <div className="dval">
-                    <span className="vn">
-                      {fmtDuration(audience.avgSessionDurationSec)}
-                    </span>
-                  </div>
-                  <Sparkline
-                    values={durationSeries}
-                    color={audience.durationDeltaPct >= 0 ? "var(--accent)" : "#fca5a5"}
-                  />
-                </div>
-                <div className="drow">
-                  <div className="dtop">
-                    <span className="dname">{tt("tiles.viewsPerSession")}</span>
-                    <DeltaPill pct={audience.viewsDeltaPct} />
-                  </div>
-                  <div className="dval">
-                    <span className="vn">{audience.viewsPerSession.toFixed(1)}</span>
-                  </div>
-                  <Sparkline
-                    values={viewsSeries}
-                    color={audience.viewsDeltaPct >= 0 ? "var(--accent)" : "#fca5a5"}
-                  />
-                </div>
-              </div>
-            </div>
           </>
         ) : (
           <div className="tile" style={{ gridColumn: "span 12" }}>
             <div className="tile-empty">{tt("empty")}</div>
           </div>
         )}
-
-        {/* ═══ ADQUISICIÓN ═══ */}
-        <div className="sec-label">
-          <span className="txt">{tt("sections.acquisition")}</span>
-          <span className="rule" />
-          <span className="meta">{tt("sections.acquisitionMeta")}</span>
-        </div>
-
-        {/* Channels */}
-        {channelRows.length > 0 ? (
-          <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-            <div className="tile-head">
-              <span className="tile-label">{tt("tiles.sessionsByChannel")}</span>
-              <span className="tile-sub">
-                {tt("tiles.totalSessions", { n: fmtInt(channelTotal) })}
-              </span>
-            </div>
-            <StackBars rows={channelRows} />
-          </div>
-        ) : (
-          emptyTile(tt("tiles.sessionsByChannel"))
-        )}
-
-        {/* Geo — grouped with channels + device as a segmentation row */}
-        <div className="tile" data-col style={{ gridColumn: "span 5" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("tiles.geo")}</span>
-            <span className="tile-sub">{tt("tiles.byCountry")}</span>
-          </div>
-          {geoRows.length > 0 ? (
-            <StackBars rows={geoRows} />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
-
-        {/* Device mix */}
-        <div className="tile" data-col style={{ gridColumn: "span 3" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("tiles.deviceMix")}</span>
-          </div>
-          {deviceRows.length > 0 ? (
-            <SegBar rows={deviceRows} />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
 
         {/* ═══ PÁGINAS ═══ */}
         <div className="sec-label">
@@ -484,138 +416,55 @@ export default async function TrafficDashboardPage() {
           )}
         </div>
 
-        {/* ═══ TENDENCIAS ═══ */}
+        {/* ═══ ADQUISICIÓN ═══ */}
         <div className="sec-label">
-          <span className="txt">{tt("sections.trends")}</span>
+          <span className="txt">{tt("sections.acquisition")}</span>
           <span className="rule" />
-          <span className="meta">{tt("sections.trendsMeta", { n: TIMESERIES_DAYS })}</span>
+          <span className="meta">{tt("sections.acquisitionMeta")}</span>
         </div>
 
-        <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-          <div className="chart-head">
-            <div>
-              <span className="tile-label">
-                {tt("trends.sessions", { n: TIMESERIES_DAYS })}
+        {/* Channels */}
+        {channelRows.length > 0 ? (
+          <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+            <div className="tile-head">
+              <span className="tile-label">{tt("tiles.sessionsByChannel")}</span>
+              <span className="tile-sub">
+                {tt("tiles.totalSessions", { n: fmtInt(channelTotal) })}
               </span>
-              <div className="chart-figure">
-                <span className="v">{fmtInt(audience.sessions)}</span>
-                <DeltaPill
-                  pct={audience.sessionsDeltaPct}
-                  label={fmtSignedPct(audience.sessionsDeltaPct)}
-                />
-              </div>
             </div>
+            <StackBars rows={channelRows} />
           </div>
-          {sessionsSeries.length > 0 ? (
-            <AreaChartSvg values={sessionsSeries} color="var(--accent)" />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
+        ) : (
+          emptyTile(tt("tiles.sessionsByChannel"))
+        )}
 
-        <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-          <div className="chart-head">
-            <div>
-              <span className="tile-label">
-                {tt("trends.engagement", { n: TIMESERIES_DAYS })}
-              </span>
-              <div className="chart-figure">
-                <span className="v">{fmtPct(audience.engagementRate)}</span>
-                <DeltaPill
-                  pct={audience.engagementDeltaPp}
-                  label={`${audience.engagementDeltaPp >= 0 ? "+" : ""}${audience.engagementDeltaPp.toFixed(1)}pp`}
-                />
-              </div>
-            </div>
-          </div>
-          {engagementSeries.length > 0 ? (
-            <AreaChartSvg values={engagementSeries} color="var(--sage)" />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
-
-        <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-          <div className="chart-head">
-            <div>
-              <span className="tile-label">
-                {tt("trends.users", { n: TIMESERIES_DAYS })}
-              </span>
-              <div className="chart-figure">
-                <span className="v">{fmtInt(audience.users)}</span>
-                <DeltaPill
-                  pct={audience.usersDeltaPct}
-                  label={fmtSignedPct(audience.usersDeltaPct)}
-                />
-              </div>
-            </div>
-          </div>
-          {usersSeries.length > 0 ? (
-            <AreaChartSvg values={usersSeries} color="var(--blue)" />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
-
-        {/* ═══ ALERTAS ═══ */}
-        <div className="sec-label">
-          <span className="txt">{tt("sections.alerts")}</span>
-          <span className="rule" />
-        </div>
-
-        {tiles.map((tile) => {
-          const firing = tile.status === "firing";
-          const value =
-            tile.metric === "engagement_rate"
-              ? fmtPct(tile.current)
-              : tile.metric === "traffic_share"
-                ? "—"
-                : fmtInt(tile.current);
-          const baseline =
-            tile.metric === "engagement_rate"
-              ? fmtPct(tile.baseline)
-              : tile.metric === "traffic_share"
-                ? "—"
-                : fmtInt(tile.baseline);
-          return (
-            <div
-              key={tile.metric}
-              className={`tile alert-tile${firing ? " firing" : ""}`}
-              data-col
-              style={{ gridColumn: "span 4" }}
-            >
-              <div className="tile-head">
-                <span className="tile-label">{tileMeta[tile.metric].label}</span>
-                <span className={`alert-status ${firing ? "firing" : "ok"}`}>
-                  {firing ? tt("alerts.statusFiring") : tt("alerts.statusOk")}
-                </span>
-              </div>
-              <span className="av">{value}</span>
-              <span className="tile-sub" style={{ textAlign: "left", marginTop: 4 }}>
-                {tile.metric === "traffic_share"
-                  ? tt("alerts.trafficShareHint")
-                  : tt("alerts.vsBaseline", { value: baseline })}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* Active alerts inbox */}
-        <div className="tile inbox">
+        {/* Geo — grouped with channels + device */}
+        <div className="tile" data-col style={{ gridColumn: "span 5" }}>
           <div className="tile-head">
-            <span className="tile-label">{tt("alerts.inboxTitle")}</span>
-            <span className="tile-sub">{inboxItems.length}</span>
+            <span className="tile-label">{tt("tiles.geo")}</span>
+            <span className="tile-sub">{tt("tiles.byCountry")}</span>
           </div>
-          {inboxItems.length > 0 ? (
-            <AlertInbox
-              items={inboxItems}
-              ackLabel={tt("alerts.acknowledge")}
-              ackedLabel={tt("alerts.acknowledged")}
-            />
+          {geoRows.length > 0 ? (
+            <StackBars rows={geoRows} />
           ) : (
-            <div className="tile-empty">{tt("alerts.inboxEmpty")}</div>
+            <div className="tile-empty">{tt("empty")}</div>
           )}
         </div>
+
+        {/* Device mix */}
+        <div className="tile" data-col style={{ gridColumn: "span 3" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("tiles.deviceMix")}</span>
+          </div>
+          {deviceRows.length > 0 ? (
+            <SegBar rows={deviceRows} />
+          ) : (
+            <div className="tile-empty">{tt("empty")}</div>
+          )}
+        </div>
+
+        {/* Alerts removed 2026-06-12 — no thresholds/rules defined yet; alert
+            management is an open design question (see ga4-integration.md §15). */}
 
         {/* ═══ CONVERSIONES Y EMBUDOS (Próximamente) — pinned to the bottom ═══ */}
         <div className="sec-label">

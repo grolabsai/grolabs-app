@@ -646,6 +646,8 @@
       "sections": {
         "audience": "Audiencia",
         "audienceMeta": "agrupado · usuarios y sesiones",
+        "keyMetrics": "Métricas clave",
+        "keyMetricsMeta": "ayer · vs. promedio de los 7 días previos",
         "acquisition": "Adquisición",
         "acquisitionMeta": "de dónde vienen las sesiones",
         "pagesGeo": "Páginas",
@@ -657,7 +659,13 @@
         "trendsMeta": "últimos {n} días",
         "alerts": "Alertas"
       },
+      "kpi": {
+        "sessions": "Sesiones",
+        "avgDuration": "Duración media de sesión",
+        "viewsPerSession": "Páginas vistas / sesión"
+      },
       "tiles": {
+        "homePage": "Inicio",
         "usersComposition": "Usuarios · composición",
         "usersSub": "nuevos vs recurrentes",
         "newUsers": "Nuevos",

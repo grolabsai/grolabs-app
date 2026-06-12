@@ -646,6 +646,8 @@
       "sections": {
         "audience": "Audience",
         "audienceMeta": "grouped · users & sessions",
+        "keyMetrics": "Key metrics",
+        "keyMetricsMeta": "yesterday · vs prior 7-day avg",
         "acquisition": "Acquisition",
         "acquisitionMeta": "where sessions come from",
         "pagesGeo": "Pages",
@@ -657,7 +659,13 @@
         "trendsMeta": "last {n} days",
         "alerts": "Alerts"
       },
+      "kpi": {
+        "sessions": "Sessions",
+        "avgDuration": "Avg. session duration",
+        "viewsPerSession": "Page views / session"
+      },
       "tiles": {
+        "homePage": "Home",
         "usersComposition": "Users · composition",
         "usersSub": "new vs returning",
         "newUsers": "New",

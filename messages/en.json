@@ -646,7 +646,7 @@
       "sections": {
         "audience": "Audience",
         "audienceMeta": "grouped · users & sessions",
-        "keyMetrics": "Key metrics",
+        "keyMetrics": "Traffic",
         "keyMetricsMeta": "yesterday · vs prior 7-day avg",
         "acquisition": "Acquisition",
         "acquisitionMeta": "where sessions come from",

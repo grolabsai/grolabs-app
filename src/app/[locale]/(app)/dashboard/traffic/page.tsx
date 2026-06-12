@@ -21,9 +21,11 @@ import { DashboardPullButton } from "@/components/dashboard/insights/_pull-butto
 import {
   AreaChartSvg,
   DeltaPill,
+  DeviceGlyph,
   DonutSplit,
   Ptable,
   SegBar,
+  titleCase,
   SoonBars,
   SoonRing,
   Sparkline,
@@ -141,14 +143,18 @@ export default async function TrafficDashboardPage() {
     value: c.sessions_today,
   }));
 
-  // ── Device mix rows ──
-  const deviceRows: SegRow[] = devices.map((d, i) => ({
-    name: d.device,
-    valueLabel: fmtInt(d.sessions),
-    pcLabel: fmtPct(d.share, 0),
-    color: DEVICE_COLORS[i % DEVICE_COLORS.length],
-    share: d.share,
-  }));
+  // ── Device mix rows ── (proper-cased name + a colored device glyph for the dot)
+  const deviceRows: SegRow[] = devices.map((d, i) => {
+    const color = DEVICE_COLORS[i % DEVICE_COLORS.length];
+    return {
+      name: titleCase(d.device),
+      valueLabel: fmtInt(d.sessions),
+      pcLabel: fmtPct(d.share, 0),
+      color,
+      share: d.share,
+      icon: <DeviceGlyph category={d.device} color={color} />,
+    };
+  });
 
   // ── Geo stack rows ──
   const geoRows: StackRow[] = geo.map((g) => ({
@@ -278,29 +284,8 @@ export default async function TrafficDashboardPage() {
               <Sparkline values={viewsSeries} color="var(--blue)" />
             </div>
 
-            {/* Row 2 — Engagement over time / Users over time / New vs returning. */}
-            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
-              <div className="chart-head">
-                <div>
-                  <span className="tile-label">
-                    {tt("trends.engagement", { n: TIMESERIES_DAYS })}
-                  </span>
-                  <div className="chart-figure">
-                    <span className="v">{fmtPct(audience.engagementRate)}</span>
-                    <DeltaPill
-                      pct={audience.engagementDeltaPp}
-                      label={`${audience.engagementDeltaPp >= 0 ? "+" : ""}${audience.engagementDeltaPp.toFixed(1)}pp`}
-                    />
-                  </div>
-                </div>
-              </div>
-              {engagementSeries.length > 0 ? (
-                <AreaChartSvg values={engagementSeries} color="var(--sage)" />
-              ) : (
-                <div className="tile-empty">{tt("empty")}</div>
-              )}
-            </div>
-
+            {/* Row 2 — Users (left) / New-vs-returning composition (middle) /
+                Engagement (right). */}
             <div className="tile" data-col style={{ gridColumn: "span 4" }}>
               <div className="chart-head">
                 <div>
@@ -371,50 +356,34 @@ export default async function TrafficDashboardPage() {
                 </div>
               </div>
             </div>
+
+            <div className="tile" data-col style={{ gridColumn: "span 4" }}>
+              <div className="chart-head">
+                <div>
+                  <span className="tile-label">
+                    {tt("trends.engagement", { n: TIMESERIES_DAYS })}
+                  </span>
+                  <div className="chart-figure">
+                    <span className="v">{fmtPct(audience.engagementRate)}</span>
+                    <DeltaPill
+                      pct={audience.engagementDeltaPp}
+                      label={`${audience.engagementDeltaPp >= 0 ? "+" : ""}${audience.engagementDeltaPp.toFixed(1)}pp`}
+                    />
+                  </div>
+                </div>
+              </div>
+              {engagementSeries.length > 0 ? (
+                <AreaChartSvg values={engagementSeries} color="var(--sage)" />
+              ) : (
+                <div className="tile-empty">{tt("empty")}</div>
+              )}
+            </div>
           </>
         ) : (
           <div className="tile" style={{ gridColumn: "span 12" }}>
             <div className="tile-empty">{tt("empty")}</div>
           </div>
         )}
-
-        {/* ═══ PÁGINAS ═══ */}
-        <div className="sec-label">
-          <span className="txt">{tt("sections.pagesGeo")}</span>
-          <span className="rule" />
-        </div>
-
-        {/* Top landing pages — entry */}
-        <div className="tile" data-col style={{ gridColumn: "span 6" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("tiles.topLandingPages")}</span>
-            <span className="tile-sub">{tt("tiles.byEntrances")}</span>
-          </div>
-          {landingRows.length > 0 ? (
-            <Ptable
-              headers={[tt("tiles.colPage"), tt("tiles.colEntrances"), tt("tiles.colDelta")]}
-              rows={landingRows}
-            />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
-
-        {/* Exit pages — exit */}
-        <div className="tile" data-col style={{ gridColumn: "span 6" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("tiles.topExitPages")}</span>
-            <span className="tile-sub">{tt("tiles.byExits")}</span>
-          </div>
-          {exitRows.length > 0 ? (
-            <Ptable
-              headers={[tt("tiles.colPage"), tt("tiles.colExits"), tt("tiles.colDelta")]}
-              rows={exitRows}
-            />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
 
         {/* ═══ ADQUISICIÓN ═══ */}
         <div className="sec-label">
@@ -458,6 +427,44 @@ export default async function TrafficDashboardPage() {
           </div>
           {deviceRows.length > 0 ? (
             <SegBar rows={deviceRows} />
+          ) : (
+            <div className="tile-empty">{tt("empty")}</div>
+          )}
+        </div>
+
+        {/* ═══ PÁGINAS ═══ */}
+        <div className="sec-label">
+          <span className="txt">{tt("sections.pagesGeo")}</span>
+          <span className="rule" />
+        </div>
+
+        {/* Top landing pages — entry */}
+        <div className="tile" data-col style={{ gridColumn: "span 6" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("tiles.topLandingPages")}</span>
+            <span className="tile-sub">{tt("tiles.byEntrances")}</span>
+          </div>
+          {landingRows.length > 0 ? (
+            <Ptable
+              headers={[tt("tiles.colPage"), tt("tiles.colEntrances"), tt("tiles.colDelta")]}
+              rows={landingRows}
+            />
+          ) : (
+            <div className="tile-empty">{tt("empty")}</div>
+          )}
+        </div>
+
+        {/* Exit pages — exit */}
+        <div className="tile" data-col style={{ gridColumn: "span 6" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("tiles.topExitPages")}</span>
+            <span className="tile-sub">{tt("tiles.byExits")}</span>
+          </div>
+          {exitRows.length > 0 ? (
+            <Ptable
+              headers={[tt("tiles.colPage"), tt("tiles.colExits"), tt("tiles.colDelta")]}
+              rows={exitRows}
+            />
           ) : (
             <div className="tile-empty">{tt("empty")}</div>
           )}

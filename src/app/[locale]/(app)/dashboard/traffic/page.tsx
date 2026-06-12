@@ -387,17 +387,14 @@ export default async function TrafficDashboardPage() {
           emptyTile(tt("tiles.sessionsByChannel"))
         )}
 
-        {/* Top landing pages */}
+        {/* Geo — grouped with channels + device as a segmentation row */}
         <div className="tile" data-col style={{ gridColumn: "span 5" }}>
           <div className="tile-head">
-            <span className="tile-label">{tt("tiles.topLandingPages")}</span>
-            <span className="tile-sub">{tt("tiles.byEntrances")}</span>
+            <span className="tile-label">{tt("tiles.geo")}</span>
+            <span className="tile-sub">{tt("tiles.byCountry")}</span>
           </div>
-          {landingRows.length > 0 ? (
-            <Ptable
-              headers={[tt("tiles.colPage"), tt("tiles.colEntrances"), tt("tiles.colDelta")]}
-              rows={landingRows}
-            />
+          {geoRows.length > 0 ? (
+            <StackBars rows={geoRows} />
           ) : (
             <div className="tile-empty">{tt("empty")}</div>
           )}
@@ -415,13 +412,29 @@ export default async function TrafficDashboardPage() {
           )}
         </div>
 
-        {/* ═══ PÁGINAS Y GEOGRAFÍA ═══ */}
+        {/* ═══ PÁGINAS ═══ */}
         <div className="sec-label">
           <span className="txt">{tt("sections.pagesGeo")}</span>
           <span className="rule" />
         </div>
 
-        {/* Exit pages */}
+        {/* Top landing pages — entry */}
+        <div className="tile" data-col style={{ gridColumn: "span 6" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("tiles.topLandingPages")}</span>
+            <span className="tile-sub">{tt("tiles.byEntrances")}</span>
+          </div>
+          {landingRows.length > 0 ? (
+            <Ptable
+              headers={[tt("tiles.colPage"), tt("tiles.colEntrances"), tt("tiles.colDelta")]}
+              rows={landingRows}
+            />
+          ) : (
+            <div className="tile-empty">{tt("empty")}</div>
+          )}
+        </div>
+
+        {/* Exit pages — exit */}
         <div className="tile" data-col style={{ gridColumn: "span 6" }}>
           <div className="tile-head">
             <span className="tile-label">{tt("tiles.topExitPages")}</span>
@@ -432,19 +445,6 @@ export default async function TrafficDashboardPage() {
               headers={[tt("tiles.colPage"), tt("tiles.colExits"), tt("tiles.colDelta")]}
               rows={exitRows}
             />
-          ) : (
-            <div className="tile-empty">{tt("empty")}</div>
-          )}
-        </div>
-
-        {/* Geo */}
-        <div className="tile" data-col style={{ gridColumn: "span 6" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("tiles.geo")}</span>
-            <span className="tile-sub">{tt("tiles.byCountry")}</span>
-          </div>
-          {geoRows.length > 0 ? (
-            <StackBars rows={geoRows} />
           ) : (
             <div className="tile-empty">{tt("empty")}</div>
           )}

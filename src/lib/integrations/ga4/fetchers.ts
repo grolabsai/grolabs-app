@@ -92,6 +92,10 @@ export async function getSessionTimeseries(
     .slice()
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
+  // Drop the trailing not-yet-finalized day(s) (current UTC day is all-zero
+  // until GA4 processes it) so the lines don't cliff to zero at the right edge.
+  while (rows.length > 1 && rows[rows.length - 1].sessions === 0) rows.pop();
+
   const out: SessionTimeseriesPoint[] = [];
   for (let i = 0; i < rows.length; i++) {
     const window = rows.slice(Math.max(0, i - 6), i + 1);
@@ -191,8 +195,14 @@ export async function getAudienceSummary(
     };
   }
 
-  const observed = rows[rows.length - 1];
-  const base = rows.slice(0, -1);
+  // The current day (and any quiet trailing day) is all-zero — GA4 hasn't
+  // finalized it yet — so anchoring the headline on the latest *row* makes every
+  // metric read 0 with a -100% delta. Anchor instead on the most recent day that
+  // actually has sessions; the days before it form the baseline.
+  let obsIdx = rows.length - 1;
+  while (obsIdx > 0 && rows[obsIdx].sessions === 0) obsIdx--;
+  const observed = rows[obsIdx];
+  const base = rows.slice(0, obsIdx);
   const avg = (sel: (r: (typeof rows)[number]) => number) =>
     base.length > 0 ? base.reduce((s, r) => s + Number(sel(r)), 0) / base.length : 0;
 

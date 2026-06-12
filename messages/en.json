@@ -646,7 +646,7 @@
         "audienceMeta": "grouped · users & sessions",
         "acquisition": "Acquisition",
         "acquisitionMeta": "where sessions come from",
-        "pagesGeo": "Pages & geography",
+        "pagesGeo": "Pages",
         "conversions": "Conversions & funnels",
         "conversionsMeta": "requires conversion tracking",
         "revenue": "Goals & revenue",

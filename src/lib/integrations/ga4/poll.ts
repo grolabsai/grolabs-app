@@ -123,7 +123,7 @@ function parseTrafficRows(
  *              `entrances` metric, so sessions-that-started-on-a-page is the
  *              equivalent). GA4 has NO exits metric at all, so exits stays 0.
  */
-function mergePageRows(
+export function mergePageRows(
   instanceId: number,
   date: string,
   pageR: RunReportResponse,

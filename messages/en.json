@@ -622,6 +622,95 @@
       "toastSuccess": "Synonym added: {query} ↔ {synonym}",
       "toastFailed": "Could not save synonym",
       "requiresWriteKey": "Requires the Write (Admin) API key"
+    },
+    "tabs": {
+      "traffic": "Traffic",
+      "search": "Search"
+    },
+    "traffic": {
+      "header": {
+        "property": "GA4 · Property",
+        "realtime": "Realtime",
+        "windowDays": "Last {n} days",
+        "windowBaseline": "vs. 7-day baseline"
+      },
+      "sections": {
+        "audience": "Audience",
+        "audienceMeta": "grouped · users & sessions",
+        "acquisition": "Acquisition",
+        "acquisitionMeta": "where sessions come from",
+        "pagesGeo": "Pages & geography",
+        "conversions": "Conversions & funnels",
+        "conversionsMeta": "requires conversion tracking",
+        "revenue": "Goals & revenue",
+        "revenueMeta": "requires revenue data",
+        "trends": "Trends",
+        "trendsMeta": "last {n} days",
+        "alerts": "Alerts"
+      },
+      "tiles": {
+        "usersComposition": "Users · composition",
+        "usersSub": "new vs returning",
+        "newUsers": "New",
+        "returningUsers": "Returning",
+        "sessionsEngagement": "Sessions · engagement",
+        "engagementRateSub": "rate {pct}",
+        "engaged": "Engaged",
+        "nonEngaged": "Non-engaged",
+        "perSession": "Per session · depth",
+        "avgDuration": "Avg. session duration",
+        "viewsPerSession": "Views per session",
+        "sessionsByChannel": "Sessions by channel",
+        "totalSessions": "{n} total",
+        "topLandingPages": "Top landing pages",
+        "byEntrances": "by entrances",
+        "deviceMix": "Device mix",
+        "topExitPages": "Top exit pages",
+        "byExits": "by exits",
+        "geo": "Geography",
+        "byCountry": "by country",
+        "colPage": "Page",
+        "colEntrances": "Entrances",
+        "colExits": "Exits",
+        "colDelta": "Δ"
+      },
+      "soon": {
+        "badge": "Coming soon",
+        "purchaseFunnel": "Purchase funnel",
+        "conversionRate": "Conversion rate",
+        "checkoutCompletion": "Checkout completion",
+        "goalCompletions": "Goal completions",
+        "revenueByChannel": "Revenue by channel",
+        "cartAbandonment": "Cart abandonment"
+      },
+      "trends": {
+        "sessions": "Sessions · {n} days",
+        "engagement": "Engagement · {n} days",
+        "users": "Users · {n} days"
+      },
+      "alerts": {
+        "tileSessions": "Sessions",
+        "tileEngagement": "Engagement rate",
+        "tileTrafficShare": "Channel mix",
+        "statusOk": "Stable",
+        "statusFiring": "Alert",
+        "vsBaseline": "vs baseline {value}",
+        "trafficShareHint": "channel-mix shift",
+        "inboxTitle": "Active alerts",
+        "inboxEmpty": "No active alerts",
+        "acknowledge": "Acknowledge",
+        "acknowledged": "Acknowledged",
+        "metricSessions": "Sessions drop",
+        "metricEngagement": "Engagement drop",
+        "metricTrafficShare": "Channel-mix shift",
+        "observed": "observed {observed} · baseline {baseline} · Δ {delta}%"
+      },
+      "empty": "No data",
+      "notConnected": {
+        "title": "Connect Google Analytics",
+        "body": "Connect a GA4 property to see this instance’s traffic, audience, and alerts.",
+        "cta": "Connect Google Analytics"
+      }
     }
   },
   "analytics": {

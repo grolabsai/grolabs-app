@@ -59,7 +59,10 @@ export async function isGa4Connected(instanceId: number): Promise<boolean> {
 export interface SessionTimeseriesPoint {
   date: string;
   sessions: number;
+  users: number;
   engagement_rate: number;
+  avg_session_duration_sec: number;
+  views_per_session: number;
   rolling_avg_sessions: number; // 7-day trailing average
 }
 
@@ -71,7 +74,9 @@ export async function getSessionTimeseries(
   // Pull `days + 6` so the leftmost rolling-avg points have 7 prior days.
   const { data } = await supabase
     .from("ga4_session_daily")
-    .select("date, sessions, engagement_rate")
+    .select(
+      "date, sessions, users, engagement_rate, avg_session_duration_sec, views_per_session",
+    )
     .eq("instance_id", instanceId)
     .order("date", { ascending: false })
     .limit(days + 6);
@@ -79,7 +84,10 @@ export async function getSessionTimeseries(
   const rows = ((data ?? []) as Array<{
     date: string;
     sessions: number;
+    users: number;
     engagement_rate: number;
+    avg_session_duration_sec: number;
+    views_per_session: number;
   }>)
     .slice()
     .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -92,12 +100,182 @@ export async function getSessionTimeseries(
     out.push({
       date: rows[i].date,
       sessions: rows[i].sessions,
+      users: rows[i].users,
       engagement_rate: Number(rows[i].engagement_rate),
+      avg_session_duration_sec: Number(rows[i].avg_session_duration_sec),
+      views_per_session: Number(rows[i].views_per_session),
       rolling_avg_sessions: avg,
     });
   }
   // Return only the trailing `days` for display (drops the warmup).
   return out.slice(-days);
+}
+
+// ── Audience summary (latest finalized day vs 7-day baseline) ─────────────────
+
+export interface AudienceSummary {
+  hasData: boolean;
+  users: number;
+  usersDeltaPct: number;
+  newUsers: number;
+  newUsersDeltaPct: number;
+  returningUsers: number;
+  returningUsersDeltaPct: number;
+  sessions: number;
+  sessionsDeltaPct: number;
+  engagedSessions: number;
+  nonEngagedSessions: number;
+  engagementRate: number; // 0..1
+  engagementDeltaPp: number; // signed percentage points
+  avgSessionDurationSec: number;
+  durationDeltaPct: number;
+  viewsPerSession: number;
+  viewsDeltaPct: number;
+}
+
+function pctDelta(observed: number, baseline: number): number {
+  return baseline > 0 ? ((observed - baseline) / baseline) * 100 : 0;
+}
+
+/**
+ * One row of headline audience metrics for the most-recent finalized day,
+ * each with a delta versus the trailing 7-day average. Powers the two
+ * Audience donuts and the per-session depth tile.
+ */
+export async function getAudienceSummary(
+  instanceId: number,
+): Promise<AudienceSummary> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("ga4_session_daily")
+    .select(
+      "date, sessions, users, new_users, returning_users, engaged_sessions, engagement_rate, avg_session_duration_sec, views_per_session",
+    )
+    .eq("instance_id", instanceId)
+    .order("date", { ascending: false })
+    .limit(8);
+
+  const rows = ((data ?? []) as Array<{
+    date: string;
+    sessions: number;
+    users: number;
+    new_users: number;
+    returning_users: number;
+    engaged_sessions: number;
+    engagement_rate: number;
+    avg_session_duration_sec: number;
+    views_per_session: number;
+  }>)
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  if (rows.length === 0) {
+    return {
+      hasData: false,
+      users: 0,
+      usersDeltaPct: 0,
+      newUsers: 0,
+      newUsersDeltaPct: 0,
+      returningUsers: 0,
+      returningUsersDeltaPct: 0,
+      sessions: 0,
+      sessionsDeltaPct: 0,
+      engagedSessions: 0,
+      nonEngagedSessions: 0,
+      engagementRate: 0,
+      engagementDeltaPp: 0,
+      avgSessionDurationSec: 0,
+      durationDeltaPct: 0,
+      viewsPerSession: 0,
+      viewsDeltaPct: 0,
+    };
+  }
+
+  const observed = rows[rows.length - 1];
+  const base = rows.slice(0, -1);
+  const avg = (sel: (r: (typeof rows)[number]) => number) =>
+    base.length > 0 ? base.reduce((s, r) => s + Number(sel(r)), 0) / base.length : 0;
+
+  const engagementRate = Number(observed.engagement_rate);
+  const baseEr = avg((r) => Number(r.engagement_rate));
+
+  return {
+    hasData: true,
+    users: observed.users,
+    usersDeltaPct: pctDelta(observed.users, avg((r) => r.users)),
+    newUsers: observed.new_users,
+    newUsersDeltaPct: pctDelta(observed.new_users, avg((r) => r.new_users)),
+    returningUsers: observed.returning_users,
+    returningUsersDeltaPct: pctDelta(
+      observed.returning_users,
+      avg((r) => r.returning_users),
+    ),
+    sessions: observed.sessions,
+    sessionsDeltaPct: pctDelta(observed.sessions, avg((r) => r.sessions)),
+    engagedSessions: observed.engaged_sessions,
+    nonEngagedSessions: Math.max(
+      0,
+      observed.sessions - observed.engaged_sessions,
+    ),
+    engagementRate,
+    engagementDeltaPp: (engagementRate - baseEr) * 100,
+    avgSessionDurationSec: Number(observed.avg_session_duration_sec),
+    durationDeltaPct: pctDelta(
+      Number(observed.avg_session_duration_sec),
+      avg((r) => Number(r.avg_session_duration_sec)),
+    ),
+    viewsPerSession: Number(observed.views_per_session),
+    viewsDeltaPct: pctDelta(
+      Number(observed.views_per_session),
+      avg((r) => Number(r.views_per_session)),
+    ),
+  };
+}
+
+// ── Device mix (latest finalized day) ────────────────────────────────────────
+
+export interface DeviceMixRow {
+  device: string;
+  sessions: number;
+  share: number; // 0..1
+}
+
+export async function getDeviceMix(
+  instanceId: number,
+): Promise<DeviceMixRow[]> {
+  const supabase = await createClient();
+  const { data: latest } = await supabase
+    .from("ga4_device_daily")
+    .select("date")
+    .eq("instance_id", instanceId)
+    .order("date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!latest) return [];
+  const observedDate = latest.date as string;
+
+  const { data } = await supabase
+    .from("ga4_device_daily")
+    .select("device_category, sessions")
+    .eq("instance_id", instanceId)
+    .eq("date", observedDate);
+
+  const agg = new Map<string, number>();
+  for (const r of (data ?? []) as Array<{
+    device_category: string;
+    sessions: number;
+  }>) {
+    agg.set(r.device_category, (agg.get(r.device_category) ?? 0) + r.sessions);
+  }
+  const total = [...agg.values()].reduce((s, v) => s + v, 0);
+
+  return [...agg.entries()]
+    .map(([device, sessions]) => ({
+      device,
+      sessions,
+      share: total > 0 ? sessions / total : 0,
+    }))
+    .sort((a, b) => b.sessions - a.sessions);
 }
 
 // ── Channels ─────────────────────────────────────────────────────────────────

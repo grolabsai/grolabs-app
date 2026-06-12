@@ -351,6 +351,22 @@ The "Active Users right now" widget on the daily digest screen calls the GA4 Rea
 
 ## 8. Daily digest screen at `/dashboard/traffic`
 
+**Status: implemented** (the earlier "barebones data-layer exerciser" was replaced
+with the GroLabs "insights" design — a dark glass dashboard ported from the design
+handoff). It is the `Traffic` tab of the tabbed `/dashboard`; the legacy Algolia
+no-results dashboard is the `Search` tab at `/dashboard/search`. Realtime is the
+header `En vivo` indicator (30s poll, degrades to `—`). The reveal animation and
+the live realtime poll are the only client pieces; every tile is server-rendered
+from the `src/lib/integrations/ga4/fetchers.ts` data layer with SVG geometry built
+at render time (`src/components/dashboard/insights/`).
+
+Because GA4 v1 collects no e-commerce/conversion data (deferred to
+`ga4-conversions.md`), the **Conversiones y embudos** (purchase funnel, CVR gauge,
+checkout completion) and **Objetivos e ingresos** (goal completions, revenue by
+channel, cart abandonment) sections render as greyed `Próximamente` shells with no
+numbers — the design's full layout is preserved without fabricated values. Wire
+them to real data when conversion tracking lands.
+
 Layout per `docs/design/dashboard.md`. Functional content:
 
 - **Active users right now** widget (live, 30s refresh)

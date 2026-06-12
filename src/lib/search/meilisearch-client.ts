@@ -276,6 +276,53 @@ export async function deleteIndex(instanceId: number): Promise<void> {
   }
 }
 
+// ── Index settings (external-platform / BYO) ─────────────────────────────────
+
+/** The subset of Meilisearch index settings a merchant can read/declare via
+ *  the external-platform API. Mirrors Meilisearch's `/indexes/{uid}/settings`. */
+export type UpdatableIndexSettings = {
+  searchableAttributes?: string[];
+  filterableAttributes?: string[];
+  sortableAttributes?: string[];
+  synonyms?: Record<string, string[]>;
+  stopWords?: string[];
+};
+
+/** Read the live index settings for an instance (defaulting any unset field). */
+export async function getIndexSettings(
+  instanceId: number,
+): Promise<Required<UpdatableIndexSettings>> {
+  const client = getClient();
+  try {
+    const s = await client.index(indexUidFor(instanceId)).getSettings();
+    return {
+      searchableAttributes: (s.searchableAttributes ?? []) as string[],
+      filterableAttributes: (s.filterableAttributes ?? []) as string[],
+      sortableAttributes: (s.sortableAttributes ?? []) as string[],
+      synonyms: (s.synonyms ?? {}) as Record<string, string[]>,
+      stopWords: (s.stopWords ?? []) as string[],
+    };
+  } catch (err) {
+    throw new MeilisearchOpError(`getIndexSettings(${instanceId}) failed`, err);
+  }
+}
+
+/** Apply a partial settings update. Returns the Meilisearch task UID. */
+export async function updateIndexSettings(
+  instanceId: number,
+  settings: UpdatableIndexSettings,
+): Promise<TaskRef> {
+  const client = getClient();
+  try {
+    const task = await client
+      .index(indexUidFor(instanceId))
+      .updateSettings(settings);
+    return { taskUid: task.taskUid };
+  } catch (err) {
+    throw new MeilisearchOpError(`updateIndexSettings(${instanceId}) failed`, err);
+  }
+}
+
 // ── Document operations (Stage 1) ────────────────────────────────────────────
 
 export type TaskRef = { taskUid: number };
@@ -330,6 +377,32 @@ export async function deleteAllDocuments(instanceId: number): Promise<TaskRef> {
     return { taskUid: task.taskUid };
   } catch (err) {
     throw new MeilisearchOpError(`deleteAllDocuments(${instanceId}) failed`, err);
+  }
+}
+
+/**
+ * Delete a batch of documents by id in a single Meilisearch task. The ids are
+ * the index's primary key (`id`) — passed as strings/numbers, matching what was
+ * ingested. Empty input is a no-op success (`taskUid: -1`).
+ */
+export async function deleteDocuments(
+  instanceId: number,
+  documentIds: Array<string | number>,
+): Promise<TaskRef> {
+  if (documentIds.length === 0) return { taskUid: -1 };
+  const client = getClient();
+  try {
+    // The index primary key (`id`) is stored as text by the document mapper,
+    // so delete by the stringified ids. Coercing to a homogeneous string[]
+    // also satisfies meilisearch-js's `DocumentsIds` (string[] | number[]).
+    const ids = documentIds.map((d) => String(d));
+    const task = await client.index(indexUidFor(instanceId)).deleteDocuments(ids);
+    return { taskUid: task.taskUid };
+  } catch (err) {
+    throw new MeilisearchOpError(
+      `deleteDocuments(${instanceId}, ${documentIds.length}) failed`,
+      err,
+    );
   }
 }
 

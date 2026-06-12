@@ -3,16 +3,10 @@ import type { NextRequest } from "next/server";
 import { authenticateWriteKey } from "@/lib/byo/auth";
 import {
   ensureIndex,
-  DEFAULT_INDEX_SETTINGS,
-  upsertDocuments,
+  getIndexSettings,
+  updateIndexSettings,
+  type UpdatableIndexSettings,
 } from "@/lib/search/meilisearch-client";
-
-// Stubs — getIndexSettings/updateIndexSettings/UpdatableIndexSettings were
-// removed from meilisearch-client; this route needs a refactor.
-// Temporarily aliasing to avoid build failure.
-const getIndexSettings = async (_id: number) => DEFAULT_INDEX_SETTINGS;
-const updateIndexSettings = async (_id: number, _s: unknown) => ({ taskUid: 0 });
-type UpdatableIndexSettings = typeof DEFAULT_INDEX_SETTINGS;
 import { recordBackendOperation } from "@/lib/observability/backend-operation";
 
 export const runtime = "nodejs";
@@ -71,8 +65,7 @@ export async function PATCH(req: NextRequest) {
   const auth = await authenticateWriteKey(req, b.instance_id);
   if (!auth.ok) return auth.response;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const update: any = {};
+  const update: UpdatableIndexSettings = {};
   const searchable = strArray(b.searchableAttributes);
   if (searchable) update.searchableAttributes = searchable;
   const filterable = strArray(b.filterableAttributes);

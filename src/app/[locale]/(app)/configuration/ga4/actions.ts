@@ -37,6 +37,11 @@ async function resolveInstance(): Promise<{
 export type SavePropertyResult = {
   ok: boolean;
   error?: string;
+  /**
+   * Outcome of the immediate data pull kicked off by saving. `undefined` only
+   * if the save itself failed before we got there.
+   */
+  pull?: { ok: boolean; rows: number; error?: string };
 };
 
 /**
@@ -82,7 +87,33 @@ export async function saveGa4PropertyId(args: {
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/configuration/ga4");
-  return { ok: true };
+
+  // Saving the property ID is the natural moment to fetch data — otherwise the
+  // dashboard stays empty until the daily 06:00 UTC cron. Pull immediately
+  // (best-effort: the save already succeeded, so a pull failure doesn't fail
+  // the save — we just report it back). pullForInstance never throws.
+  const pull = await pullForInstance({
+    instanceId: ctx.instanceId,
+    propertyId: trimmed,
+  });
+  if (pull.ok) {
+    await runAnomalyDetection({ instanceId: ctx.instanceId });
+  }
+  revalidatePath("/dashboard/traffic");
+
+  const rows =
+    pull.rowsBySurface.session +
+    pull.rowsBySurface.traffic +
+    pull.rowsBySurface.page +
+    pull.rowsBySurface.geo +
+    pull.rowsBySurface.device;
+
+  return {
+    ok: true,
+    pull: pull.ok
+      ? { ok: true, rows }
+      : { ok: false, rows: 0, error: pull.error },
+  };
 }
 
 // ── Test connection ──────────────────────────────────────────────────────────

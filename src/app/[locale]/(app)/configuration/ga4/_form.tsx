@@ -100,6 +100,14 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
         return;
       }
       toast.success(t("toast.propertyIdSaved"));
+      // Saving also pulls data immediately — report what came back.
+      if (r.pull?.ok) {
+        toast.success(t("toast.pullSuccess"), {
+          description: t("toast.pullSummary", { rows: r.pull.rows }),
+        });
+      } else if (r.pull && !r.pull.ok) {
+        toast.error(t("toast.pullFailed"), { description: r.pull.error });
+      }
     });
   }
 

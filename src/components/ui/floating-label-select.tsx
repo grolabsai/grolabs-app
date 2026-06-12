@@ -27,14 +27,22 @@ const FloatingLabelSelect = React.forwardRef<
   FloatingLabelSelectProps
 >(({ label, id, className, wrapperClassName, children, ...props }, ref) => {
   return (
-    <div className={cn("relative", wrapperClassName)}>
+    <div
+      className={cn(
+        "relative",
+        // On focus, the label turns accent-yellow to match the select border.
+        "[&:focus-within>label]:text-[color:var(--gl-accent)]",
+        wrapperClassName,
+      )}
+    >
       <label
         htmlFor={id}
-        style={{ color: "var(--gl-text-tertiary)" }}
         className={cn(
           "absolute -top-[7px] left-[10px] z-10",
           "inline-flex items-center gap-1 px-1.5",
           "bg-[var(--gl-surface)]",
+          // Base color as a class (not inline) so the focus-within variant wins.
+          "text-[color:var(--gl-text-tertiary)] transition-colors",
           "text-[10px] font-medium uppercase tracking-[0.08em]",
           "leading-none",
           "pointer-events-none",

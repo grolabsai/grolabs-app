@@ -1,0 +1,41 @@
+name: CI
+
+# Fast, dependency-free gate on every PR into main: typecheck + lint + build.
+# Catches the "broke the build / type regression" class before it can be merged
+# (and therefore before it auto-deploys to production from main).
+#
+# This does NOT catch runtime render crashes (e.g. a missing React provider) —
+# build + typecheck pass for those because the types are valid. The Smoke
+# workflow (smoke.yml) covers that class by actually loading the pages.
+
+on:
+  pull_request:
+    branches: [main]
+
+# One run per branch; new pushes cancel the previous run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time placeholders — the real values live in Vercel. The app
+          # reads Supabase lazily on the client, so dummy values let `next build`
+          # compile every route without needing production secrets in CI.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-build-only

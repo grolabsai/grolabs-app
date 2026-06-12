@@ -1,0 +1,70 @@
+name: Smoke
+
+# Loads the important authenticated pages on a DEPLOYED environment and fails if
+# any hits the error boundary. This is the layer that catches runtime render
+# crashes (e.g. a missing React provider) that build + typecheck cannot.
+#
+# Runs:
+#   - on demand (workflow_dispatch) — e.g. right after a deploy
+#   - on a schedule — synthetic monitoring of production
+#
+# Requires two repo secrets (see tests/smoke/README.md):
+#   SMOKE_EMAIL, SMOKE_PASSWORD
+# Defaults to production; override ADMIN_URL / APP_URL to point at a preview.
+
+on:
+  workflow_dispatch:
+    inputs:
+      admin_url:
+        description: "Admin base URL (default production)"
+        required: false
+      app_url:
+        description: "RRE app base URL (default production)"
+        required: false
+  schedule:
+    - cron: "0 */3 * * *" # every 3 hours
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # Skip cleanly (no red X) when the test account isn't configured yet.
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -n "${{ secrets.SMOKE_PASSWORD }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::SMOKE_EMAIL/SMOKE_PASSWORD not set — skipping smoke tests. See tests/smoke/README.md."
+          fi
+
+      - run: npm ci
+        if: steps.cfg.outputs.ready == 'true'
+      - run: npx playwright install --with-deps chromium
+        if: steps.cfg.outputs.ready == 'true'
+      - name: Run smoke tests
+        if: steps.cfg.outputs.ready == 'true'
+        run: npm run test:smoke
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          ADMIN_URL: ${{ github.event.inputs.admin_url }}
+          APP_URL: ${{ github.event.inputs.app_url }}
+
+      - name: Upload report on failure
+        if: failure() && steps.cfg.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

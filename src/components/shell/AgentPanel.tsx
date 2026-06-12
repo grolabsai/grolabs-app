@@ -103,7 +103,7 @@ export function AgentPanel() {
           title={t("title")}
           style={{
             flex: 1,
-            background: "#ffffff",
+            background: "var(--gl-panel)",
             border: "1px solid var(--gl-border)",
             borderRadius: 14,
             boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
@@ -197,7 +197,7 @@ export function AgentPanel() {
     <div
       style={{
         flex: 1,
-        background: "#ffffff",
+        background: "var(--gl-panel)",
         border: "1px solid var(--gl-border)",
         borderRadius: 14,
         boxShadow: "0 4px 12px rgba(0,0,0,0.06)",

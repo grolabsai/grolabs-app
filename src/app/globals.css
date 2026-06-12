@@ -107,6 +107,9 @@ svg {
      to the same value as surface so nothing nests as a darker fill. */
   --gl-surface-alt: #1c1d24;
   --gl-surface-hover: #22232a;
+  /* Agent panel surface — a soft gray, intentionally a step off the canvas so
+     the panel reads as its own region (differentiated, but not stark white). */
+  --gl-panel: #24252d;
   --gl-border: rgba(255, 255, 255, 0.08);
   --gl-border-strong: rgba(255, 255, 255, 0.16);
 
@@ -204,6 +207,9 @@ svg {
      "alt" container reads as plain white, not off-white-gray. */
   --gl-surface-alt: #FFFFFF;
   --gl-surface-hover: #EFEFEE;
+  /* Agent panel: soft gray so it's clearly its own region next to the white
+     canvas, without the harsh white-on-dark contrast it had before. */
+  --gl-panel: #EAEAEE;
   --gl-border: rgba(0, 0, 0, 0.08);
   --gl-border-strong: rgba(0, 0, 0, 0.16);
 

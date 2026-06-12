@@ -1560,6 +1560,18 @@
         "propertyId": "ID de propiedad GA4",
         "propertyIdHint": "El ID numérico de tu propiedad GA4 (Admin → Property settings). Solo dígitos."
       },
+      "postConnect": {
+        "stepBadge": "Paso 1 de 2 · Cuenta conectada",
+        "intro": "Conectar tu cuenta de Google fue el paso 1. Ahora completa el paso 2: indícale a GroLabs de qué propiedad de GA4 extraer el tráfico — una cuenta de Google puede tener varias, así que necesitamos la exacta.",
+        "step2Heading": "Paso 2 · Elige la propiedad a monitorear",
+        "howToTitle": "Cómo encontrar el ID de tu propiedad GA4",
+        "howToStep1": "Abre analytics.google.com e inicia sesión con la misma cuenta de Google que acabas de conectar.",
+        "howToStep2": "Haz clic en el engranaje de Admin (⚙) en la esquina inferior izquierda.",
+        "howToStep3": "En la columna Propiedad, selecciona el sitio web que quieres y abre Configuración de la propiedad.",
+        "howToStep4": "Copia el ID de propiedad que aparece arriba — un número de 9 dígitos.",
+        "howToWarning": "Usa el ID de propiedad de solo dígitos (ej. 498123456). NO es el ID de medición que empieza con «G-».",
+        "openAnalytics": "Abrir Google Analytics"
+      },
       "status": {
         "connected": "Conectado",
         "lastPullOk": "Última extracción hace {time} · {latency} ms",

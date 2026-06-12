@@ -1560,6 +1560,18 @@
         "propertyId": "GA4 property ID",
         "propertyIdHint": "Numeric ID of your GA4 property (Admin → Property settings). Digits only."
       },
+      "postConnect": {
+        "stepBadge": "Step 1 of 2 · Account connected",
+        "intro": "Connecting your Google account was step 1. Now finish step 2: tell GroLabs which GA4 property to pull traffic from — a Google account can have several, so we need the exact one.",
+        "step2Heading": "Step 2 · Choose the property to watch",
+        "howToTitle": "How to find your GA4 property ID",
+        "howToStep1": "Open analytics.google.com and sign in with the same Google account you just connected.",
+        "howToStep2": "Click the Admin gear (⚙) in the bottom-left corner.",
+        "howToStep3": "In the Property column, select the website you want, then open Property settings.",
+        "howToStep4": "Copy the Property ID shown at the top — a 9-digit number.",
+        "howToWarning": "Use the digits-only Property ID (e.g. 498123456). It is NOT the Measurement ID that starts with “G-”.",
+        "openAnalytics": "Open Google Analytics"
+      },
       "status": {
         "connected": "Connected",
         "lastPullOk": "Last pull {time} ago · {latency} ms",

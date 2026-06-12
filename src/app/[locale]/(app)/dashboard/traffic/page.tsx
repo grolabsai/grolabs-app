@@ -89,14 +89,6 @@ export default async function TrafficDashboardPage() {
       <div className="s-page-content" style={{ maxWidth: "none" }}>
         {Header}
         <InsightsReveal>
-          <div className="dash-head">
-            <div className="head-left">
-              <div className="brand">
-                <span className="mk">G</span>
-                <span className="nm">GRO</span>
-              </div>
-            </div>
-          </div>
           <div className="tile connect">
             <h2>{tt("notConnected.title")}</h2>
             <p>{tt("notConnected.body")}</p>
@@ -209,11 +201,6 @@ export default async function TrafficDashboardPage() {
         {/* ── Header strip ── */}
         <div className="dash-head">
           <div className="head-left">
-            <div className="brand">
-              <span className="mk">G</span>
-              <span className="nm">GRO</span>
-            </div>
-            <div className="head-divider" />
             <div className="head-prop">
               <span className="eyebrow">{tt("header.property")}</span>
               <span className="name">

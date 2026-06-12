@@ -12,8 +12,10 @@
   --lilac: #caa6e0;
   --g-light: #d6d3ca;
   --g-dark: #74747c;
-  --tile: rgba(18, 18, 22, 0.92);
-  --tile-alt: rgba(13, 13, 16, 0.92);
+  /* Blocks read as a light overlay lifted off the dark page (not dark glass),
+     so they have real contrast. Border-less; defined by fill + drop shadow. */
+  --tile: rgba(255, 255, 255, 0.055);
+  --tile-alt: rgba(255, 255, 255, 0.055);
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.14);
   --track: rgba(255, 255, 255, 0.05);
@@ -37,7 +39,7 @@
   font-family: var(--gl-font);
 }
 .gro-id[data-bg="dark"] {
-  background: #0c0c0f;
+  background: #0a0a0a;
   padding: 28px 20px;
   border-radius: 14px;
 }
@@ -56,14 +58,14 @@
 }
 .gro-id .tile {
   background: var(--tile);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 12px;
   padding: 14px 16px;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 8px 24px rgba(0, 0, 0, 0.18);
+  /* No border and no inset top-highlight (that 1px white line read as a stroke);
+     the block is defined by the lighter fill + a single soft drop shadow. */
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -74,7 +76,7 @@
 .gro-id .dash-head {
   grid-column: span 12;
   background: var(--tile-alt);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 12px;
   padding: 13px 18px;
   display: flex;
@@ -82,7 +84,7 @@
   justify-content: space-between;
   gap: 16px;
   backdrop-filter: blur(3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   flex-wrap: wrap;
 }
 .gro-id .head-left {
@@ -223,13 +225,13 @@
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--t3);
+  /* Brighter (--t3 → --t2) for more contrast against the page. */
+  color: var(--t2);
   white-space: nowrap;
 }
+/* The trailing divider line to the right of each section title is removed. */
 .gro-id .sec-label .rule {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
+  display: none;
 }
 .gro-id .sec-label .meta {
   font-family: var(--id-mono);
@@ -237,6 +239,8 @@
   color: var(--t4);
   letter-spacing: 0.04em;
   white-space: nowrap;
+  /* With the rule gone, push the meta to the right edge. */
+  margin-left: auto;
 }
 
 /* Tile header */

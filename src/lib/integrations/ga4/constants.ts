@@ -19,6 +19,15 @@ export const GA4_OAUTH_SCOPES = [
 // so 3 days of overlap covers the common cases without thrashing.
 export const POLL_TRAILING_DAYS = 3;
 
+// Wider window for a manual / on-save pull, so the dashboard's rolling charts
+// have history immediately instead of just the last 3 days. The daily cron
+// keeps refreshing the trailing window; older days persist from this backfill.
+// 7 days = a full "last 7 days" view; kept modest because days are pulled
+// sequentially (GA4 caps concurrent requests per property) so a much larger
+// window risks the serverless function timeout. Larger backfills (30d) want a
+// batched/off-request job — see the date-range work.
+export const BACKFILL_DAYS = 7;
+
 // History fetched for charts. 14 days for the rolling-avg overlay.
 export const TIMESERIES_DAYS = 14;
 

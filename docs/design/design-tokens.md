@@ -169,6 +169,7 @@ These have **two values**: dark (default) and light (`.gl-light`, renamed from
 | `--gl-surface` | Cards / inputs | `#1c1d24` | `#FFFFFF` | `--s-surface` |
 | `--gl-surface-alt` | Alias → surface | `#1c1d24` | `#FFFFFF` | `--s-surface-alt` |
 | `--gl-surface-hover` | Hover surface | `#22232a` | `#EFEFEE` | `--s-surface-hover` |
+| `--gl-panel` | Assistant panel surface (a deliberate step off the canvas so the panel reads as its own region) | `#24252d` | `#EAEAEE` | — |
 | `--gl-border` | Default border | `rgba(255,255,255,0.08)` | `rgba(0,0,0,0.08)` | `--s-border` |
 | `--gl-border-strong` | Stronger border | `rgba(255,255,255,0.16)` | `rgba(0,0,0,0.16)` | `--s-border-strong` |
 

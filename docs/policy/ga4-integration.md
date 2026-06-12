@@ -499,10 +499,7 @@ right-side Assistant panel via a drop-in shim — import `toast` from
 ## 15. OPEN — alert management is undecided (UI removed 2026-06-12)
 
 The **Alerts** section was removed from `/dashboard/traffic` (the three top-3
-alert tiles + the inbox). The dashboard restructured to: Row 1 = Sessions / Avg
-session duration / Page views per session; Row 2 = Engagement (line) / Users
-(line) / New-vs-returning donut; then Pages, then Acquisition (channels / geo /
-device). Coming-soon stays pinned at the bottom.
+alert tiles + the inbox). The dashboard's final layout is in §16.
 
 **Why removed, and what must be decided:** §6 *specs* default thresholds (±15%
 sessions, −10pp engagement, >20pp share), but those were never ratified with
@@ -519,3 +516,38 @@ alerting UI we need to decide:**
 
 Until that conversation happens, alerting stays out of the UI. The anomaly job
 and `ga4_alert` rows are untouched in the DB; this is purely a UI removal.
+
+## 16. Dashboard layout + visual conventions (final, 2026-06-12)
+
+Authoritative current state of `/dashboard/traffic` — supersedes the layout
+bullets in §8. Section order, top → bottom:
+
+1. **Header strip** — property id · **Refresh data** button (on-demand pull) ·
+   realtime active-users indicator. Below it, a single-line freshness label:
+   "Data through <yesterday> · last updated <pull time> UTC" (never wraps).
+2. **Traffic** (section meta: "yesterday · vs prior 7-day avg")
+   - Row 1: **Sessions · Avg session duration · Page views / session** — big
+     value (yesterday) + delta (vs prior 7-day avg) + area chart.
+   - Row 2: **Users** (line) · **New-vs-returning composition** (donut) ·
+     **Engagement** (line).
+   - Every line chart uses the same `AreaChartSvg` (faint gridlines + gradient
+     fade + end dot). The `Sparkline` is retired from this page.
+3. **Acquisition** — Sessions by channel · Geography · Device mix. The device-mix
+   legend uses a colored **device glyph** (Monitor / Smartphone / Tablet / Tv,
+   `DeviceGlyph` in `charts.tsx`) in place of the dot, with proper-cased names.
+4. **Pages** — Top landing pages · Top exit pages. `"/"` renders as **"Home"**;
+   the exit-pages tile is empty (GA4 has no exits metric — §14).
+5. **Conversions & funnels** and **Goals & revenue** — gray `Próximamente`
+   shells, pinned to the bottom (pending e-commerce tracking).
+
+**Tabs.** The Traffic / Search tabs carry left-nav-style icons: the active tab's
+icon is yellow (`#fae194`), the inactive tab's icon inherits the font color.
+
+**Visuals (`insights.css`).** Blocks are **border-less**, defined by a
+lighter-than-page fill + a single soft drop shadow — tokens `--page-bg`,
+`--tile`, `--block-shadow`. Section titles have no trailing divider line.
+Coming-soon badges are **gray** (yellow `--accent` is reserved for "act on
+this"). The donut container's `class="ring"` collides with Tailwind's `ring`
+utility (it paints a blue box-shadow — the long-standing "blue square");
+`.gro-id .ring { box-shadow: none }` suppresses it. The right-side Assistant
+panel uses the theme-aware `--gl-panel` gray (not stark white) — `globals.css`.

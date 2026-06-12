@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { ChevronLeft, RefreshCw, CheckCheck, Undo2 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 

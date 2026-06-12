@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { Lock, Unlock } from "lucide-react";
 
 import { Icon } from "@/components/ui/icon";

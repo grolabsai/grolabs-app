@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { CheckCircle2, XCircle, Eye, EyeOff, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

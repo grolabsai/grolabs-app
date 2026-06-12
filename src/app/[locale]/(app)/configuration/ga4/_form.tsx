@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { CheckCircle2, XCircle, RefreshCw, Unplug, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

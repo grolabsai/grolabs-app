@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { CheckCircle2, ExternalLink, AlertTriangle, AlertCircle } from "lucide-react";
 
 import { Icon } from "@/components/ui/icon";

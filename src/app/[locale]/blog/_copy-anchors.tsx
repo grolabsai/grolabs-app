@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 
 /**
  * Add a "copy link" affordance next to every h2/h3 inside the rendered

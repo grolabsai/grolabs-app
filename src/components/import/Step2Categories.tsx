@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 
 import type { Brand, Category } from "@/components/import/ImportWizard";
 import { ProductThumbnail } from "@/components/import/ProductThumbnail";

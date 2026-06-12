@@ -259,13 +259,23 @@ export function Sparkline({
 }) {
   const sp = sparkline(values);
   if (!sp) return null;
+  // Fade via a gradient (like AreaChartSvg). The old `${color}22` trick only
+  // works for hex colors — with the CSS-variable colors these tiles pass
+  // (var(--accent), …) it produced an invalid fill and fell back to black.
+  const gradId = `gro-spark-${gradSeq++}`;
   return (
     <svg
       className="mspark"
       viewBox="0 0 300 26"
       preserveAspectRatio="none"
     >
-      <path d={sp.area} className="ar" style={{ fill: `${color}22`, stroke: "none" }} />
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.26} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={sp.area} className="ar" style={{ fill: `url(#${gradId})`, stroke: "none" }} />
       <path d={sp.line} className="ln" stroke={color} />
     </svg>
   );

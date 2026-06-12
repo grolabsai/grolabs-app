@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { useActivityStream } from "@/lib/activity-stream";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";

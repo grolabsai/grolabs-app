@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { useRouter } from "@/i18n/routing";
 import { Icon } from "@/components/ui/icon";
 import { ChevronDown, Plus, Save, Trash2, Minus } from "lucide-react";

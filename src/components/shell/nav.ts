@@ -8,15 +8,12 @@ import {
   Shapes,
   Tag,
   GitMerge,
-  PawPrint,
-  Rabbit,
   UserRound,
   Settings,
   Search,
   Telescope,
   Download,
   Palette,
-  Workflow,
   RefreshCw,
   ShoppingBag,
   CircleDollarSign,
@@ -25,11 +22,9 @@ import {
   Receipt,
   Truck,
   LineChart,
-  GitBranch,
   Layers,
   DollarSign,
   Database,
-  Library,
   Wrench,
   Activity,
   FileText,
@@ -108,14 +103,16 @@ export function buildRreNav(
         { href: "/dashboard" as Route, label: t("nav.dashboard"), icon: LayoutDashboard },
       ],
     },
-    {
-      key: "conversion",
-      title: t("nav.conversion"),
-      icon: GitBranch,
-      items: [
-        { href: "/funnel" as Route, label: t("nav.funnel"), icon: Workflow, useIconWrapper: true },
-      ],
-    },
+    // Conversion (funnel) hidden per request 2026-06-12 — restore this block
+    // when the funnel surface is ready to show.
+    // {
+    //   key: "conversion",
+    //   title: t("nav.conversion"),
+    //   icon: GitBranch,
+    //   items: [
+    //     { href: "/funnel" as Route, label: t("nav.funnel"), icon: Workflow, useIconWrapper: true },
+    //   ],
+    // },
     {
       key: "catalog",
       title: t("nav.catalog"),
@@ -152,16 +149,18 @@ export function buildRreNav(
         { href: "/sync" as Route, label: t("nav.sync"), icon: RefreshCw },
       ],
     },
-    {
-      key: "references",
-      title: t("nav.references"),
-      icon: Library,
-      items: [
-        { href: null, label: t("nav.species"), icon: PawPrint },
-        { href: null, label: t("nav.breeds"), icon: Rabbit },
-        { href: null, label: t("nav.profileAttributes"), icon: UserRound },
-      ],
-    },
+    // References hidden per request 2026-06-12 — restore this block when the
+    // references surface (species / breeds / profile attributes) is ready.
+    // {
+    //   key: "references",
+    //   title: t("nav.references"),
+    //   icon: Library,
+    //   items: [
+    //     { href: null, label: t("nav.species"), icon: PawPrint },
+    //     { href: null, label: t("nav.breeds"), icon: Rabbit },
+    //     { href: null, label: t("nav.profileAttributes"), icon: UserRound },
+    //   ],
+    // },
     {
       key: "configuration",
       title: t("nav.configuration"),

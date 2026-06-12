@@ -85,7 +85,9 @@ function parseSessionRow(
     returning_users: Math.max(0, m(1) - m(3)),
     engaged_sessions: m(4),
     engagement_rate: m(5),
-    avg_engagement_time_sec: m(6),
+    // m(6) is raw userEngagementDuration (total seconds across the day);
+    // the stored column is the per-session average, so divide by sessions.
+    avg_engagement_time_sec: sessions > 0 ? m(6) / sessions : 0,
     avg_session_duration_sec: m(7),
     views: m(8),
     views_per_session: sessions > 0 ? m(8) / sessions : 0,
@@ -207,7 +209,11 @@ async function fetchDay(args: {
         { name: "newUsers" },
         { name: "engagedSessions" },
         { name: "engagementRate" },
-        { name: "averageEngagementTimePerSession" },
+        // "Average engagement time per session" is a *calculated* GA4 metric, not
+        // a raw API metric — requesting it by that name returns HTTP 400 and aborts
+        // the whole pull. Pull the raw userEngagementDuration (total seconds) and
+        // divide by sessions in parseSessionRow to get the per-session average.
+        { name: "userEngagementDuration" },
         { name: "averageSessionDuration" },
         { name: "screenPageViews" },
       ],

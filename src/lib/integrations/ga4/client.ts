@@ -254,7 +254,23 @@ async function callDataApi<T>(args: {
     json = text;
   }
   if (!res.ok) {
-    throw new Ga4ApiError(`GA4 Data API ${res.status}`, res.status, json);
+    // Surface Google's actual reason (e.g. "Field X is not a valid metric") in
+    // the message so it lands in last_pull_error instead of a bare status code.
+    const reason =
+      json &&
+      typeof json === "object" &&
+      "error" in json &&
+      json.error &&
+      typeof json.error === "object" &&
+      "message" in json.error &&
+      typeof (json.error as { message?: unknown }).message === "string"
+        ? (json.error as { message: string }).message
+        : null;
+    throw new Ga4ApiError(
+      reason ? `GA4 Data API ${res.status}: ${reason}` : `GA4 Data API ${res.status}`,
+      res.status,
+      json,
+    );
   }
   return json as T;
 }

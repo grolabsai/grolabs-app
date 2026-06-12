@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { CheckCircle2, XCircle, RefreshCw, Unplug, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,14 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
         return;
       }
       toast.success(t("toast.propertyIdSaved"));
+      // Saving also pulls data immediately — report what came back.
+      if (r.pull?.ok) {
+        toast.success(t("toast.pullSuccess"), {
+          description: t("toast.pullSummary", { rows: r.pull.rows }),
+        });
+      } else if (r.pull && !r.pull.ok) {
+        toast.error(t("toast.pullFailed"), { description: r.pull.error });
+      }
     });
   }
 
@@ -160,7 +168,7 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
         }}
       >
         <CheckCircle2 size={14} />
-        <span>{t("status.connected")}</span>
+        <span>{t("postConnect.stepBadge")}</span>
         {initialValues.oauthAccountEmail ? (
           <span style={{ color: "var(--gl-text-secondary)" }}>
             · {initialValues.oauthAccountEmail}
@@ -168,12 +176,26 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
         ) : null}
       </div>
 
-      {/* Property ID */}
+      {/* Two-step framing: account is connected (step 1); choosing the property is step 2 */}
+      <p style={{ fontSize: 13, color: "var(--gl-text-secondary)", margin: 0 }}>
+        {t("postConnect.intro")}
+      </p>
+
+      {/* Step 2 — Property ID */}
       <div>
+        <p
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--gl-text-strong)",
+            margin: "0 0 8px",
+          }}
+        >
+          {t("postConnect.step2Heading")}
+        </p>
         <FloatingLabelInput
           id="ga4-property-id"
           label={t("fields.propertyId")}
-          placeholder="123456789"
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value.replace(/[^0-9]/g, ""))}
           disabled={pending}
@@ -182,14 +204,78 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
           {t("fields.propertyIdHint")}
         </p>
         <div style={{ marginTop: 8 }}>
-          <Button
+          <button
             type="button"
-            variant="outline"
+            className="s-btn s-btn-primary"
             onClick={onSavePropertyId}
             disabled={pending}
           >
             {t("actions.savePropertyId")}
-          </Button>
+          </button>
+        </div>
+
+        {/* How to find the property ID — visible at the moment of need */}
+        <div
+          style={{
+            marginTop: 12,
+            padding: "12px 14px",
+            border: "0.5px solid var(--gl-border)",
+            borderRadius: "var(--gl-radius-md)",
+            background: "var(--gl-surface)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--gl-text-strong)",
+              margin: "0 0 8px",
+            }}
+          >
+            {t("postConnect.howToTitle")}
+          </p>
+          <ol
+            style={{
+              fontSize: 12,
+              color: "var(--gl-text-secondary)",
+              margin: 0,
+              paddingLeft: 18,
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
+            <li>{t("postConnect.howToStep1")}</li>
+            <li>{t("postConnect.howToStep2")}</li>
+            <li>{t("postConnect.howToStep3")}</li>
+            <li>{t("postConnect.howToStep4")}</li>
+          </ol>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--gl-warning-text)",
+              margin: "8px 0 0",
+            }}
+          >
+            {t("postConnect.howToWarning")}
+          </p>
+          <div style={{ marginTop: 10 }}>
+            <a
+              href="https://analytics.google.com/analytics/web/#/admin"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                color: "var(--gl-accent)",
+              }}
+            >
+              <ExternalLink size={14} />
+              {t("postConnect.openAnalytics")}
+            </a>
+          </div>
         </div>
       </div>
 

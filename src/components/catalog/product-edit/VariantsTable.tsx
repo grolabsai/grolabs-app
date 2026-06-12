@@ -8,7 +8,7 @@ import {
   useTransition,
 } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { Icon } from "@/components/ui/icon";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronRight, ImageIcon, Trash2, Plus } from "lucide-react";

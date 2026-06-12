@@ -10,7 +10,7 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 
 import { useAgentLog } from "@/components/shell/AgentLogContext";
 import { useAgentPanel } from "@/components/shell/AgentPanelContext";

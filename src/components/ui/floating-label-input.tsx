@@ -36,11 +36,17 @@ const FloatingLabelInput = React.forwardRef<
   FloatingLabelInputProps
 >(({ label, id, className, wrapperClassName, ...props }, ref) => {
   return (
-    <div className={cn("relative", wrapperClassName)}>
+    <div
+      className={cn(
+        "relative",
+        // On focus, the label turns accent-yellow to match the input border.
+        "[&:focus-within>label]:text-[color:var(--gl-accent)]",
+        wrapperClassName,
+      )}
+    >
       {/* Label cuts through the top border via z-index + background match */}
       <label
         htmlFor={id}
-        style={{ color: "var(--gl-text-tertiary)" }}
         className={cn(
           // Positioning: sits on top of the border line
           "absolute -top-[7px] left-[10px] z-10",
@@ -49,6 +55,9 @@ const FloatingLabelInput = React.forwardRef<
           // Matches the input's surface so the label "notch" reads as
           // a cutout in the border (theme-aware via tokens).
           "bg-[var(--gl-surface)]",
+          // Base color (class, not inline style, so the focus-within variant
+          // above can override it). Smoothly transitions to the accent.
+          "text-[color:var(--gl-text-tertiary)] transition-colors",
           // Typography — matches .s-field-label
           "text-[10px] font-medium uppercase tracking-[0.08em]",
           "leading-none",

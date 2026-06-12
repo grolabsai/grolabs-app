@@ -57,7 +57,7 @@ import {
   Captions,
   Type,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/agent-toast";
 import { uploadPostImage } from "@/lib/actions/post";
 import {
   aiContinueWriting,

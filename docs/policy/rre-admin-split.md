@@ -229,6 +229,15 @@ distinguishes the two surfaces.
 | `admin.grolabs.ai` | `(admin)` group | `/prospects` (or `/content/posts`) |
 | a tenant's bound `instance.domain` (e.g. `wazu.com`) | public `/blog/**`, sitemap, rss, llms.txt | — |
 
+The admin-host root redirect is **auth-aware**: an authenticated visitor
+lands on `/prospects`, an unauthenticated one on `/login` (never bounced
+through a protected admin page). Middleware also sends an unauthenticated
+hit on any `(admin)` path straight to `/login`, so the §2.2 invariant
+("unauthenticated requests redirect to /login") holds at the host root, not
+just inside the layout. Login itself lands on `/` — middleware then routes
+per-host — rather than a hardcoded `/dashboard`, which is RRE-only and 404s
+on the admin host.
+
 Because both `(app)` and `(admin)` resolve the same path segments,
 collisions are impossible *within a host* — only one group is ever
 mounted per host. The host decision happens once, in middleware.

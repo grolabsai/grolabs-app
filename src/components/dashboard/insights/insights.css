@@ -363,6 +363,20 @@
   height: 100%;
   display: block;
 }
+/* The donut/chart/sparkline SVGs are decorative and non-interactive, but Chrome
+   focuses an inline <svg> when you click it and paints the browser-default BLUE
+   outline around its box — that's the "blue square" around the donut ring.
+   globals.css only strips that default outline for form fields, so kill it here
+   for the dashboard's decorative SVGs and the ring. Real controls (buttons)
+   keep their focus ring. */
+.gro-id svg:focus,
+.gro-id svg:focus-visible,
+.gro-id .ring:focus,
+.gro-id .ring :focus,
+.gro-id .ring:focus-visible,
+.gro-id .ring :focus-visible {
+  outline: none;
+}
 .gro-id .ring svg path.seg,
 .gro-id .ring svg circle.seg {
   stroke-dasharray: 1;

@@ -5,7 +5,15 @@
  * an ancestor — see _reveal.tsx and insights.css).
  */
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import {
+  Monitor,
+  Smartphone,
+  Tablet,
+  Tv,
+  MonitorSmartphone,
+  type LucideIcon,
+} from "lucide-react";
 import {
   RING_VIEWBOX,
   donutSplit,
@@ -16,6 +24,34 @@ import {
 } from "./geometry";
 
 const TRACK = "rgba(255,255,255,0.08)";
+
+// ── Device glyphs ────────────────────────────────────────────────────────────
+// GA4 device categories → an icon (desktop = monitor, mobile = phone, …). Drawn
+// in the segment's own color, in place of the legend dot.
+const DEVICE_ICONS: Record<string, LucideIcon> = {
+  desktop: Monitor,
+  mobile: Smartphone,
+  tablet: Tablet,
+  "smart tv": Tv,
+};
+
+export function DeviceGlyph({
+  category,
+  color,
+}: {
+  category: string;
+  color: string;
+}) {
+  const Glyph = DEVICE_ICONS[category.trim().toLowerCase()] ?? MonitorSmartphone;
+  return (
+    <Glyph size={14} strokeWidth={1.8} color={color} style={{ flexShrink: 0 }} />
+  );
+}
+
+/** Proper-case a label: "smart tv" → "Smart Tv", "desktop" → "Desktop". */
+export function titleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 // ── Formatting ───────────────────────────────────────────────────────────────
 
@@ -282,6 +318,8 @@ export interface SegRow {
   pcLabel: string;
   color: string;
   share: number; // 0..1
+  /** Optional glyph rendered in place of the legend dot (e.g. a device icon). */
+  icon?: ReactNode;
 }
 
 export function SegBar({ rows }: { rows: SegRow[] }) {
@@ -303,7 +341,7 @@ export function SegBar({ rows }: { rows: SegRow[] }) {
       <div className="seglist">
         {rows.map((r, i) => (
           <div className="r" key={`${r.name}-leg-${i}`}>
-            <span className="dot" style={{ background: r.color }} />
+            {r.icon ?? <span className="dot" style={{ background: r.color }} />}
             <span className="nm">{r.name}</span>
             <span className="vv">{r.valueLabel}</span>
             <span className="pc">{r.pcLabel}</span>

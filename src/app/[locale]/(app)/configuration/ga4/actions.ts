@@ -9,6 +9,7 @@ import {
   Ga4ApiError,
 } from "@/lib/integrations/ga4/client";
 import { pullForInstance } from "@/lib/integrations/ga4/poll";
+import { BACKFILL_DAYS } from "@/lib/integrations/ga4/constants";
 import { runAnomalyDetection } from "@/lib/integrations/ga4/anomaly";
 import type { PullResult } from "@/lib/integrations/ga4/types";
 
@@ -95,6 +96,7 @@ export async function saveGa4PropertyId(args: {
   const pull = await pullForInstance({
     instanceId: ctx.instanceId,
     propertyId: trimmed,
+    trailingDays: BACKFILL_DAYS,
   });
   if (pull.ok) {
     await runAnomalyDetection({ instanceId: ctx.instanceId });
@@ -232,6 +234,7 @@ export async function pullNowGa4(): Promise<PullResult> {
   const result = await pullForInstance({
     instanceId: ctx.instanceId,
     propertyId,
+    trailingDays: BACKFILL_DAYS,
   });
 
   if (result.ok) {

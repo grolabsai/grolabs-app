@@ -116,24 +116,55 @@ function parseTrafficRows(
   });
 }
 
-function parsePageRows(
+/**
+ * Pages need two reports merged by path:
+ *  - pageR:    dimension pagePath  → screenPageViews (views) + userEngagementDuration
+ *  - landingR: dimension landingPage → sessions (= "entrances"; GA4 has no
+ *              `entrances` metric, so sessions-that-started-on-a-page is the
+ *              equivalent). GA4 has NO exits metric at all, so exits stays 0.
+ */
+function mergePageRows(
   instanceId: number,
   date: string,
-  r: RunReportResponse,
+  pageR: RunReportResponse,
+  landingR: RunReportResponse,
 ): Ga4PageDailyRow[] {
-  return rows(r).map((row) => {
+  const byPath = new Map<string, Ga4PageDailyRow>();
+
+  for (const row of rows(pageR)) {
     const path = row.dimensionValues?.[0]?.value ?? "/";
     const mv = (i: number) => num(row.metricValues?.[i]?.value);
-    return {
+    byPath.set(path, {
       instance_id: instanceId,
       date,
       page_path: path,
       views: mv(0),
-      entrances: mv(1),
-      exits: mv(2),
-      avg_engagement_time_sec: mv(3),
-    };
-  });
+      entrances: 0,
+      exits: 0, // GA4 Data API has no exits metric.
+      avg_engagement_time_sec: mv(1),
+    });
+  }
+
+  for (const row of rows(landingR)) {
+    const path = row.dimensionValues?.[0]?.value ?? "/";
+    const sessions = num(row.metricValues?.[0]?.value);
+    const existing = byPath.get(path);
+    if (existing) {
+      existing.entrances = sessions;
+    } else {
+      byPath.set(path, {
+        instance_id: instanceId,
+        date,
+        page_path: path,
+        views: 0,
+        entrances: sessions,
+        exits: 0,
+        avg_engagement_time_sec: 0,
+      });
+    }
+  }
+
+  return Array.from(byPath.values());
 }
 
 function parseGeoRows(
@@ -246,13 +277,27 @@ async function fetchDay(args: {
     request: {
       dateRanges,
       dimensions: [{ name: "pagePath" }],
+      // entrances/exits are Universal Analytics metrics that GA4 dropped —
+      // requesting them returns HTTP 400. Views + engagement only; entrances
+      // come from the landing-page report below.
       metrics: [
         { name: "screenPageViews" },
-        { name: "entrances" },
-        { name: "exits" },
         { name: "userEngagementDuration" },
       ],
       orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+      limit: TOP_PAGES_LIMIT,
+    },
+  });
+
+  // "Entrances" in GA4 = sessions that started on a page (landingPage dimension).
+  const landingReq = runReport({
+    propertyId,
+    accessToken,
+    request: {
+      dateRanges,
+      dimensions: [{ name: "landingPage" }],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: TOP_PAGES_LIMIT,
     },
   });
@@ -290,10 +335,11 @@ async function fetchDay(args: {
     },
   });
 
-  const [sessionR, trafficR, pagesR, geoR, deviceR] = await Promise.all([
+  const [sessionR, trafficR, pagesR, landingR, geoR, deviceR] = await Promise.all([
     sessionReq,
     trafficReq,
     pagesReq,
+    landingReq,
     geoReq,
     deviceReq,
   ]);
@@ -301,7 +347,7 @@ async function fetchDay(args: {
   return {
     session: parseSessionRow(instanceId, date, sessionR),
     traffic: parseTrafficRows(instanceId, date, trafficR),
-    pages: parsePageRows(instanceId, date, pagesR),
+    pages: mergePageRows(instanceId, date, pagesR, landingR),
     geo: parseGeoRows(instanceId, date, geoR),
     device: parseDeviceRows(instanceId, date, deviceR),
   };

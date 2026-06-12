@@ -188,7 +188,6 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
         <FloatingLabelInput
           id="ga4-property-id"
           label={t("fields.propertyId")}
-          placeholder="123456789"
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value.replace(/[^0-9]/g, ""))}
           disabled={pending}
@@ -197,14 +196,14 @@ export function Ga4Form({ initialValues, hasRefreshToken }: Props) {
           {t("fields.propertyIdHint")}
         </p>
         <div style={{ marginTop: 8 }}>
-          <Button
+          <button
             type="button"
-            variant="outline"
+            className="s-btn s-btn-primary"
             onClick={onSavePropertyId}
             disabled={pending}
           >
             {t("actions.savePropertyId")}
-          </Button>
+          </button>
         </div>
 
         {/* How to find the property ID — visible at the moment of need */}

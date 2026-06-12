@@ -138,7 +138,7 @@ Always set explicit `width` and `height`:
 **Mandatory pattern for every form field in RRE:**
 
 1. **Label inside the border** — use `FloatingLabelInput` or `FloatingLabelSelect` (from `src/components/ui/`). Never a separate `<label>` element above the field, never the bare `className="s-input"` pattern with an external label.
-2. **No placeholders for hint content.** `placeholder="e.g. running shoes"` is forbidden — placeholders are visually invisible to focused users, clash with the floating label, and are dead to assistive tech.
+2. **No placeholders. Ever.** The `placeholder` attribute is forbidden on every input in RRE — not just for hint content. Whatever sits inside an input box is either real content or it is empty (null); a placeholder fakes content where there is none, is invisible to a focused user, clashes with the floating label, and is dead to assistive tech. There is **no exception** — not for samples (`123456789`), not for "e.g." hints, not for "N/A", not for a search-action label. If you feel the urge to explain the field, that text goes in the agent-panel hint; if you feel the urge to show an example value, that's still a hint. An empty field stays visually empty.
 3. **Hints live in the right Agent panel.** Use `HintedInput` / `HintedSelect` / `HintedTextarea` from `src/components/ui/hinted-field.tsx` — they wrap the floating-label variants, render a small `ⓘ` icon at the end of the field, and bind to `useFieldHint(...)` so the body text appears in the agent panel on focus.
 
 ```tsx
@@ -160,7 +160,7 @@ Always set explicit `width` and `height`:
 <p className="hint">{t("intentLabelHint")}</p>
 ```
 
-Truly content-less placeholders (e.g. an empty search box where there's literally nothing else to put in the spot) can use `placeholder` for the actual search action label only. Anything that describes the *field* goes in the hint.
+No placeholder is ever justified — including on a search box. A search field communicates its purpose through its label and its search icon, not through ghost text. Anything that describes the *field* goes in the hint.
 
 ### Surface tokens — no nested gray fills
 

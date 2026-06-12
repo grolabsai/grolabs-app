@@ -32,6 +32,19 @@ import type {
   Ga4Config,
 } from "./types";
 
+/**
+ * Today (UTC) as YYYY-MM-DD. The traffic dashboard never shows the current day:
+ * GA4 hasn't finalized it, so comparing a partial today against a full prior day
+ * fabricates a drop. Every daily query filters `.lt("date", DATA_CUTOFF())` so
+ * the dataset always ends at yesterday. Live "now" numbers are realtime's job,
+ * not this dataset's.
+ */
+function DATA_CUTOFF(): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
 // ── Connection / config ──────────────────────────────────────────────────────
 
 export async function getGa4Config(
@@ -78,6 +91,7 @@ export async function getSessionTimeseries(
       "date, sessions, users, engagement_rate, avg_session_duration_sec, views_per_session",
     )
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(days + 6);
 
@@ -156,6 +170,7 @@ export async function getAudienceSummary(
       "date, sessions, users, new_users, returning_users, engaged_sessions, engagement_rate, avg_session_duration_sec, views_per_session",
     )
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(8);
 
@@ -258,6 +273,7 @@ export async function getDeviceMix(
     .from("ga4_device_daily")
     .select("date")
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -312,6 +328,7 @@ export async function getTopChannels(
     .from("ga4_traffic_daily")
     .select("date")
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -402,6 +419,7 @@ async function topPagesBy(
     .from("ga4_page_daily")
     .select("date")
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -487,6 +505,7 @@ export async function getGeoTop(
     .from("ga4_geo_daily")
     .select("date")
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -541,6 +560,7 @@ export async function getAlertTiles(
     .from("ga4_session_daily")
     .select("date, sessions, engagement_rate")
     .eq("instance_id", instanceId)
+    .lt("date", DATA_CUTOFF())
     .order("date", { ascending: false })
     .limit(8);
   const rows = ((data ?? []) as Array<{

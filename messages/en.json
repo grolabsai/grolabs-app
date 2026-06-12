@@ -632,7 +632,9 @@
         "property": "GA4 · Property",
         "realtime": "Realtime",
         "windowDays": "Last {n} days",
-        "windowBaseline": "vs. 7-day baseline"
+        "windowBaseline": "vs. 7-day baseline",
+        "freshness": "Data through {date} (yesterday) · last updated {updated}",
+        "freshnessNoData": "Data through {date} (yesterday) · not pulled yet"
       },
       "actions": {
         "refresh": "Refresh data",

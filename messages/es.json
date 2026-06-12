@@ -632,7 +632,9 @@
         "property": "GA4 · Propiedad",
         "realtime": "En vivo",
         "windowDays": "Últimos {n} días",
-        "windowBaseline": "vs. base de 7 días"
+        "windowBaseline": "vs. base de 7 días",
+        "freshness": "Datos hasta {date} (ayer) · última actualización {updated}",
+        "freshnessNoData": "Datos hasta {date} (ayer) · aún sin extraer"
       },
       "actions": {
         "refresh": "Actualizar datos",

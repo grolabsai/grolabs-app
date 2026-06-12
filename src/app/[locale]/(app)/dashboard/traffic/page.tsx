@@ -113,6 +113,26 @@ export default async function TrafficDashboardPage() {
       getActiveAlerts(instanceId),
     ]);
 
+  // ── Data freshness: the dashboard only shows finalized days (through
+  // yesterday UTC); today is excluded so a partial day never reads as a drop. ──
+  const dataThrough = new Date();
+  dataThrough.setUTCHours(0, 0, 0, 0);
+  dataThrough.setUTCDate(dataThrough.getUTCDate() - 1);
+  const dataThroughLabel = dataThrough.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  const updatedLabel = cfg?.last_pull_at
+    ? `${new Date(cfg.last_pull_at).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+      })} UTC`
+    : null;
+
   // ── Derived series for charts ──
   const sessionsSeries = series.map((p) => p.sessions);
   const engagementSeries = series.map((p) => p.engagement_rate);
@@ -219,6 +239,20 @@ export default async function TrafficDashboardPage() {
             <DashboardPullButton />
             <RealtimeHeader label={tt("header.realtime")} />
           </div>
+        </div>
+
+        {/* Data freshness — finalized through yesterday, plus last refresh time */}
+        <div
+          style={{
+            fontSize: 11,
+            color: "var(--t3)",
+            margin: "0 0 8px",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {updatedLabel
+            ? tt("header.freshness", { date: dataThroughLabel, updated: updatedLabel })
+            : tt("header.freshnessNoData", { date: dataThroughLabel })}
         </div>
 
         {/* ═══ AUDIENCIA ═══ */}
@@ -450,64 +484,6 @@ export default async function TrafficDashboardPage() {
           )}
         </div>
 
-        {/* ═══ CONVERSIONES Y EMBUDOS (Próximamente) ═══ */}
-        <div className="sec-label">
-          <span className="txt">{tt("sections.conversions")}</span>
-          <span className="rule" />
-          <span className="meta">{tt("sections.conversionsMeta")}</span>
-        </div>
-
-        <div className="tile soon" data-col style={{ gridColumn: "span 6" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("soon.purchaseFunnel")}</span>
-            <span className="soon-badge">{tt("soon.badge")}</span>
-          </div>
-          <SoonBars n={5} />
-        </div>
-        <div className="tile soon" data-col style={{ gridColumn: "span 3" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("soon.conversionRate")}</span>
-            <span className="soon-badge">{tt("soon.badge")}</span>
-          </div>
-          <SoonRing />
-        </div>
-        <div className="tile soon" data-col style={{ gridColumn: "span 3" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("soon.checkoutCompletion")}</span>
-            <span className="soon-badge">{tt("soon.badge")}</span>
-          </div>
-          <SoonRing />
-        </div>
-
-        {/* ═══ OBJETIVOS E INGRESOS (Próximamente) ═══ */}
-        <div className="sec-label">
-          <span className="txt">{tt("sections.revenue")}</span>
-          <span className="rule" />
-          <span className="meta">{tt("sections.revenueMeta")}</span>
-        </div>
-
-        <div className="tile soon" data-col style={{ gridColumn: "span 4" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("soon.goalCompletions")}</span>
-            <span className="soon-badge">{tt("soon.badge")}</span>
-          </div>
-          <SoonBars n={3} />
-        </div>
-        <div className="tile soon" data-col style={{ gridColumn: "span 4" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("soon.revenueByChannel")}</span>
-            <span className="soon-badge">{tt("soon.badge")}</span>
-          </div>
-          <SoonBars n={4} />
-        </div>
-        <div className="tile soon" data-col style={{ gridColumn: "span 4" }}>
-          <div className="tile-head">
-            <span className="tile-label">{tt("soon.cartAbandonment")}</span>
-            <span className="soon-badge">{tt("soon.badge")}</span>
-          </div>
-          <SoonRing />
-        </div>
-
         {/* ═══ TENDENCIAS ═══ */}
         <div className="sec-label">
           <span className="txt">{tt("sections.trends")}</span>
@@ -639,6 +615,64 @@ export default async function TrafficDashboardPage() {
           ) : (
             <div className="tile-empty">{tt("alerts.inboxEmpty")}</div>
           )}
+        </div>
+
+        {/* ═══ CONVERSIONES Y EMBUDOS (Próximamente) — pinned to the bottom ═══ */}
+        <div className="sec-label">
+          <span className="txt">{tt("sections.conversions")}</span>
+          <span className="rule" />
+          <span className="meta">{tt("sections.conversionsMeta")}</span>
+        </div>
+
+        <div className="tile soon" data-col style={{ gridColumn: "span 6" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("soon.purchaseFunnel")}</span>
+            <span className="soon-badge">{tt("soon.badge")}</span>
+          </div>
+          <SoonBars n={5} />
+        </div>
+        <div className="tile soon" data-col style={{ gridColumn: "span 3" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("soon.conversionRate")}</span>
+            <span className="soon-badge">{tt("soon.badge")}</span>
+          </div>
+          <SoonRing />
+        </div>
+        <div className="tile soon" data-col style={{ gridColumn: "span 3" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("soon.checkoutCompletion")}</span>
+            <span className="soon-badge">{tt("soon.badge")}</span>
+          </div>
+          <SoonRing />
+        </div>
+
+        {/* ═══ OBJETIVOS E INGRESOS (Próximamente) — pinned to the bottom ═══ */}
+        <div className="sec-label">
+          <span className="txt">{tt("sections.revenue")}</span>
+          <span className="rule" />
+          <span className="meta">{tt("sections.revenueMeta")}</span>
+        </div>
+
+        <div className="tile soon" data-col style={{ gridColumn: "span 4" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("soon.goalCompletions")}</span>
+            <span className="soon-badge">{tt("soon.badge")}</span>
+          </div>
+          <SoonBars n={3} />
+        </div>
+        <div className="tile soon" data-col style={{ gridColumn: "span 4" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("soon.revenueByChannel")}</span>
+            <span className="soon-badge">{tt("soon.badge")}</span>
+          </div>
+          <SoonBars n={4} />
+        </div>
+        <div className="tile soon" data-col style={{ gridColumn: "span 4" }}>
+          <div className="tile-head">
+            <span className="tile-label">{tt("soon.cartAbandonment")}</span>
+            <span className="soon-badge">{tt("soon.badge")}</span>
+          </div>
+          <SoonRing />
         </div>
       </InsightsReveal>
     </div>

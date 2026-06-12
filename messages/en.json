@@ -359,7 +359,8 @@
     "copy": "Copy response",
     "copyHint": "Copy the full response to clipboard",
     "copied": "Response copied to clipboard.",
-    "copyFailed": "Couldn't copy to clipboard."
+    "copyFailed": "Couldn't copy to clipboard.",
+    "resizeHint": "Drag to resize"
   },
   "activityStream": {
     "errorToastTitle": "An error occurred",
@@ -602,7 +603,10 @@
         "week": "7 days",
         "month": "30 days"
       },
-      "withFilterText": "{n}/{total} with filter"
+      "withFilterText": "{n}/{total} with filter",
+      "analyticsAclNotice": "Search analytics needs an Algolia key with the “analytics” permission. Your search key doesn’t have it — add your Write (Admin) API key, or grant the analytics ACL to your search key in Algolia.",
+      "analyticsErrorNotice": "Couldn’t load search analytics from Algolia right now. Check the connection and try again.",
+      "synonymsDisabledNote": "Viewing analytics works with your search key. Adding synonyms needs the Write (Admin) API key — it’s not set for this instance yet."
     },
     "catalogAlerts": {
       "title": "Catalog alerts",
@@ -616,7 +620,8 @@
       "save": "Save synonym",
       "cancel": "Cancel",
       "toastSuccess": "Synonym added: {query} ↔ {synonym}",
-      "toastFailed": "Could not save synonym"
+      "toastFailed": "Could not save synonym",
+      "requiresWriteKey": "Requires the Write (Admin) API key"
     }
   },
   "analytics": {
@@ -1204,13 +1209,30 @@
         "test": "Test connection",
         "save": "Save",
         "showKey": "Show key",
-        "hideKey": "Hide key"
+        "hideKey": "Hide key",
+        "testSearch": "Test search",
+        "testWrite": "Test write key"
       },
       "toast": {
         "testSuccess": "Connection successful",
         "testFailed": "Connection failed",
         "saveSuccess": "Configuration saved",
-        "saveFailed": "Could not save configuration"
+        "saveFailed": "Could not save configuration",
+        "searchTestSuccess": "Search OK",
+        "searchTestFailed": "Search test failed"
+      },
+      "errors": {
+        "missingForTest": "Enter App ID and Write (Admin) API Key before testing.",
+        "unknown": "Unknown error. Check the server console.",
+        "savedAndVerified": "Saved and verified · HTTP {status} · {latency}ms.",
+        "savedNotVerified": "Saved, but verification failed · HTTP {status}. Check the credentials.",
+        "savedNoKey": "Saved. Add a Write (Admin) API Key to verify the connection.",
+        "missingForSearchTest": "Enter App ID, Search API Key and Primary Index before testing search.",
+        "searchOk": "Index reachable · {count, number} records · {latency}ms.",
+        "analyticsNoAcl": "Analytics: this key is missing the “analytics” ACL — searches & no-results can’t be read. Grant it in Algolia, or use the Admin key.",
+        "analyticsError": "Analytics: couldn’t read — {message}.",
+        "analyticsNoData": "Analytics: ACL OK, but 0 searches recorded in the last 7 days — Algolia has no data to show yet.",
+        "analyticsAclOk": "Analytics: ACL OK · {count, number} searches in the last 7 days."
       }
     },
     "woocommerce": {

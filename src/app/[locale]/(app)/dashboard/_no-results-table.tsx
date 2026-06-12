@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useRouter } from "@/i18n/routing";
+import { useRouter, Link } from "@/i18n/routing";
 import {
   Select,
   SelectContent,
@@ -33,9 +33,20 @@ type Props = {
   timeWindow: "24h" | "7d" | "30d";
   offset: number;
   hasMore: boolean;
+  /** Write (Admin) key present — synonyms can be created. */
+  canAddSynonyms: boolean;
+  /** Set when analytics couldn't be read. "acl" = key lacks the analytics ACL. */
+  analyticsError: "acl" | "generic" | null;
 };
 
-export function NoResultsTable({ rows, timeWindow, offset, hasMore }: Props) {
+export function NoResultsTable({
+  rows,
+  timeWindow,
+  offset,
+  hasMore,
+  canAddSynonyms,
+  analyticsError,
+}: Props) {
   const t = useTranslations("dashboard");
   const router = useRouter();
 
@@ -76,8 +87,61 @@ export function NoResultsTable({ rows, timeWindow, offset, hasMore }: Props) {
     });
   }
 
+  // Analytics couldn't be read (e.g. the key lacks the `analytics` ACL).
+  // Render a precise explanation instead of a misleading empty table.
+  if (analyticsError) {
+    return (
+      <div
+        style={{
+          padding: "20px",
+          borderRadius: 8,
+          background: "var(--muted)",
+          fontSize: 14,
+          color: "var(--muted-foreground)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        <p style={{ margin: 0, lineHeight: 1.5 }}>
+          {analyticsError === "acl"
+            ? t("noResults.analyticsAclNotice")
+            : t("noResults.analyticsErrorNotice")}
+        </p>
+        <Link
+          href="/configuration/algolia"
+          style={{ color: "var(--gl-accent-800)", fontWeight: 500 }}
+        >
+          {t("noResults.configureButton")} →
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <>
+      {!canAddSynonyms && (
+        <div
+          style={{
+            padding: "10px 14px",
+            marginBottom: 16,
+            borderRadius: 8,
+            background: "var(--muted)",
+            fontSize: 12.5,
+            color: "var(--muted-foreground)",
+            lineHeight: 1.5,
+          }}
+        >
+          {t("noResults.synonymsDisabledNote")}{" "}
+          <Link
+            href="/configuration/algolia"
+            style={{ color: "var(--gl-accent-800)", fontWeight: 500 }}
+          >
+            {t("noResults.configureButton")} →
+          </Link>
+        </div>
+      )}
+
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
         <Select value={timeWindow} onValueChange={handleWindowChange}>
           <SelectTrigger style={{ width: 140 }}>
@@ -194,7 +258,13 @@ export function NoResultsTable({ rows, timeWindow, offset, hasMore }: Props) {
                     <button
                       className="s-btn s-btn-secondary"
                       style={{ fontSize: 12, padding: "4px 10px" }}
-                      onClick={() => openDialog(row.search)}
+                      disabled={!canAddSynonyms}
+                      title={
+                        !canAddSynonyms
+                          ? t("synonym.requiresWriteKey")
+                          : undefined
+                      }
+                      onClick={() => canAddSynonyms && openDialog(row.search)}
                     >
                       {t("noResults.actions.addSynonym")}
                     </button>

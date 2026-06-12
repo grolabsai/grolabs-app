@@ -8,10 +8,13 @@ export type TestResult = {
   status: number;
   latencyMs: number;
   message?: string;
+  /** Record count in the index — set by the search probe on success. */
+  count?: number;
 };
 
 /**
- * Test an Algolia connection by hitting the /1/keys endpoint.
+ * Test the ADMIN/WRITE path by hitting the /1/keys endpoint. This validates
+ * the Write (Admin) API key — search keys do not have access here.
  * Pure HTTP probe — no DB side-effects.
  */
 export async function testAlgoliaConnection(
@@ -36,6 +39,159 @@ export async function testAlgoliaConnection(
   }
 }
 
+/**
+ * Algolia's two analytics regions. The analytics region is a per-application
+ * setting that is INDEPENDENT of the search/DSN region the user picks in our
+ * form — so we can't derive it from `algolia.region`. We probe both and use
+ * whichever actually holds the data. (Confirmed in the field: an app whose
+ * search region was "us" had all its analytics in "de".)
+ */
+const ANALYTICS_HOSTS = [
+  "analytics.us.algolia.com",
+  "analytics.de.algolia.com",
+] as const;
+
+/**
+ * Result of probing Algolia's Analytics API with a key:
+ *   - hasAcl: the key carries the `analytics` ACL (no 401/403).
+ *   - ok: the probe returned data.
+ *   - searchCount: total searches recorded in the probe window — 0 means the
+ *     ACL is fine but Algolia simply has no search traffic for this index.
+ *   - region: which analytics region the data was found in ("us" | "de").
+ */
+export type AnalyticsProbe = {
+  hasAcl: boolean;
+  ok: boolean;
+  searchCount?: number;
+  region?: string;
+  message?: string;
+};
+
+export type SearchTestResult = TestResult & { analytics: AnalyticsProbe };
+
+/** Probe the Analytics API (`/2/searches/count`, last 7 days) across BOTH
+ *  regions to verify the `analytics` ACL and find where the data lives. */
+async function probeAnalytics(
+  appId: string,
+  key: string,
+  indexName: string
+): Promise<AnalyticsProbe> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - 7);
+  const qs =
+    `?index=${encodeURIComponent(indexName)}` +
+    `&startDate=${start.toISOString().slice(0, 10)}` +
+    `&endDate=${end.toISOString().slice(0, 10)}`;
+
+  let hasAcl = false;
+  let best: { count: number; region: string } | null = null;
+  let lastMessage: string | undefined;
+
+  for (const host of ANALYTICS_HOSTS) {
+    try {
+      const res = await fetch(`https://${host}/2/searches/count${qs}`, {
+        headers: {
+          "X-Algolia-Application-Id": appId,
+          "X-Algolia-API-Key": key,
+          accept: "application/json",
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+      // ACL is a property of the key, not the host: a 401/403 anywhere means
+      // the key lacks the analytics ACL.
+      if (res.status === 401 || res.status === 403) continue;
+      hasAcl = true;
+      const data = (await res.json().catch(() => null)) as
+        | { count?: number; message?: string }
+        | null;
+      if (!res.ok) {
+        lastMessage = data?.message ?? `HTTP ${res.status}`;
+        continue;
+      }
+      const count = data?.count ?? 0;
+      const region = host.includes(".de.") ? "de" : "us";
+      if (!best || count > best.count) best = { count, region };
+    } catch (err) {
+      lastMessage = err instanceof Error ? err.message : "Network error";
+    }
+  }
+
+  if (!hasAcl) return { hasAcl: false, ok: false, message: lastMessage };
+  return {
+    hasAcl: true,
+    ok: true,
+    searchCount: best?.count ?? 0,
+    region: best?.region,
+    message: lastMessage,
+  };
+}
+
+/**
+ * Test the SEARCH/READ path with just the Search API key — the credentials the
+ * storefront actually uses. Runs a zero-hit query against the primary index
+ * (`POST /1/indexes/{index}/query`), then ALSO probes the Analytics API so the
+ * caller can tell whether the same key can read searches/no-results (the
+ * `analytics` ACL) and whether any analytics data exists at all.
+ *
+ * A 200 on the query means App ID + Search key + index line up. The analytics
+ * probe reports the ACL status separately. Pure HTTP probe — no DB side-effects.
+ */
+export async function testAlgoliaSearch(
+  appId: string,
+  searchKey: string,
+  indexName: string
+): Promise<SearchTestResult> {
+  const url = `https://${appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(
+    indexName
+  )}/query`;
+  const start = Date.now();
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-Algolia-Application-Id": appId,
+        "X-Algolia-API-Key": searchKey,
+        "Content-Type": "application/json",
+      },
+      // Empty query, zero hits — cheapest possible probe that still exercises
+      // the read path and index existence.
+      body: JSON.stringify({ query: "", hitsPerPage: 0 }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const detail = (await res.json().catch(() => null)) as
+      | { message?: string; nbHits?: number }
+      | null;
+    if (!res.ok) {
+      // Algolia returns { message, status } on error — surface it verbatim.
+      return {
+        ok: false,
+        status: res.status,
+        latencyMs: Date.now() - start,
+        message: detail?.message ?? `HTTP ${res.status}`,
+        analytics: { hasAcl: false, ok: false },
+      };
+    }
+    const analytics = await probeAnalytics(appId, searchKey, indexName);
+    return {
+      ok: true,
+      status: res.status,
+      latencyMs: Date.now() - start,
+      count: detail?.nbHits,
+      analytics,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Network error";
+    return {
+      ok: false,
+      status: 0,
+      latencyMs: Date.now() - start,
+      message,
+      analytics: { hasAcl: false, ok: false },
+    };
+  }
+}
+
 export type SavePayload = {
   instanceId: number;
   appId: string;
@@ -55,12 +211,17 @@ export type SaveResult = {
 };
 
 /**
- * Persist Algolia credentials, then test the connection and record the result.
+ * Persist Algolia credentials. Saving is NEVER blocked by incomplete data:
+ * the non-secret fields are always written, and the admin key is optional.
  *
- * When adminApiKey is omitted the existing Vault secret is re-used:
- * we fetch it via algolia_get_admin_key and pass it back into
- * algolia_save_credentials so non-secret fields are updated without
- * disrupting the stored key.
+ * Admin-key resolution:
+ *   - adminApiKey provided  → use it (and write it to Vault).
+ *   - omitted but on file   → re-use the stored Vault secret for verification.
+ *   - omitted and none on file → save config only; skip verification.
+ *
+ * When we end up with an admin key we also test the connection and record the
+ * result; without one, the save still succeeds and verification is simply
+ * skipped (verified: false, no httpStatus).
  */
 export async function saveAlgoliaConfig(
   payload: SavePayload
@@ -69,28 +230,21 @@ export async function saveAlgoliaConfig(
   const { instanceId, appId, region, searchApiKey, adminApiKey, primaryIndex } =
     payload;
 
-  // ── Resolve the admin key we'll use ────────────────────────────────────────
-  let effectiveAdminKey: string;
+  // ── Resolve the admin key we'll use (may be null — that's fine) ─────────────
+  let effectiveAdminKey: string | null = null;
 
   if (adminApiKey) {
     effectiveAdminKey = adminApiKey;
   } else {
-    // User kept the existing key — fetch from Vault before overwriting config.
-    const { data: storedKey, error: keyError } = await supabase.rpc(
-      "algolia_get_admin_key",
-      { p_instance_id: instanceId }
-    );
-    if (keyError || !storedKey) {
-      return {
-        ok: false,
-        verified: false,
-        error: keyError?.message ?? "No admin key on file — provide one to save",
-      };
-    }
-    effectiveAdminKey = storedKey as string;
+    // No new key supplied — re-use the stored one if there is any. A missing
+    // key never blocks the save; it only means we can't verify.
+    const { data: storedKey } = await supabase.rpc("algolia_get_admin_key", {
+      p_instance_id: instanceId,
+    });
+    effectiveAdminKey = (storedKey as string | null) ?? null;
   }
 
-  // ── Persist all fields ──────────────────────────────────────────────────────
+  // ── Persist all fields (admin key optional — RPC skips Vault when null) ──────
   const { error: saveError } = await supabase.rpc("algolia_save_credentials", {
     p_instance_id: instanceId,
     p_app_id: appId,
@@ -100,20 +254,25 @@ export async function saveAlgoliaConfig(
     p_index: primaryIndex,
   });
   if (saveError) {
+    // A genuine DB/RLS failure — not an "incomplete data" block.
     return { ok: false, verified: false, error: saveError.message };
   }
 
-  // ── Test connection ─────────────────────────────────────────────────────────
+  // ── No key → saved, verification skipped ────────────────────────────────────
+  if (!effectiveAdminKey) {
+    revalidatePath("/configuration/algolia");
+    return { ok: true, verified: false };
+  }
+
+  // ── Test connection + record verification ───────────────────────────────────
   const testResult = await testAlgoliaConnection(appId, effectiveAdminKey);
 
-  // ── Record verification result ──────────────────────────────────────────────
   await supabase.rpc("algolia_record_verification", {
     p_instance_id: instanceId,
     p_http_status: testResult.status,
     p_latency_ms: testResult.latencyMs,
   });
 
-  // ── Invalidate page cache ───────────────────────────────────────────────────
   revalidatePath("/configuration/algolia");
 
   return {

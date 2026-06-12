@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Eye, EyeOff, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { useAgentLog } from "@/components/shell/AgentLogContext";
+import type { AgentMessage } from "@/lib/import/types";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { testAlgoliaConnection, saveAlgoliaConfig } from "./actions";
+import {
+  testAlgoliaConnection,
+  testAlgoliaSearch,
+  saveAlgoliaConfig,
+} from "./actions";
 
 /** Returns a short relative time string: "12s", "5m", "2h", "3d", or a date. */
 function timeAgo(iso: string): string {
@@ -50,6 +56,30 @@ const REGIONS = [
 
 export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
   const t = useTranslations("configuration.algolia");
+  const { append } = useAgentLog();
+
+  // ── Error/diagnostic surface ────────────────────────────────────────────────
+  // During this build stage every failure is written to the right-side
+  // Assistant panel (persistent + copyable) instead of a fleeting toast, so the
+  // exact reason a save/test failed can actually be read and shared.
+  function logToPanel(
+    kind: AgentMessage["kind"],
+    title: string,
+    body: string,
+    raw?: unknown
+  ) {
+    append({
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : String(Date.now() + Math.random()),
+      timestamp: Date.now(),
+      kind,
+      title,
+      body,
+      raw,
+    });
+  }
 
   // ── Field state ─────────────────────────────────────────────────────────────
   const [appId, setAppId] = useState(initialValues.appId);
@@ -69,12 +99,70 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
 
   const [isPending, startTransition] = useTransition();
 
-  // ── Test only (no save) ─────────────────────────────────────────────────────
+  // ── Test the SEARCH path (search key only — what the storefront uses) ───────
+  function handleTestSearch() {
+    if (!appId || !searchApiKey || !primaryIndex) {
+      logToPanel(
+        "error",
+        t("toast.searchTestFailed"),
+        t("errors.missingForSearchTest")
+      );
+      return;
+    }
+    startTransition(async () => {
+      const result = await testAlgoliaSearch(appId, searchApiKey, primaryIndex);
+      if (!result.ok) {
+        logToPanel(
+          "error",
+          t("toast.searchTestFailed"),
+          result.message ?? `HTTP ${result.status}`,
+          result
+        );
+        return;
+      }
+
+      // Search works. Build a two-line report: the search probe, then what the
+      // same key can (or can't) do on the Analytics API.
+      const searchLine =
+        result.count != null
+          ? t("errors.searchOk", {
+              latency: result.latencyMs,
+              count: result.count,
+            })
+          : `HTTP ${result.status} · ${result.latencyMs}ms`;
+
+      const a = result.analytics;
+      let analyticsLine: string;
+      let kind: AgentMessage["kind"] = "success";
+      if (!a.hasAcl) {
+        analyticsLine = t("errors.analyticsNoAcl");
+        kind = "warning";
+      } else if (!a.ok) {
+        analyticsLine = t("errors.analyticsError", {
+          message: a.message ?? "error",
+        });
+        kind = "warning";
+      } else if ((a.searchCount ?? 0) === 0) {
+        analyticsLine = t("errors.analyticsNoData");
+        kind = "warning";
+      } else {
+        analyticsLine = t("errors.analyticsAclOk", { count: a.searchCount ?? 0 });
+      }
+
+      const body = `${searchLine}\n${analyticsLine}`;
+      toast.success(t("toast.searchTestSuccess"), { description: searchLine });
+      logToPanel(kind, t("toast.searchTestSuccess"), body, result);
+    });
+  }
+
+  // ── Test the WRITE/ADMIN path (requires the Write/Admin key) ────────────────
   function handleTest() {
     if (!appId || (!replacingKey && !hasAdminKey) || (replacingKey && !adminApiKey)) {
-      toast.error(t("toast.testFailed"), {
-        description: "Completa App ID y Admin API Key antes de probar.",
-      });
+      logToPanel(
+        "error",
+        t("toast.testFailed"),
+        t("errors.missingForTest")
+      );
       return;
     }
 
@@ -86,10 +174,18 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
           toast.success(t("toast.testSuccess"), {
             description: `HTTP ${result.status} · ${result.latencyMs}ms`,
           });
+          logToPanel(
+            "success",
+            t("toast.testSuccess"),
+            `HTTP ${result.status} · ${result.latencyMs}ms`
+          );
         } else {
-          toast.error(t("toast.testFailed"), {
-            description: result.message ?? `HTTP ${result.status}`,
-          });
+          logToPanel(
+            "error",
+            t("toast.testFailed"),
+            result.message ?? `HTTP ${result.status}`,
+            result
+          );
         }
       });
     } else {
@@ -110,16 +206,26 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
           toast.success(t("toast.testSuccess"), {
             description: `HTTP ${result.httpStatus} · ${result.latencyMs}ms`,
           });
+          logToPanel(
+            "success",
+            t("toast.testSuccess"),
+            `HTTP ${result.httpStatus} · ${result.latencyMs}ms`
+          );
         } else {
-          toast.error(t("toast.testFailed"), {
-            description: result.error ?? `HTTP ${result.httpStatus ?? 0}`,
-          });
+          logToPanel(
+            "error",
+            t("toast.testFailed"),
+            result.error ?? `HTTP ${result.httpStatus ?? 0}`,
+            result
+          );
         }
       });
     }
   }
 
   // ── Save ────────────────────────────────────────────────────────────────────
+  // Saving is never blocked — partial/incomplete data is allowed. The admin key
+  // is optional; without it the data still saves and verification is skipped.
   function handleSave() {
     startTransition(async () => {
       const result = await saveAlgoliaConfig({
@@ -132,11 +238,39 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
       });
 
       if (!result.ok) {
-        toast.error(t("toast.saveFailed"), { description: result.error });
+        logToPanel(
+          "error",
+          t("toast.saveFailed"),
+          result.error ?? t("errors.unknown"),
+          result
+        );
         return;
       }
 
       toast.success(t("toast.saveSuccess"));
+      if (result.verified) {
+        logToPanel(
+          "success",
+          t("toast.saveSuccess"),
+          t("errors.savedAndVerified", {
+            status: result.httpStatus ?? 0,
+            latency: result.latencyMs ?? 0,
+          }),
+          result
+        );
+      } else if (result.httpStatus != null) {
+        // We had a key and tested it, but the connection check failed.
+        logToPanel(
+          "warning",
+          t("toast.saveSuccess"),
+          t("errors.savedNotVerified", { status: result.httpStatus }),
+          result
+        );
+      } else {
+        // No admin key → saved without verifying. Not an error.
+        logToPanel("info", t("toast.saveSuccess"), t("errors.savedNoKey"), result);
+      }
+
       setVerifiedAt(new Date().toISOString());
       setHttpStatus(result.httpStatus);
       setLatencyMs(result.latencyMs);
@@ -276,9 +410,17 @@ export function AlgoliaForm({ instanceId, initialValues, hasAdminKey }: Props) {
           type="button"
           variant="outline"
           disabled={isPending}
+          onClick={handleTestSearch}
+        >
+          {t("actions.testSearch")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending}
           onClick={handleTest}
         >
-          {t("actions.test")}
+          {t("actions.testWrite")}
         </Button>
         <Button
           type="button"

@@ -3,11 +3,13 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import type { Route } from "next";
+import { Activity, Search, type LucideIcon } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
-const TABS: { key: "traffic" | "search"; href: Route }[] = [
-  { key: "traffic", href: "/dashboard/traffic" as Route },
-  { key: "search", href: "/dashboard/search" as Route },
+const TABS: { key: "traffic" | "search"; href: Route; icon: LucideIcon }[] = [
+  { key: "traffic", href: "/dashboard/traffic" as Route, icon: Activity },
+  { key: "search", href: "/dashboard/search" as Route, icon: Search },
 ];
 
 /**
@@ -28,12 +30,19 @@ export function DashboardTabs() {
             key={tab.key}
             href={tab.href}
             className={cn(
-              "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all",
+              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all",
               active
                 ? "bg-background text-foreground shadow"
                 : "hover:text-foreground",
             )}
           >
+            {/* Same treatment as the left nav: active → yellow icon, inactive →
+                icon inherits the font color (currentColor). */}
+            <Icon
+              icon={tab.icon}
+              size={14}
+              color={active ? "#fae194" : undefined}
+            />
             {t(tab.key)}
           </Link>
         );

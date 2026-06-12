@@ -184,7 +184,7 @@ useCases:
     title: Non-staff cannot reach the admin surface
     given: An authenticated user who is not a member of the template-owner tenant
     when: They request an admin.grolabs.ai route
-    then: isGroLabsAdmin() returns false and the (admin) layout returns notFound()
+    then: isGroLabsAdmin() returns false and the (admin) layout renders a sign-out screen (NoAccess) so the user can switch accounts
     verifies: [R-8]
 ---
 
@@ -358,7 +358,7 @@ Extends `instance-management.md`:
 
 ## 8. The admin gate flip (closes SEC-001)
 
-`src/lib/auth/admin.ts` `isGroLabsAdmin(user)` changes from the always-true Phase-1 stub to: **true iff the user is an active `tenant_member` of the `template_owner` tenant** (the tenant that owns instance 0). A SQL mirror `is_grolabs_admin()` (SECURITY DEFINER) backs RLS/RPC reuse. The `(admin)` layout awaits it and `notFound()`s non-staff. This resolves **SEC-001** (`backlog-registry.md` §4 / `CLAUDE.md` §17 / `rre-admin-split.md` §5, §8).
+`src/lib/auth/admin.ts` `isGroLabsAdmin(user)` changes from the always-true Phase-1 stub to: **true iff the user is an active `tenant_member` of the `template_owner` tenant** (the tenant that owns instance 0). A SQL mirror `is_grolabs_admin()` (SECURITY DEFINER) backs RLS/RPC reuse. The `(admin)` layout awaits it and renders a sign-out screen (`NoAccess`) for non-staff — not `notFound()`, which would trap them with no way to log out. This resolves **SEC-001** (`backlog-registry.md` §4 / `CLAUDE.md` §17 / `rre-admin-split.md` §5, §8).
 
 ## 9. Constitutional compliance
 
@@ -370,7 +370,7 @@ Extends `instance-management.md`:
 ## 10. Implementation sequence (7 PRs)
 
 1. **Schema** — `tenant.domain` (unique, lowercased) + `is_tenant_admin()` helper; backfill GroLabs→`grolabs.ai`. Update `schema.md`.
-2. **Admin gate** — real `isGroLabsAdmin()` + `is_grolabs_admin()`; `(admin)` layout `notFound()`s non-staff. Closes SEC-001.
+2. **Admin gate** — real `isGroLabsAdmin()` + `is_grolabs_admin()`; `(admin)` layout renders a sign-out screen (`NoAccess`) for non-staff. Closes SEC-001.
 3. **SSO** — Google + Microsoft buttons (GroLabs-styled), `/auth/callback`, Before-User-Created hook + layout no-access gate. (+ manual provider setup.)
 4. **Admin "Clientes"** — list + create-customer form + `createCustomerAccount`.
 5. **RRE "Equipo"** — list + create/role/deactivate + `createTenantUser`, gated by `is_tenant_admin`.
@@ -406,7 +406,7 @@ Per the "docs travel with code" rule, this feature updates:
 ## 13. Verification checklist (post-implementation)
 
 1. `tenant.domain` exists, unique; GroLabs tenant = `grolabs.ai`; a customer create resolves-or-creates by domain (no duplicate on repeat domain).
-2. `isGroLabsAdmin()` returns false for a non-template-tenant user → `admin.grolabs.ai` routes `notFound()`; true for staff.
+2. `isGroLabsAdmin()` returns false for a non-template-tenant user → `admin.grolabs.ai` renders a sign-out screen (`NoAccess`); true for staff.
 3. Creating a customer yields tenant+instance+auth user+tenant_member(admin)+instance_member(is_current); one-time password shown once; `must_change_password` set.
 4. A Tenant Admin can create a Member who lands with `instance_member` rows for every tenant instance; cannot cross tenants; a Member sees no "Equipo" screen.
 5. Google + Microsoft buttons render in GroLabs tokens (no vendor colors); an unknown email is rejected by the hook; an orphan authenticated user is signed out.

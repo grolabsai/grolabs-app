@@ -4,13 +4,21 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Shown when an authenticated user has no active instance membership — the
- * belt-and-suspenders half of the "pre-created emails only" rule
- * (docs/policy/user-management.md §5.2). An orphan SSO user lands here and can
- * only sign out; nothing else is reachable.
+ * Shown when an authenticated user reaches a surface they cannot use and the
+ * only safe escape is to sign out (a plain redirect to /login would loop — the
+ * session is still valid, so /login bounces them straight back). Two callers:
+ *   - orphan accounts with no active instance membership (the default
+ *     "auth.noAccess" copy — user-management.md §5.2), and
+ *   - a non-GroLabs user who landed on the admin host (`messageKey
+ *     ="auth.noAdminAccess"`).
+ * The sign-out button clears the session and returns to /login.
  */
-export function NoAccess() {
-  const t = useTranslations("auth.noAccess");
+export function NoAccess({
+  messageKey = "auth.noAccess",
+}: {
+  messageKey?: "auth.noAccess" | "auth.noAdminAccess";
+}) {
+  const t = useTranslations(messageKey);
 
   async function signOut() {
     const supabase = createClient();

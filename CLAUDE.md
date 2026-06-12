@@ -186,21 +186,31 @@ Use `sonner` via `src/components/ui/sonner.tsx`. The `<Toaster />` is mounted in
 
 | Decision | Value |
 |---|---|
-| Default locale | `es` — clean URLs, no prefix |
-| Supported locales | `['es', 'en']` |
+| Default locale | `en` — clean URLs, no prefix |
+| Active locales | `['en']` — **English-only** for now; locale switcher removed from the UI |
 | URL strategy | `localePrefix: 'as-needed'` |
 | Canonical path segments | English ASCII (`catalog`, `products`, `settings`) |
-| Message source of truth | `messages/es.json` |
+| Message source of truth | `messages/en.json` |
+
+**English is the official product language.** Spanish is fully translated and
+**parked** (`messages/es.json`, kept in sync as a mirror) but not active — `es`
+is not in `routing.locales` and there is no switcher. To re-enable Spanish:
+add `'es'` back to `locales` in `src/i18n/routing.ts`, re-mount
+`<LocaleSwitcher />` in `src/components/shell/TopBar.tsx` (the component is kept,
+just unused), and restore the bilingual affordance in `src/app/[locale]/error.tsx`.
+
+Strings still go through `t()` (never hardcoded) — the i18n layer stays in place
+so a second locale is a config flip, not a rewrite.
 
 ### Navigation utilities
 
-`src/i18n/routing.ts` exports locale-aware `Link`, `redirect`, `usePathname`, `useRouter`. New screens use these; legacy screens use `next/navigation` and work only for `es`.
+`src/i18n/routing.ts` exports locale-aware `Link`, `redirect`, `usePathname`, `useRouter`. New screens use these; legacy screens use `next/navigation` and work for the default locale.
 
 ```ts
 // ✅ New screens
 import { Link, redirect } from '@/i18n/routing';
 
-// ⚠️ Legacy — works for es only, migrate on touch
+// ⚠️ Legacy — default-locale only, migrate on touch
 import Link from 'next/link';
 ```
 

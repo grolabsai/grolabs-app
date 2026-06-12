@@ -30,7 +30,10 @@ async function login(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/dashboard");
+  // Land on "/" and let middleware route per-host: the RRE host's home
+  // redirects to /dashboard, the admin host's root goes to /prospects.
+  // Hardcoding /dashboard here 404s on the admin host (it's an RRE-only route).
+  redirect("/");
 }
 
 export default async function LoginPage({
@@ -41,12 +44,13 @@ export default async function LoginPage({
   const { error } = await searchParams;
   const t = await getTranslations("auth.login");
 
-  // If already signed in, skip straight to the catalog.
+  // If already signed in, skip straight through. "/" lets middleware route
+  // per-host (RRE → /dashboard, admin → /prospects); /dashboard is RRE-only.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect("/");
 
   return (
     <div className="s-auth-shell">

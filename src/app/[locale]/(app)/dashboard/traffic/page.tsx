@@ -19,6 +19,7 @@ import {
 import { DashboardTabs } from "../_dashboard-tabs";
 import { InsightsReveal } from "@/components/dashboard/insights/_reveal";
 import { RealtimeHeader } from "@/components/dashboard/insights/_realtime-header";
+import { DashboardPullButton } from "@/components/dashboard/insights/_pull-button";
 import {
   AlertInbox,
   type InboxItem,
@@ -227,7 +228,8 @@ export default async function TrafficDashboardPage() {
               <span className="chip">{tt("header.windowBaseline")}</span>
             </div>
           </div>
-          <div className="head-right">
+          <div className="head-right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <DashboardPullButton />
             <RealtimeHeader label={tt("header.realtime")} />
           </div>
         </div>

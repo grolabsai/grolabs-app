@@ -634,6 +634,13 @@
         "windowDays": "Últimos {n} días",
         "windowBaseline": "vs. base de 7 días"
       },
+      "actions": {
+        "refresh": "Actualizar datos",
+        "refreshing": "Obteniendo…",
+        "pullSuccess": "Datos actualizados",
+        "pullRows": "{rows} datos extraídos de GA4",
+        "pullFailed": "No se pudieron actualizar los datos"
+      },
       "sections": {
         "audience": "Audiencia",
         "audienceMeta": "agrupado · usuarios y sesiones",

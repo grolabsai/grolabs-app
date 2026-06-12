@@ -634,6 +634,13 @@
         "windowDays": "Last {n} days",
         "windowBaseline": "vs. 7-day baseline"
       },
+      "actions": {
+        "refresh": "Refresh data",
+        "refreshing": "Fetching…",
+        "pullSuccess": "Data refreshed",
+        "pullRows": "{rows} data points pulled from GA4",
+        "pullFailed": "Couldn't refresh data"
+      },
       "sections": {
         "audience": "Audience",
         "audienceMeta": "grouped · users & sessions",

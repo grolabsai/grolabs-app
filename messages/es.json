@@ -2780,6 +2780,11 @@
       "errorSave": "No se pudo guardar la contraseña. Intentá de nuevo.",
       "submitting": "Guardando…",
       "submit": "Guardar contraseña"
+    },
+    "noAdminAccess": {
+      "title": "Sin acceso de administrador",
+      "body": "Tu cuenta no tiene acceso a la consola de administración de GroLabs. Cerrá sesión para entrar con otra cuenta.",
+      "signOut": "Cerrar sesión"
     }
   },
   "clientes": {

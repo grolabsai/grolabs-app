@@ -1,4 +1,4 @@
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isGroLabsAdmin } from "@/lib/auth/admin";
 import { loadSwitcherInstances } from "@/lib/shell/switcher";
@@ -42,9 +42,12 @@ export default async function AdminLayout({
 
   // Authorization checkpoint — REAL CHECK (user-management.md §8, closes
   // SEC-001). Only members of the GroLabs template-owner tenant reach the
-  // admin surface; every other authenticated user is hidden from it (404).
+  // admin surface. A non-admin authenticated user gets a sign-out screen
+  // (NOT notFound) so they can switch accounts — a bare redirect to /login
+  // would loop (their session is still valid) and a 404 would trap them with
+  // no way to log out.
   if (!(await isGroLabsAdmin())) {
-    notFound();
+    return <NoAccess messageKey="auth.noAdminAccess" />;
   }
 
   // GroLabs staff see every tenant's instances ("domain — instance").

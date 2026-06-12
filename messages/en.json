@@ -2780,6 +2780,11 @@
       "errorSave": "Could not save the password. Try again.",
       "submitting": "Saving…",
       "submit": "Save password"
+    },
+    "noAdminAccess": {
+      "title": "No admin access",
+      "body": "Your account doesn't have access to the GroLabs admin console. Sign out to use a different account.",
+      "signOut": "Sign out"
     }
   },
   "clientes": {

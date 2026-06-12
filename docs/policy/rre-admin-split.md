@@ -394,8 +394,8 @@ restriction in Phase 1.
 > **Superseded by [`user-management.md`](user-management.md) §8 (PR 2).**
 > That spec flips `isGroLabsAdmin(user)` to a **real** check — true only
 > for active `tenant_member`s of the GroLabs template-owner tenant (owns
-> instance 0) — so non-staff authenticated users get `notFound()` on the
-> admin host. This **closes SEC-001**. The "any authenticated user"
+> instance 0) — so non-staff authenticated users get a sign-out screen
+> (`NoAccess`) on the admin host. This **closes SEC-001**. The "any authenticated user"
 > default above is the pre-flip state; once that PR lands, the admin host
 > is GroLabs-staff-only. The flip is required there because the new admin
 > **"Clientes"** surface (create customers, see cross-tenant data) cannot

@@ -28,7 +28,6 @@ import {
   titleCase,
   SoonBars,
   SoonRing,
-  Sparkline,
   StackBars,
   fmtDelta,
   fmtDuration,
@@ -235,7 +234,8 @@ export default async function TrafficDashboardPage() {
         {audience.hasData ? (
           <>
             {/* Row 1 — Sessions / Avg session duration / Page views per session.
-                Big number (yesterday) + delta (vs prior 7-day avg) + sparkline. */}
+                Big number (yesterday) + delta (vs prior 7-day avg) + area chart
+                (same AreaChartSvg style as Row 2, for consistency). */}
             <div className="tile" data-col style={{ gridColumn: "span 4" }}>
               <div className="chart-head">
                 <div>
@@ -249,7 +249,11 @@ export default async function TrafficDashboardPage() {
                   </div>
                 </div>
               </div>
-              <Sparkline values={sessionsSeries} color="var(--accent)" />
+              {sessionsSeries.length > 0 ? (
+                <AreaChartSvg values={sessionsSeries} color="var(--accent)" />
+              ) : (
+                <div className="tile-empty">{tt("empty")}</div>
+              )}
             </div>
 
             <div className="tile" data-col style={{ gridColumn: "span 4" }}>
@@ -265,7 +269,11 @@ export default async function TrafficDashboardPage() {
                   </div>
                 </div>
               </div>
-              <Sparkline values={durationSeries} color="var(--sage)" />
+              {durationSeries.length > 0 ? (
+                <AreaChartSvg values={durationSeries} color="var(--sage)" />
+              ) : (
+                <div className="tile-empty">{tt("empty")}</div>
+              )}
             </div>
 
             <div className="tile" data-col style={{ gridColumn: "span 4" }}>
@@ -281,7 +289,11 @@ export default async function TrafficDashboardPage() {
                   </div>
                 </div>
               </div>
-              <Sparkline values={viewsSeries} color="var(--blue)" />
+              {viewsSeries.length > 0 ? (
+                <AreaChartSvg values={viewsSeries} color="var(--blue)" />
+              ) : (
+                <div className="tile-empty">{tt("empty")}</div>
+              )}
             </div>
 
             {/* Row 2 — Users (left) / New-vs-returning composition (middle) /

@@ -13,9 +13,14 @@
   --g-light: #d6d3ca;
   --g-dark: #74747c;
   /* Blocks read as a light overlay lifted off the dark page (not dark glass),
-     so they have real contrast. Border-less; defined by fill + drop shadow. */
+     so they have real contrast. Border-less; defined by fill + drop shadow.
+     These are the single source of truth — every block references the tokens
+     (--tile / --block-shadow / --page-bg), so any insights surface inherits the
+     same look instead of repeating literal values. */
+  --page-bg: #0a0a0a;
   --tile: rgba(255, 255, 255, 0.055);
   --tile-alt: rgba(255, 255, 255, 0.055);
+  --block-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.14);
   --track: rgba(255, 255, 255, 0.05);
@@ -39,7 +44,7 @@
   font-family: var(--gl-font);
 }
 .gro-id[data-bg="dark"] {
-  background: #0a0a0a;
+  background: var(--page-bg);
   padding: 28px 20px;
   border-radius: 14px;
 }
@@ -65,7 +70,7 @@
   -webkit-backdrop-filter: blur(3px);
   /* No border and no inset top-highlight (that 1px white line read as a stroke);
      the block is defined by the lighter fill + a single soft drop shadow. */
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--block-shadow);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -84,7 +89,7 @@
   justify-content: space-between;
   gap: 16px;
   backdrop-filter: blur(3px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--block-shadow);
   flex-wrap: wrap;
 }
 .gro-id .head-left {

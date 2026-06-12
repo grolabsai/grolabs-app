@@ -322,6 +322,12 @@ For each instance:
 
 Errors per pull are logged but don't abort the run for other instances. Per-pull HTTP calls are independent transactions.
 
+> **Update (2026-06-12, §14):** the daily cron runs once a day (`0 6 * * *`) with
+> the 3-day trailing window. Two **on-demand** triggers also run the same pull
+> with a wider `BACKFILL_DAYS = 7` window: saving the Property ID, and the
+> dashboard's **Refresh data** button. Today's row is still pulled but never
+> displayed (the dashboard filters to finalized days — §14).
+
 ## 6. Alert pipeline (top 3 metrics)
 
 Runs after polling. For each instance:
@@ -373,10 +379,14 @@ Layout per `docs/design/dashboard.md`. Functional content:
 - **Three alert tiles** for the top-3 metrics — green when within threshold, red/yellow when firing
 - **Sessions chart**: last 14 days, line graph, with the 7-day rolling avg overlaid
 - **Engagement rate chart**: last 14 days
-- **Top channels card**: today's mix (default channel grouping) with WoW arrows per channel
-- **Top landing pages** (top 5): pagepath + entrances + WoW
-- **Top exit pages** (top 5): pagepath + exits + WoW
-- **Geo top 5** (countries by sessions)
+- **Top channels card**: latest finalized day's mix (default channel grouping) with WoW arrows per channel
+- **Top landing pages** (top 5): pagepath + entrances (via `landingPage` + `sessions`) + WoW
+- **Top exit pages** (top 5): empty in v1 — GA4 has no exits metric (see §14)
+- **Geo top 5** (countries by sessions) — grouped with channels + device
+
+> **Note (2026-06-12):** all daily tiles show data **through yesterday** — the
+> current day is excluded (§14). The coming-soon sections are pinned below the
+> alerts inbox. See §14 for the full set of v1.1 corrections.
 - **Active alerts inbox** at bottom — list of `firing` alerts with "Acknowledge" button
 
 Alerts also appear in GroLabs's global notification UI (if/when one exists) — for v1, dedicated panel on this screen is sufficient.
@@ -429,3 +439,59 @@ These have been resolved through Tuncho's direction (2026-05-09):
 4. **Polling cadence**: every 6h, re-pull trailing 3 days for late-finalizing data.
 5. **Alert state machine**: `firing → acknowledged → cleared`, deduplicated per (metric, dimension_key).
 6. **Dashboard surface**: `/dashboard/traffic` is one section of a multi-section dashboard. The existing `/dashboard` (no-results analytics) becomes a sibling section. See `docs/design/dashboard.md` for the unified layout brief.
+
+## 14. v1.1 implementation corrections (2026-06-12)
+
+Shipped while getting a real property (Wazú/GroLabs, property `526309917`) to
+display. These supersede the corresponding lines above where they conflict.
+
+**GA4 Data API metric corrections (these caused HTTP 400s that aborted the whole
+pull — GA4 reports only the *first* invalid field, so they surfaced one at a
+time).** All requested fields are now verified against the GA4 Data API schema:
+- `averageEngagementTimePerSession` is a *calculated* metric, not a raw API
+  metric → replaced with raw `userEngagementDuration`, divided by `sessions` in
+  `parseSessionRow` to get the per-session average.
+- `entrances` / `exits` are Universal Analytics metrics GA4 **dropped**.
+  - "Entrances" is now derived the GA4 way: a separate `landingPage`-dimension
+    report with the `sessions` metric, merged into `ga4_page_daily` by path
+    (`mergePageRows` in `poll.ts`).
+  - **GA4 has no exits metric at all** → `ga4_page_daily.exits` stays `0` and the
+    *Top exit pages* tile is permanently empty. Candidate to drop or repurpose
+    (e.g. top pages by views).
+- `client.ts` now puts Google's actual error text (e.g. "Field X is not a valid
+  metric") into `last_pull_error` instead of a bare `GA4 Data API 400`.
+
+**Data window = through yesterday (the current day is never shown).** GA4 doesn't
+finalize today, so a partial today vs a full prior day fabricates a drop.
+`DATA_CUTOFF()` (today UTC) in `fetchers.ts` filters every daily query with
+`.lt("date", DATA_CUTOFF())`. The audience summary additionally anchors on the
+latest day that has sessions; the timeseries drops trailing unfinalized days. The
+header shows a freshness line ("Data through <yesterday> · last updated <pull
+time> UTC"). Realtime active-users stays the only live surface; dedicated
+real-time monitor blocks are planned separately. A future today/7/30 range
+selector will **not** offer "today". See [[project_ga4_dashboard_through_yesterday]].
+
+**Pull triggers + backfill.** Saving the Property ID now also pulls immediately,
+and a gold **Refresh data** button on the dashboard runs the same `pullNowGa4`
+action — previously nothing fetched except the daily cron, so a freshly-connected
+property sat empty until the next morning. Manual / on-save pulls backfill
+`BACKFILL_DAYS = 7` (a full "last 7 days") while the cron stays at
+`POLL_TRAILING_DAYS = 3`; per-day reports are sequential (GA4 concurrency cap), so
+a 30-day backfill needs a batched/off-request job.
+
+**Instance resolution.** GA4 server actions (`configuration/ga4/actions.ts`)
+resolve the target instance via `instance_member.is_current` — the same key the
+dashboard reads — so an on-save / Pull-now write always lands in the instance the
+dashboard displays (and can't throw for multi-instance users the way the old
+`is_active` + `.maybeSingle()` did).
+
+**Dashboard layout.** Geography is grouped with Sessions-by-channel and
+Device-mix (segmentation); landing + exit pages live under a "Pages" section; the
+two coming-soon sections (Conversions & funnels, Goals & revenue) are pinned to
+the bottom; the donut SVGs are sized to their ring; the coming-soon badge is gray
+(yellow is reserved for attention); the decorative "GRO" header block was removed.
+
+**Toasts → Assistant panel (app-wide).** All `toast.*()` calls now route into the
+right-side Assistant panel via a drop-in shim — import `toast` from
+`@/components/ui/agent-toast`, never from `sonner`. See
+[[feedback_errors_to_agent_panel]].

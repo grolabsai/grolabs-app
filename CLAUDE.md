@@ -41,7 +41,7 @@ Live routes (as of latest main):
 - `/catalog/categories` — category tree + attribute/variant accordion detail
 - `/configuration/algolia` — Algolia credentials + verification
 - `/dashboard` — tabbed dashboard; redirects to the default `Traffic` tab
-- `/dashboard/traffic` — GA4 traffic insights (dark "insights" design: audience donuts, channel/device/page/geo tiles, trend area charts, alert tiles + inbox). Conversion-funnel and revenue tiles are styled `Próximamente` shells pending GA4 e-commerce tracking (`ga4-conversions.md`).
+- `/dashboard/traffic` — GA4 traffic insights (dark "insights" design: audience donuts, channel/device/page/geo tiles, trend area charts, alert tiles + inbox). All daily tiles show data **through yesterday** — the current day is excluded so a partial day never reads as a drop (`DATA_CUTOFF` in `ga4/fetchers.ts`); realtime active-users is the only live surface. A **Refresh data** button (and saving the Property ID) runs an on-demand pull. Conversion-funnel and revenue tiles are gray `Próximamente` shells pinned to the bottom, pending GA4 e-commerce tracking (`ga4-conversions.md`). Full v1.1 corrections: `ga4-integration.md` §14.
 - `/dashboard/search` — no-results analytics (Algolia-sourced)
 - `/import` — import method picker
 - `/import/text` — text-paste import (parser wired in CI-11)

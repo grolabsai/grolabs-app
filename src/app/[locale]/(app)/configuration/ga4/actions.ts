@@ -23,11 +23,17 @@ async function resolveInstance(): Promise<{
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  // Resolve via is_current — the SAME key the traffic dashboard uses
+  // (dashboard/traffic/page.tsx) — so an on-save / Pull-now write always lands
+  // in the instance the dashboard reads. is_current has a per-user partial
+  // unique index, so .maybeSingle() can't error for multi-instance users (the
+  // old is_active filter could match several rows and throw, failing every GA4
+  // action). See instance-management migration 20260510000010.
   const { data: membership } = await supabase
     .from("instance_member")
     .select("instance_id")
     .eq("user_id", user.id)
-    .eq("is_active", true)
+    .eq("is_current", true)
     .maybeSingle();
   if (!membership) return null;
   return { instanceId: membership.instance_id };

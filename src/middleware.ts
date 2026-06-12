@@ -100,7 +100,9 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Step 3: host → route-group separation. The admin host serves only the
   // `(admin)` group + public surfaces; every other host serves only the RRE
@@ -109,19 +111,32 @@ export async function middleware(request: NextRequest) {
   const isAdminHost = hostFromRequest(request) === ADMIN_HOST;
   const logical = stripLocale(request.nextUrl.pathname);
 
-  // Admin landing: the home page server-redirects to /dashboard (an RRE
-  // route, blocked on the admin host). Send admin-host root to the admin
-  // default landing instead (rre-admin-split.md §8).
-  if (isAdminHost && logical === "/") {
-    return NextResponse.redirect(new URL("/prospects", request.url));
-  }
-
   const isAdminPath = matchesPrefix(logical, ADMIN_PREFIXES);
   const isPublic =
     logical === "/" ||
     logical.startsWith("/s/") ||
     matchesPrefix(logical, PUBLIC_PREFIXES) ||
     PUBLIC_ROOT_FILES.includes(logical);
+
+  // Admin-host auth routing. Two jobs, both auth-aware so a logged-out visitor
+  // is sent to /login rather than bounced through a protected admin page (which
+  // would render an error instead of the login screen):
+  //   - Root `/`: the shared home page server-redirects to /dashboard (an RRE
+  //     route blocked here), so route it explicitly — authed → /prospects
+  //     landing (rre-admin-split.md §8), anon → /login.
+  //   - Any protected admin path reached while logged out → /login.
+  // Authorization ("is this user a GroLabs admin") still lives in the (admin)
+  // layout; this only handles the authenticated/anonymous split.
+  if (isAdminHost) {
+    if (logical === "/") {
+      return NextResponse.redirect(
+        new URL(user ? "/prospects" : "/login", request.url),
+      );
+    }
+    if (isAdminPath && !user) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
 
   const blocked = isAdminPath ? !isAdminHost : isAdminHost && !isPublic;
   if (blocked) {

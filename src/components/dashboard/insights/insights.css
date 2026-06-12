@@ -363,12 +363,16 @@
   height: 100%;
   display: block;
 }
-/* The donut/chart/sparkline SVGs are decorative and non-interactive, but Chrome
-   focuses an inline <svg> when you click it and paints the browser-default BLUE
-   outline around its box — that's the "blue square" around the donut ring.
-   globals.css only strips that default outline for form fields, so kill it here
-   for the dashboard's decorative SVGs and the ring. Real controls (buttons)
-   keep their focus ring. */
+/* THE "blue square" around the donut: the container's class="ring" collides
+   with Tailwind's `ring` utility. Tailwind generates a `.ring` rule (the literal
+   "ring" className triggers it during content scanning) that paints a blue-500
+   focus-style BOX-SHADOW — that blue box was the square. `.gro-id .ring`
+   out-specifies Tailwind's `.ring`, so null the shadow here (the ring is purely
+   decorative and never needs one). Verified live before/after.
+   (Belt-and-suspenders: also drop any focus outline on the decorative SVGs.) */
+.gro-id .ring {
+  box-shadow: none;
+}
 .gro-id svg:focus,
 .gro-id svg:focus-visible,
 .gro-id .ring:focus,

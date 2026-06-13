@@ -237,7 +237,15 @@ export async function ensureIndex(instanceId: number): Promise<string> {
   const uid = indexUidFor(instanceId);
   try {
     if (!(await indexExists(instanceId))) {
-      await client.createIndex(uid, { primaryKey: "id" });
+      // createIndex enqueues an async task; settings applied before it lands
+      // race against an index that doesn't exist yet. Wait for creation first.
+      const created = await client.createIndex(uid, { primaryKey: "id" });
+      const outcome = await waitForTaskCompletion(created.taskUid);
+      if (outcome.outcome === "failed") {
+        throw new MeilisearchOpError(
+          `createIndex(${uid}) task failed: ${outcome.error.message ?? outcome.error.code ?? "unknown"}`,
+        );
+      }
     }
     const codes = await loadInstanceAttributeCodes(instanceId);
     // Per-instance widening: add `attributes.<code>` paths for every
@@ -262,7 +270,11 @@ export async function ensureIndex(instanceId: number): Promise<string> {
     });
     return uid;
   } catch (err) {
-    throw new MeilisearchOpError(`ensureIndex(${instanceId}) failed`, err);
+    // Surface the underlying Meilisearch cause in the message — otherwise a
+    // generic "ensureIndex failed" hides the real reason (index limit, settings
+    // rejection, auth, …) all the way up to the ingestion API response.
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new MeilisearchOpError(`ensureIndex(${instanceId}) failed: ${detail}`, err);
   }
 }
 

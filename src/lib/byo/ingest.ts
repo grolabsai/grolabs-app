@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ensureIndex,
   upsertDocuments as upsertRawDocuments,
-  deleteDocument,
+  deleteDocuments,
   deleteAllDocuments,
 } from "@/lib/search/meilisearch-client";
 import { recordBackendOperation } from "@/lib/observability/backend-operation";
@@ -164,8 +164,10 @@ export async function ingestDelete(
       if (error) throw new Error(`byo_document delete: ${error.message}`);
     }
 
-    // deleteDocumentsByIds removed — deleting first item as fallback
-    const { taskUid } = await deleteDocument(instanceId, Number(strIds[0] ?? 0));
+    // Batch-delete every id in a single Meilisearch task. (Previously this
+    // could only delete the first id — a real data-loss bug now that the
+    // batch primitive exists.)
+    const { taskUid } = await deleteDocuments(instanceId, strIds);
     const taskId = await insertTask(
       sb,
       instanceId,

@@ -1,0 +1,987 @@
+openapi: 3.1.0
+
+info:
+  title: GroLabs Public API
+  version: 1.0.0
+  summary: Search, analytics events, and storefront diagnostics for any platform.
+  description: |
+    The GroLabs public API. The mental model is **Meilisearch (search) + PostHog
+    (analytics)**, pointed at GroLabs so every storefront interaction is captured.
+
+    There are three trust models on this surface:
+
+    - **Origin-validated (no key):** `/search`, `/search/token`, `/events`,
+      `/events/token`. The browser sends no secret. The request's `Origin` header
+      is matched server-side against the instance's registered
+      `storefront_domains`. `instance_id` is public — treat it like a Stripe
+      *publishable* key. Only registered domains can call these.
+    - **Write-key (Bearer):** `/catalog/*`. Privileged, server-side only. The
+      per-instance write key is secret — never ship it to a browser. Treat it
+      like a Stripe *secret* key.
+    - **Anonymous public:** `/diagnostic/*`. No instance, no key; IP rate-limited.
+      The `runId` UUID doubles as an unguessable share token.
+
+    This document is the single source of truth for the API contract. The
+    hand-written JavaScript SDK (`@grolabs/web-sdk`) and every generated
+    per-language SDK derive from it.
+
+    > **Spec status — v1.0.0.** Covers the full external-platform surface:
+    > search, events, tenant tokens, catalog **document ingestion**
+    > (`/catalog/documents`, `/catalog/documents/delete`, `/catalog/tasks`,
+    > `/catalog/summary`), index settings, and the anonymous diagnostic. Ingestion
+    > is **accept-fast**: write calls return a `task_id`; poll `/catalog/tasks/{id}`
+    > for the terminal `succeeded`/`failed` state.
+
+  contact:
+    name: GroLabs
+    url: https://grolabs.ai
+  license:
+    name: UNLICENSED
+
+servers:
+  - url: https://app.grolabs.ai/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+tags:
+  - name: Search
+    description: Query a merchant's catalog (origin-validated, browser-callable).
+  - name: Events
+    description: Record storefront analytics events (origin-validated).
+  - name: Tokens
+    description: Mint short-lived Meilisearch tenant tokens for direct browser→Meilisearch calls.
+  - name: Catalog
+    description: Privileged index management (write-key authenticated, server-side).
+  - name: Diagnostics
+    description: Anonymous public storefront diagnostic (landing-page widget).
+
+security: []   # Most endpoints are origin-validated, not credential-authenticated.
+
+paths:
+  # ──────────────────────────────────────────────────────────────────────────
+  /search:
+    post:
+      tags: [Search]
+      summary: Search a catalog
+      operationId: search
+      description: |
+        Proxy search against the instance's Meilisearch index. Origin-validated:
+        the caller's `Origin` must be a registered storefront domain. Returns hits
+        plus a `query_uid` used to attribute later click/conversion events back to
+        this search.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SearchRequest' }
+      responses:
+        '200':
+          description: Search results.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+        '400':
+          description: Malformed body or invalid instance_id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Instance not found, inactive, or origin not authorized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Rate limited (per-IP or per-instance/origin).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '502':
+          description: Upstream search engine failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
+  /search/token:
+    post:
+      tags: [Tokens]
+      summary: Mint a search tenant token
+      operationId: mintSearchToken
+      description: |
+        Mint a short-lived Meilisearch tenant token scoped to this instance's
+        index, for storefronts that call Meilisearch directly instead of through
+        `/search`. Origin-validated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InstanceRef' }
+      responses:
+        '200':
+          description: A scoped tenant token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '403':
+          description: Instance not found, inactive, or origin not authorized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Token minting failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
+  /events:
+    post:
+      tags: [Events]
+      summary: Record an analytics event
+      operationId: recordEvent
+      description: |
+        Record a storefront analytics event (e.g. a `click` or `conversion`).
+        Origin-validated, fire-and-forget. The event is stored locally and
+        mirrored to PostHog. Pass `queryUid` (from a prior `/search` response) to
+        attribute the event to the search that produced it — this is what makes
+        keyword→conversion analytics computable. Do not put PII in any field.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventRequest' }
+      responses:
+        '200':
+          description: Event accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                required: [ok]
+        '400':
+          description: Malformed body, invalid instance_id, or missing eventType/eventName.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Instance not found, inactive, or origin not authorized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Event could not be recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
+  /events/token:
+    post:
+      tags: [Tokens]
+      summary: Mint an events tenant token
+      operationId: mintEventsToken
+      description: |
+        Mint a short-lived Meilisearch token for submitting analytics events
+        directly to Meilisearch's `/events` endpoint. Origin-validated. Same
+        shape and trust model as `/search/token`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InstanceRef' }
+      responses:
+        '200':
+          description: A scoped events token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '403':
+          description: Instance not found, inactive, or origin not authorized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Token minting failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
+  /catalog/settings:
+    get:
+      tags: [Catalog]
+      summary: Read index settings
+      operationId: getCatalogSettings
+      security:
+        - writeKey: []
+      parameters:
+        - name: instance_id
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+          description: The instance whose index settings to read.
+      responses:
+        '200':
+          description: Current index settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IndexSettings' }
+        '400':
+          description: Invalid instance_id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Settings read failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    patch:
+      tags: [Catalog]
+      summary: Update index settings
+      operationId: updateCatalogSettings
+      security:
+        - writeKey: []
+      description: |
+        Declare which mapped fields are searchable / filterable / sortable, plus
+        synonyms and stop words. Mirrors Meilisearch's index settings. Async:
+        returns a task acknowledgement. `instance_id` is always kept filterable
+        server-side regardless of input.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IndexSettingsUpdate' }
+      responses:
+        '202':
+          description: Settings update accepted (async).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettingsAck' }
+        '400':
+          description: Invalid instance_id, invalid JSON, or no settings provided.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Settings update failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
+  /catalog/documents:
+    post:
+      tags: [Catalog]
+      summary: Upsert catalog documents
+      operationId: upsertDocuments
+      security:
+        - writeKey: []
+      description: |
+        Add-or-update a batch of catalog documents (max 1000 per request). The
+        first full load is just a large upsert. Documents are mapped into the
+        GroLabs canonical structure for ranking/filtering and the original
+        payload is retained verbatim for display. Accept-fast — poll the returned
+        `task_id` for terminal status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DocumentsUpsertRequest' }
+      responses:
+        '202':
+          description: Batch accepted (indexing is async).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IngestAck' }
+        '400':
+          description: Invalid instance_id, invalid JSON, empty/oversized batch, or no documents.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Ingestion failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      tags: [Catalog]
+      summary: Delete the entire catalog
+      operationId: deleteAllDocuments
+      security:
+        - writeKey: []
+      description: Remove every document for the instance (a re-seed). Accept-fast.
+      parameters:
+        - name: instance_id
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '202':
+          description: Deletion accepted (async).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IngestAck' }
+        '400':
+          description: Invalid instance_id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Deletion failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /catalog/documents/delete:
+    post:
+      tags: [Catalog]
+      summary: Delete documents by id
+      operationId: deleteDocuments
+      security:
+        - writeKey: []
+      description: |
+        Batch-delete documents by id (max 1000 per request). A POST rather than a
+        DELETE because the id list travels in the body. Accept-fast.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DocumentsDeleteRequest' }
+      responses:
+        '202':
+          description: Deletion accepted (async).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IngestAck' }
+        '400':
+          description: Invalid instance_id, invalid JSON, or missing/oversized id list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Deletion failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /catalog/tasks/{taskId}:
+    get:
+      tags: [Catalog]
+      summary: Poll an ingestion task
+      operationId: getCatalogTask
+      security:
+        - writeKey: []
+      description: |
+        Read the status of an ingestion task. A still-processing task is refreshed
+        against the search engine and converges to `succeeded`/`failed` on read.
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: instance_id
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: The task status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskStatus' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Task not found for this instance.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Task read failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /catalog/summary:
+    get:
+      tags: [Catalog]
+      summary: Catalog sync summary
+      operationId: getCatalogSummary
+      security:
+        - writeKey: []
+      description: Document counts (index vs source of truth), the last task, and recent failures.
+      parameters:
+        - name: instance_id
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: The catalog summary.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogSummary' }
+        '401':
+          description: Missing or invalid write key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
+  /diagnostic/runs:
+    post:
+      tags: [Diagnostics]
+      summary: Start a storefront diagnostic
+      operationId: createDiagnosticRun
+      description: |
+        Run an anonymous storefront diagnostic against a public URL. No auth;
+        rate-limited per IP. The returned `run_id` is an unguessable UUID that
+        doubles as a share token for fetching the result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiagnosticRunRequest' }
+      responses:
+        '201':
+          description: Run created (and, for v1 scoring, completed synchronously).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiagnosticRunCreated' }
+        '400':
+          description: Missing url or invalid JSON.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Rate limited (per IP, hourly/daily).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RateLimitedError' }
+        '503':
+          description: Diagnostic engine not configured on this deployment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /diagnostic/runs/{runId}:
+    get:
+      tags: [Diagnostics]
+      summary: Fetch a diagnostic result
+      operationId: getDiagnosticRun
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The run, prospect, and findings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiagnosticRunResult' }
+        '404':
+          description: Run not found (or not an anonymous run).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: Diagnostic engine not configured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /diagnostic/runs/{runId}/v5:
+    get:
+      tags: [Diagnostics]
+      summary: Fetch v5 atomic-rubric scoring
+      operationId: getDiagnosticRunV5
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completed v5 scoring, grouped by category.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiagnosticV5Result' }
+        '202':
+          description: Scoring still processing — poll again.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id: { type: string, format: uuid }
+                  status: { type: string, const: processing }
+                required: [run_id, status]
+        '404':
+          description: Run not found (or not an anonymous run).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    writeKey:
+      type: http
+      scheme: bearer
+      description: |
+        Per-instance write key, sent as `Authorization: Bearer <write_key>`.
+        Secret — server-side only. Never expose in a browser.
+
+  schemas:
+    # ── shared ───────────────────────────────────────────────────────────────
+    InstanceRef:
+      type: object
+      required: [instance_id]
+      properties:
+        instance_id:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string }
+          description: |
+            Public instance id (publishable-key class). Accepts an integer or a
+            numeric string. `0` is the valid template instance — never treat it
+            as falsy.
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Stable machine-readable error code.
+          examples: [instance_not_found_or_origin_not_authorized, rate_limited, url_required]
+        message:
+          type: string
+          description: Optional human-readable detail (not always present).
+
+    RateLimitedError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, const: rate_limited }
+        retry_after_seconds: { type: integer }
+
+    TokenResponse:
+      type: object
+      required: [token, expires_at, meilisearch_host, index_uid]
+      properties:
+        token: { type: string, description: Short-lived Meilisearch tenant token. }
+        expires_at: { type: integer, description: Expiry as a Unix timestamp (seconds). }
+        meilisearch_host: { type: string, description: Meilisearch cluster host to call directly. }
+        index_uid: { type: string, description: 'Index to query, e.g. "inst_42".' }
+
+    # ── search ───────────────────────────────────────────────────────────────
+    SearchRequest:
+      type: object
+      required: [instance_id, query]
+      properties:
+        instance_id:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string }
+        query:
+          type: string
+          description: The search text. An empty string is valid (returns the full index, ranked).
+        userId:
+          type: string
+          maxLength: 128
+          description: Anonymous storefront session id. Stitches no-result searches and journeys.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+        filters:
+          type: string
+          description: 'Meilisearch filter expression, e.g. `brand = "Acme" AND in_stock = true`.'
+        sort:
+          type: array
+          items: { type: string }
+          description: 'Sort expressions, e.g. `["price:asc"]`.'
+        facets:
+          type: array
+          items: { type: string }
+          description: Facet field names. Allowlist-gated server-side; unknown names are dropped.
+
+    SearchResponse:
+      type: object
+      required: [hits, total_hits, processing_time_ms, query_uid, metadata]
+      properties:
+        hits:
+          type: array
+          items: { $ref: '#/components/schemas/SearchHit' }
+        total_hits: { type: integer, description: Estimated total matches. }
+        processing_time_ms: { type: integer }
+        query_uid:
+          type: string
+          description: |
+            Meilisearch analytics query id. Echo this as `queryUid` on a later
+            `/events` call to attribute that event to this search.
+        metadata:
+          type: object
+          required: [queryUid, requestUid, indexUid]
+          properties:
+            queryUid: { type: string }
+            requestUid: { type: string }
+            indexUid: { type: string }
+        facets:
+          type: object
+          description: Per-facet value→count map. Present only when facets were requested.
+          additionalProperties:
+            type: object
+            additionalProperties: { type: integer }
+        facet_stats:
+          type: object
+          description: Numeric facet min/max. Present only when relevant.
+          additionalProperties:
+            type: object
+            properties:
+              min: { type: number }
+              max: { type: number }
+
+    SearchHit:
+      type: object
+      required: [document]
+      properties:
+        document:
+          type: object
+          description: |
+            The stored catalog document. The `id` you ingested is the `id`
+            returned here and the id you reference on events — keep it stable
+            across ingest→search→events or attribution breaks.
+          properties:
+            id:
+              oneOf: [{ type: string }, { type: integer }]
+          additionalProperties: true
+        matched_variation:
+          description: The specific variant that matched, when applicable; otherwise null.
+          oneOf:
+            - { type: object, additionalProperties: true }
+            - { type: 'null' }
+
+    # ── events ───────────────────────────────────────────────────────────────
+    EventRequest:
+      type: object
+      required: [instance_id, eventType, eventName]
+      properties:
+        instance_id:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string }
+        eventType:
+          type: string
+          maxLength: 64
+          description: 'Event category. Known values: `click`, `conversion`. Others are accepted and stored.'
+        eventName:
+          type: string
+          maxLength: 256
+          description: 'Specific event name, e.g. "Added to cart from PDP".'
+        userId:
+          type: string
+          maxLength: 128
+          description: Anonymous storefront session id (same id used on `/search`).
+        queryUid:
+          type: string
+          maxLength: 128
+          description: The `query_uid` of the search that produced this product. Drives attribution.
+        indexUid:
+          type: string
+          maxLength: 128
+        objectId:
+          oneOf: [{ type: string }, { type: integer }, { type: 'null' }]
+          description: The product id the event concerns (coerced to string, max 128 chars).
+        objectName:
+          type: string
+          maxLength: 512
+        position:
+          type: integer
+          minimum: 0
+          maximum: 32767
+          description: 1-based rank of the product in the result list, if applicable.
+
+    # ── catalog settings ─────────────────────────────────────────────────────
+    IndexSettings:
+      type: object
+      description: Meilisearch-style index settings.
+      properties:
+        searchableAttributes: { type: array, items: { type: string } }
+        filterableAttributes: { type: array, items: { type: string } }
+        sortableAttributes: { type: array, items: { type: string } }
+        synonyms:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+        stopWords: { type: array, items: { type: string } }
+
+    IndexSettingsUpdate:
+      allOf:
+        - { $ref: '#/components/schemas/InstanceRef' }
+        - { $ref: '#/components/schemas/IndexSettings' }
+
+    SettingsAck:
+      type: object
+      required: [applied]
+      properties:
+        task_id:
+          oneOf: [{ type: string }, { type: 'null' }]
+          description: GroLabs ingestion task id (poll for status once task endpoints ship).
+        meilisearch_task_uid:
+          oneOf: [{ type: integer }, { type: 'null' }]
+        applied:
+          type: array
+          items: { type: string }
+          description: Setting keys that were applied.
+
+    # ── catalog documents ────────────────────────────────────────────────────
+    DocumentsUpsertRequest:
+      type: object
+      required: [instance_id, documents]
+      properties:
+        instance_id:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string }
+        documents:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: object
+            description: |
+              An arbitrary merchant document. Recognized canonical fields:
+              `id` (required — your stable primary key), `title`/`name`,
+              `description`, `brand`, `categories`, `category_ids`, `price`,
+              `in_stock`, `image`/`image_url`, `url`, `variants`. Any other field
+              is stored and returned verbatim on search.
+            properties:
+              id:
+                oneOf: [{ type: string }, { type: integer }]
+            additionalProperties: true
+        primary_key:
+          type: string
+          default: id
+          description: The field to use as the document id. Defaults to `id`.
+
+    DocumentsDeleteRequest:
+      type: object
+      required: [instance_id, ids]
+      properties:
+        instance_id:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string }
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            oneOf: [{ type: string }, { type: integer }]
+
+    IngestAck:
+      type: object
+      required: [task_id, meilisearch_task_uid]
+      properties:
+        task_id:
+          oneOf: [{ type: string, format: uuid }, { type: 'null' }]
+          description: GroLabs ingestion task id — poll `/catalog/tasks/{task_id}`.
+        accepted:
+          type: integer
+          description: Documents accepted for indexing.
+        rejected:
+          type: integer
+          description: Documents rejected (e.g. missing primary key).
+        meilisearch_task_uid:
+          oneOf: [{ type: integer }, { type: 'null' }]
+
+    TaskStatus:
+      type: object
+      required: [task_id, op, status, document_count, failed_count, created_at]
+      properties:
+        task_id: { type: string, format: uuid }
+        op:
+          type: string
+          enum: [upsert, delete, delete_all, settings]
+        status:
+          type: string
+          enum: [queued, processing, succeeded, failed]
+        document_count: { type: integer }
+        failed_count: { type: integer }
+        meilisearch_task_uid:
+          oneOf: [{ type: integer }, { type: 'null' }]
+        error:
+          description: Error detail when the task failed; null otherwise.
+          oneOf: [{ type: object, additionalProperties: true }, { type: 'null' }]
+        created_at: { type: string, format: date-time }
+        completed_at:
+          oneOf: [{ type: string, format: date-time }, { type: 'null' }]
+
+    CatalogSummary:
+      type: object
+      required: [index_document_count, stored_document_count, last_task, recent_failures]
+      properties:
+        index_document_count:
+          type: integer
+          description: Documents live in the search index.
+        stored_document_count:
+          type: integer
+          description: Documents held as source of truth.
+        last_task:
+          description: The most recent ingestion task, or null.
+          oneOf: [{ $ref: '#/components/schemas/TaskStatus' }, { type: 'null' }]
+        recent_failures:
+          type: array
+          items: { type: object, additionalProperties: true }
+
+    # ── diagnostics ──────────────────────────────────────────────────────────
+    DiagnosticRunRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri, description: The storefront to diagnose. }
+        pdp_url: { type: string, format: uri, description: Optional product-detail-page sample. }
+        category_url: { type: string, format: uri, description: Optional category/listing sample. }
+        display_name: { type: string }
+        vertical_id:
+          oneOf: [{ type: integer }, { type: string }]
+        contact_email: { type: string, format: email }
+        version: { type: string, description: 'Pass "v5" to enable atomic-rubric scoring.' }
+
+    DiagnosticRunCreated:
+      type: object
+      required: [run_id, report_url, status]
+      properties:
+        run_id: { type: string, format: uuid, description: Share token for fetching the result. }
+        report_url: { type: string, description: 'Relative report path, e.g. "/diagnostics/<run_id>".' }
+        status: { type: string, const: completed }
+        v5:
+          type: object
+          properties:
+            run_id: { type: string, format: uuid }
+            status: { type: string, enum: [processing, completed] }
+
+    DiagnosticRunResult:
+      type: object
+      required: [run, prospect, findings]
+      properties:
+        run:
+          type: object
+          properties:
+            run_id: { type: string, format: uuid }
+            prospect_id: { type: integer }
+            instance_id: { type: 'null' }
+            run_status: { type: string }
+            started_at: { type: string, format: date-time }
+            completed_at:
+              oneOf: [{ type: string, format: date-time }, { type: 'null' }]
+            overall_score:
+              oneOf: [{ type: number }, { type: 'null' }]
+            stage_scores:
+              oneOf:
+                - { type: object, additionalProperties: { type: number } }
+                - { type: 'null' }
+            maturity_tier:
+              oneOf: [{ type: string }, { type: 'null' }]
+            est_annual_uplift_usd:
+              oneOf: [{ type: number }, { type: 'null' }]
+            error_message:
+              oneOf: [{ type: string }, { type: 'null' }]
+        prospect:
+          type: object
+          properties:
+            prospect_id: { type: integer }
+            url: { type: string }
+            display_name:
+              oneOf: [{ type: string }, { type: 'null' }]
+            vertical_id:
+              oneOf: [{ type: integer }, { type: 'null' }]
+            platform_detected:
+              oneOf: [{ type: string }, { type: 'null' }]
+            engine_detected:
+              oneOf: [{ type: string }, { type: 'null' }]
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              finding_id: { type: string }
+              diagnostic_check_id: { type: integer }
+              score:
+                oneOf: [{ type: number }, { type: 'null' }]
+              result_status: { type: string }
+              evidence: {}
+              notes:
+                oneOf: [{ type: string }, { type: 'null' }]
+
+    DiagnosticV5Result:
+      type: object
+      required: [run_id, status, categories]
+      properties:
+        run_id: { type: string, format: uuid }
+        status: { type: string, const: completed }
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              category_code: { type: string }
+              score:
+                oneOf: [{ type: number }, { type: 'null' }]
+              findings:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status: { type: string }
+                    score:
+                      oneOf: [{ type: number }, { type: 'null' }]
+                    evidence: {}

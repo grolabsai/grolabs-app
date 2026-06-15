@@ -11,6 +11,7 @@ import { FieldHintProvider } from "@/components/shell/FieldHintContext";
 import { MissingTranslationListener } from "@/components/i18n/MissingTranslationListener";
 import { NewInstanceBanner } from "@/components/shell/NewInstanceBanner";
 import { NoAccess } from "@/components/auth/NoAccess";
+import { wasPasswordSession } from "@/lib/auth/session-method";
 
 /**
  * Protected app layout. Every route under `(app)/` inherits this:
@@ -38,16 +39,17 @@ export default async function AppLayout({
 
   // Forced first-login password change — block the app until the generated
   // password is replaced. Only applies to PASSWORD sessions: an SSO sign-in
-  // has no password to change, so we gate on the provider of the current
-  // session (`app_metadata.provider`). An account provisioned with a password
-  // can also have a Google/Microsoft identity linked; when they come in via
-  // SSO the provider is 'google'/'azure' and the gate is correctly skipped.
-  const signInProvider = user.app_metadata?.provider ?? "email";
-  if (
-    signInProvider === "email" &&
-    user.user_metadata?.must_change_password === true
-  ) {
-    redirect("/cambiar-contrasena");
+  // has no password to change, so forcing the flow would just trap the user.
+  // We key on the session's auth method (JWT `amr`), NOT app_metadata.provider
+  // — the latter is the account's primary identity and stays 'email' even
+  // during a Google session on a linked account. See lib/auth/session-method.
+  if (user.user_metadata?.must_change_password === true) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (wasPasswordSession(session?.access_token, user)) {
+      redirect("/cambiar-contrasena");
+    }
   }
 
   // Instance switcher list. GroLabs staff get every tenant's instances

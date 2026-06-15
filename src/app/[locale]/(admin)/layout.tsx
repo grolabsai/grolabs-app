@@ -11,6 +11,7 @@ import { FieldHintProvider } from "@/components/shell/FieldHintContext";
 import { MissingTranslationListener } from "@/components/i18n/MissingTranslationListener";
 import { NewInstanceBanner } from "@/components/shell/NewInstanceBanner";
 import { NoAccess } from "@/components/auth/NoAccess";
+import { wasPasswordSession } from "@/lib/auth/session-method";
 
 /**
  * Admin app layout — the GroLabs-internal management surface served on
@@ -37,14 +38,15 @@ export default async function AdminLayout({
   }
 
   // Forced first-login password change — same gate as the RRE surface. Only
-  // applies to PASSWORD sessions; an SSO sign-in (provider 'google'/'azure')
-  // has no password to change, so it is exempt.
-  const signInProvider = user.app_metadata?.provider ?? "email";
-  if (
-    signInProvider === "email" &&
-    user.user_metadata?.must_change_password === true
-  ) {
-    redirect("/cambiar-contrasena");
+  // applies to PASSWORD sessions; an SSO sign-in has no password to change.
+  // Keyed on the session auth method (JWT `amr`), not app_metadata.provider.
+  if (user.user_metadata?.must_change_password === true) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (wasPasswordSession(session?.access_token, user)) {
+      redirect("/cambiar-contrasena");
+    }
   }
 
   // Authorization checkpoint — REAL CHECK (user-management.md §8, closes

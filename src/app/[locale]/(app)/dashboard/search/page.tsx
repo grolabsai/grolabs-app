@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
+import { NoAccess } from "@/components/auth/NoAccess";
 import { Link } from "@/i18n/routing";
 import {
   Card,
@@ -53,15 +55,11 @@ export default async function DashboardPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("instance_member")
-    .select("instance_id")
-    .eq("user_id", user.id)
-    .eq("is_current", true)
-    .maybeSingle();
-  if (!membership) redirect("/login");
-
-  const instanceId: number = membership.instance_id;
+  // Canonical self-healing resolver. Do NOT redirect an authenticated user to
+  // /login on a missing instance — that loops via /dashboard
+  // (ERR_TOO_MANY_REDIRECTS). The layout already gates auth + zero-membership.
+  const instanceId = await currentInstanceId();
+  if (instanceId == null) return <NoAccess />;
 
   const { data: instanceRow } = await supabase
     .from("instance")

@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
-import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
+import { NoAccess } from "@/components/auth/NoAccess";
 import { TIMESERIES_DAYS } from "@/lib/integrations/ga4/constants";
 import {
   getAudienceSummary,
@@ -53,19 +53,13 @@ export default async function TrafficDashboardPage() {
   const t = await getTranslations("dashboard");
   const tt = await getTranslations("dashboard.traffic");
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: membership } = await supabase
-    .from("instance_member")
-    .select("instance_id")
-    .eq("user_id", user.id)
-    .eq("is_current", true)
-    .maybeSingle();
-  if (!membership) redirect("/login");
-  const instanceId: number = membership.instance_id;
+  // Resolve the instance via the canonical self-healing resolver. NEVER
+  // redirect an authenticated user to /login here: /login bounces a logged-in
+  // user back to /dashboard, which loops (ERR_TOO_MANY_REDIRECTS). The (app)
+  // layout already gates auth + zero-membership; on the unreachable null path
+  // we render NoAccess rather than redirect.
+  const instanceId = await currentInstanceId();
+  if (instanceId == null) return <NoAccess />;
 
   const Header = (
     <>

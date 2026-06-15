@@ -37,8 +37,16 @@ export default async function AppLayout({
   }
 
   // Forced first-login password change — block the app until the generated
-  // password is replaced. SSO users never carry this flag.
-  if (user.user_metadata?.must_change_password === true) {
+  // password is replaced. Only applies to PASSWORD sessions: an SSO sign-in
+  // has no password to change, so we gate on the provider of the current
+  // session (`app_metadata.provider`). An account provisioned with a password
+  // can also have a Google/Microsoft identity linked; when they come in via
+  // SSO the provider is 'google'/'azure' and the gate is correctly skipped.
+  const signInProvider = user.app_metadata?.provider ?? "email";
+  if (
+    signInProvider === "email" &&
+    user.user_metadata?.must_change_password === true
+  ) {
     redirect("/cambiar-contrasena");
   }
 

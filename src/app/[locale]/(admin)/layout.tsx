@@ -36,8 +36,14 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Forced first-login password change — same gate as the RRE surface.
-  if (user.user_metadata?.must_change_password === true) {
+  // Forced first-login password change — same gate as the RRE surface. Only
+  // applies to PASSWORD sessions; an SSO sign-in (provider 'google'/'azure')
+  // has no password to change, so it is exempt.
+  const signInProvider = user.app_metadata?.provider ?? "email";
+  if (
+    signInProvider === "email" &&
+    user.user_metadata?.must_change_password === true
+  ) {
     redirect("/cambiar-contrasena");
   }
 

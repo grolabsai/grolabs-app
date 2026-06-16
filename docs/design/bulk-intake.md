@@ -135,7 +135,53 @@ unit), then the existing ASE interpretation runs identically on top:
   agent-panel pattern the app is already built around (CLAUDE.md §14), and it
   reuses the import wizard's review step.
 
-### 4. The update basis — the SAME endpoint as the initial load
+### 4. The mapping profile — discover the field map once, apply it forever
+
+The wire shape is **JSON**: an array of record objects, each carrying the stable
+ID plus arbitrary fields under **the merchant's own names** (`peso_neto`,
+`categoria`, `Option1 Value`) — not ours. So "how do we know what field is what?"
+must be answered without re-running the AI on every upsert.
+
+Answer: the field map is **discovered once and persisted**. Discovery (the
+session + dictionary + ASE interpret + confirm loop above) produces a saved
+**mapping profile** per integration — the artifact that turns the confirm loop's
+output into a deterministic transform:
+
+```jsonc
+{
+  "id_field": "id",
+  "fields": {
+    "Title":         { "target": "name" },
+    "peso_neto":     { "target": "attribute:weight", "type": "quantity", "unit_hint": "parse" },
+    "categoria":     { "target": "category", "split": ">" },
+    "Option1 Value": { "target": "variant_axis", "axis_from": "Option1" }
+  }
+}
+```
+
+Two phases follow from this:
+
+- **Discovery (onboarding, once)** — establish + save the profile.
+- **Steady-state upsert (every delta after)** — pass each incoming JSON record
+  through the **saved profile**: rename, parse `"500 g"` → `{value: 500, unit: g}`,
+  split category paths, pull variant axes. No AI, deterministic, repeatable. The
+  stable ID + the mapping profile together **are** the integration contract.
+
+**Unknown new field** (`color_hex` appears, wasn't in the profile): it lands raw
+and triggers a *fresh, tiny* confirm round — it never blocks, and everything
+already mapped keeps flowing. The profile grows over time.
+
+**Who adapts to whom** — one genuine choice, both ending at the same model:
+
+| Model | Merchant sends | Map lives | Default for |
+|---|---|---|---|
+| **We adapt** (recommended) | Their **own raw** field names | Our saved profile | Least merchant work — Shopify, WC, most customs |
+| **They adapt** | Our **canonical** keys (`id`, `name`, `price`, `categories`…) | Their side | Partner devs who'd rather map once and send clean docs (push API canonical keys already support this) |
+
+Default to **we adapt** — consistent with "the only thing they must format is the
+ID."
+
+### 5. The update basis — the SAME endpoint as the initial load
 
 There is **no separate update pipeline**. This is the trick Algolia, Meilisearch,
 and Shopify all use. One endpoint, keyed on a stable external ID:
@@ -246,6 +292,12 @@ Both staging tables carry `instance_id` and are RLS-isolated like every
 operational table (CLAUDE.md §2). Raw landing is lossless — nothing is discarded
 before interpretation, mirroring the `wc_raw` precedent.
 
+The **mapping profile** (§4) persists per integration. Simplest home is a
+`mapping_profile` JSONB sub-key under `instance.integrations_config.<source>`
+(the established integration-config pattern, CLAUDE.md §7); promote to a dedicated
+`import_mapping_profile` table only if versioning/history is needed. ERD: N/A
+while it lives in `integrations_config` (no new table).
+
 ## Implementation plan (discrete prompts — confirm before building)
 
 > Ordered. Each is independently executable; later prompts depend on earlier ones
@@ -275,12 +327,14 @@ before interpretation, mirroring the `wc_raw` precedent.
    (reuses the wizard's grouping concepts). *Why:* support Shopify-style single
    exports. *Depends on:* 2.
 
-5. **Wire interpretation to the session.**
+5. **Wire interpretation to the session + persist the mapping profile.**
    *What:* Feed the stitched/split model through the existing ASE agents
-   (`analyze-categories`, `group-products`) and persist confidence-scored
-   proposals. *Where:* `web-apps/app` (`src/lib/ase.ts` + import lib). *Why:*
-   reuse the AI normalization that already exists in the wizard. *Depends on:*
-   3, 4.
+   (`analyze-categories`, `group-products`), persist confidence-scored proposals,
+   and on confirm **save the mapping profile** (§4) to
+   `integrations_config.<source>.mapping_profile`. *Where:* `web-apps/app`
+   (`src/lib/ase.ts` + import lib). *Why:* reuse the wizard's AI normalization and
+   produce the artifact that makes steady-state upserts deterministic.
+   *Depends on:* 3, 4.
 
 6. **"I found this" confirm surface.**
    *What:* Reuse the wizard review step to confirm interpretations from an
@@ -288,12 +342,14 @@ before interpretation, mirroring the `wc_raw` precedent.
    never blocks. *Where:* `web-apps/app` (`src/app/[locale]/(app)/import/`).
    *Why:* the human-in-the-loop without gating. *Depends on:* 5.
 
-7. **Delta + reconcile sync.**
-   *What:* Confirm the upsert/delete endpoint covers deltas (it does); add a
-   scheduled `modified_after` WC poll and a periodic full reconcile (atomic
-   Meilisearch index swap) that removes records absent from the latest snapshot.
-   *Where:* `web-apps/app` (pg_cron + sync lib). *Why:* the update basis +
-   delete-catcher safety net. *Depends on:* none (orthogonal to 1–6).
+7. **Delta + reconcile sync (apply the saved profile).**
+   *What:* Confirm the upsert/delete endpoint covers deltas (it does); apply the
+   saved mapping profile to each incoming record (deterministic transform, no AI),
+   routing unknown fields to raw + a fresh confirm round; add a scheduled
+   `modified_after` WC poll and a periodic full reconcile (atomic Meilisearch
+   index swap) that removes records absent from the latest snapshot. *Where:*
+   `web-apps/app` (pg_cron + sync lib). *Why:* the update basis + delete-catcher
+   safety net. *Depends on:* 5 (needs the profile).
 
 8. **Source change-signals.**
    *What:* Shopify webhook registration + handler; a WooCommerce push hook in the

@@ -6,7 +6,7 @@ title: "Bulk Catalog Intake & Sync — minimal-ask ingest, AI normalization, ups
 status: Draft
 owner: "Tuncho"
 audience: "Claude Code (future implementer), GroLabs contributors scoping catalog intake."
-scope: "How a merchant gets their catalog into GroLabs and keeps it in sync, with the least possible formatting work on their side. Covers (A) the intake ask — separate tables + a tiny data dictionary as default, one flat file as fallback, mega-join rejected; (B) accept-fast raw landing in an import session, processed only once the full set has arrived; (C) AI normalization (stitch / split → one internal model → ASE interpretation → an 'I found this' confirm loop that never blocks); and (D) the update basis — the SAME upsert-by-ID endpoint as the initial load, deltas via webhook or modified_after, plus a periodic full reconcile as the self-healing delete-catcher. Replicates the Algolia / Meilisearch sync model. Plan, not code — see docs/policy/design-session-protocol.md."
+scope: "How a merchant gets their catalog into GroLabs and keeps it in sync — and how GroLabs sends enhanced products back — with the least possible work on their side. The data flow is BIDIRECTIONAL, so the canonical unit is the product DATA OBJECT (stable ID + nested variants/attributes/categories) in both directions, built with the generated SDK. Covers (A) the object-as-unit decision + how objects arrive/depart per source (pull/write via platform APIs for Shopify+WC = zero merchant code; SDK push/pull for custom; table dumps demoted to a custom initial-load convenience we stitch into objects); (B) accept-fast raw landing in an import session; (C) AI normalization (stitch + ASE interpretation → an 'I found this' confirm loop that never blocks) producing a saved BIDIRECTIONAL mapping profile; (D) the update basis — the SAME upsert-by-ID endpoint as the initial load, deltas via webhook or modified_after, plus a periodic full reconcile as the self-healing delete-catcher (replicates the Algolia/Meilisearch model); and (E) write-back — enhancements out as the same object, fields inverted via the profile, propose-then-approve, never silent. Plan, not code — see docs/policy/design-session-protocol.md."
 integrations:
   - name: Shopify
     kind: external-service
@@ -74,38 +74,40 @@ update basis.
 
 ## Decisions
 
-### 1. The intake ask — separate tables + a tiny data dictionary
+### 1. The canonical unit is the product data object — in both directions
 
-Merchant data arrives in one of two natural shapes. We accept both, but we
-**default to the one that preserves the most structure**:
+The data flow is **bidirectional**: GroLabs ingests the merchant's catalog *and*
+sends enhanced products back to enrich it (better attributes, categories,
+synonyms). That write-back requirement is decisive — a table dump is a one-way
+street you cannot write enrichments into. So the shared currency, in and out, is
+the **product data object**: a stable ID + nested variants / attributes /
+categories. Updates are product objects; enhancements are product objects; the
+initial load resolves to product objects too. One unit everywhere.
 
-- **Default — separate tables, as-is, + a one-line data dictionary.** When we
-  can talk to devs (Shopify, WooCommerce, or a custom system), this is the ask.
-  The merchant exports their tables unchanged and writes a five-line note: what
-  each table is and which column links it to the others. This is *less* work for
-  them than a join query and gives us the join graph explicitly.
+**"We help them create them" — the SDK.** Merchants don't reverse-engineer our
+schema from docs; they use the **generated SDK** (one OpenAPI spec → per-language
+SDKs, TS flagship — the push-ingest API + `public/openapi.yaml` from PR #232 are
+the start of this). `buildProduct({...})` produces a valid object. Because the
+SDK is generated from the spec, the same types describe the enhancement objects we
+send *back* — one spec, both directions.
 
-  ```
-  products.csv    — our products.          key: product_id
-  variants.csv    — sizes/colors.          links to products by product_id
-  categories.csv  — category tree.         links to products by category_id
-  attributes.csv  — attribute definitions. key: attribute_id
-  attr_values.csv — values per product.    links by product_id + attribute_id
-  ```
+**How objects arrive/depart varies by source; the unit does not:**
 
-  The dictionary is **optional, never a gate** — if absent, we infer join keys
-  (matching column names + value overlap) and confirm them in the same loop.
+- **Shopify / WooCommerce — zero merchant code.** We *pull* (their APIs already
+  return product-shaped objects) and write enhancements *back* through their
+  platform APIs (Shopify Admin / WC REST). The object is internal; the merchant
+  installs our app/plugin and writes nothing.
+- **Custom (talk-to-devs) — SDK push/pull.** They send objects built with the
+  SDK, and receive enhancement objects on the same channel. Minimal, unavoidable
+  plumbing for a bespoke system, but never per-product upsert/mapping logic —
+  that's ours.
 
-- **Fallback — one flat file, we split it.** For merchants who can only press an
-  "Export all products" button (typical Shopify export) and don't know their
-  structure. We detect the repeating product key, treat constant-within-group
-  columns as product-level and varying columns as variant axes. Used only when
-  separate tables aren't available.
-
-- **Rejected — the mega flat join.** Asking the merchant to join everything into
-  one denormalized file is the worst option: it destroys the foreign keys we
-  want, is *more* work for them, and explodes rows combinatorially. We never
-  offer it.
+**Table dumps are demoted** to an *initial-load convenience for a custom source*:
+if exporting tables + a five-line data dictionary is easier for a one-time
+backfill than serializing objects, we accept them and **stitch them into product
+objects on arrival** (dictionary or inferred join keys; confirmed in the loop).
+They are not a second pipeline and never carry updates or enhancements. The mega
+flat join stays rejected (destroys foreign keys, more work, row explosion).
 
 ### 2. Accept-fast — raw landing in an import session
 
@@ -142,10 +144,13 @@ ID plus arbitrary fields under **the merchant's own names** (`peso_neto`,
 `categoria`, `Option1 Value`) — not ours. So "how do we know what field is what?"
 must be answered without re-running the AI on every upsert.
 
-Answer: the field map is **discovered once and persisted**. Discovery (the
-session + dictionary + ASE interpret + confirm loop above) produces a saved
-**mapping profile** per integration — the artifact that turns the confirm loop's
-output into a deterministic transform:
+Answer: the field map is **discovered once and persisted**, and it is
+**bidirectional** — because we also send enhancements back, the map must invert
+(`weight` → their `peso_neto`) so outbound objects speak the merchant's language.
+Discovery (the session + dictionary + ASE interpret + confirm loop above) produces
+a saved **mapping profile** per integration — the artifact that turns the confirm
+loop's output into a deterministic transform, applied inbound on ingest and
+inverted outbound on enhancement:
 
 ```jsonc
 {
@@ -214,6 +219,23 @@ half-empty window.
 > create/update/delete, or put a `modified_at` column on the tables so we can ask
 > for deltas — and tell us how a delete is signalled."
 
+### 6. Write-back — enhancements flow out as the same object, propose-then-approve
+
+The reason objects (not dumps) are canonical: GroLabs sends **enhanced products
+back** to enrich the merchant's catalog. The outbound object is the same shape as
+the inbound one, addressed by the **stable shared ID**, with our fields inverted
+to the merchant's via the bidirectional mapping profile (§4).
+
+- **Departure by source:** Shopify Admin API / WC REST write for the platforms
+  (zero merchant code); the SDK channel for custom.
+- **Never silent.** Writing into a merchant's live catalog is outward-facing and
+  hard to reverse — it is *their* data. Enhancements are **proposed**, not
+  auto-applied: the merchant accepts them (the same "I found this, approve?" loop,
+  pointed outward). Default to suggestions the merchant confirms, not overwrites.
+- This is a larger product commitment than read-only intake (we become a *writer*
+  into the store). It is the endgame of an enrichment engine, called out here so
+  the object-as-unit decision is understood as serving it — not gold-plating.
+
 ## Flow
 
 ```mermaid
@@ -224,33 +246,37 @@ flowchart TD
     CU["Custom (talk-to-devs)"]
   end
 
-  SH --> ASK
-  WC --> ASK
-  CU --> ASK
-  ASK["Ask: separate tables + 5-line dictionary<br/>(fallback: one flat file)"] --> SESS
+  SH -->|"pull objects (zero code)"| INGEST
+  WC -->|"pull objects (zero code)"| INGEST
+  CU -->|"SDK push objects<br/>(or table dump → stitch)"| INGEST
+  INGEST["Product DATA OBJECTS in<br/>stable ID + nested variants/attrs/cats"] --> SESS
 
-  subgraph Intake["Accept-fast import session"]
-    SESS["Upload parts → land RAW verbatim<br/>instant 'got it' ack"] --> DONE{"'that's everything'?"}
+  subgraph Intake["Accept-fast session"]
+    SESS["Land RAW verbatim · instant ack"] --> DONE{"complete?"}
   end
   DONE -- no --> SESS
-  DONE -- yes --> RESHAPE
+  DONE -- yes --> NORM
 
   subgraph Normalize
-    RESHAPE{"shape?"}
-    RESHAPE -- "relational" --> STITCH["Stitch via dictionary / inferred keys"]
-    RESHAPE -- "flat fallback" --> SPLIT["Split: detect product key + variant axes"]
-    STITCH --> MODEL["One internal model<br/>product · variant · attribute · unit"]
-    SPLIT --> MODEL
-    MODEL --> INTERP["ASE interpret<br/>categories · axes · units (with confidence)"]
-    INTERP --> CONFIRM["'I found this' loop — never block<br/>high-conf auto · low-conf flagged"]
+    NORM["Stitch (custom dump) → objects<br/>+ ASE interpret (cats · axes · units, conf.)"] --> CONFIRM["'I found this' loop — never block"]
+    CONFIRM --> PROFILE["Save bidirectional mapping profile"]
   end
 
-  CONFIRM --> UPSERT["Upsert by stable ID → catalog + Meilisearch"]
+  PROFILE --> UPSERT["Upsert by stable ID → catalog + Meilisearch"]
 
-  subgraph Sync["Update basis = same endpoint"]
-    DELTA["Deltas: webhook OR modified_after poll"] --> UPSERT
-    RECON["Periodic full reconcile<br/>self-heal drift + catch deletes<br/>(atomic index swap)"] --> UPSERT
+  subgraph Sync["Update basis = same endpoint, same object"]
+    DELTA["Deltas: webhook / modified_after"] --> UPSERT
+    RECON["Periodic full reconcile<br/>(atomic index swap, delete-catcher)"] --> UPSERT
   end
+
+  subgraph Writeback["Enhancement — out as the same object"]
+    ENH["Enrich (attrs · categories · synonyms)"] --> PROPOSE["Propose, merchant approves<br/>(never silent)"]
+    PROPOSE -->|"fields inverted via profile"| OUT["Shopify Admin / WC REST / SDK"]
+  end
+  UPSERT --> ENH
+  OUT -.->|"enhanced objects"| SH
+  OUT -.-> WC
+  OUT -.-> CU
 ```
 
 ## Data model
@@ -303,38 +329,43 @@ while it lives in `integrations_config` (no new table).
 > Ordered. Each is independently executable; later prompts depend on earlier ones
 > as noted. Per design-session-protocol R-1, no code until the owner confirms.
 
-1. **Staging schema migration.**
+1. **Product data object schema + SDK builder.**
+   *What:* Extend `public/openapi.yaml` to the full product object (stable ID +
+   nested variants/attributes/categories) used in *both* directions; generate the
+   TS flagship SDK with a `buildProduct({...})` helper. *Where:* `web-apps/app`
+   (`public/openapi.yaml`) + the SDK repo. *Why:* the canonical unit + the "we
+   help them create them" tooling; one spec drives ingest and write-back.
+   *Depends on:* none.
+
+2. **Staging schema migration.**
    *What:* Add `import_session` + `import_file` tables (above) with RLS + an
    `instance_id` index. *Where:* `web-apps/app` (`supabase/migrations/`, apply +
    verify per CLAUDE.md §12). *Why:* the raw landing zone every other prompt
    builds on. *Depends on:* none.
 
-2. **Multi-part intake API.**
+3. **Multi-part intake API.**
    *What:* Extend `/api/v1/catalog/**` with session lifecycle — open session,
-   upload part (lands raw, instant ack), mark complete. *Where:* `web-apps/app`
-   (`src/app/api/v1/catalog/`). *Why:* accept-fast multi-table intake.
-   *Depends on:* 1.
+   upload part (lands raw, instant ack), mark complete. Accepts product objects
+   directly, or table-dump parts for a custom backfill. *Where:* `web-apps/app`
+   (`src/app/api/v1/catalog/`). *Why:* accept-fast intake. *Depends on:* 1, 2.
 
-3. **Shape detection + stitch (relational).**
+4. **Stitch table dumps → product objects (custom backfill).**
    *What:* On session-complete, read the dictionary (or infer join keys via
-   column-name + value-overlap) and stitch parts into the internal model.
-   *Where:* `web-apps/app` (`src/lib/import/`), optionally an ASE assist for key
-   inference. *Why:* the default, structure-preserving path. *Depends on:* 2.
+   column-name + value-overlap) and stitch dump parts into product objects; the
+   flat-file fallback (detect product key; constant-within-group → product,
+   varying → variant axes) for single exports. *Where:* `web-apps/app`
+   (`src/lib/import/`), optional ASE assist for key inference. *Why:* the
+   custom-source initial-load convenience; everything else already arrives as
+   objects. *Depends on:* 3.
 
-4. **Flat-file split (fallback).**
-   *What:* Detect the repeating product key; constant-within-group columns →
-   product, varying → variant axes. *Where:* `web-apps/app` `src/lib/import/`
-   (reuses the wizard's grouping concepts). *Why:* support Shopify-style single
-   exports. *Depends on:* 2.
-
-5. **Wire interpretation to the session + persist the mapping profile.**
-   *What:* Feed the stitched/split model through the existing ASE agents
-   (`analyze-categories`, `group-products`), persist confidence-scored proposals,
-   and on confirm **save the mapping profile** (§4) to
+5. **Wire interpretation + persist the bidirectional mapping profile.**
+   *What:* Feed objects through the existing ASE agents (`analyze-categories`,
+   `group-products`), persist confidence-scored proposals, and on confirm **save
+   the bidirectional mapping profile** (§4) to
    `integrations_config.<source>.mapping_profile`. *Where:* `web-apps/app`
-   (`src/lib/ase.ts` + import lib). *Why:* reuse the wizard's AI normalization and
-   produce the artifact that makes steady-state upserts deterministic.
-   *Depends on:* 3, 4.
+   (`src/lib/ase.ts` + import lib). *Why:* the AI normalization + the artifact
+   that makes upserts deterministic *and* lets write-back speak their language.
+   *Depends on:* 4.
 
 6. **"I found this" confirm surface.**
    *What:* Reuse the wizard review step to confirm interpretations from an
@@ -344,7 +375,7 @@ while it lives in `integrations_config` (no new table).
 
 7. **Delta + reconcile sync (apply the saved profile).**
    *What:* Confirm the upsert/delete endpoint covers deltas (it does); apply the
-   saved mapping profile to each incoming record (deterministic transform, no AI),
+   saved mapping profile to each incoming object (deterministic transform, no AI),
    routing unknown fields to raw + a fresh confirm round; add a scheduled
    `modified_after` WC poll and a periodic full reconcile (atomic Meilisearch
    index swap) that removes records absent from the latest snapshot. *Where:*
@@ -357,21 +388,34 @@ while it lives in `integrations_config` (no new table).
    (Shopify) + `wp-plugins/grolabs-wordpress-*` (WC hook). *Why:* real-time
    deltas incl. deletes. *Depends on:* 7.
 
-9. **Doc amendments (sign-off prompts, not inline).**
-   *What:* Amend `wc-import.md` to point its update story at this design; add the
-   Shopify source. *Where:* `web-apps/app/docs/`. *Why:* docs travel with code.
-   *Depends on:* the relevant prompts landing. (`wc-import.md` is a policy doc —
-   amend only via its own sign-off per protocol R-4.)
+9. **Write-back — enhancement out as the same object (propose-then-approve).**
+   *What:* Build the outbound path — enrich, invert fields via the mapping
+   profile, **propose** changes the merchant approves (never silent), then write
+   via Shopify Admin / WC REST / the SDK channel. *Where:* `web-apps/app`
+   (enhancement lib + a review surface) + the SDK. *Why:* the bidirectional
+   endgame the object-as-unit decision exists to serve. *Depends on:* 1, 5.
+
+10. **Doc amendments (sign-off prompts, not inline).**
+    *What:* Amend `wc-import.md` to point its update story at this design; add the
+    Shopify source; note the write-back/SDK direction. *Where:* `web-apps/app/docs/`.
+    *Why:* docs travel with code. *Depends on:* the relevant prompts landing.
+    (`wc-import.md` is a policy doc — amend only via its own sign-off per protocol
+    R-4.)
 
 ## Why this shape
 
-- **Least merchant work:** the only hard requirement is a stable ID. "Send your
-  tables + a five-line note" beats every rigid-schema competitor and is easier
-  than a join.
-- **One brain, two front doors:** the relational and flat paths converge before
-  interpretation, so the AI normalization is built once.
+- **One unit, both directions:** the product data object is canonical in and out.
+  Write-back (enhancement) is what forces this — a table dump is a one-way street
+  you cannot write enrichments into.
+- **Least merchant work:** only hard requirement is a stable ID; the SDK builds
+  the object. Shopify/WC are zero-code (we pull + write via their APIs); custom
+  uses the SDK; table dumps survive only as a custom initial-load convenience.
+- **Bidirectional mapping:** discovered once, saved, inverted for write-back —
+  enhancements come back in the merchant's own field names.
 - **No drift:** upsert-by-ID makes every write idempotent; the periodic reconcile
   guarantees convergence and is the only reliable delete-catcher.
-- **Already half-built:** the push-ingest API (upsert/delete/accept-fast) and the
-  wizard (stitch/split/interpret/confirm) exist — this design connects them and
-  adds the session + sync layer.
+- **Safe outbound:** writing into a live store is propose-then-approve, never
+  silent.
+- **Already half-built:** the push-ingest API (upsert/delete/accept-fast),
+  `openapi.yaml`, and the wizard (stitch/interpret/confirm) exist — this design
+  connects them and adds the session, sync, SDK, and write-back layers.

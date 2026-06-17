@@ -77,27 +77,26 @@ async function resolveBrandId(
   return id;
 }
 
-/** Derive a leaf category name from a product's category/categories field. */
-function categoryLeaf(p: Record<string, unknown>): string | null {
-  const c = p.category;
-  if (typeof c === "string" && c.trim() !== "") {
-    const parts = c.split(/[>/|»]/).map((s) => s.trim()).filter(Boolean);
+/** Extract a leaf category name from a string path, array, or ProductCategoryRef. */
+function leafFromValue(v: unknown): string | null {
+  if (typeof v === "string") {
+    const parts = v.split(/[>/|»]/).map((s) => s.trim()).filter(Boolean);
     return parts.length > 0 ? parts[parts.length - 1] : null;
   }
-  const cs = p.categories;
-  if (Array.isArray(cs) && cs.length > 0) {
-    const last = cs[cs.length - 1];
-    if (typeof last === "string" && last.trim() !== "") return last.trim();
-    if (last && typeof last === "object") {
-      const o = last as Record<string, unknown>;
-      if (typeof o.name === "string" && o.name.trim() !== "") return o.name.trim();
-      if (Array.isArray(o.path) && o.path.length > 0) {
-        const lp = o.path[o.path.length - 1];
-        if (typeof lp === "string" && lp.trim() !== "") return lp.trim();
-      }
-    }
+  if (Array.isArray(v)) {
+    return v.length > 0 ? leafFromValue(v[v.length - 1]) : null;
+  }
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if (typeof o.name === "string" && o.name.trim() !== "") return o.name.trim();
+    if (Array.isArray(o.path)) return leafFromValue(o.path);
   }
   return null;
+}
+
+/** Derive a leaf category from a product's `category` or `categories` field. */
+function categoryLeaf(p: Record<string, unknown>): string | null {
+  return leafFromValue(p.category) ?? leafFromValue(p.categories);
 }
 
 /** Resolve (dedupe case-insensitively) or create a leaf category. Best-effort. */

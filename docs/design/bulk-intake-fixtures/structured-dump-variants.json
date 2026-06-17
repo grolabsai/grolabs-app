@@ -1,0 +1,10 @@
+{
+  "instance_id": 99999,
+  "part_role": "variants",
+  "records": [
+    { "variant_id": "V-1", "product_id": "P-100", "sku": "TRP-42", "size": "42" },
+    { "variant_id": "V-2", "product_id": "P-100", "sku": "TRP-43", "size": "43" },
+    { "variant_id": "V-3", "product_id": "P-200", "sku": "CCT-S", "size": "S" },
+    { "variant_id": "V-4", "product_id": "P-200", "sku": "CCT-M", "size": "M" }
+  ]
+}

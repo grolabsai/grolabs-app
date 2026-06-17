@@ -1,0 +1,9 @@
+{
+  "instance_id": 99999,
+  "part_role": "products",
+  "records": [
+    { "product_id": "P-100", "name": "Trail Runner Pro", "brand": "Nike", "category_id": "C-1", "price": 129.99 },
+    { "product_id": "P-101", "name": "Ultraboost Light", "brand": "Adidas", "category_id": "C-1", "price": 189.99 },
+    { "product_id": "P-200", "name": "Cloud Cotton Tee", "brand": "Adidas", "category_id": "C-2", "price": 34.5 }
+  ]
+}

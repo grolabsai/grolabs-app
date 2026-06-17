@@ -1,0 +1,8 @@
+{
+  "instance_id": 99999,
+  "part_role": "categories",
+  "records": [
+    { "category_id": "C-1", "name": "Footwear" },
+    { "category_id": "C-2", "name": "Apparel" }
+  ]
+}

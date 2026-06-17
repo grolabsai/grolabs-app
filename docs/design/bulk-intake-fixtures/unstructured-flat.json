@@ -1,0 +1,11 @@
+{
+  "instance_id": 99999,
+  "records": [
+    { "sku": "CR-RED-S", "Nombre": "Camiseta Roja 200g", "Marca": "nike",   "Categoria": "Ropa > Camisetas", "Talla": "S",  "Precio": "19.99" },
+    { "sku": "CR-RED-M", "Nombre": "Camiseta Roja 200g", "Marca": "Nike",   "Categoria": "Ropa > Camisetas", "Talla": "M",  "Precio": "19.99" },
+    { "sku": "CR-RED-L", "Nombre": "Camiseta Roja 200g", "Marca": "NIKE",   "Categoria": "Ropa > Camisetas", "Talla": "L",  "Precio": "19.99" },
+    { "Nombre": "Gorra Azul",                            "Marca": "Adidas", "Categoria": "Accesorios",       "Precio": "12.00" },
+    { "sku": "ZAP-42",   "Nombre": "Zapatilla Trail 280g", "Marca": "adidas", "Categoria": "Calzado > Trail", "Talla": "42", "Precio": "89,90" },
+    { "sku": "ZAP-43",   "Nombre": "Zapatilla Trail 280g", "Marca": "ADIDAS", "Categoria": "Calzado > Trail", "Talla": "43", "Precio": "89,90" }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "instance_id": 99999,
+  "records": [
+    {
+      "id": "SKU-1001",
+      "title": "Trail Runner Pro",
+      "brand": "Nike",
+      "categories": ["Footwear", "Running"],
+      "price": 129.99,
+      "in_stock": true,
+      "attributes": [
+        { "code": "weight", "quantity": { "value": 280, "unit": "g" } },
+        { "code": "color", "value": "Black" }
+      ],
+      "variants": [
+        { "id": "SKU-1001-42", "sku": "TRP-42", "attributes": [{ "code": "size", "value": "42", "is_variant_axis": true }] },
+        { "id": "SKU-1001-43", "sku": "TRP-43", "attributes": [{ "code": "size", "value": "43", "is_variant_axis": true }] }
+      ]
+    },
+    {
+      "id": "SKU-1002",
+      "title": "Pegasus 41",
+      "brand": "Nike",
+      "categories": ["Footwear", "Running"],
+      "price": 134.99,
+      "in_stock": true,
+      "attributes": [{ "code": "weight", "quantity": { "value": 290, "unit": "g" } }]
+    },
+    {
+      "id": "SKU-2001",
+      "title": "Ultraboost Light",
+      "brand": "Adidas",
+      "categories": ["Footwear", "Running"],
+      "price": 189.99,
+      "in_stock": false,
+      "attributes": [{ "code": "color", "value": "White" }]
+    },
+    {
+      "id": "SKU-3001",
+      "title": "Cloud Cotton Tee",
+      "brand": "Adidas",
+      "categories": ["Apparel", "Tops"],
+      "price": 34.5,
+      "in_stock": true,
+      "variants": [
+        { "id": "SKU-3001-S", "sku": "CCT-S", "attributes": [{ "code": "size", "value": "S", "is_variant_axis": true }] },
+        { "id": "SKU-3001-M", "sku": "CCT-M", "attributes": [{ "code": "size", "value": "M", "is_variant_axis": true }] },
+        { "id": "SKU-3001-L", "sku": "CCT-L", "attributes": [{ "code": "size", "value": "L", "is_variant_axis": true }] }
+      ]
+    },
+    {
+      "id": "SKU-3002",
+      "title": "Suede Classic Cap",
+      "brand": "Puma",
+      "categories": ["Apparel", "Accessories"],
+      "price": 24.0,
+      "in_stock": true
+    }
+  ]
+}

@@ -594,6 +594,31 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/overview:
+    get:
+      tags: [Catalog]
+      summary: Session overview / totals (macro reconciliation)
+      operationId: overviewIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Pure counts over the session's product objects — product/variant totals,
+        field coverage (% populated), and value distributions for categorical
+        fields (auto-surfacing brands, categories, statuses…). No AI. The macro
+        check a merchant uses to confirm the received data matches their catalog
+        before any per-product work.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: instance_id, in: query, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          description: Overview totals.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OverviewResult' }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/sessions/{sessionId}/interpret:
     post:
       tags: [Catalog]
@@ -1242,6 +1267,40 @@ components:
         products:
           type: array
           items: { $ref: '#/components/schemas/ProductObject' }
+
+    OverviewResult:
+      type: object
+      required: [products, variants, fields, distributions]
+      properties:
+        products: { type: integer }
+        variants: { type: integer }
+        truncated: { type: boolean }
+        fields:
+          type: array
+          description: Field coverage — how many products populate each field.
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              populated: { type: integer }
+              total: { type: integer }
+              pct: { type: integer }
+        distributions:
+          type: array
+          description: Value distributions for categorical fields (brands, categories, statuses…).
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              distinct: { type: integer }
+              truncated: { type: boolean }
+              top:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value: { type: string }
+                    count: { type: integer }
 
     InterpretRequest:
       allOf:

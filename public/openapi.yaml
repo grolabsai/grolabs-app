@@ -1482,11 +1482,12 @@ components:
 
     PromoteResult:
       type: object
-      required: [promoted, skipped, product_ids]
+      required: [promoted, skipped, product_ids, categories_linked]
       properties:
         promoted: { type: integer }
         skipped: { type: integer, description: Accepted suggestions already promoted. }
         product_ids: { type: array, items: { type: integer } }
+        categories_linked: { type: integer, description: product_category_link rows created (best-effort). }
 
     ProposeResult:
       type: object

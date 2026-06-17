@@ -35,6 +35,7 @@ export type PromoteResult = {
   promoted: number;
   skipped: number;
   product_ids: number[];
+  categories_linked: number;
 };
 
 type LibError = { ok: false; error: string };
@@ -76,6 +77,72 @@ async function resolveBrandId(
   return id;
 }
 
+/** Derive a leaf category name from a product's category/categories field. */
+function categoryLeaf(p: Record<string, unknown>): string | null {
+  const c = p.category;
+  if (typeof c === "string" && c.trim() !== "") {
+    const parts = c.split(/[>/|»]/).map((s) => s.trim()).filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : null;
+  }
+  const cs = p.categories;
+  if (Array.isArray(cs) && cs.length > 0) {
+    const last = cs[cs.length - 1];
+    if (typeof last === "string" && last.trim() !== "") return last.trim();
+    if (last && typeof last === "object") {
+      const o = last as Record<string, unknown>;
+      if (typeof o.name === "string" && o.name.trim() !== "") return o.name.trim();
+      if (Array.isArray(o.path) && o.path.length > 0) {
+        const lp = o.path[o.path.length - 1];
+        if (typeof lp === "string" && lp.trim() !== "") return lp.trim();
+      }
+    }
+  }
+  return null;
+}
+
+/** Resolve (dedupe case-insensitively) or create a leaf category. Best-effort. */
+async function resolveCategoryId(
+  sb: SupabaseClient,
+  instanceId: number,
+  catMap: Map<string, number>,
+  rawName: string,
+): Promise<number | null> {
+  const name = rawName.trim();
+  const key = name.toLowerCase();
+  if (key === "") return null;
+  const existing = catMap.get(key);
+  if (existing !== undefined) return existing;
+
+  const { data, error } = await sb
+    .from("category")
+    .insert({
+      instance_id: instanceId,
+      category_name: name,
+      slug: slugify(name),
+      level: 1,
+      is_active: true,
+    })
+    .select("category_id")
+    .single();
+  if (error) {
+    const { data: rows } = await sb
+      .from("category")
+      .select("category_id, category_name")
+      .eq("instance_id", instanceId);
+    const found = ((rows ?? []) as { category_id: number; category_name: string }[]).find(
+      (c) => c.category_name.trim().toLowerCase() === key,
+    );
+    if (found) {
+      catMap.set(key, found.category_id);
+      return found.category_id;
+    }
+    return null;
+  }
+  const id = (data as { category_id: number }).category_id;
+  catMap.set(key, id);
+  return id;
+}
+
 export async function promoteAccepted(
   sb: SupabaseClient,
   instanceId: number,
@@ -104,7 +171,18 @@ export async function promoteAccepted(
     brandMap.set(b.brand_name.trim().toLowerCase(), b.brand_id);
   }
 
+  // preload existing categories for case-insensitive dedup
+  const { data: cats } = await sb
+    .from("category")
+    .select("category_id, category_name")
+    .eq("instance_id", instanceId);
+  const catMap = new Map<string, number>();
+  for (const c of (cats ?? []) as { category_id: number; category_name: string }[]) {
+    catMap.set(c.category_name.trim().toLowerCase(), c.category_id);
+  }
+
   const productIds: number[] = [];
+  let categoriesLinked = 0;
   for (const s of toPromote) {
     const p = s.payload;
     const title =
@@ -160,6 +238,21 @@ export async function promoteAccepted(
       if (vErr) return { ok: false, error: `variant insert failed: ${vErr.message}` };
     }
 
+    // best-effort category linking — never fails the product write
+    const leaf = categoryLeaf(p);
+    if (leaf) {
+      const categoryId = await resolveCategoryId(sb, instanceId, catMap, leaf);
+      if (categoryId !== null) {
+        const { error: linkErr } = await sb.from("product_category_link").insert({
+          instance_id: instanceId,
+          product_id: productId,
+          category_id: categoryId,
+          is_primary: true,
+        });
+        if (!linkErr) categoriesLinked++;
+      }
+    }
+
     await sb
       .from("catalog_suggestion")
       .update({ entity_type: "product", entity_id: productId })
@@ -173,6 +266,7 @@ export async function promoteAccepted(
       promoted: productIds.length,
       skipped: all.length - toPromote.length,
       product_ids: productIds,
+      categories_linked: categoriesLinked,
     },
   };
 }

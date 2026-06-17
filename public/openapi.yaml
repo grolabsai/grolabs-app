@@ -569,6 +569,31 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/preview:
+    get:
+      tags: [Catalog]
+      summary: Preview reassembled product objects
+      operationId: previewIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Stitch the session's landed parts into product objects (whole objects
+        pass through; multi-table dumps are joined by link key from the
+        data_dictionary) and return them — so a client can confirm the shape
+        before interpretation. Read-only.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: instance_id, in: query, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 25 } }
+      responses:
+        '200':
+          description: Reassembled product objects.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PreviewResult' }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/validate:
     post:
       tags: [Catalog]
@@ -1167,6 +1192,26 @@ components:
         session_id: { type: integer }
         status: { type: string, const: review }
         summary: { $ref: '#/components/schemas/IntakeSessionSummary' }
+
+    PreviewResult:
+      type: object
+      required: [count, products]
+      properties:
+        count: { type: integer, description: Total product objects reassembled. }
+        truncated:
+          type: boolean
+          description: True if more staging rows existed than the stitch cap read.
+        unlinked:
+          type: array
+          description: Parts/rows that could not be attached to a product (transparency).
+          items:
+            type: object
+            properties:
+              part_role: { type: string }
+              count: { type: integer }
+        products:
+          type: array
+          items: { $ref: '#/components/schemas/ProductObject' }
 
     ValidateRequest:
       allOf:

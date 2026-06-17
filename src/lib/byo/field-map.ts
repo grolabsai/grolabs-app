@@ -44,13 +44,20 @@ export function normalizeKey(s: string): string {
     .trim();
 }
 
-/** Lower is better; Infinity = no match. Exact synonym match beats substring. */
+/**
+ * Lower is better; Infinity = no match. Exact synonym match wins; otherwise the
+ * merchant field may *contain* a synonym (e.g. "list_price" ⊃ "price"). We do NOT
+ * do the reverse (synonym contains field) — that absorbs short fields by accident
+ * (e.g. "talle" inside "detalles" → wrongly mapped a size column to description) —
+ * and we require a synonym of length ≥ 3 for the substring match to avoid 2-char
+ * false positives (e.g. "id" inside "width").
+ */
 function matchScore(col: string, synonyms: string[]): number {
   let best = Infinity;
   for (let j = 0; j < synonyms.length; j++) {
     const kw = synonyms[j];
     if (col === kw) best = Math.min(best, j);
-    else if (col.includes(kw) || kw.includes(col)) best = Math.min(best, j + 100);
+    else if (kw.length >= 3 && col.includes(kw)) best = Math.min(best, j + 100);
   }
   return best;
 }

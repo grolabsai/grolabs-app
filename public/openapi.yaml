@@ -670,6 +670,47 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/propose:
+    post:
+      tags: [Catalog]
+      summary: Generate + persist proposals (confirm queue)
+      operationId: proposeIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Run field-map → group and persist the results into catalog_suggestion as
+        `pending` proposals (a session-level `column_mapping` + one
+        `variant_structure` per product). Idempotent (replaces prior pending).
+        List via …/suggestions; confirm via /catalog/suggestions/decision.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/InstanceRef' } } }
+      responses:
+        '201':
+          description: Proposals written.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProposeResult' } } }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /catalog/sessions/{sessionId}/suggestions:
+    get:
+      tags: [Catalog]
+      summary: List a session's proposals
+      operationId: listIntakeSuggestions
+      security: [{ writeKey: [] }]
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: instance_id, in: query, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: status, in: query, required: false, schema: { type: string, enum: [pending, accepted, edited, rejected] } }
+      responses:
+        '200':
+          description: Proposals.
+          content: { application/json: { schema: { $ref: '#/components/schemas/SuggestionList' } } }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/sessions/{sessionId}/interpret:
     post:
       tags: [Catalog]
@@ -699,6 +740,33 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '502': { description: ASE interpretation failed or unreachable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /catalog/suggestions/decision:
+    post:
+      tags: [Catalog]
+      summary: Accept / reject / edit proposals
+      operationId: decideCatalogSuggestions
+      security: [{ writeKey: [] }]
+      description: |
+        Confirm action on catalog_suggestion proposals — sets status +
+        reviewed_at. Accepted proposals are what the promote step writes to the
+        live catalog.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated, decision]
+                properties:
+                  updated: { type: integer }
+                  decision: { type: string }
+        '400': { description: Missing ids or invalid decision., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /catalog/validate:
     post:
@@ -1387,6 +1455,45 @@ components:
         products:
           type: array
           items: { $ref: '#/components/schemas/ProductObject' }
+
+    ProposeResult:
+      type: object
+      required: [cleared, column_mapping_id, product_suggestions]
+      properties:
+        cleared: { type: integer, description: Prior pending proposals removed. }
+        column_mapping_id: { oneOf: [{ type: integer }, { type: 'null' }] }
+        product_suggestions: { type: integer }
+
+    Suggestion:
+      type: object
+      properties:
+        suggestion_id: { type: integer }
+        suggestion_type: { type: string }
+        source_function: { type: string }
+        entity_type: { type: string }
+        confidence: { type: number }
+        payload: { type: object, additionalProperties: true }
+        status: { type: string, enum: [pending, accepted, edited, rejected] }
+        reviewed_at: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        editor_notes: { oneOf: [{ type: string }, { type: 'null' }] }
+        created_at: { type: string, format: date-time }
+
+    SuggestionList:
+      type: object
+      required: [count, suggestions]
+      properties:
+        count: { type: integer }
+        suggestions: { type: array, items: { $ref: '#/components/schemas/Suggestion' } }
+
+    DecisionRequest:
+      allOf:
+        - { $ref: '#/components/schemas/InstanceRef' }
+        - type: object
+          required: [suggestion_ids, decision]
+          properties:
+            suggestion_ids: { type: array, minItems: 1, items: { type: integer } }
+            decision: { type: string, enum: [accepted, rejected, edited] }
+            editor_notes: { type: string }
 
     InterpretRequest:
       allOf:

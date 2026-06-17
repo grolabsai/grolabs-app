@@ -645,6 +645,31 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/group:
+    get:
+      tags: [Catalog]
+      summary: Group rows into base products + variants
+      operationId: groupIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Stitch → apply the inferred field map → group rows that share a title into
+        one product, with fields that vary across them becoming variant axes
+        (e.g. three rows differing only by size → one product with a size axis).
+        Also absorbs brand casing noise. Deterministic, no AI. Read-only.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: instance_id, in: query, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 25 } }
+      responses:
+        '200':
+          description: Grouped products.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupResult' }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/sessions/{sessionId}/interpret:
     post:
       tags: [Catalog]
@@ -1351,6 +1376,17 @@ components:
             properties:
               before: { type: object, additionalProperties: true }
               after: { type: object, additionalProperties: true }
+
+    GroupResult:
+      type: object
+      required: [input_rows, grouped_products, products]
+      properties:
+        input_rows: { type: integer, description: Row/product count before grouping. }
+        grouped_products: { type: integer, description: Product count after grouping. }
+        truncated: { type: boolean }
+        products:
+          type: array
+          items: { $ref: '#/components/schemas/ProductObject' }
 
     InterpretRequest:
       allOf:

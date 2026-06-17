@@ -711,6 +711,30 @@ paths:
         '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/promote:
+    post:
+      tags: [Catalog]
+      summary: Promote accepted proposals to the live catalog
+      operationId: promoteIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Write ACCEPTED `variant_structure` proposals into the live catalog
+        (product + product_variant), resolving brand via the existing
+        case-insensitive dedup. The one production write — idempotent (only
+        accepted-and-not-yet-promoted rows; a promoted suggestion gets entity_id).
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/InstanceRef' } } }
+      responses:
+        '201':
+          description: Promoted.
+          content: { application/json: { schema: { $ref: '#/components/schemas/PromoteResult' } } }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: Promote failed., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/sessions/{sessionId}/interpret:
     post:
       tags: [Catalog]
@@ -1455,6 +1479,14 @@ components:
         products:
           type: array
           items: { $ref: '#/components/schemas/ProductObject' }
+
+    PromoteResult:
+      type: object
+      required: [promoted, skipped, product_ids]
+      properties:
+        promoted: { type: integer }
+        skipped: { type: integer, description: Accepted suggestions already promoted. }
+        product_ids: { type: array, items: { type: integer } }
 
     ProposeResult:
       type: object

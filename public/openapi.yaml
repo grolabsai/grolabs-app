@@ -619,6 +619,32 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/field-map:
+    get:
+      tags: [Catalog]
+      summary: Infer field map (merchant fields → canonical)
+      operationId: inferSessionFieldMap
+      security: [{ writeKey: [] }]
+      description: |
+        Infer which merchant fields map to canonical ProductObject fields
+        (id / title / brand / price / category / …) and return a before/after
+        sample. Pure, no AI — the proposal the confirm step acts on, and what lets
+        unstructured data (sku / Nombre / Marca / Precio) flow through the
+        canonical-field stages. Read-only.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: instance_id, in: query, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 20, default: 3 } }
+      responses:
+        '200':
+          description: Inferred field map + before/after sample.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FieldMapResult' }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/sessions/{sessionId}/interpret:
     post:
       tags: [Catalog]
@@ -1301,6 +1327,30 @@ components:
                   properties:
                     value: { type: string }
                     count: { type: integer }
+
+    FieldMapResult:
+      type: object
+      required: [mapping, unmapped, sample]
+      properties:
+        mapping:
+          type: array
+          items:
+            type: object
+            properties:
+              source: { type: string }
+              target:
+                type: string
+                enum: [id, title, brand, price, category, image, description, in_stock]
+        unmapped:
+          type: array
+          items: { type: string }
+        sample:
+          type: array
+          items:
+            type: object
+            properties:
+              before: { type: object, additionalProperties: true }
+              after: { type: object, additionalProperties: true }
 
     InterpretRequest:
       allOf:

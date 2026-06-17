@@ -233,7 +233,11 @@ export async function promoteAccepted(
           is_pack: false,
         };
       });
-      const { error: vErr } = await sb.from("product_variant").insert(vrows);
+      // upsert (ignore dups) so re-importing an existing variant sku doesn't
+      // crash or orphan the product — variant sku is unique per instance.
+      const { error: vErr } = await sb
+        .from("product_variant")
+        .upsert(vrows, { onConflict: "instance_id,sku", ignoreDuplicates: true });
       if (vErr) return { ok: false, error: `variant insert failed: ${vErr.message}` };
     }
 

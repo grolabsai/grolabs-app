@@ -802,7 +802,9 @@ components:
               `id` (required — your stable primary key), `title`/`name`,
               `description`, `brand`, `categories`, `category_ids`, `price`,
               `in_stock`, `image`/`image_url`, `url`, `variants`. Any other field
-              is stored and returned verbatim on search.
+              is stored and returned verbatim on search. The full canonical mapped
+              shape (nested variants / attributes / categories, used in both
+              directions) is `ProductObject`.
             properties:
               id:
                 oneOf: [{ type: string }, { type: integer }]
@@ -881,6 +883,94 @@ components:
         recent_failures:
           type: array
           items: { type: object, additionalProperties: true }
+
+    # ── canonical product object (the bidirectional unit) ─────────────────────
+    ProductObject:
+      type: object
+      required: [id]
+      description: |
+        The canonical GroLabs **product object** — the unit used in BOTH
+        directions: ingest (merchant → GroLabs) and enrichment write-back
+        (GroLabs → merchant). Only `id` is required; every other field is
+        best-effort and may be enriched over time. On ingest, a merchant may send
+        fields under their own names — those are stored verbatim and translated to
+        these canonical fields via the saved per-integration mapping profile, so
+        the same `id` flows ingest → search → events → write-back unbroken.
+      properties:
+        id:
+          oneOf: [{ type: string }, { type: integer }]
+          description: Stable primary key. Must stay stable across ingest→search→events→write-back.
+        title: { type: string, description: Product name / title. }
+        description: { type: string }
+        brand: { type: string }
+        url: { type: string, format: uri }
+        image: { type: string, format: uri }
+        price: { type: number }
+        in_stock: { type: boolean }
+        categories:
+          type: array
+          items: { $ref: '#/components/schemas/ProductCategoryRef' }
+        attributes:
+          type: array
+          items: { $ref: '#/components/schemas/ProductAttributeValue' }
+          description: Product-level descriptive and variant-axis attribute values.
+        variants:
+          type: array
+          items: { $ref: '#/components/schemas/ProductVariant' }
+      additionalProperties: true
+
+    ProductCategoryRef:
+      type: object
+      description: A category the product belongs to — an id, a root→leaf path, or both.
+      properties:
+        id: { oneOf: [{ type: string }, { type: integer }] }
+        name: { type: string }
+        path:
+          type: array
+          items: { type: string }
+          description: 'Root→leaf path, e.g. ["Footwear","Running"].'
+
+    ProductAttributeValue:
+      type: object
+      required: [code]
+      description: A descriptive or variant attribute value on a product or variant.
+      properties:
+        code: { type: string, description: 'Attribute code, e.g. "weight", "color".' }
+        value:
+          description: Scalar value for text / number / boolean / list attributes.
+          oneOf: [{ type: string }, { type: number }, { type: boolean }]
+        quantity:
+          $ref: '#/components/schemas/Quantity'
+        is_variant_axis:
+          type: boolean
+          description: True when this attribute distinguishes variants (size, color…).
+
+    Quantity:
+      type: object
+      required: [value, unit]
+      description: |
+        A physical measurement — numeric value plus a unit code (see the
+        `unit_of_measure` table: g, kg, oz, lb, ml, l, fl_oz, ea).
+      properties:
+        value: { type: number }
+        unit: { type: string, description: 'Unit code, e.g. "g", "kg", "ml", "l", "ea".' }
+
+    ProductVariant:
+      type: object
+      required: [id]
+      description: A purchasable variant of the product.
+      properties:
+        id: { oneOf: [{ type: string }, { type: integer }] }
+        sku: { type: string }
+        barcode: { type: string }
+        price: { type: number }
+        in_stock: { type: boolean }
+        image: { type: string, format: uri }
+        attributes:
+          type: array
+          items: { $ref: '#/components/schemas/ProductAttributeValue' }
+          description: Variant-level attribute values — the axis values that define this variant.
+      additionalProperties: true
 
     # ── diagnostics ──────────────────────────────────────────────────────────
     DiagnosticRunRequest:

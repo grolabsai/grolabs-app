@@ -470,6 +470,130 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
 
   # ──────────────────────────────────────────────────────────────────────────
+  /catalog/sessions:
+    post:
+      tags: [Catalog]
+      summary: Open a multi-part intake session
+      operationId: openIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Open an accept-fast intake session. Upload parts against the returned
+        `session_id`, then mark it complete. Reuses the import_job pipeline; a
+        custom source may send a `data_dictionary` describing a multi-table dump.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionOpenRequest' }
+      responses:
+        '201':
+          description: Session opened.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionOpened' }
+        '400': { description: Invalid instance_id or JSON., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: Session create failed., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /catalog/sessions/{sessionId}:
+    get:
+      tags: [Catalog]
+      summary: Read intake session status
+      operationId: getIntakeSession
+      security: [{ writeKey: [] }]
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: instance_id, in: query, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          description: Session status + summary.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionStatus' }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /catalog/sessions/{sessionId}/parts:
+    post:
+      tags: [Catalog]
+      summary: Upload a part to an intake session
+      operationId: uploadIntakePart
+      security: [{ writeKey: [] }]
+      description: |
+        Land a batch of records (max 1000) raw/verbatim, accept-fast. `part_role`
+        tags rows of a multi-table dump (products / variants / categories…); omit
+        it when sending whole product objects.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartUploadRequest' }
+      responses:
+        '202':
+          description: Part accepted (raw landed).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartAck' }
+        '400': { description: Invalid session id or records., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: Session is no longer collecting., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /catalog/sessions/{sessionId}/complete:
+    post:
+      tags: [Catalog]
+      summary: Mark an intake session complete
+      operationId: completeIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        "That's everything." Flips the session to `review` and returns a summary
+        of what landed. Interpretation + the confirm loop consume review-state
+        sessions.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InstanceRef' }
+      responses:
+        '200':
+          description: Session completed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionCompleted' }
+        '400': { description: Invalid session id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /catalog/validate:
+    post:
+      tags: [Catalog]
+      summary: Dry-run validate documents
+      operationId: validateCatalogDocuments
+      security: [{ writeKey: [] }]
+      description: |
+        Validate a batch of product documents against `ProductObject` and return
+        per-document errors. Writes nothing — use it to self-correct payloads
+        before ingest, killing the back-and-forth.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ValidateRequest' }
+      responses:
+        '200':
+          description: Validation report.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidateReport' }
+        '400': { description: Invalid instance_id, JSON, or batch., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ──────────────────────────────────────────────────────────────────────────
   /diagnostic/runs:
     post:
       tags: [Diagnostics]
@@ -971,6 +1095,107 @@ components:
           items: { $ref: '#/components/schemas/ProductAttributeValue' }
           description: Variant-level attribute values — the axis values that define this variant.
       additionalProperties: true
+
+    # ── intake sessions + validation ─────────────────────────────────────────
+    SessionOpenRequest:
+      allOf:
+        - { $ref: '#/components/schemas/InstanceRef' }
+        - type: object
+          properties:
+            source_type:
+              type: string
+              enum: [api, shopify, woocommerce, custom]
+              default: api
+            data_dictionary:
+              type: object
+              additionalProperties: true
+              description: Optional part→meaning + link-key map for a multi-table dump.
+            filename: { type: string }
+
+    SessionOpened:
+      type: object
+      required: [session_id, status]
+      properties:
+        session_id: { type: integer }
+        status: { type: string, const: collecting }
+        source_type: { type: string }
+
+    PartUploadRequest:
+      allOf:
+        - { $ref: '#/components/schemas/InstanceRef' }
+        - type: object
+          required: [records]
+          properties:
+            part_role:
+              type: string
+              description: 'e.g. products, variants, categories. Omit for whole product objects.'
+            records:
+              type: array
+              minItems: 1
+              maxItems: 1000
+              items: { type: object, additionalProperties: true }
+
+    PartAck:
+      type: object
+      required: [accepted, total_rows]
+      properties:
+        accepted: { type: integer }
+        total_rows: { type: integer }
+
+    IntakeSessionSummary:
+      type: object
+      required: [job_id, total_rows, parts]
+      properties:
+        job_id: { type: integer }
+        total_rows: { type: integer }
+        parts:
+          type: object
+          additionalProperties: { type: integer }
+          description: Row count per part_role ("_unlabeled" for rows with no role).
+
+    SessionStatus:
+      type: object
+      required: [session, summary]
+      properties:
+        session: { type: object, additionalProperties: true }
+        summary: { $ref: '#/components/schemas/IntakeSessionSummary' }
+
+    SessionCompleted:
+      type: object
+      required: [session_id, status, summary]
+      properties:
+        session_id: { type: integer }
+        status: { type: string, const: review }
+        summary: { $ref: '#/components/schemas/IntakeSessionSummary' }
+
+    ValidateRequest:
+      allOf:
+        - { $ref: '#/components/schemas/InstanceRef' }
+        - type: object
+          required: [documents]
+          properties:
+            documents:
+              type: array
+              minItems: 1
+              maxItems: 1000
+              items: { $ref: '#/components/schemas/ProductObject' }
+
+    ValidateReport:
+      type: object
+      required: [ok, total, valid, invalid, errors]
+      properties:
+        ok: { type: boolean }
+        total: { type: integer }
+        valid: { type: integer }
+        invalid: { type: integer }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              index: { type: integer }
+              id: { oneOf: [{ type: string }, { type: integer }] }
+              errors: { type: array, items: { type: string } }
 
     # ── diagnostics ──────────────────────────────────────────────────────────
     DiagnosticRunRequest:

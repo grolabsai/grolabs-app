@@ -594,6 +594,36 @@ paths:
         '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /catalog/sessions/{sessionId}/interpret:
+    post:
+      tags: [Catalog]
+      summary: Interpret a session's products (category inference)
+      operationId: interpretIntakeSession
+      security: [{ writeKey: [] }]
+      description: |
+        Stitch the session's parts into product objects and ask ASE to infer a
+        category per product. Returns confidence-tiered suggestions (the "I found
+        this" data the confirm step acts on). Uses the instance's catalog
+        categories by default; pass `candidates` to interpret against an explicit
+        set. Calls the live ASE service.
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InterpretRequest' }
+      responses:
+        '200':
+          description: Category suggestions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InterpretResult' }
+        '400': { description: Invalid session id or JSON., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: Missing or invalid write key., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: Session not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '502': { description: ASE interpretation failed or unreachable., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /catalog/validate:
     post:
       tags: [Catalog]
@@ -1212,6 +1242,43 @@ components:
         products:
           type: array
           items: { $ref: '#/components/schemas/ProductObject' }
+
+    InterpretRequest:
+      allOf:
+        - { $ref: '#/components/schemas/InstanceRef' }
+        - type: object
+          properties:
+            candidates:
+              type: array
+              description: Optional explicit category list to interpret against (else the instance catalog is used).
+              items:
+                type: object
+                required: [category_id, name]
+                properties:
+                  category_id: { oneOf: [{ type: integer }, { type: string }] }
+                  name: { type: string }
+                  parent_id: { oneOf: [{ type: integer }, { type: string }, { type: 'null' }] }
+                  slug: { type: string }
+                  parsing_hint: { type: string }
+
+    InterpretResult:
+      type: object
+      required: [count, suggestions]
+      properties:
+        count: { type: integer }
+        model_used: { type: string }
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              product_ref: { type: string }
+              product_name: { type: string }
+              category_id: { oneOf: [{ type: integer }, { type: string }] }
+              category_name: { type: string }
+              confidence: { type: number }
+              confidence_tier: { type: string, enum: [high, medium, low] }
+              reasoning: { type: string }
 
     ValidateRequest:
       allOf:

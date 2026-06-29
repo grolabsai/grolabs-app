@@ -68,6 +68,7 @@ export function EventsLogLive() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional initial fetch on mount; setState runs after the await, not synchronously
     refresh();
   }, [refresh]);
 

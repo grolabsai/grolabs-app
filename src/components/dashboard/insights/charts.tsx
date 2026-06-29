@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   RING_VIEWBOX,
+  arc,
   donutSplit,
   donutSingle,
   gauge,
@@ -63,6 +64,38 @@ export function fmtPct(frac: number, digits = 1): string {
   return `${(frac * 100).toFixed(digits)}%`;
 }
 
+/** Compact money, no decimals for whole amounts: 14820 → "$14,820". */
+export function fmtMoney(n: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: n % 1 === 0 ? 0 : 2,
+  }).format(n);
+}
+
+/** Signed percentage-point delta for ratios: 0.012 → "+1.2 pts". */
+export function fmtSignedPp(pp: number, digits = 1): string {
+  const s = pp >= 0 ? "+" : "";
+  return `${s}${pp.toFixed(digits)} pts`;
+}
+
+/** Unsigned percentage-point magnitude (direction comes from the delta arrow). */
+export function fmtPp(pp: number, digits = 1): string {
+  return `${Math.abs(pp).toFixed(digits)} pts`;
+}
+
+/** Chart color matching a delta: green up, red down, neutral when flat.
+ *  Same thresholds as DeltaPill so the line agrees with the pill. */
+export function deltaColor(pct: number): string {
+  return pct > 0.05 ? "var(--success)" : pct < -0.05 ? "var(--danger)" : "var(--t3)";
+}
+
+/** Signed trend of a series (last − first) — feeds deltaColor for charts that
+ *  show history but no explicit delta pill (e.g. the funnel tiles). */
+export function seriesTrend(s: number[]): number {
+  return s.length < 2 ? 0 : s[s.length - 1] - s[0];
+}
+
 export function fmtSignedPct(pct: number, digits = 1): string {
   const s = pct >= 0 ? "+" : "";
   return `${s}${pct.toFixed(digits)}%`;
@@ -94,8 +127,8 @@ export function DeltaPill({
   return (
     <span className={`delta ${dir}`}>
       {dir !== "flat" ? (
-        <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.6}>
-          {dir === "up" ? <path d="M2 7 L5 3 L8 7" /> : <path d="M2 3 L5 7 L8 3" />}
+        <svg viewBox="0 0 10 10" width="9" height="9" fill="currentColor" aria-hidden="true">
+          {dir === "up" ? <path d="M5 2.5 L8.5 7.5 L1.5 7.5 Z" /> : <path d="M5 7.5 L8.5 2.5 L1.5 2.5 Z" />}
         </svg>
       ) : null}
       {text}
@@ -159,6 +192,49 @@ export function DonutSingle({
         strokeWidth={11}
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+/** N-segment donut (whole partitioned across `segments`) with a small gap
+ *  between arcs. Tiny slices keep a reduced gap so they stay visible. */
+export function DonutMulti({
+  segments,
+  gap = 4,
+}: {
+  segments: { value: number; color: string }[];
+  gap?: number;
+}) {
+  const total = segments.reduce((s, x) => s + Math.max(0, x.value), 0);
+  const arcs: { d: string; color: string }[] = [];
+  if (total > 0) {
+    let acc = 0;
+    for (const seg of segments) {
+      const v = Math.max(0, seg.value);
+      if (v <= 0) continue;
+      const a0 = (acc / total) * 360;
+      acc += v;
+      const a1 = (acc / total) * 360;
+      const span = a1 - a0;
+      const g = Math.min(gap, span * 0.6); // shrink the gap for slivers
+      arcs.push({ d: arc(a0 + g / 2, a1 - g / 2), color: seg.color });
+    }
+  }
+  return (
+    <svg viewBox={RING_VIEWBOX}>
+      <circle cx={50} cy={50} r={38} fill="none" stroke={TRACK} strokeWidth={11} />
+      {arcs.map((a, i) => (
+        <path
+          key={i}
+          d={a.d}
+          className="seg"
+          pathLength={1}
+          fill="none"
+          stroke={a.color}
+          strokeWidth={11}
+          strokeLinecap="round"
+        />
+      ))}
     </svg>
   );
 }

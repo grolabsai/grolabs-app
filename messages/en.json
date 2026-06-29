@@ -625,7 +625,9 @@
     },
     "tabs": {
       "traffic": "Traffic",
-      "search": "Search"
+      "search": "Search",
+      "overview": "Overview",
+      "carts": "Carts"
     },
     "traffic": {
       "header": {
@@ -727,6 +729,90 @@
         "title": "Connect Google Analytics",
         "body": "Connect a GA4 property to see this instance’s traffic, audience, and alerts.",
         "cta": "Connect Google Analytics"
+      }
+    },
+    "overview": {
+      "period": {
+        "yesterday": "Yesterday",
+        "d7": "7d",
+        "d15": "15d",
+        "d30": "30d"
+      },
+      "header": {
+        "eyebrow": "Overview",
+        "title": "Your store",
+        "freshness": "Closed period · through {date}"
+      },
+      "sections": {
+        "sales": "Sales",
+        "salesMeta": "revenue",
+        "traffic": "Traffic",
+        "trafficMeta": "sessions · users · who — from our event spine",
+        "search": "Search",
+        "searchMeta": "search to cart",
+        "funnel": "Funnel",
+        "funnelMeta": "session to cart · spine",
+        "users": "Users",
+        "usersMeta": "who is searching · from our event spine",
+        "estimated": "Estimated",
+        "trafficEstimatedMeta": "GA4 not connected · estimated from our event spine",
+        "trafficEstimatedHint": "Placeholder derived from our own event data. Connect GA4 to replace with real traffic."
+      },
+      "kpi": {
+        "totalSales": "Total sales",
+        "orders": "Orders",
+        "aov": "AOV",
+        "avgItems": "Avg items",
+        "conversion": "Conversion",
+        "cvr": "CVR",
+        "salesByCartAge": "Sales by when added to cart",
+        "totalUsers": "Total users",
+        "newVsReturning": "new vs returning",
+        "newUsers": "New",
+        "returningUsers": "Returning",
+        "sessions": "Sessions",
+        "searches": "Searches",
+        "noResultRate": "No-result rate",
+        "searchCtr": "Search CTR",
+        "searchToPurchase": "Search → purchase",
+        "identity": "Identity",
+        "anonVsRegistered": "anonymous vs registered",
+        "anonymous": "Anonymous",
+        "registered": "Registered",
+        "users": "users",
+        "whoBreakdown": "New · Returning · Anonymous"
+      },
+      "soon": "Soon",
+      "noData": "No data yet",
+      "trafficNotConnected": "Connect GA4 to see traffic",
+      "funnel": {
+        "entered": "entered",
+        "performed": "performed",
+        "clicks": "Clicks",
+        "cart": "Cart",
+        "ofSearches": "of searches",
+        "ofClicks": "of clicks",
+        "cumulative": "cumulative"
+      }
+    },
+    "carts": {
+      "subtitle": "Live · open carts by age",
+      "amount": "Amount",
+      "carts": "Carts",
+      "live": "Live",
+      "reconnecting": "Reconnecting",
+      "updated": "updated {time}",
+      "estimated": "Estimated",
+      "estimatedHint": "Estimated as average order value × open carts. Carts don't yet emit a subtotal — this becomes exact once the plugin sends cart value.",
+      "barAria": "Open carts split by age",
+      "empty": "No open carts right now.",
+      "buckets": {
+        "today": "Today",
+        "d1": "-1",
+        "d2": "-2",
+        "d3_10": "3-10",
+        "d10_30": "10-30",
+        "d30plus": ">30"
       }
     }
   },
@@ -1629,6 +1715,16 @@
         "no_refresh_token": "Google did not return a refresh token.",
         "save_failed": "Could not save credentials."
       }
+    },
+    "events": {
+      "navLabel": "Events",
+      "title": "Events log",
+      "subtitle": "Live view of everything recorded for this instance — watch events land as you test.",
+      "live": "Live",
+      "paused": "Paused",
+      "refresh": "Refresh",
+      "status": "{count} events · updated {time}",
+      "empty": "No events recorded yet for this instance."
     }
   },
   "sync": {

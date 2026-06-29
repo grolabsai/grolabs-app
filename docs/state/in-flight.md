@@ -123,6 +123,17 @@ CLAUDE.md §18 design explorations).
 
 ## Open architectural decisions
 
+> **Consolidated register:** the tracking → measurement → dashboard decisions
+> and structural gaps now live in **[`open-decisions.md`](open-decisions.md)**
+> (planning guide, 2026-06-28). Headline open item there:
+
+- **Event-store substrate — OLTP Postgres vs analytics-optimised** (DEC-1, added
+  2026-06-28) — we store every storefront event as a row in a transactional
+  Postgres (`analytics_event`); the workload is analytical. Decide the substrate
+  (keep Postgres + rollups / OLAP store / managed platform / hybrid) before more
+  dashboard build-out — it sets the dashboard data path, ingest-at-scale, and
+  cost. Subsumes the proxy/ingest service-extraction question. Tied to the
+  tracking module. See [`open-decisions.md`](open-decisions.md) §B.
 - **Catalog template-fork pattern** — whether catalog adopts the funnel's `tenant_read` + template-fallthrough RLS for starter content on new-instance provisioning. Trigger to revisit: next new customer instance provisioned. (Now also relevant to `tenant-model.md`'s "create tenant + first instance" signup shape.)
 - **Domain-as-tenant-identity** — Constitution Article 3 mandates domain as the tenant identity; `tenant`/`tenant_member` shipped keyed on slug, no domain column. Unmodeled constitutional requirement (flagged in Review 1). **RESOLVED (decision) by [`docs/policy/user-management.md`](../policy/user-management.md)** (Draft): adds `tenant.domain` (unique, lowercased) as the logical identity key, keeping `tenant_id` as the physical PK; create-customer resolves-or-creates by domain (Article 3 T-3). Pending the schema migration (that doc's PR 1) — decision locked, implementation outstanding.
 - **Unified findings + monitoring layer** (added 2026-05-29) — merging the prospect rubric, search/cart events, and GA4 traffic into one findings store. Decided: 3-class taxonomy + Plan-B storage (`finding` + new `monitor_alert` + `findings_unified` view). Open: monitor scheduling, identity model, and a required amendment to the locked `search-events.md`. Full design: [`docs/design/unified-findings-and-monitoring.md`](../design/unified-findings-and-monitoring.md).

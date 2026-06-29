@@ -3,11 +3,13 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import type { Route } from "next";
-import { Activity, Search, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Activity, Search, ShoppingCart, type LucideIcon } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
-const TABS: { key: "traffic" | "search"; href: Route; icon: LucideIcon }[] = [
+const TABS: { key: "overview" | "carts" | "traffic" | "search"; href: Route; icon: LucideIcon }[] = [
+  { key: "overview", href: "/dashboard/overview" as Route, icon: LayoutDashboard },
+  { key: "carts", href: "/dashboard/carts" as Route, icon: ShoppingCart },
   { key: "traffic", href: "/dashboard/traffic" as Route, icon: Activity },
   { key: "search", href: "/dashboard/search" as Route, icon: Search },
 ];

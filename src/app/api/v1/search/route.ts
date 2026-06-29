@@ -108,6 +108,9 @@ async function logRequest(input: {
   processingTimeMs?: number;
   queryUid?: string | null;
   userId?: string | null;
+  accountId?: string | null;
+  isCommitted?: boolean | null;
+  commitReason?: string | null;
 }): Promise<void> {
   try {
     const sb = createServiceRoleClient();
@@ -159,6 +162,11 @@ async function logRequest(input: {
       query_uid: input.queryUid ?? null,
       user_id: input.userId ?? null,
       intent_group_id: intentGroupId,
+      account_id: input.accountId ?? null,
+      // Commitment is decided by the caller (results-page PHP = committed;
+      // typeahead JS = prefix probe). NULL when the caller didn't say.
+      is_committed: input.isCommitted ?? null,
+      commit_reason: input.commitReason ?? null,
     });
   } catch (err) {
     console.error("[search] query_log insert failed:", err instanceof Error ? err.message : err);
@@ -216,6 +224,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // query_log.user_id so no-result searches + query sequences stitch into a
   // journey. Matches the `userId` field the /api/v1/events route reads.
   const userId = typeof b.userId === "string" ? b.userId.slice(0, 128) : null;
+  // Option B identity: opaque (hashed) id of a logged-in storefront customer.
+  // NULL for anonymous shoppers (they ride on userId, the browser id).
+  const accountId = typeof b.accountId === "string" ? b.accountId.slice(0, 128) : null;
+  // Commitment, marked at capture time by the caller. The results-page (PHP)
+  // search sends committed=true; the typeahead (JS) sends committed=false so its
+  // prefix probes can be excluded from search-quality KPIs. NULL when unsent.
+  const isCommitted = typeof b.committed === "boolean" ? b.committed : null;
+  const commitReason =
+    typeof b.commit_reason === "string"
+      ? b.commit_reason.slice(0, 32)
+      : isCommitted === true
+      ? "results_page"
+      : isCommitted === false
+      ? "typeahead"
+      : null;
   const limit = typeof b.limit === "number" && Number.isFinite(b.limit) ? Math.min(Math.max(b.limit, 1), 100) : 20;
   const offset = typeof b.offset === "number" && Number.isFinite(b.offset) ? Math.max(b.offset, 0) : 0;
   const filters = typeof b.filters === "string" ? b.filters : undefined;
@@ -251,6 +274,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
       userId,
+      accountId,
+      isCommitted,
+      commitReason,
     });
     return deny(origin);
   }
@@ -265,6 +291,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
       userId,
+      accountId,
+      isCommitted,
+      commitReason,
     });
     return deny(origin);
   }
@@ -285,6 +314,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
       userId,
+      accountId,
+      isCommitted,
+      commitReason,
     });
     return corsify(
       NextResponse.json({ error: "rate_limited" }, { status: 429 }),
@@ -320,6 +352,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       totalHandlerMs: Date.now() - handlerStart,
       origin: host,
       userId,
+      accountId,
+      isCommitted,
+      commitReason,
     });
     return corsify(
       NextResponse.json({ error: "search_failed" }, { status: 502 }),
@@ -368,6 +403,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     processingTimeMs: response.processing_time_ms,
     queryUid: queryUid || null,
     userId,
+    accountId,
+    isCommitted,
+    commitReason,
   });
 
   // Forward "Search Performed" to PostHog (best-effort, after the response is

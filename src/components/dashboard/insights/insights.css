@@ -1024,3 +1024,41 @@
     transition: none;
   }
 }
+
+/* ── Overview period selector (closed-period chips) ─────────────────────────── */
+.gro-id .ov-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.gro-id .ov-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  color: var(--t2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.gro-id .ov-chip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.gro-id .ov-chip.active {
+  background: rgba(250, 225, 148, 0.1);
+  border-color: rgba(250, 225, 148, 0.3);
+  color: var(--accent);
+}
+
+/* Funnel figure: white KPI number + delta pill on one baseline row. */
+.fn-fig { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.fn-v {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}

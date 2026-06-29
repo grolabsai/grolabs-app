@@ -251,6 +251,16 @@ The "we don't see events" failure modes, in order of frequency:
 > (migrations `20260603000001`, `20260603000002`). The aggregation reversal is realized via **PostHog**
 > rather than a Meilisearch webhook (see the amended "No aggregation API on RRE" bullet + R-12). The
 > durable buffer, Remove-from-cart, and the un-gated Completed-order write remain unapplied.
+>
+> **✅ Own-store side landed (2026-06-27, plugin v0.9.0). New home:**
+> [`docs/design/event-tracking.md`](../design/event-tracking.md). The un-gated firing,
+> **Remove-from-cart** (eventType `cart_remove`, own-store only), the un-gated **Completed-order**
+> write, plus `account_id` (Option B identity), `cart_id`/`order_id` journey keys, committed-search
+> marking, and global click position **now live on the OWN STORE** (`analytics_event` / `query_log`).
+> **The Meilisearch path in this doc is unchanged and still authoritative** — it stays
+> `queryUid`-gated (the fence). The best-effort-loss (§4) and no-aggregation (§6) non-goals are
+> superseded **for the own store only**; they still describe the Meilisearch relevance loop. See
+> `event-tracking.md` for the consolidated tracking model.
 
 - **No cross-device user attribution.** `userId` is a random UUID stored in `localStorage`; clearing the browser starts a new identity.
 - **~~No aggregation API on RRE.~~ Cross-event analytics live in PostHog (2026-06-03).** RRE forwards events server-side to the external PostHog product (R-12), where keyword↔conversion, journeys, and intent funnels are queried. The local `analytics_event` / `query_log` store still powers the in-app admin panels (`/configuration/search`), and Meilisearch remains the only relevance-training path. A Meilisearch→RRE webhook is no longer needed for aggregation.
@@ -266,5 +276,6 @@ The "we don't see events" failure modes, in order of frequency:
 | v0.5.0 | All four conversion event types shipped. Attribution store added. |
 | v0.7.0 | Dual-write to RRE's `/api/v1/events` for the in-app analytics panel. Meilisearch path unchanged. |
 | v0.8.0 | Search POST to `/api/v1/search` now sends the anonymous `userId` (same localStorage session id the events use), so `query_log.user_id` populates for journey + intent stitching. Cache-buster bump required for the new `typeahead.js` to load. |
+| v0.9.0 | **Event-tracking foundations** ([`event-tracking.md`](../design/event-tracking.md)): un-gated own-store firing for all conversions + new `Removed from cart` (`cart_remove`); `account_id` (Option B identity), `cart_id`, `order_id` on `analytics_event`; committed-search marking + global click position on `query_log`. Meilisearch path unchanged (still `queryUid`-gated). |
 
 The flow described in this doc reflects v0.7.0+ behavior.

@@ -78,7 +78,10 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
 // time below. Keep this for the eventName-counts panel + future
 // allowlist enforcement.
 
-const KNOWN_EVENT_TYPES = new Set(["click", "conversion"]);
+// 'cart_remove' is own-store-only (no Meilisearch path, no queryUid meaning) —
+// it lets cart value be computed as adds − removes − purchases. See
+// docs/design/event-tracking.md.
+const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove"]);
 
 // ── Handler ──────────────────────────────────────────────────────────────
 
@@ -87,11 +90,17 @@ type EventBody = {
   eventType?: unknown;
   eventName?: unknown;
   userId?: unknown;
+  accountId?: unknown;
   queryUid?: unknown;
   indexUid?: unknown;
   objectId?: unknown;
   objectName?: unknown;
   position?: unknown;
+  orderId?: unknown;
+  cartId?: unknown;
+  value?: unknown;
+  quantity?: unknown;
+  placement?: unknown;
 };
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -161,6 +170,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Coerce optional fields to safe types. Defensive — never trust the
   // sender to send a number where a number is expected.
   const userId    = typeof b.userId    === "string" ? b.userId.slice(0, 128)    : null;
+  // Option B identity (logged-in storefront customer) + journey keys. All
+  // nullable — un-gated journey events arrive without search lineage.
+  const accountId = typeof b.accountId === "string" ? b.accountId.slice(0, 128) : null;
+  const orderId   = typeof b.orderId   === "string" ? b.orderId.slice(0, 128)   : (b.orderId == null ? null : String(b.orderId).slice(0, 128));
+  const cartId    = typeof b.cartId    === "string" ? b.cartId.slice(0, 128)    : null;
+  // Order line value + quantity (Sales KPIs). Coerce numeric strings too.
+  const valueNum  = typeof b.value === "number" ? b.value : (typeof b.value === "string" && b.value.trim() !== "" ? Number(b.value) : NaN);
+  const value     = Number.isFinite(valueNum) && valueNum >= 0 ? valueNum : null;
+  const qtyNum    = typeof b.quantity === "number" ? b.quantity : (typeof b.quantity === "string" && b.quantity.trim() !== "" ? Number(b.quantity) : NaN);
+  const quantity  = Number.isFinite(qtyNum) && qtyNum >= 0 ? Math.min(Math.round(qtyNum), 32767) : null;
+  // Placement = the on-site surface a product interaction came from (pdp, plp,
+  // search_results, related, a raw block heading, …). Replaces the old two-name
+  // add-to-cart split; carried as a free dimension, normalised in analysis.
+  const placement = typeof b.placement === "string" && b.placement.trim() !== "" ? b.placement.slice(0, 80) : null;
   const queryUid  = typeof b.queryUid  === "string" ? b.queryUid.slice(0, 128)  : null;
   const indexUid  = typeof b.indexUid  === "string" ? b.indexUid.slice(0, 128)  : null;
   const objectId  = b.objectId == null ? null : String(b.objectId).slice(0, 128);
@@ -181,6 +204,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     object_name: objectName,
     position,
     origin: host,
+    account_id: accountId,
+    order_id: orderId,
+    cart_id: cartId,
+    value,
+    quantity,
+    placement,
   });
 
   if (insertError) {

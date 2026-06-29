@@ -12,7 +12,17 @@
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "smoke:calcom": "node scripts/calcom-webhook-smoke.mjs",
-    "test:smoke": "playwright test"
+    "test:smoke": "playwright test",
+    "emulate": "npm run emulate:reset && npm run emulate:teardown && npm run emulate:push && npm run emulate:check",
+    "emulate:reset": "node --env-file=.env.local scripts/emulator/reset.mjs",
+    "emulate:push": "node scripts/emulator/run.mjs",
+    "emulate:check": "node --env-file=.env.local scripts/emulator/check.mjs",
+    "emulate:seed": "node --env-file=.env.local scripts/emulator/seed-meili.mjs",
+    "emulate:teardown": "node --env-file=.env.local scripts/emulator/seed-meili.mjs --teardown",
+    "emulate:phase2": "npm run emulate:reset && npm run emulate:seed && npm run emulate:push:phase2 && npm run emulate:check:phase2",
+    "emulate:push:phase2": "node scripts/emulator/run.phase2.mjs",
+    "emulate:check:phase2": "EMU_SCENARIO=./scenario.phase2.mjs node --env-file=.env.local scripts/emulator/check.mjs",
+    "emulate:demo": "node scripts/emulator/seed-demo.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",

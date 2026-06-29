@@ -27,6 +27,7 @@ import {
   Database,
   Wrench,
   Activity,
+  ScrollText,
   FileText,
   Users,
   Building,
@@ -83,6 +84,7 @@ export function buildRreNav(
     { href: "/configuration/woocommerce" as Route, label: t("nav.woocommerce"), icon: ShoppingBag },
     { href: "/configuration/ga4" as Route, label: t("configuration.ga4.navLabel"), icon: LineChart, useIconWrapper: true },
     { href: "/configuration/system-health" as Route, label: t("configuration.systemHealth.navLabel"), icon: Activity, useIconWrapper: true },
+    { href: "/configuration/events" as Route, label: t("configuration.events.navLabel"), icon: ScrollText, useIconWrapper: true },
     { href: null, label: t("nav.storeSettings"), icon: Settings },
   ];
   if (opts?.isTenantAdmin) {

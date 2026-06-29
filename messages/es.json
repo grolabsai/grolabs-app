@@ -625,7 +625,9 @@
     },
     "tabs": {
       "traffic": "Tráfico",
-      "search": "Búsqueda"
+      "search": "Búsqueda",
+      "overview": "Overview",
+      "carts": "Carritos"
     },
     "traffic": {
       "header": {
@@ -727,6 +729,90 @@
         "title": "Conecta Google Analytics",
         "body": "Conecta una propiedad de GA4 para ver el tráfico, la audiencia y las alertas de esta instancia.",
         "cta": "Conectar Google Analytics"
+      }
+    },
+    "overview": {
+      "period": {
+        "yesterday": "Yesterday",
+        "d7": "7d",
+        "d15": "15d",
+        "d30": "30d"
+      },
+      "header": {
+        "eyebrow": "Overview",
+        "title": "Your store",
+        "freshness": "Closed period · through {date}"
+      },
+      "sections": {
+        "sales": "Sales",
+        "salesMeta": "revenue",
+        "traffic": "Traffic",
+        "trafficMeta": "sesiones · usuarios · quién — desde nuestro registro de eventos",
+        "search": "Search",
+        "searchMeta": "search to cart",
+        "funnel": "Funnel",
+        "funnelMeta": "session to cart · spine",
+        "users": "Usuarios",
+        "usersMeta": "quién está buscando · desde nuestro registro de eventos",
+        "estimated": "Estimado",
+        "trafficEstimatedMeta": "GA4 no conectado · estimado desde nuestro registro de eventos",
+        "trafficEstimatedHint": "Valor provisional derivado de nuestros propios datos de eventos. Conecta GA4 para reemplazarlo con tráfico real."
+      },
+      "kpi": {
+        "totalSales": "Total sales",
+        "orders": "Orders",
+        "aov": "AOV",
+        "avgItems": "Items prom.",
+        "conversion": "Conversion",
+        "cvr": "CVR",
+        "salesByCartAge": "Sales by when added to cart",
+        "totalUsers": "Total users",
+        "newVsReturning": "new vs returning",
+        "newUsers": "New",
+        "returningUsers": "Returning",
+        "sessions": "Sessions",
+        "searches": "Searches",
+        "noResultRate": "No-result rate",
+        "searchCtr": "Search CTR",
+        "searchToPurchase": "Search → purchase",
+        "identity": "Identidad",
+        "anonVsRegistered": "anónimos vs registrados",
+        "anonymous": "Anónimos",
+        "registered": "Registrados",
+        "users": "usuarios",
+        "whoBreakdown": "Nuevos · Recurrentes · Anónimos"
+      },
+      "soon": "Soon",
+      "noData": "No data yet",
+      "trafficNotConnected": "Connect GA4 to see traffic",
+      "funnel": {
+        "entered": "entered",
+        "performed": "performed",
+        "clicks": "Clicks",
+        "cart": "Cart",
+        "ofSearches": "of searches",
+        "ofClicks": "of clicks",
+        "cumulative": "cumulative"
+      }
+    },
+    "carts": {
+      "subtitle": "En vivo · carritos abiertos por antigüedad",
+      "amount": "Monto",
+      "carts": "Carritos",
+      "live": "En vivo",
+      "reconnecting": "Reconectando",
+      "updated": "actualizado {time}",
+      "estimated": "Estimado",
+      "estimatedHint": "Estimado como valor promedio de pedido × carritos abiertos. Los carritos aún no envían un subtotal — será exacto cuando el plugin envíe el valor del carrito.",
+      "barAria": "Carritos abiertos divididos por antigüedad",
+      "empty": "No hay carritos abiertos en este momento.",
+      "buckets": {
+        "today": "Hoy",
+        "d1": "-1",
+        "d2": "-2",
+        "d3_10": "3-10",
+        "d10_30": "10-30",
+        "d30plus": ">30"
       }
     }
   },
@@ -1629,6 +1715,16 @@
         "no_refresh_token": "Google no devolvió refresh token.",
         "save_failed": "No se pudieron guardar las credenciales."
       }
+    },
+    "events": {
+      "navLabel": "Eventos",
+      "title": "Registro de eventos",
+      "subtitle": "Vista en vivo de todo lo registrado para esta instancia — observa los eventos al probar.",
+      "live": "En vivo",
+      "paused": "Pausado",
+      "refresh": "Actualizar",
+      "status": "{count} eventos · actualizado {time}",
+      "empty": "Aún no hay eventos registrados para esta instancia."
     }
   },
   "sync": {

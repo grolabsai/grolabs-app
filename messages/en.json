@@ -803,7 +803,7 @@
       "reconnecting": "Reconnecting",
       "updated": "updated {time}",
       "estimated": "Estimated",
-      "estimatedHint": "Estimated as average order value × open carts. Carts don't yet emit a subtotal — this becomes exact once the plugin sends cart value.",
+      "estimatedHint": "Estimated as average order value × open carts — used when a cart’s products aren’t priced in the catalog. Exact when items match the catalog.",
       "barAria": "Open carts split by age",
       "empty": "No open carts right now.",
       "buckets": {

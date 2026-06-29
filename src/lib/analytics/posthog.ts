@@ -43,6 +43,10 @@ function host(): string {
  * after the response is sent; the returned result lands in server logs.
  */
 export async function capturePostHog(e: PostHogEvent): Promise<CaptureResult> {
+  // DEC-5 (2026-06-29): PostHog mirroring is intentionally DORMANT. The forwarder
+  // and every call site are preserved on purpose — to turn it back on, set
+  // POSTHOG_ENABLED=1 (plus POSTHOG_API_KEY). Nothing here was deleted.
+  if (process.env.POSTHOG_ENABLED !== "1") return { ok: false, reason: "not_configured" };
   const apiKey = process.env.POSTHOG_API_KEY;
   if (!apiKey) return { ok: false, reason: "not_configured" };
 

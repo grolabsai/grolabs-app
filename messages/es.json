@@ -803,7 +803,7 @@
       "reconnecting": "Reconectando",
       "updated": "actualizado {time}",
       "estimated": "Estimado",
-      "estimatedHint": "Estimado como valor promedio de pedido × carritos abiertos. Los carritos aún no envían un subtotal — será exacto cuando el plugin envíe el valor del carrito.",
+      "estimatedHint": "Estimado como valor promedio de pedido × carritos abiertos — cuando los productos del carrito no tienen precio en el catálogo. Exacto cuando coinciden con el catálogo.",
       "barAria": "Carritos abiertos divididos por antigüedad",
       "empty": "No hay carritos abiertos en este momento.",
       "buckets": {

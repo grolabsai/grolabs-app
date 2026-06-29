@@ -163,14 +163,19 @@ export const METRICS: readonly MetricDef[] = [
     description: "PDP views ÷ result clicks.",
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "pdp",
     kind: "rate", buildable: "needs_instrumentation", materialized: false, unit: "ratio",
-    blockedReason: "No PDP-view event is emitted. Add a 'PDP viewed' event to the plugin.",
+    blockedReason: "PDP-view event now emitted (plugin v0.12.0), but click→PDP attribution (joining a click to the resulting PDP view) is not yet computed.",
+  },
+  {
+    key: "pdp_views", label: "PDP views",
+    description: "Count of 'Product viewed' events (plugin v0.12.0).",
+    grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "pdp",
+    kind: "aggregate", buildable: "now", materialized: true, unit: "count",
   },
   {
     key: "pdp_to_cart", label: "PDP → cart",
     description: "Cart adds ÷ PDP views. Page convinces to add → PDP content enhancement.",
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "pdp",
-    kind: "rate", buildable: "needs_instrumentation", materialized: false, unit: "ratio",
-    blockedReason: "No PDP-view event is emitted.",
+    kind: "rate", buildable: "now", materialized: true, unit: "ratio",
   },
   // ── Sales — revenue (order value + quantity, instrumented 2026-06-27) ─────
   {

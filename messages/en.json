@@ -1724,7 +1724,9 @@
       "paused": "Paused",
       "refresh": "Refresh",
       "status": "{count} events · updated {time}",
-      "empty": "No events recorded yet for this instance."
+      "empty": "No events recorded yet for this instance.",
+      "tabEvents": "Events",
+      "tabSearches": "Searches"
     }
   },
   "sync": {

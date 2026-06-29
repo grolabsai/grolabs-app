@@ -81,7 +81,7 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
 // 'cart_remove' is own-store-only (no Meilisearch path, no queryUid meaning) —
 // it lets cart value be computed as adds − removes − purchases. See
 // docs/design/event-tracking.md.
-const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove"]);
+const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove", "view"]);
 
 // ── Handler ──────────────────────────────────────────────────────────────
 

@@ -1726,7 +1726,8 @@
       "status": "{count} eventos · actualizado {time}",
       "empty": "Aún no hay eventos registrados para esta instancia.",
       "tabEvents": "Eventos",
-      "tabSearches": "Búsquedas"
+      "tabSearches": "Búsquedas",
+      "tabCarts": "Carritos"
     }
   },
   "sync": {

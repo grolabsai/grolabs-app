@@ -1726,7 +1726,8 @@
       "status": "{count} events · updated {time}",
       "empty": "No events recorded yet for this instance.",
       "tabEvents": "Events",
-      "tabSearches": "Searches"
+      "tabSearches": "Searches",
+      "tabCarts": "Carts"
     }
   },
   "sync": {

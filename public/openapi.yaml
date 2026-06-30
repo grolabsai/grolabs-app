@@ -183,6 +183,53 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
 
   # ──────────────────────────────────────────────────────────────────────────
+  /orders:
+    post:
+      tags: [Events]
+      summary: Record a completed order
+      operationId: recordOrder
+      description: |
+        Record a completed order — the canonical revenue entity. **Idempotent**:
+        UPSERT on `(instance_id, orderId)`, so re-posting the same order (a retry,
+        a page reload, or the server-side and client paths both firing) never
+        double-counts. Origin-validated, same trust model as `/events`.
+
+        Prefer firing this **server-side** on your platform's payment-complete
+        hook (the WooCommerce plugin posts here on `payment_complete`). The
+        browser SDK's `trackOrder` is the loss-tolerant fallback for platforms
+        without a server hook. Attach `cartId` so the order closes its cart.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderRequest' }
+      responses:
+        '200':
+          description: Order accepted (inserted or updated).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                required: [ok]
+        '400':
+          description: Malformed body, invalid instance_id, or missing orderId.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Instance not found, inactive, or origin not authorized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Order could not be recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ──────────────────────────────────────────────────────────────────────────
   /events/token:
     post:
       tags: [Tokens]
@@ -1069,15 +1116,23 @@ components:
         eventType:
           type: string
           maxLength: 64
-          description: 'Event category. Known values: `click`, `conversion`. Others are accepted and stored.'
+          description: 'Event category. Known values: `click`, `conversion`, `cart_remove`, `view`. Others are accepted and stored.'
         eventName:
           type: string
           maxLength: 256
-          description: 'Specific event name, e.g. "Added to cart from PDP".'
+          description: |
+            Specific event name. Canonical cart/funnel names (emitted identically
+            by the SDK and the WooCommerce plugin): `Added to cart`,
+            `Cart updated`, `Removed from cart`, `Product viewed`,
+            `Proceeded to check out`, `Completed order`.
         userId:
           type: string
           maxLength: 128
           description: Anonymous storefront session id (same id used on `/search`).
+        accountId:
+          type: string
+          maxLength: 128
+          description: Logged-in customer identity — opaque/hashed, never a raw email. Threads anonymous and signed-in activity for one shopper.
         queryUid:
           type: string
           maxLength: 128
@@ -1096,6 +1151,76 @@ components:
           minimum: 0
           maximum: 32767
           description: 1-based rank of the product in the result list, if applicable.
+        placement:
+          type: string
+          maxLength: 80
+          description: |
+            The on-site surface the interaction came from — `pdp`, `plp`,
+            `search_results`, `related`, `cart`, or a raw block heading. A free
+            dimension, normalised in analysis. Replaces the old two-name
+            add-to-cart split (`Added to cart from PDP`/`from PLP`).
+        quantity:
+          oneOf: [{ type: integer }, { type: string }]
+          description: |
+            Units. On `Added to cart` this is the delta added; on `Cart updated`
+            it is the new absolute quantity for the product (latest set wins).
+            Coerced and capped at 32767.
+        value:
+          oneOf: [{ type: number }, { type: string }]
+          description: Monetary line value (ex-tax), when known. Feeds Sales KPIs.
+        cartId:
+          type: string
+          maxLength: 128
+          description: |
+            Journey key threading add → cart-update → remove → checkout → order
+            into one cart. The SDK mints a per-cart token and attaches it
+            automatically; the WooCommerce plugin mints `grolabs_cart_token`.
+        orderId:
+          oneOf: [{ type: string }, { type: integer }]
+          description: Order id, on order-related events. Use `/orders` for the authoritative revenue record.
+
+    # ── orders ────────────────────────────────────────────────────────────────
+    OrderRequest:
+      type: object
+      required: [instance_id, orderId, amount]
+      properties:
+        instance_id:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string }
+        orderId:
+          oneOf: [{ type: string }, { type: integer }]
+          description: Idempotency key. Re-posting the same orderId UPSERTs — never double-counts. Max 128 chars.
+        amount:
+          oneOf: [{ type: number }, { type: string }]
+          description: Net product revenue for the order.
+        currency:
+          type: string
+          maxLength: 8
+          default: USD
+        itemCount:
+          oneOf: [{ type: integer }, { type: string }]
+          description: Distinct line-item count.
+        totalQuantity:
+          oneOf: [{ type: integer }, { type: string }]
+          description: Total units across all lines.
+        userId:
+          type: string
+          maxLength: 128
+          description: Anonymous storefront session id.
+        accountId:
+          type: string
+          maxLength: 128
+          description: Logged-in customer identity — opaque/hashed, never a raw email.
+        cartId:
+          type: string
+          maxLength: 128
+          description: The cart this order closes (the SDK/plugin minted token).
+        source:
+          type: string
+          maxLength: 32
+          default: woocommerce
+          description: Origin of the order, e.g. `woocommerce`, `byo-sdk`.
 
     # ── catalog settings ─────────────────────────────────────────────────────
     IndexSettings:

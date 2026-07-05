@@ -807,12 +807,12 @@
       "barAria": "Carritos abiertos divididos por antigüedad",
       "empty": "No hay carritos abiertos en este momento.",
       "buckets": {
-        "today": "Hoy",
-        "d1": "-1",
-        "d2": "-2",
-        "d3_10": "3-10",
-        "d10_30": "10-30",
-        "d30plus": ">30"
+        "today": "< 24 h",
+        "d1": "1–2 d",
+        "d2": "2–3 d",
+        "d3_10": "3–10 d",
+        "d10_30": "10–30 d",
+        "d30plus": "> 30 d"
       }
     }
   },

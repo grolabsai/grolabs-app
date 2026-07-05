@@ -61,6 +61,34 @@ resume:
    (always) from "integration/E2E" (main + nightly) so a slow or flaky tier never
    blocks PRs again.
 
+## SDK / events-pipeline testing (live since 2026-07-04)
+
+One tier of testing is ALREADY running (on demand, not CI-gated) and is exempt
+from the deferred framing above — the SDK/events-pipeline pair:
+
+- **Generation — `grolabsai/TestEcomSite`** (own repo, `~/code/Grolabs/TestEcomSite/`).
+  A customer-style storefront consuming `@grolabs/web-sdk` as a normal npm
+  dependency. Two generators: `site/` (interactive store, every control = one
+  SDK call, live API log) and `scenarios/run.mjs` (the variation matrix:
+  anon/logged-in × abandon/remove/convert × same-day/cross-day; the cross-day
+  pair persists shoppers in `state.json` between a `day1` and a later `day2`
+  run). Browser tier: **Playwright, local headless Chromium** (`npm run
+  test:e2e` there) — asserts every `/api/v1/*` call returns 200, event counts,
+  cart-token rotation, no page errors. Playwright, NOT Browserless: Browserless
+  is for probing external production sites (prospectos); our own page needs
+  local, free, deterministic.
+- **Assertion — this repo**: `npm run testecom:check`
+  (`scripts/testecom/check.mjs`, service-role, emulator-check pattern).
+  Verifies what LANDED: order rows (amount/qty/account_id), cart entity states
+  (completed vs open), and cross-day carts (opened < ordered). Default scope:
+  instance 99999 (localhost is a registered origin there), `tes-`-prefixed
+  orders, last 12 h. The split is deliberate: the customer-shaped repo holds no
+  DB credentials; outcome assertions live where the schema and keys live.
+
+Flow: `GROLABS_INSTANCE_ID=99999 npm run scenario all` (TestEcomSite) → `npm run
+testecom:check` (here). Emulator resets wipe 99999 including `tes-` rows, so
+the two rigs coexist; run `emulate` fresh if its EXPECTED sheet matters.
+
 ## How to resume — checklist
 
 - [ ] Run `npm test` locally and capture the current failing list (it will have

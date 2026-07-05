@@ -39,6 +39,7 @@ const EXPECTED_ORDERS = [
   { prefix: "tes-login-remove-convert-", amount: 82.24, qty: 2, loggedIn: true  },
   { prefix: "tes-xday-anon-",            amount: 24,    qty: 2, loggedIn: false, crossDay: true, optional: true },
   { prefix: "tes-xday-logged-",          amount: 42,    qty: 2, loggedIn: true,  crossDay: true, optional: true },
+  { prefix: "tes-full-funnel-",         amount: 18.5,  qty: 1, loggedIn: true,  optional: true }, // needs a seeded store (testecom:seed)
 ];
 // The two abandon scenarios leave carts OPEN with these unit counts.
 const EXPECTED_OPEN_QTYS = [3, 1];
@@ -84,6 +85,32 @@ for (const e of EXPECTED_ORDERS) {
   }
   const bad = checks.filter(([ok]) => !ok);
   row(bad.length === 0, `order ${name}`, bad.length ? bad.map(([, d]) => d).join("; ") : `$${o.amount}, ${o.total_quantity}u, cart completed${e.crossDay ? ", cross-day" : ""}`);
+}
+
+// ── search tier (only when the search-funnel scenarios ran in the window) ──
+const { data: searches } = await db
+  .from("query_log")
+  .select("query, total_hits, is_committed, query_uid")
+  .eq("instance_id", INSTANCE).gte("created_at", SINCE);
+const committed = (searches ?? []).filter((q) => q.is_committed !== false);
+if (committed.length === 0) {
+  row(null, "search tier", "no committed searches in window (search-funnel not run)");
+} else {
+  const withHits = committed.filter((q) => (q.total_hits ?? 0) > 0);
+  const zeroHits = committed.filter((q) => q.total_hits === 0);
+  row(withHits.length > 0, "committed search with hits", `${withHits.length} (real index answered)`);
+  row(zeroHits.length > 0, "committed zero-hit search", `${zeroHits.length} (feeds no_result_rate)`);
+  const uids = new Set(committed.map((q) => q.query_uid).filter(Boolean));
+  const { data: clicks } = await db
+    .from("analytics_event").select("query_uid, position")
+    .eq("instance_id", INSTANCE).eq("event_type", "click").gte("created_at", SINCE);
+  const attributedClicks = (clicks ?? []).filter((c) => c.query_uid && uids.has(c.query_uid));
+  row(attributedClicks.length > 0, "click attributed to a search", `${attributedClicks.length} click(s) carry a matching query_uid`);
+  const { data: orderEvents } = await db
+    .from("analytics_event").select("order_id, query_uid")
+    .eq("instance_id", INSTANCE).eq("event_name", "Completed order").gte("created_at", SINCE);
+  const attributedOrders = (orderEvents ?? []).filter((o) => o.query_uid);
+  row(attributedOrders.length > 0, "order attributed to a search", `${attributedOrders.length} (search→purchase numerator)`);
 }
 
 const open = (carts ?? []).filter((c) => c.status === "open");

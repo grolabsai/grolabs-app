@@ -53,8 +53,61 @@ interface Row {
   value: number | null;
 }
 
-function isoDay(d: Date): string {
-  return d.toISOString().slice(0, 10);
+// ── Store-local day windows (instance.timezone, GA4-style) ──────────────────
+// "Yesterday" is the STORE's yesterday, not the viewer's and not UTC: day
+// boundaries are a property of the store (instance.timezone, IANA), so every
+// viewer sees the same numbers and they match the merchant's business day.
+// metric_daily is bucketed the same way (instance_day() in the DB).
+
+/** The calendar date of `d` in an IANA timezone, as YYYY-MM-DD. */
+function zonedDay(tz: string, d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(d);
+}
+
+/** YYYY-MM-DD ± n days (pure string math, DST-proof via UTC noon). */
+function shiftDay(day: string, delta: number): string {
+  const [y, m, dd] = day.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, dd, 12));
+  t.setUTCDate(t.getUTCDate() + delta);
+  return t.toISOString().slice(0, 10);
+}
+
+export interface DayWindow {
+  /** IANA zone the boundaries derive from (instance.timezone; UTC fallback). */
+  timezone: string;
+  /** Human label, e.g. "America/Guatemala (GMT-6)" — display next to "through <date>". */
+  tzLabel: string;
+  /** Closed current window [start..end] and the equal prior window, store-local days. */
+  end: string; start: string; priorEnd: string; priorStart: string;
+}
+
+/** The instance's closed reporting window: through the STORE's yesterday. */
+export async function getDayWindow(
+  instanceId: number,
+  periodDays: OverviewPeriod,
+): Promise<DayWindow> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("instance").select("timezone").eq("instance_id", instanceId).maybeSingle();
+  let tz = data?.timezone ?? "UTC";
+  let today: string;
+  try {
+    today = zonedDay(tz, new Date());
+  } catch {
+    tz = "UTC"; // bad/unknown IANA string in the row — never break the dashboard
+    today = zonedDay(tz, new Date());
+  }
+  const end = shiftDay(today, -1);
+  const start = shiftDay(end, -(periodDays - 1));
+  const priorEnd = shiftDay(start, -1);
+  const priorStart = shiftDay(priorEnd, -(periodDays - 1));
+  const offset =
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" })
+      .formatToParts(new Date())
+      .find((p) => p.type === "timeZoneName")?.value ?? "";
+  return { timezone: tz, tzLabel: offset ? `${tz} (${offset})` : tz, end, start, priorEnd, priorStart };
 }
 
 /** Metrics whose period value pools as Σnum/Σden (rates + the num/den aggregates). */
@@ -76,32 +129,24 @@ export async function getOverviewMetrics(
 ): Promise<Record<string, OverviewMetric>> {
   const supabase = await createClient();
 
-  // Closed window: through yesterday (UTC), excluding today (partial-day guard,
-  // same convention as the GA4 dashboard).
-  const end = new Date();
-  end.setUTCHours(0, 0, 0, 0);
-  end.setUTCDate(end.getUTCDate() - 1);
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - (periodDays - 1));
-  const priorEnd = new Date(start);
-  priorEnd.setUTCDate(priorEnd.getUTCDate() - 1);
-  const priorStart = new Date(priorEnd);
-  priorStart.setUTCDate(priorStart.getUTCDate() - (periodDays - 1));
+  // Closed window: through the STORE's yesterday (instance.timezone), excluding
+  // its partial today — same convention as the GA4 dashboard.
+  const w = await getDayWindow(instanceId, periodDays);
 
   const { data, error } = await supabase
     .from("metric_daily")
     .select("day, metric_key, numerator, denominator, value")
     .eq("instance_id", instanceId)
-    .gte("day", isoDay(priorStart))
-    .lte("day", isoDay(end));
+    .gte("day", w.priorStart)
+    .lte("day", w.end);
   if (error) {
     console.error("[overview] metric_daily read failed:", error.message);
     return {};
   }
   const rows = (data ?? []) as Row[];
 
-  const startS = isoDay(start), endS = isoDay(end);
-  const pStartS = isoDay(priorStart), pEndS = isoDay(priorEnd);
+  const startS = w.start, endS = w.end;
+  const pStartS = w.priorStart, pEndS = w.priorEnd;
   const inCur = (d: string) => d >= startS && d <= endS;
   const inPri = (d: string) => d >= pStartS && d <= pEndS;
 
@@ -169,19 +214,15 @@ export async function getFunnelSeries(
   periodDays: OverviewPeriod,
 ): Promise<FunnelSeries> {
   const supabase = await createClient();
-  const end = new Date();
-  end.setUTCHours(0, 0, 0, 0);
-  end.setUTCDate(end.getUTCDate() - 1);
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - (periodDays - 1));
+  const w = await getDayWindow(instanceId, periodDays);
 
   const { data, error } = await supabase
     .from("metric_daily")
     .select("day, metric_key, value, denominator")
     .eq("instance_id", instanceId)
     .in("metric_key", ["session_conversion", "search_volume", "avg_click_position", "cart_to_checkout"])
-    .gte("day", isoDay(start))
-    .lte("day", isoDay(end));
+    .gte("day", w.start)
+    .lte("day", w.end);
   if (error || !data) return { sessions: [], searches: [], clickRate: [], cartRate: [] };
 
   // day → { sessions, searches, clicks, cart }
@@ -238,28 +279,21 @@ export async function getUserBreakdown(
   periodDays: OverviewPeriod,
 ): Promise<UserBreakdown> {
   const supabase = await createClient();
-  const end = new Date();
-  end.setUTCHours(0, 0, 0, 0);
-  end.setUTCDate(end.getUTCDate() - 1);
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - (periodDays - 1));
-  const priorEnd = new Date(start);
-  priorEnd.setUTCDate(priorEnd.getUTCDate() - 1);
-  const priorStart = new Date(priorEnd);
-  priorStart.setUTCDate(priorStart.getUTCDate() - (periodDays - 1));
+  const w = await getDayWindow(instanceId, periodDays);
+  const { start, end, priorStart, priorEnd } = w;
 
-  const call = async (s: Date, e: Date): Promise<BreakdownRow | null> => {
+  const call = async (s: string, e: string): Promise<BreakdownRow | null> => {
     const { data, error } = await supabase.rpc("instance_user_breakdown", {
-      p_instance: instanceId, p_start: isoDay(s), p_end: isoDay(e),
+      p_instance: instanceId, p_start: s, p_end: e,
     });
     if (error) { console.error("[overview] user breakdown failed:", error.message); return null; }
     const row = Array.isArray(data) ? data[0] : data;
     return (row ?? null) as BreakdownRow | null;
   };
 
-  const series = async (s: Date, e: Date): Promise<number[]> => {
+  const series = async (s: string, e: string): Promise<number[]> => {
     const { data, error } = await supabase.rpc("instance_daily_users", {
-      p_instance: instanceId, p_start: isoDay(s), p_end: isoDay(e),
+      p_instance: instanceId, p_start: s, p_end: e,
     });
     if (error || !data) return [];
     return (data as { day: string; users: number }[])

@@ -23,7 +23,8 @@
     "emulate:push:phase2": "node scripts/emulator/run.phase2.mjs",
     "emulate:check:phase2": "EMU_SCENARIO=./scenario.phase2.mjs node --env-file=.env.local scripts/emulator/check.mjs",
     "emulate:demo": "node scripts/emulator/seed-demo.mjs",
-    "testecom:check": "node --env-file=.env.local scripts/testecom/check.mjs"
+    "testecom:check": "node --env-file=.env.local scripts/testecom/check.mjs",
+    "testecom:seed": "node --env-file=.env.local scripts/testecom/seed-store.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",

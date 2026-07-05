@@ -4,6 +4,7 @@ import { Link } from "@/i18n/routing";
 import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import {
+  getDayWindow,
   getOverviewMetrics,
   getFunnelSeries,
   getUserBreakdown,
@@ -110,11 +111,10 @@ export default async function OverviewDashboardPage({
   const clickRateDeltaPp = (clickRate - clickRatePrior) * 100;
   const cartReachDeltaPp = (cartReach - cartReachPrior) * 100;
 
-  // Closed-period freshness label (through yesterday UTC).
-  const through = new Date();
-  through.setUTCHours(0, 0, 0, 0);
-  through.setUTCDate(through.getUTCDate() - 1);
-  const throughLabel = through.toLocaleDateString("en-US", {
+  // Closed-period freshness label — through the STORE's yesterday, and say
+  // which timezone defines that day so "yesterday" is never ambiguous.
+  const dayWindow = await getDayWindow(instanceId, period);
+  const throughLabel = new Date(`${dayWindow.end}T12:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
@@ -165,7 +165,7 @@ export default async function OverviewDashboardPage({
             letterSpacing: "0.02em",
           }}
         >
-          {to("header.freshness", { date: throughLabel })}
+          {to("header.freshness", { date: throughLabel })} · {dayWindow.tzLabel}
         </div>
 
         {/* ═══ SALES ═══ */}

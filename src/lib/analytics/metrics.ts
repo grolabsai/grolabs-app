@@ -150,20 +150,13 @@ export const METRICS: readonly MetricDef[] = [
     numeratorLabel: "purchasing users", denominatorLabel: "active users",
   },
 
-  // ── Not yet materialized — tracked so the catalog is complete ────────────
-  {
-    key: "journey_conversion", label: "Journey conversion",
-    description: "Journeys ending in purchase ÷ journeys (cart carry-over, 7-day window). The true close rate.",
-    grain: "journey", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
-    kind: "rate", buildable: "later", materialized: false, unit: "ratio",
-    blockedReason: "Journeys span days/sessions — needs an identity-spanning view, not a clean per-day grain. Deferred.",
-  },
+  // ── PDP fence — revenue (daily ratios; no per-event attribution) ─────────
   {
     key: "click_to_pdp", label: "Click → PDP",
-    description: "PDP views ÷ result clicks.",
+    description: "PDP views ÷ result clicks. The pdp-fence entry rate (daily ratio, per the fence table — not a per-click attribution join).",
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "pdp",
-    kind: "rate", buildable: "needs_instrumentation", materialized: false, unit: "ratio",
-    blockedReason: "PDP-view event now emitted (plugin v0.12.0), but click→PDP attribution (joining a click to the resulting PDP view) is not yet computed.",
+    kind: "rate", buildable: "now", materialized: true, unit: "ratio",
+    numeratorLabel: "PDP views", denominatorLabel: "result clicks",
   },
   {
     key: "pdp_views", label: "PDP views",
@@ -176,17 +169,18 @@ export const METRICS: readonly MetricDef[] = [
     description: "Cart adds ÷ PDP views. Page convinces to add → PDP content enhancement.",
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "pdp",
     kind: "rate", buildable: "now", materialized: true, unit: "ratio",
+    numeratorLabel: "cart adds", denominatorLabel: "PDP views",
   },
-  // ── Sales — revenue (order value + quantity, instrumented 2026-06-27) ─────
+  // ── Sales — revenue (from the sales_order ENTITY since _018; dedup-proof) ─
   {
     key: "total_sales", label: "Total sales",
-    description: "Sum of order-line value over Completed-order events. The headline money number.",
+    description: "Sum of sales_order.amount per day. The headline money number.",
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
     kind: "aggregate", buildable: "now", materialized: true, unit: "count",
   },
   {
     key: "orders", label: "Orders",
-    description: "Distinct order_id count over Completed-order events.",
+    description: "Count of sales_order rows (keyed on order_id → dedup-proof).",
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
     kind: "aggregate", buildable: "now", materialized: true, unit: "count",
   },
@@ -203,6 +197,14 @@ export const METRICS: readonly MetricDef[] = [
     grain: "event", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
     kind: "aggregate", buildable: "now", materialized: true, unit: "count",
     numeratorLabel: "units sold", denominatorLabel: "orders",
+  },
+  // ── Not yet materialized — tracked so the catalog is complete ────────────
+  {
+    key: "journey_conversion", label: "Journey conversion",
+    description: "Journeys ending in purchase ÷ journeys (cart carry-over, 7-day window). The true close rate.",
+    grain: "journey", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
+    kind: "rate", buildable: "later", materialized: false, unit: "ratio",
+    blockedReason: "Journeys span days/sessions — needs an identity-spanning view, not a clean per-day grain. Deferred.",
   },
   {
     key: "revenue_per_session", label: "Revenue per session",

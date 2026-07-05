@@ -110,6 +110,8 @@ export const EXPECTED = [
   { key: "search_to_purchase",   value: 0.0,  tol: 0,      note: "orders have no queryUid in Phase 1" },
   { key: "session_conversion",   value: 0.4,  tol: 0,      note: "4 converting sessions / 10" },
   { key: "user_conversion",      value: 0.4,  tol: 0,      note: "4 purchasing users / 10 active" },
+  { key: "click_to_pdp",         value: 0,    tol: 0,      note: "no 'view' events in Phase 1 → 0 views / 10 clicks" },
+  { key: "pdp_views",            absent: true,             note: "no 'view' events in Phase 1 → no row" },
   { key: "total_sales",          value: 400,  tol: 0,      note: "8 order lines × $50" },
   { key: "orders",               value: 8,    tol: 0,      note: "8 distinct order_ids" },
   { key: "aov",                  value: 50,   tol: 0,      note: "$400 / 8 orders" },

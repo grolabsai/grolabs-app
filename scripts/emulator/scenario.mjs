@@ -65,10 +65,14 @@ const mkConv = (bid, eventName, extra = {}) => ({
   ...extra,
 });
 
-// 20 add-to-cart (alternating PLP/PDP), 2 per shopper.
+// 20 add-to-cart (alternating placement), 2 per shopper. The plugin (v0.14.0)
+// sends ONE canonical name — 'Added to cart' — and WHERE it came from rides on
+// `placement`; the emulator mirrors the plugin exactly. (The legacy
+// 'Added to cart from PLP/PDP' names still exist in old rows; the view counts
+// both via the 3-name array — migration 20260704000003.)
 export const ADDS = SHOPPERS.flatMap((s, i) => [
-  mkConv(s.bid, "Added to cart from PLP", { p: (i % 10) + 1 }),
-  mkConv(s.bid, "Added to cart from PDP", { p: ((i + 5) % 10) + 1 }),
+  mkConv(s.bid, "Added to cart", { p: (i % 10) + 1, placement: "plp" }),
+  mkConv(s.bid, "Added to cart", { p: ((i + 5) % 10) + 1, placement: "pdp" }),
 ]);
 
 // 10 checkouts — one per shopper.
@@ -110,6 +114,9 @@ export const EXPECTED = [
   { key: "search_to_purchase",   value: 0.0,  tol: 0,      note: "orders have no queryUid in Phase 1" },
   { key: "session_conversion",   value: 0.4,  tol: 0,      note: "4 converting sessions / 10" },
   { key: "user_conversion",      value: 0.4,  tol: 0,      note: "4 purchasing users / 10 active" },
+  { key: "click_to_pdp",         value: 0,    tol: 0,      note: "no 'view' events in Phase 1 → 0 views / 10 clicks" },
+  { key: "pdp_views",            absent: true,             note: "no 'view' events in Phase 1 → no row" },
+  { key: "pdp_to_cart",          present: true,            note: "20 adds / 0 views → row exists, NULL rate (no view events in Phase 1)" },
   { key: "total_sales",          value: 400,  tol: 0,      note: "8 order lines × $50" },
   { key: "orders",               value: 8,    tol: 0,      note: "8 distinct order_ids" },
   { key: "aov",                  value: 50,   tol: 0,      note: "$400 / 8 orders" },

@@ -88,6 +88,7 @@ async function main() {
       ...(ev.cartId ? { cartId: ev.cartId } : {}),
       ...(ev.value != null ? { value: ev.value } : {}),
       ...(ev.qty != null ? { quantity: ev.qty } : {}),
+      ...(ev.placement ? { placement: ev.placement } : {}),
     });
     if (status === 200) e2xx++;
     else { eErr++; if (eErr <= 5) console.log(`  event non-200: ${status} (${ev.eventName})`); }

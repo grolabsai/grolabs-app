@@ -160,17 +160,34 @@ that product (the fence — R-1). The own-store write always fires.
 
 ## 4. Data model (ERD)
 
-Bold tables: **query_log**, **analytics_event**. Soft joins (logical, not FK-enforced) carry the
-spine. The GA4 overlay is a sibling source, never joined per-user.
+Bold tables: **query_log**, **analytics_event**, **sales_order** (the order ENTITY — idempotent
+upsert keyed on `(instance_id, order_id)`; source of truth for revenue, distinct from the
+behavioral log). Soft joins (logical, not FK-enforced) carry the spine. The GA4 overlay is a
+sibling source, never joined per-user.
 
 ```mermaid
 erDiagram
   instance ||--o{ query_log : has
   instance ||--o{ analytics_event : has
+  instance ||--o{ sales_order : has
   query_log ||..o{ analytics_event : "soft (instance_id, query_uid)"
   analytics_event ||..o{ analytics_event : "soft user_id / account_id / cart_id (journey)"
   query_log ||..o{ query_log : "soft (instance_id, user_id, intent_group_id)"
+  sales_order ||..o{ analytics_event : "soft (instance_id, order_id)"
 
+  sales_order {
+    bigint instance_id "PK part, FK"
+    text order_id "PK part — the platform's order id"
+    numeric amount "net product revenue (ex-tax/shipping, post-discount)"
+    text currency
+    integer item_count
+    integer total_quantity
+    text user_id "anon browser id"
+    text account_id "Option B, hashed"
+    text cart_id
+    text source "woocommerce | sdk"
+    timestamptz created_at
+  }
   query_log {
     bigserial id PK
     bigint instance_id FK
@@ -188,7 +205,7 @@ erDiagram
   analytics_event {
     bigserial id PK
     bigint instance_id FK
-    text event_type "click | conversion | cart_remove"
+    text event_type "click | conversion | view | cart_remove"
     text event_name
     text user_id "anon browser id"
     text account_id "v0.9.0 — Option B, hashed"
@@ -240,18 +257,31 @@ materialized** + **code-constant catalog**):
 - **`refresh_metric_daily()`** materializer + **nightly pg_cron** `refresh-metric-daily` (05:20 UTC,
   yesterday — GA4 "through yesterday" convention) (migration `20260627000005`).
 - **Metric catalog** as a typed code constant: `src/lib/analytics/metrics.ts` (`METRICS[]`), keys
-  matching the view. **13 KPIs materialized**; the rest tagged `needs_instrumentation` / `later` with
-  reasons.
+  matching the view. **20 KPIs materialized**; the rest tagged `needs_instrumentation` / `later` with
+  reasons. A unit test (`tests/unit/analytics/metrics.test.ts`) parses the latest
+  `metric_daily_source` migration and asserts its emitted keys equal the catalog's materialized set —
+  catalog↔view drift fails `npm test`.
 - Backfilled from existing history + cross-checked (e.g. `no_result_rate` = 675/1795 = 0.376).
 
 **`user_id` gap CLOSED (v0.10.0).** The browser id is now mirrored to a `grolabs_bid` cookie; PHP
 reads it (`current_browser_id()`) and forwards it on the committed results-page search, so
 `query_log.user_id` populates for committed searches → session/journey/intent stitching works on them.
 
+**PDP fence materialized (G-2 + 2026-07-04).** The plugin emits `Product viewed` (`event_type =
+'view'`, v0.12.0+), unblocking `pdp_views` (count), `pdp_to_cart` (adds ÷ views, PR #251) and
+`click_to_pdp` (views ÷ result clicks, migration `20260704000001`). All three are **daily ratios per
+the fence table** — no per-event click→view attribution join (view events can carry `query_uid`, so
+an attributed upgrade stays possible later).
+
+**Sales KPIs read the `sales_order` ENTITY, not events (PR #253, migration `20260627000018`).**
+`/api/v1/orders` upserts orders keyed on `(instance_id, order_id)` — dedup-proof — and
+`total_sales` / `orders` / `aov` / `avg_items_per_order` derive from it as a fourth CTE (`so`)
+joined directly in `metric_daily_source`, NOT by widening `event_stream` (orders are server-side
+facts, not behavioral events; `event_stream` stays a pure activity spine for sessionization).
+
 **Still deferred** (tagged in `metrics.ts`): `journey_conversion` (identity-spanning, not a clean
-daily grain); `click_to_pdp` / `pdp_to_cart` (need a **PDP-view event** — not emitted); `aov` /
-`revenue_per_session` (need **order revenue** on the Completed-order event); `reformulation_*` (need
-intent-grain rollup over `intent_group_id`). These are the next instrumentation items.
+daily grain); `revenue_per_session` (needs revenue joined to the session grain — a matched-population
+decision, not just a column); `reformulation_*` (need intent-grain rollup over `intent_group_id`).
 
 ## 7. Related GroLabs modules / applications
 

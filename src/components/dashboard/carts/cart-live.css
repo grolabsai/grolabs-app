@@ -17,7 +17,7 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--t3, rgba(120, 120, 120, 0.7));
+  color: var(--gl-text-tertiary);
   font-weight: 600;
 }
 .cl-figure { display: flex; align-items: baseline; gap: 10px; }
@@ -26,14 +26,14 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: var(--strong, #1a1a1a);
+  color: var(--gl-text-strong);
   font-variant-numeric: tabular-nums;
 }
 .cl-carts {
   font-size: 40px;
   font-weight: 700;
   line-height: 1;
-  color: var(--strong, #1a1a1a);
+  color: var(--gl-text-strong);
   font-variant-numeric: tabular-nums;
 }
 .cl-est {
@@ -41,8 +41,8 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--blue, #7fb0c9);
-  border: 1px solid var(--line, rgba(120, 120, 120, 0.25));
+  color: #7fb0c9;
+  border: 1px solid var(--gl-border-strong);
   border-radius: 999px;
   padding: 2px 8px;
   white-space: nowrap;
@@ -64,9 +64,9 @@
 }
 .cl-live-txt {
   font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
-  text-transform: uppercase; color: var(--strong, #1a1a1a);
+  text-transform: uppercase; color: var(--gl-text-strong);
 }
-.cl-updated { font-size: 11px; color: var(--t3, rgba(120, 120, 120, 0.7)); }
+.cl-updated { font-size: 11px; color: var(--gl-text-tertiary); }
 
 /* The 100% bar */
 .cl-bar {
@@ -113,21 +113,21 @@
 }
 .cl-leg-dot { width: 10px; height: 10px; border-radius: 3px; }
 .cl-leg-lbl {
-  color: var(--t3, rgba(120, 120, 120, 0.75));
+  color: var(--gl-text-tertiary);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 .cl-leg-val {
   font-size: 18px; font-weight: 700;
-  color: var(--strong, #1a1a1a);
+  color: var(--gl-text-strong);
   font-variant-numeric: tabular-nums;
 }
-.cl-leg-pct { color: var(--t3, rgba(120, 120, 120, 0.7)); font-variant-numeric: tabular-nums; }
+.cl-leg-pct { color: var(--gl-text-tertiary); font-variant-numeric: tabular-nums; }
 
 .cl-empty {
   padding: 40px;
   text-align: center;
-  color: var(--t3, rgba(120, 120, 120, 0.7));
-  border: 1px dashed var(--line, rgba(120, 120, 120, 0.25));
+  color: var(--gl-text-tertiary);
+  border: 1px dashed var(--gl-border-strong);
   border-radius: 8px;
 }

@@ -12,9 +12,10 @@
  */
 import { createClient } from "@/lib/supabase/server";
 
-/** Age buckets, ordered fresh → stale (capped at 30 days; older carts are an
- *  unbounded dead tail and aren't shown). Heat ramp: two greens → yellow →
- *  orange → red. */
+/** Buckets by the STORE's calendar day (instance.timezone) since last cart
+ *  activity — Today / Yesterday / 2 d / 3–10 d / 10–30 d — capped at 30 days
+ *  (older carts are an unbounded dead tail and aren't shown). Heat ramp:
+ *  two greens → yellow → orange → red. */
 export const CART_BUCKETS = [
   { key: "today", color: "#b7e1a6" },   // light green — added today
   { key: "d1", color: "#5cbb4a" },      // green — 1 day

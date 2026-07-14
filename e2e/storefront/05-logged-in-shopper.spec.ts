@@ -27,12 +27,14 @@ test("logged-in shopper searches carry a hashed account_id", async ({ page }) =>
     "E2E_SHOPPER_EMAIL / E2E_SHOPPER_PASSWORD not set — create a WP customer (wp-admin → Users → Add New) and add them to .env.local",
   );
 
-  // Storefront login via the my-account form.
+  // Storefront login via the my-account form. The theme also renders a
+  // hidden header login DRAWER with duplicate field ids — .first() targets
+  // the page form (first in DOM).
   await page.goto(tagged("/my-account/"));
   await dismissPopups(page);
-  await page.locator("#username").fill(EMAIL!);
-  await page.locator("#password").fill(PASSWORD!);
-  await page.locator('button[name="login"]').click();
+  await page.locator("#username").first().fill(EMAIL!);
+  await page.locator("#password").first().fill(PASSWORD!);
+  await page.locator('button[name="login"]').first().click();
   // Successful login re-renders my-account with the logout link.
   await expect(
     page.locator(".woocommerce-MyAccount-navigation, a[href*='customer-logout']").first(),

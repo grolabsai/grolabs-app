@@ -57,12 +57,15 @@ afterEach(() => {
 });
 
 describe("ASE_PDP scorers — page resolution + graceful failure", () => {
-  it("returns na (without calling ASE) when the PDP was not discovered", async () => {
+  it("falls back to the entry URL (ASE still called) when the PDP was not discovered", async () => {
+    // Discovery can miss the PDP (bot-protection, rate limits) even when the
+    // submitted entry URL IS a PDP — the evidence layer no longer short-circuits
+    // to na; it scans the entry URL instead.
+    mockPdp.mockResolvedValue(pdp({ has_product_schema: true }));
     const ctx = ctxWith({ PDP: { found: false }, SITE_WIDE: { found: true, url: HOME } });
     const r = await run("seo.jsonld.present", ctx);
-    expect(r.status).toBe("na");
-    expect(r.note).toBe("pdp_page_unavailable");
-    expect(mockPdp).not.toHaveBeenCalled();
+    expect(r.status).toBe("pass");
+    expect(mockPdp).toHaveBeenCalledWith(ENTRY);
   });
 
   it("returns na when the ASE call fails", async () => {
@@ -110,14 +113,17 @@ describe("FETCH scorers — presence, absence, and errors", () => {
     expect(r.status).toBe("na");
   });
 
-  it("returns na when SITE_WIDE was not discovered (no fetch attempted)", async () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal("fetch", fetchSpy);
+  it("falls back to the entry-url root when SITE_WIDE was not discovered", async () => {
+    // Discovery missing the homepage no longer gates artifact fetches — the
+    // root is derived from the entry URL and the fetch is attempted anyway.
+    const fetchImpl = vi.fn(async (_input: unknown) => { throw new Error("network down"); });
+    vi.stubGlobal("fetch", fetchImpl);
     const ctx = ctxWith({ PDP: { found: true, url: ENTRY }, SITE_WIDE: { found: false } });
     const r = await run("aeo.llms_txt.present", ctx);
+    expect(fetchImpl).toHaveBeenCalled();
+    expect(String(fetchImpl.mock.calls[0][0])).toBe(`${HOME}/llms.txt`);
     expect(r.status).toBe("na");
-    expect(r.note).toBe("site_wide_page_unavailable");
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(r.note).toBe("network_error_or_timeout");
   });
 
   it("seo.og.title parses OG tags from the fetched SITE_WIDE page", async () => {
@@ -131,11 +137,13 @@ describe("FETCH scorers — presence, absence, and errors", () => {
     expect((r.evidence as { value: string }).value).toBe("Cool Shop");
   });
 
-  it("aeo.robots.ai_policy treats a 404 robots.txt as unmentioned (partial)", async () => {
+  it("aeo.robots.ai_policy treats a 404 robots.txt as unmentioned (fail)", async () => {
+    // No robots.txt = no AI policy = nothing done for AI discoverability.
+    // Scored 0 since commit 1589f37 (was a neutral 50 before).
     stubFetch(() => ({ ok: false, status: 404, body: "" }));
     const r = await run("aeo.robots.ai_policy", ctxWith(PDP_OK));
-    expect(r.status).toBe("partial");
-    expect(r.score).toBe(50);
+    expect(r.status).toBe("fail");
+    expect(r.score).toBe(0);
   });
 
   it("memoizes the sitemap fetch across present + valid", async () => {

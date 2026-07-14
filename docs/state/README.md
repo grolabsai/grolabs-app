@@ -55,6 +55,10 @@ end of every PR that changes module state, schema, or open work.
 - **schema.md** — every table, its columns, its relationships, its RLS
   shape. Generated from `information_schema`, `pg_policies`,
   `pg_constraint`, `pg_indexes`, and `pg_trigger`.
+- **instances.md** — the canonical tenant/instance row map in the
+  production DB (template 0, HPC 11, test storefront 12, synthetic
+  99999, the deleted-Wazú graveyard). Update in the same PR as any
+  tenant/instance row change.
 - **in-flight.md** — open PRs, active branches, known issues and debt.
 
 ## Update protocol

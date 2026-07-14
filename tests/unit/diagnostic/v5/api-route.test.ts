@@ -111,9 +111,11 @@ describe("v5 routing", () => {
     const res = await POST(makeRequest({ url: "https://shop.example/p/1", version: "v5" }));
 
     expect(mocks.runV5Diagnostic).toHaveBeenCalledOnce();
+    // v5 is fire-and-forget: the response only acknowledges the background
+    // run; results are picked up by polling GET /runs/{run_id}/v5.
     const body = await res.json();
     expect(body).toHaveProperty("v5");
-    expect(body.v5.profile).toBe("anonymous_landing_audit");
+    expect(body.v5.status).toBe("processing");
   });
 
   it("routes to v5 runner when PROSPECTOS_V5_ENABLED=1 is set", async () => {
@@ -143,24 +145,26 @@ describe("v5 routing", () => {
     expect(mocks.runV5Diagnostic).toHaveBeenCalledOnce();
   });
 
-  it("returns legacy run_id even when v5 also runs", async () => {
+  it("returns legacy run_id even when v5 also runs (v5 shares the same run_id)", async () => {
     const res = await POST(makeRequest({ url: "https://shop.example/p/1", version: "v5" }));
     const body = await res.json();
 
     expect(body.run_id).toBe("run-legacy-id");
-    expect(body.v5.run_id).toBe("run-v5-id");
+    expect(body.v5.run_id).toBe("run-legacy-id");
   });
 
-  it("includes v5_error in response (but still 201) when v5 runner errors", async () => {
-    mocks.runV5Diagnostic.mockResolvedValue({ error: "Profile not found: anonymous_landing_audit" });
+  it("still returns 201 with v5 acknowledged when the v5 runner errors (fire-and-forget)", async () => {
+    // The v5 run executes in the background after the response is sent — its
+    // failure can't surface in this response; it lands in the logs/DB and the
+    // poll endpoint reports it.
+    mocks.runV5Diagnostic.mockRejectedValue(new Error("Profile not found: anonymous_landing_audit"));
 
     const res = await POST(makeRequest({ url: "https://shop.example/p/1", version: "v5" }));
 
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.run_id).toBe("run-legacy-id");
-    expect(body.v5_error).toMatch(/Profile not found/);
-    expect(body).not.toHaveProperty("v5");
+    expect(body.v5.status).toBe("processing");
   });
 });
 

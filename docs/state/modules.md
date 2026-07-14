@@ -116,6 +116,7 @@ API route handlers (`src/app/api/v1/`): `search`, `search/token`, `integrations/
 
 ## Notable gaps / observations
 
+- **Canonical tenant/instance rows** — which tenants/instances actually exist in the production DB (template 0, HPC 11, test storefront 12, synthetic 99999, deleted-Wazú graveyard) is documented in [`instances.md`](instances.md) (ratified & applied 2026-07-04), not here.
 - **Pricing is built GroLabs-native in this repo** (`src/lib/pricing/*` + Supabase migrations) — consistent with Constitution Article 9 and contradicting the superseded `docs/design/pricing/*` WP-plugin framing.
 - **Algolia and Meilisearch coexist**: `src/lib/sync/algolia-*` + `dashboard` no-results (Algolia) alongside `src/lib/search/*` (Meilisearch). Transition plan still unstated (cross-doc inconsistency, Review 1 Appendix B).
 - **Optimization Agent** has no standalone module; Constitution Article 12 + search-foundations now define the contract for when it is built.

@@ -54,14 +54,16 @@ describe("aeo.robots.ai_policy grader (graded)", () => {
     expect(r.score).toBe(0);
     expect(r.status).toBe("fail");
   });
-  it("neutral partial when AI bots are unmentioned", () => {
+  // Unmentioned/absent scores 0 since commit 1589f37: a store that never
+  // thought about AI crawlers has done nothing — no neutral credit.
+  it("fails when AI bots are unmentioned", () => {
     const r = gradeRobotsAiPolicy("User-agent: *\nDisallow: /cart");
-    expect(r.score).toBe(50);
-    expect(r.status).toBe("partial");
+    expect(r.score).toBe(0);
+    expect(r.status).toBe("fail");
   });
-  it("neutral partial when robots.txt is absent (null)", () => {
+  it("fails (score 0) when robots.txt is absent (null)", () => {
     const r = gradeRobotsAiPolicy(null);
-    expect(r.score).toBe(50);
+    expect(r.score).toBe(0);
     expect((r.evidence as { robots_present: boolean }).robots_present).toBe(false);
   });
 });

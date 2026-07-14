@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     const v5RunId = legacyResult.runId; // share the same run_id
     response.v5 = { run_id: v5RunId, status: "processing" };
 
-    after(async () => {
+    const runInBackground = async () => {
       try {
         await runV5Diagnostic(
           { ...sharedInput, instanceId: null },
@@ -153,7 +153,16 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("[v5/after] background diagnostic failed:", e instanceof Error ? e.message : String(e));
       }
-    });
+    };
+    // `after()` requires an active request scope. In production that always
+    // exists; when the handler is invoked directly (unit tests call POST(req)
+    // with no scope) `after()` throws. Fall back to fire-and-forget so the
+    // v5 run still starts and the handler never throws.
+    try {
+      after(runInBackground);
+    } catch {
+      void runInBackground();
+    }
   }
 
   return json(201, response);

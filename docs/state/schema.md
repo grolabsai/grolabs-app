@@ -107,6 +107,8 @@ So the current live schema has **four identity tables**: `tenant`, `tenant_membe
 
 Seed: GroLabs (`template_owner`) owns instance 0; Wazú (`customer`) owns instances 1 and 3. RLS: SELECT for authenticated users with membership in an owned instance; INSERT/UPDATE/DELETE service_role only.
 
+> **Row-level state has moved on since this snapshot** — Wazú was deleted on 2026-07-04 (row snapshot in the `graveyard.wazu_*` schema). The canonical live tenant/instance map (template 0, HPC 11, test storefront 12, synthetic 99999) is [`instances.md`](instances.md); the seed/backfill notes in this file are migration history, not current rows.
+
 > **Identity change applied** (`user-management.md`, migrations `20260605000001`–`000004`): `tenant.domain` (unique, lowercased) is the Article-3 tenant identity. Helper functions `is_tenant_admin(bigint)`, `is_grolabs_admin()`, `get_auth_user_id_by_email(text)`; new `signup_allowlist` table + `before_user_created_restrict(jsonb)` auth hook (shipped, enabled manually). No other schema change — `must_change_password` lives in Supabase `user_metadata`, and the `admin | member` roles reuse the existing `tenant_member.role` CHECK.
 
 ### `tenant_member` (new, `20260514000001_add_tenant_member.sql`)

@@ -21,7 +21,11 @@ const nextConfig: NextConfig = {
   // bundles files it can see imported — declare the directory explicitly or
   // production serves ENOENT.
   outputFileTracingIncludes: {
-    "/[locale]/(app)/get-connected": ["./docs/guides/**/*"],
+    // Keyed by BUILT route names, which strip route groups — a key containing
+    // "(app)" matches nothing and the lambda 500s on ENOENT (hit live
+    // 2026-07-14). The glob includes the three small guide files everywhere:
+    // negligible weight, immune to route renames.
+    "/**": ["./docs/guides/**/*"],
   },
   // Allow next/image to optimize Supabase Storage URLs (blog cover images).
   // The hostname is derived from NEXT_PUBLIC_SUPABASE_URL; this is the public

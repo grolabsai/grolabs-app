@@ -156,6 +156,11 @@ export const config = {
     // an explicit exemption the locale middleware rewrites them as page routes
     // and they 404 even though the files exist in public/ (hit live 2026-07-14
     // with the OpenAPI docs the proprietary onboarding guide links to).
-    "/((?!api/|_next/static|_next/image|favicon.ico|openapi\\.yaml|api-docs\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Top-level well-known files served by routes or public/ — the locale
+    // middleware must never rewrite these. sitemap.xml / rss.xml / llms.txt
+    // had been 404ing in production since this matcher was written; the
+    // openapi/api-docs pair hit the same wall 2026-07-14. Keep this list in
+    // sync when adding root-level file routes.
+    "/((?!api/|_next/static|_next/image|favicon.ico|openapi\\.yaml|api-docs\\.html|llms\\.txt|llm-integration\\.md|sitemap\\.xml|rss\\.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

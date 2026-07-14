@@ -13,6 +13,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "smoke:calcom": "node scripts/calcom-webhook-smoke.mjs",
     "test:smoke": "playwright test",
+    "test:e2e": "playwright test --config playwright-e2e.config.ts",
     "emulate": "npm run emulate:reset && npm run emulate:teardown && npm run emulate:push && npm run emulate:check",
     "emulate:reset": "node --env-file=.env.local scripts/emulator/reset.mjs",
     "emulate:push": "node scripts/emulator/run.mjs",

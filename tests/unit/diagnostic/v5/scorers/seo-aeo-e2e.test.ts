@@ -89,12 +89,13 @@ describe("seo + aeo end-to-end via scoreRun", () => {
 
     // SEO: (100·8 + 100·10 + 0·4 + 100·6 + 100·4)/32 = 2800/32 = 87.5 → 88
     expect(seoCat?.score).toBe(88);
-    // AEO: (100·10 + 50·7 + 100·3)/20 = 1650/20 = 82.5 → 83
-    expect(aeoCat?.score).toBe(83);
+    // AEO: (100·10 + 0·7 + 100·3)/20 = 1300/20 = 65
+    // (robots unmentioned scores 0 since commit 1589f37, was a neutral 50)
+    expect(aeoCat?.score).toBe(65);
 
     // The discovery stage rolls the two up by category weight:
-    // (88·45 + 83·30)/75 = 6450/75 = 86
-    expect(run.stages.find((s) => s.stage.code === "discovery")?.score).toBe(86);
+    // (88·45 + 65·30)/75 = 5910/75 = 78.8 → 79
+    expect(run.stages.find((s) => s.stage.code === "discovery")?.score).toBe(79);
   });
 
   it("excludes a whole category as na when its page was not discovered", async () => {

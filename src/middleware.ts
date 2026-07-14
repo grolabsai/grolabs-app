@@ -152,6 +152,10 @@ export const config = {
     // Run on everything EXCEPT:
     //   /api/* (route handlers serving external clients — must not be locale-prefixed)
     //   static files, images, favicons, the Next.js internals
-    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // NOTE: .html/.yaml are NOT covered by the image-extension group — without
+    // an explicit exemption the locale middleware rewrites them as page routes
+    // and they 404 even though the files exist in public/ (hit live 2026-07-14
+    // with the OpenAPI docs the proprietary onboarding guide links to).
+    "/((?!api/|_next/static|_next/image|favicon.ico|openapi\\.yaml|api-docs\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

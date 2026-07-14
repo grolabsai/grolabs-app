@@ -1,18 +1,15 @@
 name: Test
 
-# TEMPORARILY DISABLED from auto-running (2026-06-11). The unit suite is a known
-# mess (pre-existing prospectos v5 diagnostic failures) and a clean testing
-# approach is being redesigned from scratch — see docs/state/in-flight.md
-# ("Testing approach — deferred"). Until then this workflow only runs on manual
-# dispatch so it stops gating PRs / going red. Nothing else changed: the jobs,
-# secrets wiring, test files, and `npm test` / `npm run test:integration`
-# scripts are all intact and still run locally. To re-enable, restore the
-# `pull_request` + `push` triggers below.
+# RE-ENABLED 2026-07-14: the v5 diagnostic failures that reddened every PR
+# were triaged (all test drift; suite green at 183/183 — PR #262) and a live
+# storefront E2E tier now exists alongside (`npm run test:e2e`, runs against
+# grolabs.io/instance 12 with service-role env — deliberately NOT in CI; see
+# docs/design/testing-approach.md).
 on:
-  # pull_request:
-  #   branches: [main]
-  # push:
-  #   branches: [main]
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 # Search integration tests share one Meilisearch index (instance_id=99999).

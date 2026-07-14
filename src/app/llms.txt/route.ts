@@ -15,6 +15,32 @@ export async function GET() {
   const proto = h.get("x-forwarded-proto") ?? "https";
   const origin = `${proto}://${rawHost}`;
 
+  // On the APP host this is a DEVELOPER surface, not a blog: agents that
+  // fetch app.grolabs.ai/llms.txt get the integration entry points. Merchant
+  // storefront hosts (matched by instance.domain below) keep the blog index.
+  if (host === "app.grolabs.ai" || host === process.env.NEXT_PUBLIC_APP_HOST) {
+    const dev = [
+      "# GroLabs — developer integration",
+      "",
+      "> Connect any storefront to GroLabs: catalog ingest, search, analytics",
+      "> events, and traffic analytics. Start with the agent guide below.",
+      "",
+      "## Integration",
+      "",
+      `- [Integration guide for coding agents](${origin}/llm-integration.md): modules SEARCH / CATALOG / EVENTS / GA4 — contracts, canonical event names, verification steps`,
+      `- [OpenAPI 3.1 spec](${origin}/openapi.yaml): machine-readable API contract`,
+      `- [Browsable API docs](${origin}/api-docs.html): Swagger UI`,
+      `- [Get connected (human guide)](${origin}/get-connected): WordPress and proprietary-platform tracks`,
+      "",
+    ];
+    return new Response(dev.join("\n") + "\n", {
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
+  }
+
   const supabase = createServiceRoleClient();
   const { data: instanceRow } = await supabase
     .from("instance")

@@ -5,8 +5,8 @@ info:
   version: 1.0.0
   summary: Search, analytics events, and storefront diagnostics for any platform.
   description: |
-    The GroLabs public API. The mental model is **Meilisearch (search) + PostHog
-    (analytics)**, pointed at GroLabs so every storefront interaction is captured.
+    The GroLabs public API: **search + analytics events in one surface**, pointed
+    at GroLabs so every storefront interaction is captured.
 
     There are three trust models on this surface:
 
@@ -50,7 +50,7 @@ tags:
   - name: Events
     description: Record storefront analytics events (origin-validated).
   - name: Tokens
-    description: Mint short-lived Meilisearch tenant tokens for direct browser→Meilisearch calls.
+    description: Mint short-lived scoped tokens for direct browser→search-cluster calls.
   - name: Catalog
     description: Privileged index management (write-key authenticated, server-side).
   - name: Diagnostics
@@ -66,7 +66,7 @@ paths:
       summary: Search a catalog
       operationId: search
       description: |
-        Proxy search against the instance's Meilisearch index. Origin-validated:
+        Proxy search against the instance's search index. Origin-validated:
         the caller's `Origin` must be a registered storefront domain. Returns hits
         plus a `query_uid` used to attribute later click/conversion events back to
         this search.
@@ -109,8 +109,8 @@ paths:
       summary: Mint a search tenant token
       operationId: mintSearchToken
       description: |
-        Mint a short-lived Meilisearch tenant token scoped to this instance's
-        index, for storefronts that call Meilisearch directly instead of through
+        Mint a short-lived scoped search token for this instance's index, for
+        storefronts that query the search cluster directly instead of through
         `/search`. Origin-validated.
       requestBody:
         required: true
@@ -236,8 +236,8 @@ paths:
       summary: Mint an events tenant token
       operationId: mintEventsToken
       description: |
-        Mint a short-lived Meilisearch token for submitting analytics events
-        directly to Meilisearch's `/events` endpoint. Origin-validated. Same
+        Mint a short-lived scoped token for submitting analytics events
+        directly to the search cluster's `/events` endpoint. Origin-validated. Same
         shape and trust model as `/search/token`.
       requestBody:
         required: true
@@ -309,7 +309,7 @@ paths:
         - writeKey: []
       description: |
         Declare which mapped fields are searchable / filterable / sortable, plus
-        synonyms and stop words. Mirrors Meilisearch's index settings. Async:
+        synonyms and stop words. Async:
         returns a task acknowledgement. `instance_id` is always kept filterable
         server-side regardless of input.
       requestBody:
@@ -1006,9 +1006,9 @@ components:
       type: object
       required: [token, expires_at, meilisearch_host, index_uid]
       properties:
-        token: { type: string, description: Short-lived Meilisearch tenant token. }
+        token: { type: string, description: Short-lived scoped search token. }
         expires_at: { type: integer, description: Expiry as a Unix timestamp (seconds). }
-        meilisearch_host: { type: string, description: Meilisearch cluster host to call directly. }
+        meilisearch_host: { type: string, description: Search-cluster host to call directly with the token. }
         index_uid: { type: string, description: 'Index to query, e.g. "inst_42".' }
 
     # ── search ───────────────────────────────────────────────────────────────
@@ -1038,7 +1038,7 @@ components:
           default: 0
         filters:
           type: string
-          description: 'Meilisearch filter expression, e.g. `brand = "Acme" AND in_stock = true`.'
+          description: 'Filter expression, e.g. `brand = "Acme" AND in_stock = true`.'
         sort:
           type: array
           items: { type: string }
@@ -1060,7 +1060,7 @@ components:
         query_uid:
           type: string
           description: |
-            Meilisearch analytics query id. Echo this as `queryUid` on a later
+            Search-analytics query id. Echo this as `queryUid` on a later
             `/events` call to attribute that event to this search.
         metadata:
           type: object
@@ -1225,7 +1225,7 @@ components:
     # ── catalog settings ─────────────────────────────────────────────────────
     IndexSettings:
       type: object
-      description: Meilisearch-style index settings.
+      description: Index settings.
       properties:
         searchableAttributes: { type: array, items: { type: string } }
         filterableAttributes: { type: array, items: { type: string } }

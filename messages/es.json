@@ -41,7 +41,8 @@
     "prospectsBenchmarks": "Benchmarks",
     "team": "Equipo",
     "accounts": "Cuentas",
-    "clients": "Clientes"
+    "clients": "Clientes",
+    "getConnected": "Conectá tu tienda"
   },
   "topbar": {
     "searchPlaceholder": "Buscar productos, SKUs…",
@@ -3105,6 +3106,18 @@
       "invalidEmail": "Ingresá un email válido.",
       "unauthorized": "No tenés permiso para administrar usuarios.",
       "saveFailed": "No se pudo guardar. Intentá de nuevo."
+    }
+  },
+  "getConnected": {
+    "title": "Conectá tu tienda",
+    "subtitle": "Conectá tu tienda a GroLabs: catálogo, búsqueda y eventos, y analítica de tráfico.",
+    "changePlatform": "Elegir otra plataforma",
+    "chooser": {
+      "wordpressTitle": "WordPress / WooCommerce",
+      "wordpressBody": "Tu tienda corre en WordPress. Se conecta con plugins que instalás en wp-admin más una importación de catálogo — sin código.",
+      "proprietaryTitle": "E-commerce propio",
+      "proprietaryBody": "Tu tienda es tu propia plataforma. Tus desarrolladores la conectan con la API pública y el SDK de JavaScript de GroLabs.",
+      "choose": "Empezá aquí"
     }
   }
 }

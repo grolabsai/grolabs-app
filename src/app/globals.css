@@ -2885,3 +2885,25 @@ input[type="date"].s-input {
   display: table;
   clear: both;
 }
+
+/* ── Get-connected guide (markdown via react-markdown + .prose) ──────────
+   Tailwind Typography supplies the structure; colors are re-pinned to the
+   --gl-* tokens so the guide reads correctly in BOTH themes (plain .prose
+   assumes a light page; the app shell is token-themed). */
+.gl-guide-md :where(h1, h2, h3, h4, strong, th) {
+  color: var(--gl-text);
+}
+.gl-guide-md :where(p, li, td, blockquote) {
+  color: var(--gl-text-secondary);
+}
+.gl-guide-md :where(a) {
+  color: var(--gl-accent);
+}
+.gl-guide-md :where(code) {
+  color: var(--gl-text);
+}
+.gl-guide-md :where(h1) {
+  /* The page header already carries the title; markdown h1 is a section. */
+  font-size: 1.35em;
+  margin-top: 0.5em;
+}

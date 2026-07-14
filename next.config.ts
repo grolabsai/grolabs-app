@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
     NEXT_PUBLIC_BUILD_DATE: new Date().toISOString().slice(0, 10),
   },
+  // The Get-connected page reads the merchant implementation guides from
+  // docs/guides at request time (repo markdown = source of truth; no deploy
+  // pipeline for content beyond the git push). Vercel's output tracing only
+  // bundles files it can see imported — declare the directory explicitly or
+  // production serves ENOENT.
+  outputFileTracingIncludes: {
+    "/[locale]/(app)/get-connected": ["./docs/guides/**/*"],
+  },
   // Allow next/image to optimize Supabase Storage URLs (blog cover images).
   // The hostname is derived from NEXT_PUBLIC_SUPABASE_URL; this is the public
   // CDN domain for the project's storage bucket.

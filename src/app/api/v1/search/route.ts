@@ -173,6 +173,24 @@ async function logRequest(input: {
   }
 }
 
+/**
+ * Schedule the query_log write so it survives the response being sent. A bare
+ * `void logRequest(...)` races the serverless freeze — the lambda can suspend
+ * the moment the response streams out, silently dropping the insert (observed
+ * live 2026-07-13: typeahead probes returned 200 with hits but wrote no row).
+ * `after()` keeps the work alive post-response; the try/catch falls back to
+ * fire-and-forget for direct handler invocation (tests), same pattern as the
+ * PostHog forward below.
+ */
+function scheduleLog(input: Parameters<typeof logRequest>[0]): void {
+  const write = () => logRequest(input);
+  try {
+    after(write);
+  } catch {
+    void write();
+  }
+}
+
 // ── Handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -266,7 +284,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // From here on every exit path is loggable.
   if (!row.is_active) {
-    void logRequest({
+    scheduleLog({
       instanceId,
       query,
       status: 403,
@@ -283,7 +301,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const domains: string[] = Array.isArray(row.storefront_domains) ? row.storefront_domains : [];
   if (!domains.includes(host)) {
-    void logRequest({
+    scheduleLog({
       instanceId,
       query,
       status: 403,
@@ -306,7 +324,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     RATE_LIMIT_WINDOW_SECONDS
   );
   if (!pairOk) {
-    void logRequest({
+    scheduleLog({
       instanceId,
       query,
       status: 429,
@@ -344,7 +362,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   } catch (err) {
     console.error("[search] meilisearch failed:", err instanceof Error ? err.message : err);
-    void logRequest({
+    scheduleLog({
       instanceId,
       query,
       status: 502,
@@ -392,7 +410,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   };
 
   // Best-effort logging — never blocks the response.
-  void logRequest({
+  scheduleLog({
     instanceId,
     query,
     status: 200,

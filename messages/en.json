@@ -41,7 +41,8 @@
     "prospectsBenchmarks": "Benchmarks",
     "team": "Team",
     "accounts": "Accounts",
-    "clients": "Customers"
+    "clients": "Customers",
+    "getConnected": "Get connected"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -3105,6 +3106,18 @@
       "invalidEmail": "Enter a valid email.",
       "unauthorized": "You are not allowed to manage users.",
       "saveFailed": "Could not save. Try again."
+    }
+  },
+  "getConnected": {
+    "title": "Get connected",
+    "subtitle": "Connect your store to GroLabs: catalog, search & events, and traffic analytics.",
+    "changePlatform": "Choose a different platform",
+    "chooser": {
+      "wordpressTitle": "WordPress / WooCommerce",
+      "wordpressBody": "Your storefront runs on WordPress. Connect through plugins you install in wp-admin plus a one-time catalog import — no code needed.",
+      "proprietaryTitle": "Proprietary e-commerce",
+      "proprietaryBody": "Your storefront is your own platform. Your developers connect through the GroLabs public API and JavaScript SDK.",
+      "choose": "Start here"
     }
   }
 }

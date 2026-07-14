@@ -31,6 +31,7 @@ import {
   FileText,
   Users,
   Building,
+  PlugZap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -103,6 +104,21 @@ export function buildRreNav(
       flat: true,
       items: [
         { href: "/dashboard" as Route, label: t("nav.dashboard"), icon: LayoutDashboard },
+      ],
+    },
+    // Onboarding guide — the platform-fork implementation manual. Becomes
+    // the live per-integration checklist in the M3 iteration.
+    {
+      key: "getConnected",
+      title: t("nav.getConnected"),
+      flat: true,
+      items: [
+        {
+          href: "/get-connected" as Route,
+          label: t("nav.getConnected"),
+          icon: PlugZap,
+          useIconWrapper: true,
+        },
       ],
     },
     // Conversion (funnel) hidden per request 2026-06-12 — restore this block

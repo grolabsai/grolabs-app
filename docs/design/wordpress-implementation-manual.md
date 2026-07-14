@@ -5,6 +5,11 @@ Audience: Whoever onboards a WordPress merchant (human or agent), and future-us 
 
 # WordPress customer implementation manual
 
+> **Merchant-facing derivative:** the sanitized install guides the app shows
+> merchants live in [`docs/guides/implementation/`](../guides/implementation/README.md)
+> (rendered at `/get-connected`). When this manual gains a new variation
+> (§6), update the merchant guide's troubleshooting table in the same PR.
+
 ## Why this doc exists
 
 Installing our plugins is never just "upload zip, activate." Every WordPress

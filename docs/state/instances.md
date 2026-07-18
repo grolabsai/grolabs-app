@@ -104,6 +104,7 @@ erDiagram
 | 1 · GroLabs | `template_owner` | `grolabs.ai` | **0** | GRO Scout Template (System) | no | **TEMPLATE** — seeds new customer instances |
 | 3 · HPC | `customer` | `www.hpcenlinea.com.gt` | **11** | HPC | yes | **REAL CUSTOMER** |
 | 4 · GroLabs.io (Test) | `customer` | `www.grolabs.io` | **12** | GroLabs.io Test Storefront | yes | **TEST SITE** — live WordPress |
+| 4 · GroLabs.io (Test) | `customer` | `www.grolabs.io` | **13** | SDK Test (TestEcomSite) | yes | **SDK / PROPRIETARY-TRACK TEST** — BYO API + JS SDK |
 | 99999 · Integration tests (synthetic) | — | — | **99999** | Integration tests (synthetic) | — | **VITEST FIXTURE** — never repurpose |
 
 ## Tenant 1 — GroLabs → instance 0 (template)
@@ -136,18 +137,40 @@ the fallback). Full rule with examples: `CLAUDE.md` §2 "Instance ID checking".
 
 - `tenant.kind = customer`, `domain = www.grolabs.io`.
 - Instance 12 **"GroLabs.io Test Storefront"**, active.
-  `storefront_domains = {www.grolabs.io, grolabs.io, demo.grolabs.io,
-  testecomsite.vercel.app, localhost, 127.0.0.1}` — instance 12 is the
-  **sole claimer** of all of these; storefront-domain → instance resolution
-  (search proxy, events) depends on that uniqueness. The first two are the
-  live WordPress storefront; the rest were added by the BYO/SDK manual E2E
-  (2026-07-05/06, TestEcomSite + local dev) — instance 12 doubles as the BYO
-  public-API test surface, which also seeded its current 6 synthetic products.
+  `storefront_domains = {www.grolabs.io, grolabs.io}` — the live WordPress
+  storefront ONLY, and sole claimer of both; storefront-domain → instance
+  resolution (search proxy, events) depends on that uniqueness. The SDK/BYO
+  test surface that briefly shared this instance was split out to
+  **instance 13** on 2026-07-18 (catalog, index docs, and SDK-era
+  events/orders all moved; the WC-imported catalog and `inst_12` index carry
+  only real WordPress products now).
+- Instance 12 also carries the **synthetic demo dataset** (2026-05-01→07-17,
+  ~14.7k events / 443 orders) seeded 2026-07-18 for dashboard timelines —
+  markers: `origin = 'demo.grolabs.io'`, synthetic order ids `8xxxxx`.
+  Filter on that origin to separate demo history from real plugin traffic.
 - Owner: `tunchog@gmail.com` — a **pure-Gmail Google SSO test account** (no
   GroLabs/HPC domain), which also **owns the GA4 property for grolabs.io**.
 - Purpose: a **live WordPress install** used to exercise the Meilisearch
   search/events plugins end-to-end, and the target for future Playwright E2E
   runs (MVP testing plan chose Playwright over Browserless for this).
+
+## Tenant 4 — instance 13 (SDK / proprietary-track test)
+
+- **"SDK Test (TestEcomSite)"**, active, same tenant as instance 12; split
+  out 2026-07-18 so WordPress-plugin testing and BYO API/SDK testing stop
+  sharing one instance (they had polluted each other's catalog and index —
+  duplicate docs, mixed dashboards).
+- `storefront_domains = {demo.grolabs.io, testecomsite.vercel.app,
+  localhost, 127.0.0.1}` — dev/demo origins live HERE, never on 12.
+  `default_currency = USD` (TestEcomSite presents USD).
+- Catalog: the 6 synthetic products (ids 1001–1006), ingested through the
+  public BYO `/catalog/documents` endpoint into the `inst_13` index; a BYO
+  write key is issued (rotate it from Configuration → External platform to
+  take ownership of the plaintext).
+- Carries the SDK-era analytics history (2026-07-04..06) moved from 12.
+- Doubles as the working prototype of the **merchant sandbox instance**
+  model (mode-by-credential, dev origins allowed) from the external-platform
+  design discussion.
 
 ## Tenant/instance 99999 — Integration tests (synthetic)
 

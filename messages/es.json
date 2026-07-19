@@ -750,7 +750,11 @@
           "tier_good": "fuera del rango normal — en la dirección buena",
           "tier_neutral": "dentro del rango normal — ruido",
           "tier_warn": "del lado débil del centro — aún dentro del rango normal",
-          "tier_bad": "fuera del rango normal — señal"
+          "tier_bad": "fuera del rango normal — señal",
+          "vsAvgRow": "vs promedio del período",
+          "firstWeeksRow": "primeras semanas (prom.)",
+          "lastWeeksRow": "semanas recientes (prom.)",
+          "changeRow": "cambio"
         },
         "legendWarn": "lado débil del centro",
         "legendGoodBreak": "más allá del rango — bueno",
@@ -759,7 +763,13 @@
           "vsAvg": "vs promedio",
           "vsLastWk": "vs sem. pasada"
         },
-        "legendPastSignal": "señal en el pasado"
+        "legendPastSignal": "señal en el pasado",
+        "legendDailyValues": "valores diarios",
+        "legendAvg": "promedio del período",
+        "legendTargetBand": "meta → umbral inferior",
+        "legendAboveBand": "sobre la meta",
+        "weekdayTimelineTitle": "Línea de tiempo por día de la semana",
+        "weekdayTimelineNote": "Una línea por día de la semana a lo largo de las semanas cerradas — las líneas de color son los días cuyas sesiones superaron tu umbral de delta; los días gris-azul se mantienen estables."
       },
       "noData": "Aún no hay datos de analítica para esta tienda.",
       "insufficientChart": "Los gráficos se habilitan con {min} semanas completas."
@@ -1866,6 +1876,55 @@
       "tabEvents": "Eventos",
       "tabSearches": "Búsquedas",
       "tabCarts": "Carritos"
+    },
+    "analysis": {
+      "navLabel": "Análisis",
+      "title": "Configuración de análisis",
+      "intro": "Cada número con el que el análisis juzga es una variable, no una constante. Los valores predeterminados se aplican al crear una instancia; ajústalos aquí a tu negocio.",
+      "sections": {
+        "general": "General",
+        "engine": "Motor de señales",
+        "goals": "Metas y umbrales por métrica"
+      },
+      "fields": {
+        "timezone": "Zona horaria (IANA)",
+        "weekEnd": "La semana termina el (para análisis)",
+        "currency": "Moneda (ISO 4217)",
+        "deltaPct": "Umbral de delta (%)",
+        "minDen": "Mín. eventos semanales para tasas",
+        "baseline": "Semanas de línea base",
+        "target": "Meta",
+        "lower": "Umbral inferior"
+      },
+      "days": {
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado",
+        "sunday": "Domingo"
+      },
+      "hints": {
+        "timezone": "Zona horaria IANA de la tienda (p. ej. America/Guatemala). Define cuándo cierra un día de negocio y, por lo tanto, una semana de análisis.",
+        "weekEnd": "Las semanas de análisis terminan este día. Con domingo, van de lunes a domingo.",
+        "currency": "Código ISO de tres letras (USD, GTQ, …) para formatear métricas de dinero.",
+        "deltaPct": "Una caída confirmada de al menos este porcentaje pinta la tendencia en rojo; por debajo, en amarillo. Predeterminado 5.",
+        "minDen": "Las tasas con denominador semanal menor a esto muestran conteos en lugar de porcentajes. Predeterminado 30.",
+        "baseline": "Cuántas semanas cerradas definen el rango normal de la tienda. Predeterminado 8.",
+        "target": "La meta de esta métrica. Valores por encima se leen en verde. Vacío = usar el rango estadístico.",
+        "lower": "El piso que no quieres cruzar. Valores por debajo se leen en rojo (rosa al recuperarse). Vacío = usar el rango estadístico."
+      },
+      "goalsIntro": "Meta y umbral inferior definen la zona gris de cada métrica en los gráficos (la banda intencional). Las tasas se ingresan como porcentajes. Los campos vacíos mantienen el rango estadístico calculado con la historia de la tienda.",
+      "save": "Guardar configuración",
+      "saving": "Guardando…",
+      "saved": "Configuración de análisis guardada",
+      "errors": {
+        "auth": "Sesión expirada — inicia sesión de nuevo",
+        "timezone": "Zona horaria desconocida",
+        "values": "Algunos valores están fuera de rango",
+        "db": "No se pudo guardar — intenta de nuevo"
+      }
     }
   },
   "sync": {

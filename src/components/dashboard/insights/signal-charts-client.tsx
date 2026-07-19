@@ -102,54 +102,99 @@ function DeltaLayer({ show, deltas, avgY, x0, x1, first, prev, chipY }: {
   );
 }
 
+export type EndStroke = "red" | "yellow" | "green" | "level";
+
 export function ControlChart({
-  labels, values, cl, ucl, lcl, tiers,
-  upperLabel, centreLabel, lowerLabel, signalText, tips, deltas,
+  labels, values, tiers, band, topLabel, bottomLabel, avgLabel,
+  endStroke, dailyValues, weekIdx, signalText, tips, deltas,
 }: {
+  /** Closed-week labels + weekly values — the story line. */
   labels: string[];
   values: number[];
-  cl: number; ucl: number; lcl: number;
-  /** Color-code tier per week: outside-band bad = red (current stretch) or
-   *  pink (past), weak side of centre within band = yellow, outside-band
-   *  good = green, else neutral blue. */
+  /** LEVEL channel per week: green above the band top, blue inside, red for a
+   *  violation that reaches today (the wound), pink for one that ended (the
+   *  scar). */
   tiers: PointTier[];
-  upperLabel: string; centreLabel: string; lowerLabel: string; signalText: string;
+  /** The gray zone. Intentional = the business set a target and/or lower
+   *  threshold; otherwise the statistical baseline is the fallback.
+   *  avg = window average, drawn as the quiet context line. */
+  band: { top: number; bottom: number; intentional: boolean; avg: number };
+  /** Preformatted axis values — the left metric scale carries the numbers, no
+   *  words on the plot (ratified). */
+  topLabel: string; bottomLabel: string; avgLabel: string;
+  /** TREND channel: only the final stroke wears the trend's severity —
+   *  confirmed decline ≥ delta threshold = red, smaller = yellow, improving =
+   *  green, "level" inherits the last dot's level color (noise). */
+  endStroke: EndStroke;
+  /** Daily texture behind the weekly line, same y-scale (gray archive). */
+  dailyValues: number[];
+  /** For each week, the index into dailyValues where its dot sits. */
+  weekIdx: number[];
+  signalText: string;
   tips: ChartTip[];
-  /** Hover-revealed anchored deltas (hidden by default per the color grammar). */
+  /** Hover-revealed anchored deltas (hidden by default per the grammar). */
   deltas?: DeltaLayerData | null;
 }) {
   const api = useChartTip();
   const gid = useGradId();
   const reveal = useHoverReveal();
-  const W = 720, H = 210, m = { l: 8, r: 118, t: 14, b: 24 };
-  const lo = Math.min(...values, lcl), hi = Math.max(...values, ucl);
-  const [d0, d1] = pad([lo, hi]);
-  const x = lin(0, Math.max(values.length - 1, 1), m.l + 8, W - m.r - 8);
+  const W = 720, H = 220, m = { l: 48, r: 14, t: 16, b: 24 };
+  const all = values.concat(dailyValues, [band.top, band.bottom, band.avg]);
+  const [d0, d1] = pad([Math.min(...all), Math.max(...all)], 0.08);
+  const x = lin(0, Math.max(dailyValues.length - 1, 1), m.l + 4, W - m.r - 6);
   const y = lin(d0, d1, H - m.b, m.t);
-  const xs = values.map((_, i) => x(i));
+  const xs = weekIdx.map((i) => x(i));
   const ys = values.map((v) => y(v));
-  const firstBad = tiers.findIndex((t) => t === "bad" || t === "badPast");
-  const lx = W - m.r + 6;
-  const line = smoothPath(xs, ys);
   const n = values.length;
+  const line = smoothPath(xs, ys);
+  const firstBad = tiers.findIndex((t) => t === "bad" || t === "badPast");
+  const topTint = band.intentional ? "rgba(52,211,153,0.6)" : AX;
+  const bottomTint = band.intentional ? "rgba(252,165,165,0.6)" : AX;
+  const segColor =
+    endStroke === "red" ? BAD
+    : endStroke === "yellow" ? "var(--amber)"
+    : endStroke === "green" ? GOOD
+    : TIER_COLOR[tiers[n - 1] ?? "neutral"];
+  const yTop = y(band.top), yBot = y(band.bottom), yAvg = y(band.avg);
+  const avgFits = Math.abs(yAvg - yTop) > 12 && Math.abs(yAvg - yBot) > 12;
 
   return api.wrap(
     <svg className="sigchart" viewBox={`0 0 ${W} ${H}`} width="100%" {...reveal.handlers}>
-      <rect x={m.l} y={y(ucl)} width={W - m.r - m.l} height={Math.max(y(lcl) - y(ucl), 0)} fill={BAND} rx={2} />
-      <line x1={m.l} x2={W - m.r} y1={y(cl)} y2={y(cl)} stroke={CENTRE} strokeWidth={1.2} />
-      <line x1={m.l} x2={W - m.r} y1={y(ucl)} y2={y(ucl)} stroke={GRID} strokeWidth={1} />
-      <line x1={m.l} x2={W - m.r} y1={y(lcl)} y2={y(lcl)} stroke={GRID} strokeWidth={1} />
-      <text x={lx} y={y(ucl) + 3} fontSize={F} fill={AX}>{upperLabel}</text>
-      <text x={lx} y={y(cl) + 3} fontSize={F} fill="var(--t2)">{centreLabel}</text>
-      <text x={lx} y={y(lcl) + 3} fontSize={F} fill={AX}>{lowerLabel}</text>
+      <rect x={m.l} y={yTop} width={W - m.r - m.l}
+        height={Math.max(yBot - yTop, 0)} fill={BAND} rx={2} />
+      <line x1={m.l} x2={W - m.r} y1={yTop} y2={yTop}
+        stroke={band.intentional ? "rgba(52,211,153,0.30)" : GRID} strokeWidth={1}
+        strokeDasharray={band.intentional ? "2 4" : undefined} strokeLinecap="round" />
+      <line x1={m.l} x2={W - m.r} y1={yBot} y2={yBot}
+        stroke={band.intentional ? PINKLINE : GRID} strokeWidth={1}
+        strokeDasharray={band.intentional ? "2 4" : undefined} strokeLinecap="round" />
+      <line x1={m.l} x2={W - m.r} y1={yAvg} y2={yAvg} stroke={CENTRE} strokeWidth={1} />
+      <text x={m.l - 6} y={yTop + 3} fontSize={F} fill={topTint} textAnchor="end">{topLabel}</text>
+      <text x={m.l - 6} y={yBot + 3} fontSize={F} fill={bottomTint} textAnchor="end">{bottomLabel}</text>
+      {avgFits ? (
+        <text x={m.l - 6} y={yAvg + 3} fontSize={F} fill={AX} textAnchor="end">{avgLabel}</text>
+      ) : null}
+
+      {dailyValues.length > 1 ? (
+        <path
+          d={smoothPath(dailyValues.map((_, i) => x(i)), dailyValues.map((v) => y(v)))}
+          fill="none" stroke="rgba(237,234,224,0.20)" strokeWidth={1}
+          strokeLinejoin="round"
+        />
+      ) : null}
 
       <Grad id={gid} color={LINE} />
       <path
-        d={`${line} L ${xs[xs.length - 1].toFixed(1)} ${H - m.b} L ${xs[0].toFixed(1)} ${H - m.b} Z`}
+        d={`${line} L ${xs[n - 1].toFixed(1)} ${H - m.b} L ${xs[0].toFixed(1)} ${H - m.b} Z`}
         fill={`url(#${gid})`}
       />
       <path d={line} fill="none" stroke={LINE} strokeWidth={2.2}
         strokeLinejoin="round" strokeLinecap="round" />
+      {n >= 2 ? (
+        <path d={smoothPath(xs.slice(n - 2), ys.slice(n - 2))} fill="none"
+          stroke={segColor} strokeWidth={segColor === LINE ? 2.2 : 2.8}
+          strokeLinejoin="round" strokeLinecap="round" />
+      ) : null}
       {values.map((v, i) => {
         const tier = tiers[i] ?? "neutral";
         return (
@@ -160,7 +205,7 @@ export function ControlChart({
       {firstBad >= 0 ? (
         <text
           x={Math.min(xs[firstBad], W - m.r - 4)} y={ys[firstBad] + 16}
-          fontSize={F} fill={BAD} textAnchor="end"
+          fontSize={F} fill={tiers[firstBad] === "bad" ? BAD : PINK} textAnchor="end"
         >{signalText}</text>
       ) : null}
       {tickIdx(labels.length).map((i) => (
@@ -337,7 +382,7 @@ export function CusumChart({
 // ── Daily rhythm vs 7-day rolling mean — crosshair + snapped readout ────────
 
 export function DailyRollingChart({
-  days, daily, rolling, endLabel, tips, deltas,
+  days, daily, rolling, endLabel, tips, deltas, endStroke = "level", endTier = "neutral",
 }: {
   days: string[];
   daily: number[];
@@ -345,6 +390,10 @@ export function DailyRollingChart({
   endLabel: string;
   tips: ChartTip[];
   deltas?: DeltaLayerData | null;
+  /** Trend severity of the last rolling segment (ratified grammar). */
+  endStroke?: EndStroke;
+  /** Level tier of the latest rolling value (colors the end dot). */
+  endTier?: PointTier;
 }) {
   const api = useChartTip();
   const gid = useGradId();
@@ -367,6 +416,12 @@ export function DailyRollingChart({
   const rollLine = smoothPath(rollXs, rollYs);
   const lastRoll: { x: number; y: number } | null =
     rollXs.length > 0 ? { x: rollXs[rollXs.length - 1], y: rollYs[rollYs.length - 1] } : null;
+  const nr = rollXs.length;
+  const segColor =
+    endStroke === "red" ? BAD
+    : endStroke === "yellow" ? "var(--amber)"
+    : endStroke === "green" ? GOOD
+    : TIER_COLOR[endTier];
   const yticks = [d0 + (d1 - d0) * 0.15, (d0 + d1) / 2, d1 - (d1 - d0) * 0.15].map(Math.round);
 
   const onMove = (e: PointerEvent) => {
@@ -396,11 +451,16 @@ export function DailyRollingChart({
             fill={`url(#${gid})`}
           />
           <path d={rollLine} fill="none" stroke={LINE} strokeWidth={2.4} strokeLinejoin="round" />
+          {nr >= 2 ? (
+            <path d={smoothPath(rollXs.slice(nr - 2), rollYs.slice(nr - 2))} fill="none"
+              stroke={segColor} strokeWidth={segColor === LINE ? 2.4 : 2.8}
+              strokeLinejoin="round" strokeLinecap="round" />
+          ) : null}
         </>
       ) : null}
       {lastRoll !== null ? (
         <g>
-          <circle cx={lastRoll.x} cy={lastRoll.y} r={3.5} fill={LINE} stroke="var(--page-bg)" strokeWidth={1.5} />
+          <circle cx={lastRoll.x} cy={lastRoll.y} r={3.5} fill={TIER_COLOR[endTier]} stroke="var(--page-bg)" strokeWidth={1.5} />
           <text x={lastRoll.x + 8} y={lastRoll.y + 3} fontSize={F} fill="var(--t2)">{endLabel}</text>
         </g>
       ) : null}
@@ -636,6 +696,89 @@ export function FunnelPlot({
       <text x={(m.l + W - m.r) / 2} y={H - 4} fontSize={F} fill={AX} textAnchor="middle">{axisText}</text>
       {points.map((q, i) => (
         <Hit key={`h${i}`} x={x(q.n)} y={y(q.p)} tip={tips[i]} api={api} />
+      ))}
+    </svg>,
+  );
+}
+
+// ── Same-weekday timeline — one line per weekday across closed weeks ────────
+
+export interface WeekdaySeries {
+  /** Localized weekday name (server-provided). */
+  name: string;
+  /** One value per closed week (null when the day is missing). */
+  values: (number | null)[];
+  /** first-half → last-half change, e.g. "+4%" (server-formatted). */
+  endLabel: string;
+  tier: "good" | "bad" | "warn" | "flat";
+  tip: ChartTip;
+}
+
+const WD_TIER: Record<WeekdaySeries["tier"], { stroke: string; w: number; op: number }> = {
+  good: { stroke: GOOD, w: 2.2, op: 1 },
+  bad: { stroke: BAD, w: 2.2, op: 1 },
+  warn: { stroke: "var(--amber)", w: 2, op: 1 },
+  flat: { stroke: MUTED, w: 1.3, op: 0.8 },
+};
+
+export function WeekdayTimeline({ labels, series }: {
+  labels: string[];
+  series: WeekdaySeries[];
+}) {
+  const api = useChartTip();
+  const W = 360, H = 200, m = { l: 34, r: 52, t: 14, b: 22 };
+  const all = series.flatMap((sr) => sr.values.filter((v): v is number => v != null));
+  if (all.length === 0) return null;
+  const [d0, d1] = pad([Math.min(...all), Math.max(...all)], 0.12);
+  const x = lin(0, Math.max(labels.length - 1, 1), m.l + 4, W - m.r);
+  const y = lin(d0, d1, H - m.b, m.t);
+
+  // Stagger colliding end labels so seven weekday names stay readable.
+  const ends = series
+    .map((sr, si) => {
+      let last = -1;
+      sr.values.forEach((v, i) => { if (v != null) last = i; });
+      return last >= 0 ? { si, x: x(last), y: y(sr.values[last] as number) } : null;
+    })
+    .filter((e): e is { si: number; x: number; y: number } => e != null)
+    .sort((a, b) => a.y - b.y);
+  const labY: number[] = [];
+  ends.forEach((e, i) => {
+    labY[e.si] = i === 0 ? e.y : Math.max(e.y, labY[ends[i - 1].si] + 11);
+  });
+
+  return api.wrap(
+    <svg className="sigchart" viewBox={`0 0 ${W} ${H}`} width="100%">
+      {[d0, (d0 + d1) / 2, d1].map((g, gi) => (
+        <g key={gi}>
+          <line x1={m.l} x2={W - m.r} y1={y(g)} y2={y(g)} stroke={GRID} strokeWidth={1} />
+          <text x={m.l - 4} y={y(g) + 3} fontSize={F} fill={AX} textAnchor="end">
+            {Math.round(g).toLocaleString("en-US")}
+          </text>
+        </g>
+      ))}
+      {series.map((sr, si) => {
+        const st = WD_TIER[sr.tier];
+        const xs: number[] = [], ys: number[] = [];
+        sr.values.forEach((v, i) => { if (v != null) { xs.push(x(i)); ys.push(y(v)); } });
+        if (xs.length < 2) return null;
+        return (
+          <g key={si} opacity={st.op}>
+            <path d={smoothPath(xs, ys)} fill="none" stroke={st.stroke} strokeWidth={st.w}
+              strokeLinejoin="round" strokeLinecap="round" />
+            <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={sr.tier === "flat" ? 2.5 : 3.5}
+              fill={st.stroke} stroke="var(--page-bg)" strokeWidth={1.2} />
+            <text x={W - m.r + 6} y={(labY[si] ?? ys[ys.length - 1]) + 3} fontSize={F}
+              fill={sr.tier === "flat" ? AX : st.stroke}
+              fontWeight={sr.tier === "flat" ? 400 : 600}>
+              {`${sr.name} ${sr.endLabel}`}
+            </text>
+            <Hit x={xs[xs.length - 1]} y={ys[ys.length - 1]} r={10} tip={sr.tip} api={api} />
+          </g>
+        );
+      })}
+      {tickIdx(labels.length, 3).map((i) => (
+        <text key={i} x={x(i)} y={H - 6} fontSize={F} fill={AX} textAnchor="middle">{labels[i]}</text>
       ))}
     </svg>,
   );

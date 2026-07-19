@@ -6,13 +6,14 @@ import { currentInstanceId } from "@/lib/instance";
 import {
   getSignalsData,
   rolling7,
+  weekStartOf,
   MIN_CLOSED_WEEKS,
-  MIN_WEEKLY_DEN,
   SIGNAL_METRICS,
   SIGNAL_METRIC_BY_KEY,
   type MetricSignal,
   type SignalsData,
 } from "@/lib/analytics/signals";
+import { weekStartIso } from "@/lib/analytics/analysis-config";
 import { DashboardTabs } from "../_dashboard-tabs";
 import { InsightsReveal } from "@/components/dashboard/insights/_reveal";
 import { fmtInt, fmtPct, fmtMoney, fmtSignedPct, fmtSignedPp } from "@/components/dashboard/insights/charts";
@@ -20,11 +21,13 @@ import { SignalSpark, weekLabel } from "@/components/dashboard/insights/signal-c
 import {
   ControlChart,
   type PointTier,
+  type EndStroke,
   WowBars,
   CusumChart,
   DailyRollingChart,
   WeeklyColumns,
-  WeekdayStrip,
+  WeekdayTimeline,
+  type WeekdaySeries,
   FunnelPlot,
 } from "@/components/dashboard/insights/signal-charts-client";
 import type { ChartTip, DeltaChip, DeltaLayerData } from "@/components/dashboard/insights/signal-chart-util";
@@ -52,7 +55,7 @@ function tileValue(sig: MetricSignal): string {
 }
 
 /** Plain-language sentence for a tile, from the machine reasons. */
-function tileSentence(t: Translate, sig: MetricSignal): string {
+function tileSentence(t: Translate, sig: MetricSignal, minDen: number): string {
   const drift = fmtSignedPct(sig.driftPct);
   if (sig.state === "insufficient") {
     return t("sentence.insufficient", { weeks: sig.weeks.length, min: MIN_CLOSED_WEEKS });
@@ -64,7 +67,7 @@ function tileSentence(t: Translate, sig: MetricSignal): string {
     const reason = sig.reasons[0];
     parts.push(t(`sentence.${reason}`, { weeks: Math.abs(sig.run), drift }));
   }
-  if (sig.lowVolume) parts.push(t("sentence.lowVolume", { min: MIN_WEEKLY_DEN }));
+  if (sig.lowVolume) parts.push(t("sentence.lowVolume", { min: minDen }));
   return parts.join(" ");
 }
 
@@ -88,6 +91,7 @@ function endColor(state: MetricSignal["state"]): string {
 
 /** Verdict = the owner's one-line answer, from the per-metric states. */
 function verdict(t: Translate, data: SignalsData) {
+  const minDen = data.config.min_weekly_denominator;
   const sigs = SIGNAL_METRICS.map((d) => data.metrics[d.key]).filter(Boolean);
   const label = (s: MetricSignal) => t(`metric.${s.def.key}`);
   const declining = sigs.filter((s) => s.state === "declining");
@@ -114,10 +118,10 @@ function verdict(t: Translate, data: SignalsData) {
 
   const parts: string[] = [];
   for (const s of declining) {
-    parts.push(t("verdict.partDeclining", { metric: label(s), sentence: tileSentence(t, s) }));
+    parts.push(t("verdict.partDeclining", { metric: label(s), sentence: tileSentence(t, s, minDen) }));
   }
   for (const s of improving) {
-    parts.push(t("verdict.partImproving", { metric: label(s), sentence: tileSentence(t, s) }));
+    parts.push(t("verdict.partImproving", { metric: label(s), sentence: tileSentence(t, s, minDen) }));
   }
   if (state === "insufficient") {
     parts.push(t("sentence.insufficient", { weeks: data.closedWeeks, min: MIN_CLOSED_WEEKS }));
@@ -125,6 +129,14 @@ function verdict(t: Translate, data: SignalsData) {
     parts.push(t("verdict.partStable"));
   }
   return { state, headline, body: parts.join(" ") };
+}
+
+/** YYYY-MM-DD + n days (UTC-noon string math, DST-proof). */
+function addDays(day: string, n: number): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d, 12));
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
 }
 
 /** "Fri · Jul 17" from YYYY-MM-DD (data-derived, not i18n copy). */
@@ -154,14 +166,9 @@ export default async function SignalsDashboardPage({
   const conv = data.metrics["session_conversion"];
   const v = verdict(ts, data);
 
-  // Freshness: through the Sunday closing the last complete week.
-  const lastSunday = (() => {
-    const [y, m, d] = data.lastClosedWeekStart.split("-").map(Number);
-    const dt = new Date(Date.UTC(y, m - 1, d, 12));
-    dt.setUTCDate(dt.getUTCDate() + 6);
-    return dt.toISOString().slice(0, 10);
-  })();
-  const throughLabel = new Date(`${lastSunday}T12:00:00Z`).toLocaleDateString("en-US", {
+  // Freshness: through the day closing the last complete week.
+  const lastClosedWeekEnd = addDays(data.lastClosedWeekStart, 6);
+  const throughLabel = new Date(`${lastClosedWeekEnd}T12:00:00Z`).toLocaleDateString("en-US", {
     month: "short", day: "numeric", timeZone: "UTC",
   });
 
@@ -170,18 +177,29 @@ export default async function SignalsDashboardPage({
   const focusFmt = fmtFor(focus);
   const focusIsRate = focus.def.kind === "rate";
   const badIsLow = focus.def.good === "up";
-  // Per-week color tier (the ratified color code, direction-aware): outside
-  // the band on the bad side = red; outside on the good side = green; inside
-  // the band but on the weak side of centre = yellow; otherwise neutral blue.
+  const dt = data.config.delta_threshold_pct;
+
+  // The band: intentional (configured target / lower threshold) with the
+  // statistical baseline as fallback for either missing edge.
+  const goal = data.goals[focusKey];
+  const intentional = goal?.target != null || goal?.lower_threshold != null;
+  const bandTopRaw = goal?.target ?? focus.baseline?.ucl ?? 0;
+  const bandBotRaw = goal?.lower_threshold ?? focus.baseline?.lcl ?? 0;
+  const bandTop = Math.max(bandTopRaw, bandBotRaw);
+  const bandBot = Math.min(bandTopRaw, bandBotRaw);
+  const windowAvg =
+    focus.values.length > 0
+      ? focus.values.reduce((a, b) => a + b, 0) / focus.values.length
+      : 0;
+
+  // LEVEL channel per week (ratified): above the band = good side, inside =
+  // neutral blue, below = the bad side — flipped for good:"down" metrics.
   const tiers: PointTier[] =
     focus.baseline === null
       ? []
       : focus.values.map((val) => {
-          const b = focus.baseline!;
-          const belowBand = val < b.lcl, aboveBand = val > b.ucl;
-          if (badIsLow ? belowBand : aboveBand) return "bad";
-          if (badIsLow ? aboveBand : belowBand) return "good";
-          if (badIsLow ? val < b.cl : val > b.cl) return "warn";
+          if (val > bandTop) return badIsLow ? "good" : "bad";
+          if (val < bandBot) return badIsLow ? "bad" : "good";
           return "neutral";
         });
   // Ratified time grammar: only the violating stretch that reaches the latest
@@ -191,9 +209,39 @@ export default async function SignalsDashboardPage({
     while (i >= 0 && tiers[i] === "bad") i--;
     for (let j = 0; j <= i; j++) if (tiers[j] === "bad") tiers[j] = "badPast";
   }
+
+  // TREND channel: the final stroke's severity from the confirmed state and
+  // the configured delta threshold (≥ threshold decline = red, smaller =
+  // yellow, improving = green, noise = the level color).
+  const endStroke: EndStroke =
+    focus.state === "declining"
+      ? (Math.abs(focus.driftPct) >= dt ? "red" : "yellow")
+      : focus.state === "improving"
+        ? "green"
+        : "level";
+
+  // Daily texture for the canonical chart, clipped to the closed-week span;
+  // weekIdx pins each weekly dot to its mid-week day on the shared x-axis.
+  const focusSpanStart = focus.weeks.length > 0 ? focus.weeks[0].weekStart : data.lastClosedWeekStart;
+  const focusDaily = (data.dailyByKey[focusKey] ?? []).filter(
+    (d) => d.day >= focusSpanStart && d.day <= lastClosedWeekEnd,
+  );
+  const focusDailyDays = focusDaily.map((d) => d.day);
+  const hasTexture = focusDaily.length >= focus.values.length && focusDaily.length > 1;
+  const dailyValues = hasTexture ? focusDaily.map((d) => d.value) : focus.values;
+  const weekIdx = hasTexture
+    ? focus.weeks.map((w) => {
+        const target = addDays(w.weekStart, 3);
+        const exact = focusDailyDays.indexOf(target);
+        if (exact >= 0) return exact;
+        const next = focusDailyDays.findIndex((d) => d >= target);
+        return next >= 0 ? next : focusDailyDays.length - 1;
+      })
+    : focus.values.map((_, i) => i);
+
   const badCusum = badIsLow ? focus.cusumDown : focus.cusumUp;
   const badCross = badIsLow ? focus.cusumDownCross : focus.cusumUpCross;
-  const wowThreshold = badIsLow ? -5 : 5;
+  const wowThreshold = badIsLow ? -dt : dt;
   const cusumFmt = (c: number) =>
     focusIsRate ? `${(c * 100).toFixed(2)} pts`
     : focus.def.kind === "money" ? fmtMoney(c)
@@ -209,7 +257,7 @@ export default async function SignalsDashboardPage({
           title: ts("charts.tt.weekOf", { date: focusLabels[i] }),
           rows: [
             { k: ts(`metric.${focusKey}`), v: focusFmt(val) },
-            { k: ts("charts.tt.vsCentre"), v: vsCentre(val, focus.baseline!.cl) },
+            { k: ts("charts.tt.vsAvgRow"), v: vsCentre(val, windowAvg) },
             {
               k: ts("charts.tt.reading"),
               v: ts(`charts.tt.tier_${tiers[i] ?? "neutral"}`),
@@ -248,6 +296,26 @@ export default async function SignalsDashboardPage({
   const dailyVals = data.dailySessions.map((d) => d.value);
   const roll = rolling7(dailyVals);
   const lastRoll = [...roll].reverse().find((x): x is number => x != null) ?? null;
+  // The rolling line ends with the sessions signal's trend severity, and its
+  // end dot wears the level color vs the (weekly) band scaled to per-day.
+  const sess = data.metrics["sessions"];
+  const sessGoal = data.goals["sessions"];
+  const rollTop = (sessGoal?.target ?? sess.baseline?.ucl ?? null);
+  const rollBot = (sessGoal?.lower_threshold ?? sess.baseline?.lcl ?? null);
+  const rollEndStroke: EndStroke =
+    sess.state === "declining"
+      ? (Math.abs(sess.driftPct) >= dt ? "red" : "yellow")
+      : sess.state === "improving"
+        ? "green"
+        : "level";
+  const rollEndTier: PointTier =
+    lastRoll == null || rollTop == null || rollBot == null
+      ? "neutral"
+      : lastRoll * 7 > Math.max(rollTop, rollBot)
+        ? "good"
+        : lastRoll * 7 < Math.min(rollTop, rollBot)
+          ? "bad"
+          : "neutral";
   const dailyTips: ChartTip[] = data.dailySessions.map((d, i) => ({
     title: dayTitle(d.day),
     rows: [
@@ -255,28 +323,44 @@ export default async function SignalsDashboardPage({
       { k: ts("charts.tt.rollingRow"), v: roll[i] == null ? "—" : fmtInt(roll[i] as number) },
     ],
   }));
-  const weekdayPts: { day: string; value: number }[] = [];
-  for (let i = dailyVals.length - 1 - 7; i >= 0; i -= 7) {
-    weekdayPts.unshift({ day: data.dailySessions[i].day, value: dailyVals[i] });
-  }
-  const weekdayName =
-    data.dailySessions.length > 0
-      ? new Date(`${data.dailySessions[data.dailySessions.length - 1].day}T12:00:00Z`)
-          .toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
-      : "";
-  const weekdayTips: ChartTip[] = weekdayPts.map((p) => ({
-    title: dayTitle(p.day),
-    rows: [{ k: ts("charts.tt.sessionsRow"), v: fmtInt(p.value) }],
-  }));
-  const weekdayCurrentTip: ChartTip | null =
-    data.dailySessions.length > 0
-      ? {
-          title: dayTitle(data.dailySessions[data.dailySessions.length - 1].day),
-          rows: [
-            { k: ts("charts.tt.sessionsRow"), v: fmtInt(dailyVals[dailyVals.length - 1]) },
-          ],
-        }
-      : null;
+  // Same-weekday timeline: one line per weekday across the closed weeks —
+  // reveals WHICH day of the week carries a change (ratified design).
+  const startIso = weekStartIso(data.config);
+  const sessByDay = new Map(data.dailySessions.map((d) => [d.day, d.value]));
+  const closedSessionDays = data.dailySessions.filter((d) => d.day <= lastClosedWeekEnd);
+  const weekdayWeeks = [...new Set(closedSessionDays.map((d) => weekStartOf(d.day, startIso)))]
+    .sort()
+    // Only weeks fully inside the daily window (a clipped first week would
+    // fake a low reading for its early weekdays).
+    .filter((wk) => sessByDay.has(wk) && addDays(wk, 6) <= lastClosedWeekEnd);
+  const weekdaySeries: WeekdaySeries[] = Array.from({ length: 7 }, (_, off) => {
+    const values = weekdayWeeks.map((wk) => sessByDay.get(addDays(wk, off)) ?? null);
+    const nums = values.filter((v): v is number => v != null);
+    if (nums.length < 2) return null;
+    const half = Math.max(1, Math.floor(nums.length / 2));
+    const firstAvg = nums.slice(0, half).reduce((a, b) => a + b, 0) / half;
+    const lastAvg = nums.slice(-half).reduce((a, b) => a + b, 0) / half;
+    const pct = firstAvg !== 0 ? (lastAvg / firstAvg - 1) * 100 : 0;
+    const tier: WeekdaySeries["tier"] =
+      pct <= -dt ? "bad" : pct >= dt ? "good" : pct <= -dt / 2 ? "warn" : "flat";
+    const sampleDay = addDays(weekdayWeeks[0], off);
+    const name = new Date(`${sampleDay}T12:00:00Z`)
+      .toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+    return {
+      name,
+      values,
+      endLabel: fmtSignedPct(pct),
+      tier,
+      tip: {
+        title: name,
+        rows: [
+          { k: ts("charts.tt.firstWeeksRow"), v: fmtInt(firstAvg) },
+          { k: ts("charts.tt.lastWeeksRow"), v: fmtInt(lastAvg) },
+          { k: ts("charts.tt.changeRow"), v: fmtSignedPct(pct) },
+        ],
+      },
+    };
+  }).filter((sr): sr is WeekdaySeries => sr != null);
 
   // Weekly columns.
   const weekTips: ChartTip[] = orders.weeks.map((w) => ({
@@ -413,7 +497,7 @@ export default async function SignalsDashboardPage({
                   <div className="chart-figure">
                     <span className="v">{tileValue(sig)}</span>
                   </div>
-                  <div className="sig-sentence">{tileSentence(ts, sig)}</div>
+                  <div className="sig-sentence">{tileSentence(ts, sig, data.config.min_weekly_denominator)}</div>
                   <SignalSpark
                     values={sig.values}
                     cl={sig.baseline?.cl ?? null}
@@ -442,24 +526,25 @@ export default async function SignalsDashboardPage({
               {focus.baseline !== null ? (
                 <>
                   <div className="sig-legend">
+                    <span className="k"><span className="ln mut" />{ts("charts.legendDailyValues")}</span>
                     <span className="k"><span className="ln" />{ts("charts.legendWeekly")}</span>
-                    <span className="k"><span className="sw" />{ts("charts.legendBand")}</span>
-                    <span className="k"><span className="ln ctr" />{ts("charts.legendCentre")}</span>
-                    <span className="k"><span className="pt warn" />{ts("charts.legendWarn")}</span>
+                    <span className="k"><span className="sw" />{intentional ? ts("charts.legendTargetBand") : ts("charts.legendBand")}</span>
+                    <span className="k"><span className="ln ctr" />{ts("charts.legendAvg")}</span>
+                    <span className="k"><span className="pt good" />{ts("charts.legendAboveBand")}</span>
                     <span className="k"><span className="pt bad" />{ts("charts.legendSignal")}</span>
                     <span className="k"><span className="pt pink" />{ts("charts.legendPastSignal")}</span>
-                    <span className="k"><span className="pt good" />{ts("charts.legendGoodBreak")}</span>
                   </div>
                   <ControlChart
                     labels={focusLabels}
                     values={focus.values}
-                    cl={focus.baseline.cl}
-                    ucl={focus.baseline.ucl}
-                    lcl={focus.baseline.lcl}
                     tiers={tiers}
-                    upperLabel={`${ts("charts.upper")} ${focusFmt(focus.baseline.ucl)}`}
-                    centreLabel={`${ts("charts.centre")} ${focusFmt(focus.baseline.cl)}`}
-                    lowerLabel={`${ts("charts.lower")} ${focusFmt(focus.baseline.lcl)}`}
+                    band={{ top: bandTop, bottom: bandBot, intentional, avg: windowAvg }}
+                    topLabel={focusFmt(bandTop)}
+                    bottomLabel={focusFmt(bandBot)}
+                    avgLabel={focusFmt(windowAvg)}
+                    endStroke={endStroke}
+                    dailyValues={dailyValues}
+                    weekIdx={weekIdx}
                     signalText={ts("charts.signalOut")}
                     tips={focusTips}
                     deltas={focusDeltas}
@@ -531,28 +616,25 @@ export default async function SignalsDashboardPage({
                     endLabel={lastRoll != null ? ts("charts.perDay", { n: fmtInt(lastRoll) }) : ""}
                     tips={dailyTips}
                     deltas={rollDeltas}
+                    endStroke={rollEndStroke}
+                    endTier={rollEndTier}
                   />
                   <div className="sig-note">{ts("charts.rhythmNote")}</div>
                 </div>
 
                 <div className="tile" data-col style={{ gridColumn: "span 4" }}>
                   <div className="tile-head">
-                    <span className="tile-label">
-                      {ts("charts.weekdayTitle", { weekday: weekdayName })}
-                    </span>
+                    <span className="tile-label">{ts("charts.weekdayTimelineTitle")}</span>
                   </div>
-                  {weekdayPts.length >= 2 && weekdayCurrentTip ? (
-                    <WeekdayStrip
-                      values={weekdayPts.map((p) => p.value)}
-                      current={dailyVals[dailyVals.length - 1]}
-                      currentText={ts("charts.thisDay", { weekday: weekdayName })}
-                      tips={weekdayTips}
-                      currentTip={weekdayCurrentTip}
+                  {weekdayWeeks.length >= 3 && weekdaySeries.length >= 2 ? (
+                    <WeekdayTimeline
+                      labels={weekdayWeeks.map((wk) => weekLabel(wk))}
+                      series={weekdaySeries}
                     />
                   ) : (
                     <div className="tile-empty">{ts("noData")}</div>
                   )}
-                  <div className="sig-note">{ts("charts.weekdayNote")}</div>
+                  <div className="sig-note">{ts("charts.weekdayTimelineNote")}</div>
                 </div>
               </>
             ) : null}

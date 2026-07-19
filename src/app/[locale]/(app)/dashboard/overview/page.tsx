@@ -9,6 +9,7 @@ import {
   getFunnelSeries,
   getUserBreakdown,
   metric,
+  type OverviewMetric,
   type OverviewPeriod,
 } from "@/lib/analytics/overview";
 import { ChevronRight } from "lucide-react";
@@ -16,9 +17,6 @@ import { Icon } from "@/components/ui/icon";
 import { DashboardTabs } from "../_dashboard-tabs";
 import { InsightsReveal } from "@/components/dashboard/insights/_reveal";
 import {
-  AreaChartSvg,
-  Sparkline,
-  DonutMulti,
   DeltaPill,
   fmtInt,
   fmtPct,
@@ -27,7 +25,14 @@ import {
   fmtPp,
   deltaColor,
 } from "@/components/dashboard/insights/charts";
+import {
+  InteractiveArea,
+  InteractiveSparkline,
+  InteractiveDonut,
+} from "@/components/dashboard/insights/insight-charts-client";
+import type { ChartTip } from "@/components/dashboard/insights/signal-chart-util";
 import "@/components/dashboard/insights/insights.css";
+import "@/components/dashboard/insights/signals.css";
 
 const PERIODS: { days: OverviewPeriod; key: string }[] = [
   { days: 1, key: "yesterday" },
@@ -41,6 +46,28 @@ function parsePeriod(raw: string | undefined): OverviewPeriod {
   return ([1, 7, 15, 30] as const).includes(n as OverviewPeriod)
     ? (n as OverviewPeriod)
     : 30;
+}
+
+/** "Fri · Jul 17" from YYYY-MM-DD (data-derived, not i18n copy). */
+function dayTitle(day: string): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  const wd = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  const md = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return `${wd} · ${md}`;
+}
+
+/** One-row-per-day tooltip content for a daily series. */
+function seriesTips(
+  days: string[], label: string, values: number[], fmt: (v: number) => string,
+): ChartTip[] {
+  return days.map((d, i) => ({
+    title: dayTitle(d),
+    rows: [{ k: label, v: fmt(values[i] ?? 0) }],
+  }));
+}
+
+function metricTips(m: OverviewMetric, label: string, fmt: (v: number) => string): ChartTip[] {
+  return seriesTips(m.seriesDays, label, m.series, fmt);
 }
 
 export default async function OverviewDashboardPage({
@@ -120,6 +147,37 @@ export default async function OverviewDashboardPage({
     timeZone: "UTC",
   });
 
+  // ── Tooltip content for every chart (built here so i18n stays server-side).
+  const salesTips = metricTips(sales, to("kpi.totalSales"), fmtMoney);
+  const ordersTips = metricTips(orders, to("kpi.orders"), fmtInt);
+  const aovTips = metricTips(aov, to("kpi.aov"), fmtMoney);
+  const itemsTips = metricTips(items, to("kpi.avgItems"), (v) => v.toFixed(1));
+  const sessionsTips = seriesTips(funnelSeries.days, to("kpi.sessions"), funnelSeries.sessions, fmtInt);
+  const usersTips = seriesTips(users.seriesDays, to("kpi.totalUsers"), users.series, fmtInt);
+  const searchesTips = seriesTips(funnelSeries.days, to("kpi.searches"), funnelSeries.searches, fmtInt);
+  const clickRateTips = seriesTips(funnelSeries.days, to("funnel.clicks"), funnelSeries.clickRate, fmtPct);
+  const cartRateTips = seriesTips(funnelSeries.days, to("funnel.cart"), funnelSeries.cartRate, fmtPct);
+  const searchVolTips = metricTips(searchVol, to("kpi.searches"), fmtInt);
+  const noResultTips = metricTips(noResult, to("kpi.noResultRate"), fmtPct);
+  const ctrTips = metricTips(ctr, to("kpi.searchCtr"), fmtPct);
+  const s2pTips = metricTips(searchToPurchase, to("kpi.searchToPurchase"), fmtPct);
+
+  const donutSegments = [
+    { value: users.newReg, color: "var(--g-light)", label: to("kpi.newUsers") },
+    { value: users.returningReg, color: "var(--g-dark)", label: to("kpi.returningUsers") },
+    { value: users.anonymous, color: "var(--blue)", label: to("kpi.anonymous") },
+  ];
+  const donutTips: ChartTip[] = donutSegments.map((seg) => ({
+    title: to("kpi.totalUsers"),
+    rows: [
+      { k: seg.label, v: fmtInt(seg.value) },
+      {
+        k: to("tt.share"),
+        v: users.total > 0 ? fmtPct(seg.value / users.total) : "—",
+      },
+    ],
+  }));
+
   const PeriodChips = (
     <div className="ov-chips">
       {PERIODS.map((p) => (
@@ -187,7 +245,7 @@ export default async function OverviewDashboardPage({
             </div>
           </div>
           {sales.series.length > 1 ? (
-            <AreaChartSvg values={sales.series} color={deltaColor(sales.deltaPct)} />
+            <InteractiveArea values={sales.series} color={deltaColor(sales.deltaPct)} tips={salesTips} />
           ) : (
             <div className="tile-empty">{to("noData")}</div>
           )}
@@ -199,7 +257,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{fmtInt(orders.value)}</span>
             <DeltaPill pct={orders.deltaPct} />
           </div>
-          {orders.series.length > 1 ? <Sparkline values={orders.series} color={deltaColor(orders.deltaPct)} /> : null}
+          {orders.series.length > 1 ? <InteractiveSparkline values={orders.series} color={deltaColor(orders.deltaPct)} tips={ordersTips} /> : null}
         </div>
 
         <div className="tile" data-col style={{ gridColumn: "span 2" }}>
@@ -208,7 +266,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{fmtMoney(aov.value)}</span>
             <DeltaPill pct={aov.deltaPct} />
           </div>
-          {aov.series.length > 1 ? <Sparkline values={aov.series} color={deltaColor(aov.deltaPct)} /> : null}
+          {aov.series.length > 1 ? <InteractiveSparkline values={aov.series} color={deltaColor(aov.deltaPct)} tips={aovTips} /> : null}
         </div>
 
         <div className="tile" data-col style={{ gridColumn: "span 2" }}>
@@ -217,7 +275,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{items.value.toFixed(1)}</span>
             <DeltaPill pct={items.deltaPct} />
           </div>
-          {items.series.length > 1 ? <Sparkline values={items.series} color={deltaColor(items.deltaPct)} /> : null}
+          {items.series.length > 1 ? <InteractiveSparkline values={items.series} color={deltaColor(items.deltaPct)} tips={itemsTips} /> : null}
         </div>
 
         {/* ═══ TRAFFIC — sessions · users · who (our spine) ═══ */}
@@ -239,7 +297,7 @@ export default async function OverviewDashboardPage({
             </div>
           </div>
           {funnelSeries.sessions.length > 1 ? (
-            <AreaChartSvg values={funnelSeries.sessions} color={deltaColor(sessionsDeltaPct)} />
+            <InteractiveArea values={funnelSeries.sessions} color={deltaColor(sessionsDeltaPct)} tips={sessionsTips} />
           ) : (
             <div className="tile-empty">{to("noData")}</div>
           )}
@@ -257,7 +315,7 @@ export default async function OverviewDashboardPage({
             </div>
           </div>
           {users.series.length > 1 ? (
-            <AreaChartSvg values={users.series} color={deltaColor(users.deltaPct)} />
+            <InteractiveArea values={users.series} color={deltaColor(users.deltaPct)} tips={usersTips} />
           ) : (
             <div className="tile-empty">{to("noData")}</div>
           )}
@@ -271,12 +329,9 @@ export default async function OverviewDashboardPage({
           </div>
           <div className="ringwrap">
             <div className="ring">
-              <DonutMulti
-                segments={[
-                  { value: users.newReg, color: "var(--g-light)" },
-                  { value: users.returningReg, color: "var(--g-dark)" },
-                  { value: users.anonymous, color: "var(--blue)" },
-                ]}
+              <InteractiveDonut
+                segments={donutSegments.map(({ value, color }) => ({ value, color }))}
+                tips={donutTips}
               />
               <div className="c">
                 <span className="v">{fmtInt(users.total)}</span>
@@ -321,7 +376,7 @@ export default async function OverviewDashboardPage({
                 <DeltaPill pct={sessionsDeltaPct} />
               </div>
               <span className="tile-sub" style={{ textAlign: "left" }}>{to("funnel.entered")}</span>
-              {funnelSeries.sessions.length > 1 ? <Sparkline values={funnelSeries.sessions} color={deltaColor(sessionsDeltaPct)} /> : null}
+              {funnelSeries.sessions.length > 1 ? <InteractiveSparkline values={funnelSeries.sessions} color={deltaColor(sessionsDeltaPct)} tips={sessionsTips} /> : null}
             </div>
             <div style={{ flex: "none", color: "var(--t3)", paddingTop: 18 }}><Icon icon={ChevronRight} size={18} /></div>
             {/* Searches — white count + delta + history */}
@@ -332,7 +387,7 @@ export default async function OverviewDashboardPage({
                 <DeltaPill pct={searchesDeltaPct} />
               </div>
               <span className="tile-sub" style={{ textAlign: "left" }}>{to("funnel.performed")}</span>
-              {funnelSeries.searches.length > 1 ? <Sparkline values={funnelSeries.searches} color={deltaColor(searchesDeltaPct)} /> : null}
+              {funnelSeries.searches.length > 1 ? <InteractiveSparkline values={funnelSeries.searches} color={deltaColor(searchesDeltaPct)} tips={searchesTips} /> : null}
             </div>
             <div style={{ flex: "none", color: "var(--t3)", paddingTop: 18 }}><Icon icon={ChevronRight} size={18} /></div>
             {/* Clicks — % of searches (white) + delta + rate history */}
@@ -343,7 +398,7 @@ export default async function OverviewDashboardPage({
                 <DeltaPill pct={clickRateDeltaPp} label={fmtPp(clickRateDeltaPp)} />
               </div>
               <span className="tile-sub" style={{ textAlign: "left" }}>{to("funnel.ofSearches")}</span>
-              {funnelSeries.clickRate.length > 1 ? <Sparkline values={funnelSeries.clickRate} color={deltaColor(clickRateDeltaPp)} /> : null}
+              {funnelSeries.clickRate.length > 1 ? <InteractiveSparkline values={funnelSeries.clickRate} color={deltaColor(clickRateDeltaPp)} tips={clickRateTips} /> : null}
             </div>
             <div style={{ flex: "none", color: "var(--t3)", paddingTop: 18 }}><Icon icon={ChevronRight} size={18} /></div>
             {/* Cart — search-to-cart reach % (white) + delta + rate history */}
@@ -354,7 +409,7 @@ export default async function OverviewDashboardPage({
                 <DeltaPill pct={cartReachDeltaPp} label={fmtPp(cartReachDeltaPp)} />
               </div>
               <span className="tile-sub" style={{ textAlign: "left" }}>{to("funnel.ofSearches")}</span>
-              {funnelSeries.cartRate.length > 1 ? <Sparkline values={funnelSeries.cartRate} color={deltaColor(cartReachDeltaPp)} /> : null}
+              {funnelSeries.cartRate.length > 1 ? <InteractiveSparkline values={funnelSeries.cartRate} color={deltaColor(cartReachDeltaPp)} tips={cartRateTips} /> : null}
             </div>
           </div>
         </div>
@@ -372,7 +427,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{fmtInt(searchVol.value)}</span>
             <DeltaPill pct={searchVol.deltaPct} />
           </div>
-          {searchVol.series.length > 1 ? <Sparkline values={searchVol.series} color={deltaColor(searchVol.deltaPct)} /> : null}
+          {searchVol.series.length > 1 ? <InteractiveSparkline values={searchVol.series} color={deltaColor(searchVol.deltaPct)} tips={searchVolTips} /> : null}
         </div>
 
         <div className="tile" data-col style={{ gridColumn: "span 3" }}>
@@ -381,7 +436,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{fmtPct(noResult.value)}</span>
             <DeltaPill pct={-noResult.deltaPp} label={fmtPp(noResult.deltaPp)} />
           </div>
-          {noResult.series.length > 1 ? <Sparkline values={noResult.series} color={deltaColor(-noResult.deltaPp)} /> : null}
+          {noResult.series.length > 1 ? <InteractiveSparkline values={noResult.series} color={deltaColor(-noResult.deltaPp)} tips={noResultTips} /> : null}
         </div>
 
         <div className="tile" data-col style={{ gridColumn: "span 3" }}>
@@ -390,7 +445,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{fmtPct(ctr.value)}</span>
             <DeltaPill pct={ctr.deltaPp} label={fmtPp(ctr.deltaPp)} />
           </div>
-          {ctr.series.length > 1 ? <Sparkline values={ctr.series} color={deltaColor(ctr.deltaPp)} /> : null}
+          {ctr.series.length > 1 ? <InteractiveSparkline values={ctr.series} color={deltaColor(ctr.deltaPp)} tips={ctrTips} /> : null}
         </div>
 
         <div className="tile" data-col style={{ gridColumn: "span 3" }}>
@@ -399,7 +454,7 @@ export default async function OverviewDashboardPage({
             <span className="v">{fmtPct(searchToPurchase.value)}</span>
             <DeltaPill pct={searchToPurchase.deltaPp} label={fmtPp(searchToPurchase.deltaPp)} />
           </div>
-          {searchToPurchase.series.length > 1 ? <Sparkline values={searchToPurchase.series} color={deltaColor(searchToPurchase.deltaPp)} /> : null}
+          {searchToPurchase.series.length > 1 ? <InteractiveSparkline values={searchToPurchase.series} color={deltaColor(searchToPurchase.deltaPp)} tips={s2pTips} /> : null}
         </div>
       </InsightsReveal>
     </div>

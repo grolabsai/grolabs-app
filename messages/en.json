@@ -914,6 +914,9 @@
         "ofSearches": "of searches",
         "ofClicks": "of clicks",
         "cumulative": "cumulative"
+      },
+      "tt": {
+        "share": "Share"
       }
     },
     "carts": {

@@ -44,7 +44,13 @@ export function pickMatchedVariation(
   document: RreSearchDocument,
   matchesPosition: MatchesPosition | undefined
 ): RreSearchVariant | null {
+  // BYO-ingested documents are not guaranteed to carry variation fields —
+  // the public /catalog/documents contract treats them as optional, and a
+  // minimal payload (id/name/price) crashed this line with an unhandled 500
+  // on every search (hit live 2026-07-18, instance 13). No summary, or no
+  // variants array, means there is nothing to match: behave like `simple`.
   const summary = document.variation_summary;
+  if (summary == null || !Array.isArray(document.variants)) return null;
 
   if (summary.type === "simple") return null;
 

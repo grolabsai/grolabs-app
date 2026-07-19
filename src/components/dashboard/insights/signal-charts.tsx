@@ -441,14 +441,14 @@ export function SignalSpark({
   const y = lin(d0, d1, H - p, p);
   return (
     <svg className="mspark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      {/* Normal-range band only — no centre hairline: at sparkline scale it reads
+          as a second (baseline) series and fights the value line. The line itself
+          wears the state color so it contrasts with the band. */}
       {ucl != null && lcl != null ? (
         <rect x={0} y={y(ucl)} width={W} height={Math.max(y(lcl) - y(ucl), 0)} fill={BAND} />
       ) : null}
-      {cl != null ? (
-        <line x1={0} x2={W} y1={y(cl)} y2={y(cl)} stroke={CENTRE} strokeWidth={0.8} />
-      ) : null}
       <path d={path(values.map((_, i) => x(i)), values.map((v) => y(v)))}
-        fill="none" stroke={MUTED} strokeWidth={1.4} strokeLinejoin="round" />
+        fill="none" stroke={endColor} strokeWidth={1.6} strokeLinejoin="round" />
       <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r={2.8} fill={endColor} />
     </svg>
   );

@@ -10,6 +10,9 @@ export const CENTRE = "rgba(237,234,224,0.45)";
 export const BAND = "rgba(255,255,255,0.05)";
 export const LINE = "var(--blue)";
 export const BAD = "var(--danger-solid)";
+/** Past violations — the scar, not the wound (ratified color grammar). */
+export const PINK = "rgba(252,165,165,0.8)";
+export const PINKLINE = "rgba(252,165,165,0.30)";
 export const GOOD = "var(--success)";
 export const MUTED = "rgba(237,234,224,0.35)";
 
@@ -77,4 +80,17 @@ export function Grad({ id, color }: { id: string; color: string }) {
 export interface ChartTip {
   title: string;
   rows: { k: string; v: string }[];
+}
+
+/** One anchored delta chip (text prebuilt server-side; dir colors it). */
+export interface DeltaChip {
+  label: string;
+  dir: "good" | "bad" | "flat";
+}
+
+/** The hover-revealed delta layer: window average + the three baselines. */
+export interface DeltaLayerData {
+  /** Window average in metric units — drawn as a line at this level. */
+  avg: number;
+  chips: { start: DeltaChip; avg: DeltaChip; last: DeltaChip };
 }

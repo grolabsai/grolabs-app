@@ -751,7 +751,13 @@
           "tier_bad": "outside the normal range — signal"
         },
         "legendWarn": "weak side of centre",
-        "legendGoodBreak": "beyond the range — good"
+        "legendGoodBreak": "beyond the range — good",
+        "delta": {
+          "vsStart": "vs start",
+          "vsAvg": "vs avg",
+          "vsLastWk": "vs last wk"
+        },
+        "legendPastSignal": "signal in the past"
       },
       "noData": "No analytics data yet for this store.",
       "insufficientChart": "Charts unlock at {min} complete weeks."

@@ -112,6 +112,7 @@
 .gro-id .sig-legend .pt.mut { background: rgba(237, 234, 224, 0.35); }
 .gro-id .sig-legend .pt.good { background: var(--success); }
 .gro-id .sig-legend .pt.warn { background: var(--amber); }
+.gro-id .sig-legend .pt.pink { background: rgba(252, 165, 165, 0.8); }
 
 /* The global stylesheet's svg fallback (svg { width: 1em; height: 1em }) beats
    presentation attributes, so the size must be set here in CSS. height:auto +
@@ -158,6 +159,15 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* Hover-revealed anchored deltas: hidden by default, fade in on block hover */
+.gro-id .sig-deltas {
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.gro-id .sig-deltas.show {
+  opacity: 1;
+}
+
 .gro-id .sigchart text {
   font-family: inherit;
   letter-spacing: 0.02em;

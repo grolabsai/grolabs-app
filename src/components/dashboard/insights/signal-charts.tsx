@@ -38,6 +38,33 @@ function path(xs: number[], ys: number[]): string {
   return d;
 }
 
+/** Midpoint-cubic smoothing (same construction as geometry.ts `smooth`) —
+ *  the curve still passes exactly through every data point. */
+function smoothPath(xs: number[], ys: number[]): string {
+  if (xs.length === 0) return "";
+  if (xs.length === 1) return `M${xs[0].toFixed(1)} ${ys[0].toFixed(1)}`;
+  let d = `M${xs[0].toFixed(1)} ${ys[0].toFixed(1)}`;
+  for (let i = 0; i < xs.length - 1; i++) {
+    const mx = ((xs[i] + xs[i + 1]) / 2).toFixed(1);
+    d += ` C ${mx} ${ys[i].toFixed(1)} ${mx} ${ys[i + 1].toFixed(1)} ${xs[i + 1].toFixed(1)} ${ys[i + 1].toFixed(1)}`;
+  }
+  return d;
+}
+
+// Gradient area fade under a line (the Overview dashboard's chart language).
+let gradSeq = 0;
+
+function Grad({ id, color }: { id: string; color: string }) {
+  return (
+    <defs>
+      <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+        <stop offset="100%" stopColor={color} stopOpacity={0} />
+      </linearGradient>
+    </defs>
+  );
+}
+
 /** Sparse tick indexes: first, last, and ~n evenly between. */
 function tickIdx(len: number, n = 4): number[] {
   if (len <= n) return Array.from({ length: len }, (_, i) => i);
@@ -87,7 +114,12 @@ export function ControlChart({
       <text x={lx} y={y(cl) + 3} fontSize={F} fill="var(--t2)">{`${centreText} ${fmt(cl)}`}</text>
       <text x={lx} y={y(lcl) + 3} fontSize={F} fill={AX}>{`${lowerText} ${fmt(lcl)}`}</text>
 
-      <path d={path(xs, ys)} fill="none" stroke={LINE} strokeWidth={1.8}
+      <Grad id={`sig-grad-cc-${gradSeq++}`} color={LINE} />
+      <path
+        d={`${smoothPath(xs, ys)} L ${xs[xs.length - 1].toFixed(1)} ${H - m.b} L ${xs[0].toFixed(1)} ${H - m.b} Z`}
+        fill={`url(#sig-grad-cc-${gradSeq - 1})`}
+      />
+      <path d={smoothPath(xs, ys)} fill="none" stroke={LINE} strokeWidth={2.2}
         strokeLinejoin="round" strokeLinecap="round" />
       {values.map((v, i) => (
         <circle key={i} cx={xs[i]} cy={ys[i]} r={bad.has(i) ? 4 : 3}
@@ -175,7 +207,7 @@ export function CusumChart({
   const x = lin(0, Math.max(cusum.length - 1, 1), m.l + 10, W - m.r - 10);
   const xs = cusum.map((_, i) => x(i));
   const ys = cusum.map((v) => y(v));
-  const line = path(xs, ys);
+  const line = smoothPath(xs, ys);
 
   return (
     <svg className="sigchart" viewBox={`0 0 ${W} ${H}`} width="100%">
@@ -185,9 +217,10 @@ export function CusumChart({
       ))}
       <line x1={m.l} x2={W - m.r} y1={y(h)} y2={y(h)} stroke={BAD} strokeWidth={1.2} />
       <text x={m.l + 2} y={y(h) - 5} fontSize={F} fill={BAD}>{limitText}</text>
+      <Grad id={`sig-grad-cu-${gradSeq++}`} color={LINE} />
       <path d={`${line} L${xs[xs.length - 1].toFixed(1)} ${y(0).toFixed(1)} L${xs[0].toFixed(1)} ${y(0).toFixed(1)} Z`}
-        fill="rgba(127,176,201,0.12)" />
-      <path d={line} fill="none" stroke={LINE} strokeWidth={1.8} strokeLinejoin="round" />
+        fill={`url(#sig-grad-cu-${gradSeq - 1})`} />
+      <path d={line} fill="none" stroke={LINE} strokeWidth={2.2} strokeLinejoin="round" />
       {crossIdx >= 0 ? (
         <g>
           <circle cx={xs[crossIdx]} cy={ys[crossIdx]} r={4} fill={BAD}
@@ -222,13 +255,16 @@ export function DailyRollingChart({
   const x = lin(0, Math.max(daily.length - 1, 1), m.l, W - m.r);
   const y = lin(d0, d1, H - m.b, m.t);
   const xs = daily.map((_, i) => x(i));
-  let rollLine = "";
-  let lastRoll: { x: number; y: number } | null = null;
+  const rollXs: number[] = [];
+  const rollYs: number[] = [];
   rolling.forEach((v, i) => {
     if (v == null) return;
-    lastRoll = { x: xs[i], y: y(v) };
-    rollLine += `${rollLine ? "L" : "M"}${xs[i].toFixed(1)} ${y(v).toFixed(1)}`;
+    rollXs.push(xs[i]);
+    rollYs.push(y(v));
   });
+  const rollLine = smoothPath(rollXs, rollYs);
+  const lastRoll: { x: number; y: number } | null =
+    rollXs.length > 0 ? { x: rollXs[rollXs.length - 1], y: rollYs[rollYs.length - 1] } : null;
   const yticks = [d0 + (d1 - d0) * 0.15, (d0 + d1) / 2, d1 - (d1 - d0) * 0.15].map(Math.round);
 
   return (
@@ -239,8 +275,17 @@ export function DailyRollingChart({
           <text x={m.l - 4} y={y(g) + 3} fontSize={F} fill={AX} textAnchor="end">{g.toLocaleString("en-US")}</text>
         </g>
       ))}
-      <path d={path(xs, daily.map((v) => y(v)))} fill="none" stroke={MUTED} strokeWidth={1.2} strokeLinejoin="round" />
-      {rollLine ? <path d={rollLine} fill="none" stroke={LINE} strokeWidth={2.2} strokeLinejoin="round" /> : null}
+      <path d={smoothPath(xs, daily.map((v) => y(v)))} fill="none" stroke={MUTED} strokeWidth={1.2} strokeLinejoin="round" />
+      {rollXs.length > 1 ? (
+        <>
+          <Grad id={`sig-grad-rr-${gradSeq++}`} color={LINE} />
+          <path
+            d={`${rollLine} L ${rollXs[rollXs.length - 1].toFixed(1)} ${H - m.b} L ${rollXs[0].toFixed(1)} ${H - m.b} Z`}
+            fill={`url(#sig-grad-rr-${gradSeq - 1})`}
+          />
+          <path d={rollLine} fill="none" stroke={LINE} strokeWidth={2.4} strokeLinejoin="round" />
+        </>
+      ) : null}
       {lastRoll !== null ? (
         <g>
           <circle cx={(lastRoll as { x: number; y: number }).x} cy={(lastRoll as { x: number; y: number }).y}
@@ -447,7 +492,12 @@ export function SignalSpark({
       {ucl != null && lcl != null ? (
         <rect x={0} y={y(ucl)} width={W} height={Math.max(y(lcl) - y(ucl), 0)} fill={BAND} />
       ) : null}
-      <path d={path(values.map((_, i) => x(i)), values.map((v) => y(v)))}
+      <Grad id={`sig-grad-sp-${gradSeq++}`} color={endColor} />
+      <path
+        d={`${smoothPath(values.map((_, i) => x(i)), values.map((v) => y(v)))} L ${(W - p).toFixed(1)} ${H} L ${p.toFixed(1)} ${H} Z`}
+        fill={`url(#sig-grad-sp-${gradSeq - 1})`}
+      />
+      <path d={smoothPath(values.map((_, i) => x(i)), values.map((v) => y(v)))}
         fill="none" stroke={endColor} strokeWidth={1.6} strokeLinejoin="round" />
       <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r={2.8} fill={endColor} />
     </svg>

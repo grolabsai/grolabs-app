@@ -744,8 +744,14 @@
           "naiveDelta": "Un delta diría",
           "honestReading": "Lectura honesta",
           "funnelSignal": "fuera de 3σ — señal",
-          "funnelNoise": "dentro de límites — ruido"
-        }
+          "funnelNoise": "dentro de límites — ruido",
+          "tier_good": "fuera del rango normal — en la dirección buena",
+          "tier_neutral": "dentro del rango normal — ruido",
+          "tier_warn": "del lado débil del centro — aún dentro del rango normal",
+          "tier_bad": "fuera del rango normal — señal"
+        },
+        "legendWarn": "lado débil del centro",
+        "legendGoodBreak": "más allá del rango — bueno"
       },
       "noData": "Aún no hay datos de analítica para esta tienda.",
       "insufficientChart": "Los gráficos se habilitan con {min} semanas completas."

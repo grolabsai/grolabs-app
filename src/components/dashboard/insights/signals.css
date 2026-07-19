@@ -111,6 +111,7 @@
 .gro-id .sig-legend .pt.bad { background: var(--danger-solid); }
 .gro-id .sig-legend .pt.mut { background: rgba(237, 234, 224, 0.35); }
 .gro-id .sig-legend .pt.good { background: var(--success); }
+.gro-id .sig-legend .pt.warn { background: var(--amber); }
 
 /* The global stylesheet's svg fallback (svg { width: 1em; height: 1em }) beats
    presentation attributes, so the size must be set here in CSS. height:auto +

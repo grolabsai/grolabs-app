@@ -24,14 +24,25 @@ const useGradId = () => {
 
 // ── Process-behaviour (XmR) chart ───────────────────────────────────────────
 
+export type PointTier = "good" | "neutral" | "warn" | "bad";
+
+const TIER_COLOR: Record<PointTier, string> = {
+  good: GOOD,
+  neutral: LINE,
+  warn: "var(--amber)",
+  bad: BAD,
+};
+
 export function ControlChart({
-  labels, values, cl, ucl, lcl, badIdx,
+  labels, values, cl, ucl, lcl, tiers,
   upperLabel, centreLabel, lowerLabel, signalText, tips,
 }: {
   labels: string[];
   values: number[];
   cl: number; ucl: number; lcl: number;
-  badIdx: number[];
+  /** Color-code tier per week: outside-band bad = red, weak side of centre
+   *  within band = yellow, outside-band good = green, else neutral blue. */
+  tiers: PointTier[];
   upperLabel: string; centreLabel: string; lowerLabel: string; signalText: string;
   tips: ChartTip[];
 }) {
@@ -44,7 +55,7 @@ export function ControlChart({
   const y = lin(d0, d1, H - m.b, m.t);
   const xs = values.map((_, i) => x(i));
   const ys = values.map((v) => y(v));
-  const bad = new Set(badIdx);
+  const firstBad = tiers.indexOf("bad");
   const lx = W - m.r + 6;
   const line = smoothPath(xs, ys);
 
@@ -65,13 +76,16 @@ export function ControlChart({
       />
       <path d={line} fill="none" stroke={LINE} strokeWidth={2.2}
         strokeLinejoin="round" strokeLinecap="round" />
-      {values.map((v, i) => (
-        <circle key={i} cx={xs[i]} cy={ys[i]} r={bad.has(i) ? 4 : 3}
-          fill={bad.has(i) ? BAD : LINE} stroke="var(--page-bg)" strokeWidth={1.5} />
-      ))}
-      {badIdx.length > 0 ? (
+      {values.map((v, i) => {
+        const tier = tiers[i] ?? "neutral";
+        return (
+          <circle key={i} cx={xs[i]} cy={ys[i]} r={tier === "neutral" ? 3 : 4}
+            fill={TIER_COLOR[tier]} stroke="var(--page-bg)" strokeWidth={1.5} />
+        );
+      })}
+      {firstBad >= 0 ? (
         <text
-          x={Math.min(xs[badIdx[0]], W - m.r - 4)} y={ys[badIdx[0]] + 16}
+          x={Math.min(xs[firstBad], W - m.r - 4)} y={ys[firstBad] + 16}
           fontSize={F} fill={BAD} textAnchor="end"
         >{signalText}</text>
       ) : null}

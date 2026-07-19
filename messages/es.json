@@ -627,7 +627,101 @@
       "traffic": "Tráfico",
       "search": "Búsqueda",
       "overview": "Overview",
-      "carts": "Carritos"
+      "carts": "Carritos",
+      "signals": "Señales"
+    },
+    "signals": {
+      "header": {
+        "eyebrow": "Dashboard principal",
+        "title": "¿Estamos mejorando?",
+        "freshness": "Semanas completas (lun–dom) · hasta {date}"
+      },
+      "sections": {
+        "verdict": "Veredicto",
+        "verdictMeta": "semanas cerradas · evidencia acumulada, no deltas puntuales",
+        "deepdive": "A fondo",
+        "deepdiveMeta": "comportamiento del proceso · detección de deriva lenta",
+        "rhythm": "Ritmo",
+        "rhythmMeta": "por qué comparar día contra día engaña",
+        "weeks": "Semanas completas y muestras pequeñas",
+        "weeksMeta": "la unidad honesta de comparación · tasas vs los datos que las sostienen"
+      },
+      "metric": {
+        "total_sales": "Ventas totales",
+        "orders": "Órdenes",
+        "sessions": "Sesiones",
+        "session_conversion": "Conversión",
+        "search_ctr": "CTR de búsqueda",
+        "no_result_rate": "Tasa sin resultados"
+      },
+      "state": {
+        "improving": "Mejorando",
+        "stable": "Estable",
+        "declining": "Empeorando",
+        "insufficient": "Datos insuficientes"
+      },
+      "sentence": {
+        "limit_low": "La última semana cayó fuera del rango normal ({drift} vs línea base).",
+        "limit_high": "La última semana subió fuera del rango normal ({drift} vs línea base).",
+        "run_low": "{weeks} semanas seguidas por debajo de la línea base — {drift} acumulado.",
+        "run_high": "{weeks} semanas seguidas por encima de la línea base — {drift} acumulado.",
+        "cusum_low": "Pequeñas caídas semanales acumulan {drift} vs la línea base — ninguna semana pareció alarmante por sí sola.",
+        "cusum_high": "Pequeñas mejoras semanales acumulan {drift} vs la línea base.",
+        "stable": "Dentro de su rango normal a lo largo de {weeks} semanas completas.",
+        "insufficient": "Solo {weeks} semanas completas — se necesitan {min} para juzgar.",
+        "lowVolume": "Menos de {min} eventos la última semana; se muestran conteos en lugar de una tasa."
+      },
+      "verdict": {
+        "declining": "Empeorando: {metrics}",
+        "improving": "Mejorando: {metrics}",
+        "steady": "Estable — ninguna señal confiable de cambio esta semana",
+        "insufficient": "Recopilando datos — aún no hay suficientes semanas completas",
+        "partDeclining": "{metric}: {sentence}",
+        "partImproving": "{metric}: {sentence}",
+        "partStable": "Todo lo demás está dentro de su rango normal."
+      },
+      "charts": {
+        "controlTitle": "Comportamiento del proceso — {metric} semanal",
+        "controlNote": "La banda es el rango normal calculado con las semanas base. El movimiento dentro de ella es ruido por definición; el veredicto solo cambia cuando una semana sale de la banda, hay una racha larga a un lado del centro, o la deriva se acumula (abajo).",
+        "centre": "centro",
+        "upper": "límite superior",
+        "lower": "límite inferior",
+        "signalOut": "fuera del rango normal",
+        "legendWeekly": "valor semanal",
+        "legendBand": "rango normal (límites del proceso)",
+        "legendCentre": "centro (media base)",
+        "legendSignal": "señal",
+        "wowTitle": "Cambio semana a semana — el detector que no ve la deriva lenta",
+        "wowThreshold": "alarma puntual {pct}",
+        "wowNote": "Cada barra compara una semana con la anterior. Una caída lenta nunca dispara esta alarma — seis semanas de −1% cada una son invisibles aquí.",
+        "cusumTitle": "Deriva acumulada (CUSUM)",
+        "cusumLimit": "límite de decisión",
+        "cusumAlarm": "dispara",
+        "cusumNote": "Suma cada pequeño déficit por debajo de la línea base. Una deriva sostenida cruza el límite de decisión semanas antes de que cualquier alarma puntual se dispare.",
+        "rhythmTitle": "Sesiones diarias vs la semana móvil",
+        "legendDaily": "sesiones diarias",
+        "legendRolling": "promedio móvil de 7 días",
+        "perDay": "{n}/día",
+        "rhythmNote": "Cada día de la semana tiene su propio ritmo, así que dos días adyacentes difieren por razones que no tienen que ver con el desempeño. La línea móvil es la tendencia honesta.",
+        "weekdayTitle": "Mismo día — {weekday}s recientes",
+        "thisDay": "este {weekday}",
+        "weekdayNote": "Contexto alineado por día de semana (este día vs el mismo día en semanas pasadas). Un día contra un día informa, pero nunca alarma.",
+        "weeksTitle": "Órdenes por semana completa",
+        "inProgress": "en curso",
+        "legendClosed": "semana cerrada",
+        "legendPartial": "en curso — excluida",
+        "weeksNote": "La semana actual aparece pero queda excluida de toda comparación y señal hasta que cierre el domingo.",
+        "funnelTitle": "Conversión semanal vs sesiones — funnel plot",
+        "funnelOverall": "global",
+        "funnelAxis": "sesiones de la semana (el denominador)",
+        "funnelSignal": "fuera de límites — señal",
+        "legendWeeks": "semanas cerradas",
+        "legendLatest": "última semana",
+        "legendOutside": "fuera de límites",
+        "funnelNote": "Cada semana se juzga contra límites que se ensanchan cuando el denominador se achica: una tasa extrema con pocas sesiones es ruido, mientras que una desviación modesta con muchas sesiones es una señal real."
+      },
+      "noData": "Aún no hay datos de analítica para esta tienda.",
+      "insufficientChart": "Los gráficos se habilitan con {min} semanas completas."
     },
     "traffic": {
       "header": {
@@ -3105,6 +3199,18 @@
       "invalidEmail": "Ingresá un email válido.",
       "unauthorized": "No tenés permiso para administrar usuarios.",
       "saveFailed": "No se pudo guardar. Intentá de nuevo."
+    }
+  },
+  "getConnected": {
+    "title": "Conectá tu tienda",
+    "subtitle": "Conectá tu tienda a GroLabs: catálogo, búsqueda y eventos, y analítica de tráfico.",
+    "changePlatform": "Elegir otra plataforma",
+    "chooser": {
+      "wordpressTitle": "WordPress / WooCommerce",
+      "wordpressBody": "Tu tienda corre en WordPress. Se conecta con plugins que instalás en wp-admin más una importación de catálogo — sin código.",
+      "proprietaryTitle": "E-commerce propio",
+      "proprietaryBody": "Tu tienda es tu propia plataforma. Tus desarrolladores la conectan con la API pública y el SDK de JavaScript de GroLabs.",
+      "choose": "Empezá aquí"
     }
   }
 }

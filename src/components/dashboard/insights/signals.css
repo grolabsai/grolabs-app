@@ -1,0 +1,119 @@
+/* Signals dashboard additions — scoped under .gro-id like insights.css.
+   State chips + verdict banner for the "are we improving?" surface. */
+
+.gro-id .sig-verdict {
+  grid-column: span 12;
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--t3);
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: var(--block-shadow);
+}
+.gro-id .sig-verdict[data-state="declining"] { border-left-color: var(--danger-solid); }
+.gro-id .sig-verdict[data-state="improving"] { border-left-color: var(--success); }
+.gro-id .sig-verdict[data-state="insufficient"] { border-left-color: var(--t4); }
+
+.gro-id .sig-verdict .headline {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--strong);
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+.gro-id .sig-verdict .body {
+  font-size: 12.5px;
+  color: var(--t2);
+  max-width: 88ch;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* State chip — improving / stable / declining / not-enough-data */
+.gro-id .sig-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.gro-id .sig-state.improving { color: var(--success); background: var(--success-bg); }
+.gro-id .sig-state.declining { color: var(--danger); background: var(--danger-bg); }
+.gro-id .sig-state.stable { color: var(--t2); background: rgba(255, 255, 255, 0.07); }
+.gro-id .sig-state.insufficient {
+  color: var(--t3);
+  background: none;
+  border: 1px dashed var(--border-strong);
+}
+
+/* Plain-language sentence under a tile figure */
+.gro-id .sig-sentence {
+  font-size: 11px;
+  color: var(--t2);
+  line-height: 1.5;
+  margin: 4px 0 8px;
+  min-height: 3em;
+}
+
+/* Small caption under a chart explaining what it shows */
+.gro-id .sig-note {
+  font-size: 10.5px;
+  color: var(--t3);
+  line-height: 1.5;
+  margin-top: 8px;
+  max-width: 90ch;
+}
+
+/* Inline legend row above a chart */
+.gro-id .sig-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10.5px;
+  color: var(--t2);
+  margin: 2px 0 8px;
+}
+.gro-id .sig-legend .k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gro-id .sig-legend .ln {
+  width: 16px;
+  height: 0;
+  border-top: 2px solid var(--blue);
+  border-radius: 2px;
+}
+.gro-id .sig-legend .ln.mut { border-top-width: 1.5px; border-color: rgba(237, 234, 224, 0.35); }
+.gro-id .sig-legend .ln.bad { border-color: var(--danger-solid); }
+.gro-id .sig-legend .ln.ctr { border-color: rgba(237, 234, 224, 0.45); border-top-width: 1.5px; }
+.gro-id .sig-legend .sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+}
+.gro-id .sig-legend .sw.partial {
+  background: rgba(127, 176, 201, 0.14);
+  border: 1px dashed rgba(237, 234, 224, 0.35);
+}
+.gro-id .sig-legend .pt {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.gro-id .sig-legend .pt.bad { background: var(--danger-solid); }
+.gro-id .sig-legend .pt.mut { background: rgba(237, 234, 224, 0.35); }
+.gro-id .sig-legend .pt.good { background: var(--success); }
+
+.gro-id .sigchart { display: block; }
+.gro-id .sigchart text {
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}

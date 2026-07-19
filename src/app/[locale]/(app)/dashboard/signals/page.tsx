@@ -195,7 +195,9 @@ export default async function SignalsDashboardPage({
   const badCross = badIsLow ? focus.cusumDownCross : focus.cusumUpCross;
   const wowThreshold = badIsLow ? -5 : 5;
   const cusumFmt = (c: number) =>
-    focusIsRate ? `${(c * 100).toFixed(2)} pts` : fmtInt(c);
+    focusIsRate ? `${(c * 100).toFixed(2)} pts`
+    : focus.def.kind === "money" ? fmtMoney(c)
+    : fmtInt(c);
   const vsCentre = (val: number, cl: number) =>
     focusIsRate ? fmtSignedPp((val - cl) * 100) : fmtSignedPct(cl !== 0 ? ((val - cl) / Math.abs(cl)) * 100 : 0);
 
@@ -343,7 +345,7 @@ export default async function SignalsDashboardPage({
 
   const MetricChips = (
     <div className="ov-chips">
-      {SIGNAL_METRICS.filter((d) => d.kind === "rate" || d.key === "orders" || d.key === "sessions").map((d) => (
+      {SIGNAL_METRICS.filter((d) => d.take === "rate" || d.key === "orders" || d.key === "sessions").map((d) => (
         <Link
           key={d.key}
           href={`/dashboard/signals?metric=${d.key}` as Route}

@@ -65,6 +65,11 @@ export const SIGNAL_METRICS: readonly SignalMetricDef[] = [
   { key: "session_conversion", source: "session_conversion", take: "rate", kind: "rate", good: "up" },
   { key: "search_ctr", source: "search_ctr", take: "rate", kind: "rate", good: "up" },
   { key: "no_result_rate", source: "no_result_rate", take: "rate", kind: "rate", good: "down" },
+  // Revenue-efficiency KPIs (decision 2026-07-19): pooled Σrevenue/Σpopulation
+  // per week — the trend read that catches basket-size uplift when conversion
+  // rates stand still. kind "money" formats them as currency.
+  { key: "revenue_per_session", source: "revenue_per_session", take: "rate", kind: "money", good: "up" },
+  { key: "revenue_per_user", source: "revenue_per_user", take: "rate", kind: "money", good: "up" },
 ];
 
 export const SIGNAL_METRIC_BY_KEY: Record<string, SignalMetricDef> = Object.fromEntries(

@@ -583,5 +583,52 @@ conflicts with disk, **disk wins and the conflict is flagged.**
 
 ---
 
+## 14. Decision addendum (2026-07-19) — purpose restated & revenue-efficiency KPIs
+
+Ratified in the signal-analytics design session (see the project's Signals dashboard work);
+recorded here because these are measurement-strategy decisions, not dashboard styling.
+
+### 14.1 Purpose restated
+
+The measurement system exists to **identify trends so we can make adjustments** — not to monitor
+how sales are going today. Every surface decision follows from this: closed Mon–Sun weeks as the
+comparison unit, accumulated-evidence signals (XmR + CUSUM) instead of day-over-day deltas, and
+color reserved for "does this need action?" rather than "what happened?". A day is a data point;
+a trend is a decision input.
+
+### 14.2 Why cart-add and completion are separate events (cross-day attribution)
+
+A shopper can add to cart today and complete the purchase tomorrow. If conversion were measured
+as a single same-day funnel, day 1 would unfairly read as a failure (traffic, cart, no sale) and
+day 2 as an inexplicable success (sale from nowhere) — the daily grain would *manufacture* noise.
+Splitting the events keeps each day's record honest: day 1 owns the add-to-cart, day 2 owns the
+completion, and each daily rate ("cart→checkout", "checkout→purchase") pools populations that
+actually occurred that day. The cross-day close-rate question is real but belongs to the
+`journey_conversion` KPI (identity-spanning, §6 `later`), not to the daily grain. Weekly pooling
+plus trend signals absorb the day-boundary artifacts: a Monday cart completing on Tuesday lands
+inside the same closed week.
+
+### 14.3 Revenue-efficiency KPIs: `revenue_per_session`, `revenue_per_user`
+
+**Problem:** conversion-rate KPIs are blind to basket growth. If 3-of-5 sessions convert before
+and after a search improvement, but converters now buy more items, session/user conversion shows
+zero uplift while real revenue per visit rose. The uplift exists — it is just not a *rate of
+converting*, it is a *rate of extracting value*.
+
+**Decision:** materialize `revenue_per_session` (Σ order revenue ÷ sessions, per store-local day)
+and `revenue_per_user` (Σ order revenue ÷ distinct users) in `metric_daily_source`. The former
+blocker on `revenue_per_session` ("events carry no revenue amount") went stale when `sales_order`
+landed — both KPIs now derive from aggregates the view already computes. Both pool weekly as
+Σnum/Σden like every rate, and both are first-class Signals metrics (trend states, deep-dive,
+anchored deltas).
+
+**Next iteration — identity split:** `revenue_per_session_registered` /
+`revenue_per_session_anonymous` (registered = the `instance_user_breakdown` convention: any event
+for that user ever carried an `account_id`). Defined in the catalog with `materialized: false`;
+requires the order→identity join in the rollup view. The split matters because registered and
+anonymous populations monetize differently, and improvements often move only one of them.
+
+---
+
 **End — directional design capture. No code written. Awaiting review of the §10 open questions and
 the Verification-3 conflict before any implementation session.**

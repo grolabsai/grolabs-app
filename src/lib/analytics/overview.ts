@@ -41,6 +41,8 @@ export interface OverviewMetric {
   deltaPp: number;
   /** Daily `value` over the current window, ascending — for sparkline/area. */
   series: number[];
+  /** Store-local day (YYYY-MM-DD) per `series` index — for chart tooltips. */
+  seriesDays: string[];
   /** True if any current-window row exists. */
   hasData: boolean;
 }
@@ -120,7 +122,7 @@ function poolsNumDen(key: string): boolean {
 
 const EMPTY: OverviewMetric = {
   value: 0, num: 0, den: 0, prior: 0, priorNum: 0, priorDen: 0,
-  deltaPct: 0, deltaPp: 0, series: [], hasData: false,
+  deltaPct: 0, deltaPp: 0, series: [], seriesDays: [], hasData: false,
 };
 
 export async function getOverviewMetrics(
@@ -173,10 +175,11 @@ export async function getOverviewMetrics(
     const cur = agg(inCur);
     const pri = agg(inPri);
     const prior = pri.value;
-    const series = krows
+    const curRows = krows
       .filter((r) => inCur(r.day))
-      .sort((a, b) => a.day.localeCompare(b.day))
-      .map((r) => Number(r.value ?? 0));
+      .sort((a, b) => a.day.localeCompare(b.day));
+    const series = curRows.map((r) => Number(r.value ?? 0));
+    const seriesDays = curRows.map((r) => r.day);
     out[key] = {
       value: cur.value,
       num: cur.num,
@@ -187,6 +190,7 @@ export async function getOverviewMetrics(
       deltaPct: prior > 0 ? ((cur.value - prior) / prior) * 100 : 0,
       deltaPp: (cur.value - prior) * 100,
       series,
+      seriesDays,
       hasData: krows.some((r) => inCur(r.day)),
     };
   }
@@ -203,6 +207,7 @@ export function metric(
 
 /** Day-aligned daily trend series for the capture funnel tiles. */
 export interface FunnelSeries {
+  days: string[];      // store-local day per index — for chart tooltips
   sessions: number[];  // daily session COUNT (session_conversion denominator)
   searches: number[];  // daily search COUNT (search_volume value)
   clickRate: number[]; // daily clicks ÷ searches
@@ -223,7 +228,7 @@ export async function getFunnelSeries(
     .in("metric_key", ["session_conversion", "search_volume", "avg_click_position", "cart_to_checkout"])
     .gte("day", w.start)
     .lte("day", w.end);
-  if (error || !data) return { sessions: [], searches: [], clickRate: [], cartRate: [] };
+  if (error || !data) return { days: [], sessions: [], searches: [], clickRate: [], cartRate: [] };
 
   // day → { sessions, searches, clicks, cart }
   const byDay = new Map<string, { sessions: number; searches: number; clicks: number; cart: number }>();
@@ -241,6 +246,7 @@ export async function getFunnelSeries(
   }
   const days = [...byDay.keys()].sort((a, b) => a.localeCompare(b));
   return {
+    days,
     sessions: days.map((d) => byDay.get(d)!.sessions),
     searches: days.map((d) => byDay.get(d)!.searches),
     clickRate: days.map((d) => { const c = byDay.get(d)!; return c.searches > 0 ? c.clicks / c.searches : 0; }),
@@ -263,6 +269,8 @@ export interface UserBreakdown {
   returningReg: number;
   /** Daily distinct-user counts over the window (ascending) — Users timeline. */
   series: number[];
+  /** Store-local day per `series` index — for chart tooltips. */
+  seriesDays: string[];
   /** Percent change in total users vs the prior equal period. */
   deltaPct: number;
   hasData: boolean;
@@ -291,14 +299,14 @@ export async function getUserBreakdown(
     return (row ?? null) as BreakdownRow | null;
   };
 
-  const series = async (s: string, e: string): Promise<number[]> => {
+  const series = async (s: string, e: string): Promise<{ days: string[]; users: number[] }> => {
     const { data, error } = await supabase.rpc("instance_daily_users", {
       p_instance: instanceId, p_start: s, p_end: e,
     });
-    if (error || !data) return [];
-    return (data as { day: string; users: number }[])
-      .sort((a, b) => a.day.localeCompare(b.day))
-      .map((r) => Number(r.users ?? 0));
+    if (error || !data) return { days: [], users: [] };
+    const rows = (data as { day: string; users: number }[])
+      .sort((a, b) => a.day.localeCompare(b.day));
+    return { days: rows.map((r) => r.day), users: rows.map((r) => Number(r.users ?? 0)) };
   };
 
   const [cur, pri, dailyUsers] = await Promise.all([
@@ -314,7 +322,8 @@ export async function getUserBreakdown(
     registered: Number(cur?.registered ?? 0),
     newReg: Number(cur?.new_registered ?? 0),
     returningReg: Number(cur?.returning_registered ?? 0),
-    series: dailyUsers,
+    series: dailyUsers.users,
+    seriesDays: dailyUsers.days,
     deltaPct: priorTotal > 0 ? ((total - priorTotal) / priorTotal) * 100 : 0,
     hasData: total > 0,
   };

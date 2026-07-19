@@ -750,7 +750,11 @@
           "tier_good": "outside the normal range — in the good direction",
           "tier_neutral": "inside the normal range — noise",
           "tier_warn": "weak side of centre — still within the normal range",
-          "tier_bad": "outside the normal range — signal"
+          "tier_bad": "outside the normal range — signal",
+          "vsAvgRow": "vs window average",
+          "firstWeeksRow": "early weeks (avg)",
+          "lastWeeksRow": "recent weeks (avg)",
+          "changeRow": "change"
         },
         "legendWarn": "weak side of centre",
         "legendGoodBreak": "beyond the range — good",
@@ -759,7 +763,13 @@
           "vsAvg": "vs avg",
           "vsLastWk": "vs last wk"
         },
-        "legendPastSignal": "signal in the past"
+        "legendPastSignal": "signal in the past",
+        "legendDailyValues": "daily values",
+        "legendAvg": "window average",
+        "legendTargetBand": "target → lower threshold",
+        "legendAboveBand": "above target",
+        "weekdayTimelineTitle": "Weekday timeline",
+        "weekdayTimelineNote": "One line per weekday across closed weeks — the colored lines are the days whose sessions moved past your delta threshold; gray-blue days are steady."
       },
       "noData": "No analytics data yet for this store.",
       "insufficientChart": "Charts unlock at {min} complete weeks."
@@ -1866,6 +1876,55 @@
       "tabEvents": "Events",
       "tabSearches": "Searches",
       "tabCarts": "Carts"
+    },
+    "analysis": {
+      "navLabel": "Analysis",
+      "title": "Analysis settings",
+      "intro": "Every number the analysis judges with is a variable, not a constant. Presets are applied when an instance is created; tune them here to match your business.",
+      "sections": {
+        "general": "General",
+        "engine": "Signal engine",
+        "goals": "Targets & thresholds per metric"
+      },
+      "fields": {
+        "timezone": "Timezone (IANA)",
+        "weekEnd": "Week ends on (for analysis)",
+        "currency": "Currency (ISO 4217)",
+        "deltaPct": "Delta threshold (%)",
+        "minDen": "Min weekly events for rates",
+        "baseline": "Baseline weeks",
+        "target": "Target",
+        "lower": "Lower threshold"
+      },
+      "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      },
+      "hints": {
+        "timezone": "The store's IANA timezone (e.g. America/Guatemala). Defines when a business day — and therefore an analysis week — closes.",
+        "weekEnd": "Analysis weeks end on this day. With Sunday, weeks run Monday to Sunday.",
+        "currency": "Three-letter ISO code (USD, GTQ, …) used to format money metrics.",
+        "deltaPct": "A confirmed decline of at least this percentage paints the trend red; a confirmed decline below it paints it yellow. Default 5.",
+        "minDen": "Rates whose weekly denominator is below this show counts instead of percentages. Default 30.",
+        "baseline": "How many closed weeks define the store's normal range. Default 8.",
+        "target": "The goal for this metric. Values above it read green. Leave empty to fall back to the statistical range.",
+        "lower": "The floor you never want to cross. Values below it read red (pink once recovered). Leave empty to fall back to the statistical range."
+      },
+      "goalsIntro": "Target and lower threshold define each metric's gray zone on the charts (the intentional band). Rates are entered as percentages. Empty fields keep the statistical range computed from the store's own history.",
+      "save": "Save settings",
+      "saving": "Saving…",
+      "saved": "Analysis settings saved",
+      "errors": {
+        "auth": "Session expired — sign in again",
+        "timezone": "Unknown timezone",
+        "values": "Some values are out of range",
+        "db": "Could not save — try again"
+      }
     }
   },
   "sync": {

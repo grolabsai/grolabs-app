@@ -80,6 +80,7 @@ export function buildRreNav(
   // the screen itself re-checks is_tenant_admin server-side. Per
   // docs/policy/user-management.md §4.
   const configurationItems: NavItem[] = [
+    { href: "/configuration/analysis" as Route, label: t("configuration.analysis.navLabel"), icon: SlidersHorizontal, useIconWrapper: true },
     { href: "/configuration/search" as Route, label: t("configuration.search.navLabel"), icon: Telescope, useIconWrapper: true },
     { href: "/configuration/algolia" as Route, label: t("configuration.algolia.navLabel"), icon: Search },
     { href: "/configuration/woocommerce" as Route, label: t("nav.woocommerce"), icon: ShoppingBag },

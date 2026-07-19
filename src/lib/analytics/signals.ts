@@ -22,11 +22,17 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getDayWindow } from "./overview";
+import {
+  mergeAnalysisConfig, weekStartIso,
+  type AnalysisConfig, type MetricGoal,
+} from "./analysis-config";
 
-// ── Tuning constants (open decisions from the design session — revisit) ─────
+// ── Tuning defaults. The per-instance values live in instance.analysis_config
+// (see analysis-config.ts) — these constants are the presets/fallbacks and
+// keep the pure functions usable without a config object. ──────────────────
 /** Minimum closed weeks before any verdict is attempted. */
 export const MIN_CLOSED_WEEKS = 5;
-/** Baseline = the first up-to-this-many closed weeks. */
+/** Baseline = the first up-to-this-many closed weeks (preset). */
 export const BASELINE_MAX_WEEKS = 8;
 /** Western-Electric-style run rule: this many consecutive weeks one side of centre. */
 export const RUN_RULE_LEN = 8;
@@ -151,12 +157,19 @@ export interface SignalsData {
   tzLabel: string;
   /** The store's yesterday (last closed day). */
   end: string;
-  /** Monday of the last CLOSED week. */
+  /** Start of the last CLOSED analysis week. */
   lastClosedWeekStart: string;
   metrics: Record<string, MetricSignal>;
   /** Daily sessions over the last DAILY_WINDOW closed days (ascending). */
   dailySessions: DayPoint[];
+  /** Daily points per signal key over the closed-week span — the canonical
+   *  chart's gray texture layer. */
+  dailyByKey: Record<string, DayPoint[]>;
   closedWeeks: number;
+  /** The instance's merged analysis configuration (presets ⊕ overrides). */
+  config: AnalysisConfig;
+  /** Convenience: config.metric_goals lookup (intentional band per metric). */
+  goals: Record<string, MetricGoal>;
 }
 
 // ── Date helpers (UTC-noon string math — DST-proof, mirrors overview.ts) ────
@@ -168,12 +181,18 @@ function shiftDay(day: string, delta: number): string {
   return t.toISOString().slice(0, 10);
 }
 
-/** Monday of the ISO week containing `day`. */
-export function mondayOf(day: string): string {
+/** Start of the analysis week containing `day`, for a week starting on the
+ *  given ISO weekday (1=Mon..7=Sun; default Monday = Mon–Sun weeks). */
+export function weekStartOf(day: string, startIso: number = 1): string {
   const [y, m, d] = day.split("-").map(Number);
   const t = new Date(Date.UTC(y, m - 1, d, 12));
-  const dow = t.getUTCDay(); // 0 = Sunday
-  return shiftDay(day, -((dow + 6) % 7));
+  const iso = ((t.getUTCDay() + 6) % 7) + 1; // 1=Mon..7=Sun
+  return shiftDay(day, -(((iso - startIso) + 7) % 7));
+}
+
+/** Monday of the ISO week containing `day` (preset week shape). */
+export function mondayOf(day: string): string {
+  return weekStartOf(day, 1);
 }
 
 // ── Pure analysis (exported for tests) ──────────────────────────────────────
@@ -182,7 +201,9 @@ export function mondayOf(day: string): string {
  * XmR baseline + run rule + one-sided CUSUMs + state over a closed-week series.
  * Pure — no I/O — so the statistical behaviour is testable in isolation.
  */
-export function analyzeSeries(values: number[], good: GoodDirection): SeriesAnalysis {
+export function analyzeSeries(
+  values: number[], good: GoodDirection, baselineWeeks: number = BASELINE_MAX_WEEKS,
+): SeriesAnalysis {
   const n = values.length;
   const empty: SeriesAnalysis = {
     values, baseline: null, run: 0, cusumUp: [], cusumDown: [],
@@ -191,8 +212,8 @@ export function analyzeSeries(values: number[], good: GoodDirection): SeriesAnal
   };
   if (n < MIN_CLOSED_WEEKS) return empty;
 
-  // Baseline: the first up-to-8 closed weeks define "normal".
-  const bn = Math.min(BASELINE_MAX_WEEKS, n);
+  // Baseline: the first up-to-baselineWeeks closed weeks define "normal".
+  const bn = Math.min(baselineWeeks, n);
   const base = values.slice(0, bn);
   const cl = base.reduce((s, v) => s + v, 0) / bn;
   let mrSum = 0;
@@ -266,10 +287,11 @@ export function analyzeSeries(values: number[], good: GoodDirection): SeriesAnal
 export function bucketWeeks(
   rows: { day: string; num: number; den: number; value: number }[],
   take: SignalMetricDef["take"],
+  startIso: number = 1,
 ): WeekPoint[] {
   const byWeek = new Map<string, { num: number; den: number; value: number; days: number }>();
   for (const r of rows) {
-    const wk = mondayOf(r.day);
+    const wk = weekStartOf(r.day, startIso);
     let cell = byWeek.get(wk);
     if (!cell) { cell = { num: 0, den: 0, value: 0, days: 0 }; byWeek.set(wk, cell); }
     cell.num += r.num;
@@ -290,16 +312,31 @@ export function bucketWeeks(
 
 // ── Data fetch ──────────────────────────────────────────────────────────────
 
+/** Load the instance's merged analysis config (RLS-scoped). */
+export async function getAnalysisConfig(instanceId: number): Promise<AnalysisConfig> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("instance")
+    .select("analysis_config")
+    .eq("instance_id", instanceId)
+    .maybeSingle();
+  return mergeAnalysisConfig(data?.analysis_config);
+}
+
 export async function getSignalsData(instanceId: number): Promise<SignalsData> {
   const supabase = await createClient();
   // period arg only shapes the prior window, which we ignore — we need the
   // store timezone + its closed "yesterday".
-  const w = await getDayWindow(instanceId, 1);
+  const [w, config] = await Promise.all([
+    getDayWindow(instanceId, 1),
+    getAnalysisConfig(instanceId),
+  ]);
+  const startIso = weekStartIso(config);
   const yesterday = w.end;
-  // A Mon–Sun week is closed iff its Sunday <= the store's yesterday.
-  const curMonday = mondayOf(yesterday);
+  // A week is closed iff its configured end day <= the store's yesterday.
+  const curStart = weekStartOf(yesterday, startIso);
   const lastClosedWeekStart =
-    shiftDay(curMonday, 6) <= yesterday ? curMonday : shiftDay(curMonday, -7);
+    shiftDay(curStart, 6) <= yesterday ? curStart : shiftDay(curStart, -7);
   const historyStart = shiftDay(lastClosedWeekStart, -7 * (HISTORY_WEEKS - 1));
 
   const sourceKeys = [...new Set(SIGNAL_METRICS.map((m) => m.source))];
@@ -329,18 +366,28 @@ export async function getSignalsData(instanceId: number): Promise<SignalsData> {
   }
 
   const metrics: Record<string, MetricSignal> = {};
+  const dailyByKey: Record<string, DayPoint[]> = {};
   let closedWeeks = 0;
   for (const def of SIGNAL_METRICS) {
     const srcRows = bySource.get(def.source) ?? [];
-    const allWeeks = bucketWeeks(srcRows, def.take);
+    const allWeeks = bucketWeeks(srcRows, def.take, startIso);
     const weeks = allWeeks.filter((p) => p.weekStart <= lastClosedWeekStart);
     const partial = allWeeks.find((p) => p.weekStart > lastClosedWeekStart) ?? null;
-    const analysis = analyzeSeries(weeks.map((p) => p.value), def.good);
+    const analysis = analyzeSeries(weeks.map((p) => p.value), def.good, config.baseline_weeks);
     const latest = weeks.length > 0 ? weeks[weeks.length - 1] : null;
     const lowVolume =
-      def.take === "rate" && latest !== null && latest.den < MIN_WEEKLY_DEN;
+      def.take === "rate" && latest !== null && latest.den < config.min_weekly_denominator;
     metrics[def.key] = { def, weeks, partial, latest, lowVolume, ...analysis };
     closedWeeks = Math.max(closedWeeks, weeks.length);
+    // Daily texture for the canonical chart: closed-span days only.
+    dailyByKey[def.key] = srcRows
+      .filter((r) => r.day >= historyStart && r.day <= yesterday)
+      .sort((a, b) => a.day.localeCompare(b.day))
+      .map((r) => ({
+        day: r.day,
+        value: def.take === "rate" ? (r.den > 0 ? r.num / r.den : 0)
+          : def.take === "den" ? r.den : r.value,
+      }));
   }
 
   // Daily sessions (closed days) for the rhythm chart.
@@ -357,7 +404,10 @@ export async function getSignalsData(instanceId: number): Promise<SignalsData> {
     lastClosedWeekStart,
     metrics,
     dailySessions,
+    dailyByKey,
     closedWeeks,
+    config,
+    goals: config.metric_goals,
   };
 }
 

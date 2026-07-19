@@ -27,7 +27,8 @@ import {
   WeekdayStrip,
   FunnelPlot,
 } from "@/components/dashboard/insights/signal-charts-client";
-import type { ChartTip } from "@/components/dashboard/insights/signal-chart-util";
+import type { ChartTip, DeltaChip, DeltaLayerData } from "@/components/dashboard/insights/signal-chart-util";
+import type { GoodDirection } from "@/lib/analytics/signals";
 import "@/components/dashboard/insights/insights.css";
 import "@/components/dashboard/insights/signals.css";
 
@@ -183,6 +184,13 @@ export default async function SignalsDashboardPage({
           if (badIsLow ? val < b.cl : val > b.cl) return "warn";
           return "neutral";
         });
+  // Ratified time grammar: only the violating stretch that reaches the latest
+  // week stays bright red; earlier violations become pink reference (scars).
+  {
+    let i = tiers.length - 1;
+    while (i >= 0 && tiers[i] === "bad") i--;
+    for (let j = 0; j <= i; j++) if (tiers[j] === "bad") tiers[j] = "badPast";
+  }
   const badCusum = badIsLow ? focus.cusumDown : focus.cusumUp;
   const badCross = badIsLow ? focus.cusumDownCross : focus.cusumUpCross;
   const wowThreshold = badIsLow ? -5 : 5;
@@ -306,6 +314,33 @@ export default async function SignalsDashboardPage({
     };
   });
 
+  // Hover-revealed anchored deltas: vs window start / window average / last
+  // week — chips colored by their own direction relative to the metric's good
+  // direction (research: labels make adaptive baselines trustworthy).
+  const deltaLayer = (vals: number[], good: GoodDirection): DeltaLayerData | null => {
+    if (vals.length < 3) return null;
+    const last = vals[vals.length - 1];
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const chip = (baseline: number, label: string): DeltaChip => {
+      const pct = baseline !== 0 ? (last / baseline - 1) * 100 : 0;
+      const dir: DeltaChip["dir"] =
+        Math.abs(pct) <= 1 ? "flat" : (pct > 0) === (good === "up") ? "good" : "bad";
+      return { label: `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct).toFixed(1)}% ${label}`, dir };
+    };
+    return {
+      avg,
+      chips: {
+        start: chip(vals[0], ts("charts.delta.vsStart")),
+        avg: chip(avg, ts("charts.delta.vsAvg")),
+        last: chip(vals[vals.length - 2], ts("charts.delta.vsLastWk")),
+      },
+    };
+  };
+  const focusDeltas = deltaLayer(focus.values, focus.def.good);
+  const orderDeltas = deltaLayer(orders.values, "up");
+  const rollValues = roll.filter((v): v is number => v != null);
+  const rollDeltas = deltaLayer(rollValues, "up");
+
   const MetricChips = (
     <div className="ov-chips">
       {SIGNAL_METRICS.filter((d) => d.kind === "rate" || d.key === "orders" || d.key === "sessions").map((d) => (
@@ -410,6 +445,7 @@ export default async function SignalsDashboardPage({
                     <span className="k"><span className="ln ctr" />{ts("charts.legendCentre")}</span>
                     <span className="k"><span className="pt warn" />{ts("charts.legendWarn")}</span>
                     <span className="k"><span className="pt bad" />{ts("charts.legendSignal")}</span>
+                    <span className="k"><span className="pt pink" />{ts("charts.legendPastSignal")}</span>
                     <span className="k"><span className="pt good" />{ts("charts.legendGoodBreak")}</span>
                   </div>
                   <ControlChart
@@ -424,6 +460,7 @@ export default async function SignalsDashboardPage({
                     lowerLabel={`${ts("charts.lower")} ${focusFmt(focus.baseline.lcl)}`}
                     signalText={ts("charts.signalOut")}
                     tips={focusTips}
+                    deltas={focusDeltas}
                   />
                   <div className="sig-note">{ts("charts.controlNote")}</div>
                 </>
@@ -444,9 +481,7 @@ export default async function SignalsDashboardPage({
                     labels={focusLabels}
                     wow={focus.wow}
                     thresholdPct={wowThreshold}
-                    thresholdText={ts("charts.wowThreshold", {
-                      pct: `${wowThreshold > 0 ? "+" : ""}${wowThreshold}%`,
-                    })}
+                    thresholdText={`${wowThreshold > 0 ? "+" : ""}${wowThreshold}%`}
                     tips={wowTips}
                   />
                   <div className="sig-note">{ts("charts.wowNote")}</div>
@@ -493,6 +528,7 @@ export default async function SignalsDashboardPage({
                     rolling={roll}
                     endLabel={lastRoll != null ? ts("charts.perDay", { n: fmtInt(lastRoll) }) : ""}
                     tips={dailyTips}
+                    deltas={rollDeltas}
                   />
                   <div className="sig-note">{ts("charts.rhythmNote")}</div>
                 </div>
@@ -542,6 +578,7 @@ export default async function SignalsDashboardPage({
                 partialTag={ts("charts.inProgress")}
                 tips={weekTips}
                 partialTip={partialTip}
+                deltas={orderDeltas}
               />
               <div className="sig-note">{ts("charts.weeksNote")}</div>
             </div>
@@ -556,6 +593,7 @@ export default async function SignalsDashboardPage({
                     <span className="k"><span className="pt mut" />{ts("charts.legendWeeks")}</span>
                     <span className="k"><span className="pt good" />{ts("charts.legendLatest")}</span>
                     <span className="k"><span className="pt bad" />{ts("charts.legendOutside")}</span>
+                    <span className="k"><span className="pt pink" />{ts("charts.legendPastSignal")}</span>
                   </div>
                   <FunnelPlot
                     points={funnelPoints.map((q) => ({ n: q.n, p: q.p }))}

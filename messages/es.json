@@ -751,7 +751,13 @@
           "tier_bad": "fuera del rango normal — señal"
         },
         "legendWarn": "lado débil del centro",
-        "legendGoodBreak": "más allá del rango — bueno"
+        "legendGoodBreak": "más allá del rango — bueno",
+        "delta": {
+          "vsStart": "vs inicio",
+          "vsAvg": "vs promedio",
+          "vsLastWk": "vs sem. pasada"
+        },
+        "legendPastSignal": "señal en el pasado"
       },
       "noData": "Aún no hay datos de analítica para esta tienda.",
       "insufficientChart": "Los gráficos se habilitan con {min} semanas completas."

@@ -15,7 +15,8 @@ import {
 } from "@/lib/analytics/signals";
 import { DashboardTabs } from "../_dashboard-tabs";
 import { InsightsReveal } from "@/components/dashboard/insights/_reveal";
-import { fmtInt, fmtPct, fmtMoney, fmtSignedPct } from "@/components/dashboard/insights/charts";
+import { fmtInt, fmtPct, fmtMoney, fmtSignedPct, fmtSignedPp } from "@/components/dashboard/insights/charts";
+import { SignalSpark, weekLabel } from "@/components/dashboard/insights/signal-charts";
 import {
   ControlChart,
   WowBars,
@@ -24,9 +25,8 @@ import {
   WeeklyColumns,
   WeekdayStrip,
   FunnelPlot,
-  SignalSpark,
-  weekLabel,
-} from "@/components/dashboard/insights/signal-charts";
+} from "@/components/dashboard/insights/signal-charts-client";
+import type { ChartTip } from "@/components/dashboard/insights/signal-chart-util";
 import "@/components/dashboard/insights/insights.css";
 import "@/components/dashboard/insights/signals.css";
 
@@ -125,6 +125,13 @@ function verdict(t: Translate, data: SignalsData) {
   return { state, headline, body: parts.join(" ") };
 }
 
+/** "Fri · Jul 17" from YYYY-MM-DD (data-derived, not i18n copy). */
+function dayTitle(day: string): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  const wd = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  return `${wd} · ${weekLabel(day)}`;
+}
+
 export default async function SignalsDashboardPage({
   searchParams,
 }: {
@@ -159,6 +166,7 @@ export default async function SignalsDashboardPage({
   // Focus-metric derived pieces.
   const focusLabels = focus.weeks.map((w) => weekLabel(w.weekStart));
   const focusFmt = fmtFor(focus);
+  const focusIsRate = focus.def.kind === "rate";
   const badIsLow = focus.def.good === "up";
   const badIdx =
     focus.baseline === null
@@ -168,29 +176,129 @@ export default async function SignalsDashboardPage({
             ? focus.values[i] < focus.baseline!.lcl
             : focus.values[i] > focus.baseline!.ucl,
         );
+  const badSet = new Set(badIdx);
   const badCusum = badIsLow ? focus.cusumDown : focus.cusumUp;
   const badCross = badIsLow ? focus.cusumDownCross : focus.cusumUpCross;
   const wowThreshold = badIsLow ? -5 : 5;
+  const cusumFmt = (c: number) =>
+    focusIsRate ? `${(c * 100).toFixed(2)} pts` : fmtInt(c);
+  const vsCentre = (val: number, cl: number) =>
+    focusIsRate ? fmtSignedPp((val - cl) * 100) : fmtSignedPct(cl !== 0 ? ((val - cl) / Math.abs(cl)) * 100 : 0);
+
+  // Tooltip content (built here so i18n stays server-side).
+  const focusTips: ChartTip[] =
+    focus.baseline === null
+      ? []
+      : focus.values.map((val, i) => ({
+          title: ts("charts.tt.weekOf", { date: focusLabels[i] }),
+          rows: [
+            { k: ts(`metric.${focusKey}`), v: focusFmt(val) },
+            { k: ts("charts.tt.vsCentre"), v: vsCentre(val, focus.baseline!.cl) },
+            {
+              k: ts("charts.tt.reading"),
+              v: badSet.has(i) ? ts("charts.tt.readingSignal") : ts("charts.tt.readingNoise"),
+            },
+          ],
+        }));
+  const wowTips: (ChartTip | null)[] = focus.wow.map((w, i) =>
+    w == null
+      ? null
+      : {
+          title: ts("charts.tt.weekOf", { date: focusLabels[i] }),
+          rows: [
+            { k: ts("charts.tt.wowChange"), v: fmtSignedPct(w) },
+            {
+              k: ts("charts.tt.alarm", { pct: `${wowThreshold > 0 ? "+" : ""}${wowThreshold}%` }),
+              v: (badIsLow ? w <= wowThreshold : w >= wowThreshold)
+                ? ts("charts.tt.alarmYes")
+                : ts("charts.tt.alarmNo"),
+            },
+          ],
+        },
+  );
+  const cusumTips: ChartTip[] = badCusum.map((c, i) => ({
+    title: ts("charts.tt.weekOf", { date: focusLabels[i] }),
+    rows: [
+      { k: ts("charts.tt.accumulated"), v: cusumFmt(c) },
+      { k: ts("charts.tt.decisionLimit"), v: cusumFmt(focus.h) },
+      {
+        k: ts("charts.tt.status"),
+        v: c > focus.h ? ts("charts.tt.statusAlarm") : ts("charts.tt.statusAccumulating"),
+      },
+    ],
+  }));
 
   // Rhythm: daily sessions + rolling mean + same-weekday strip.
   const dailyVals = data.dailySessions.map((d) => d.value);
   const roll = rolling7(dailyVals);
   const lastRoll = [...roll].reverse().find((x): x is number => x != null) ?? null;
-  const weekdayVals: number[] = [];
-  for (let i = dailyVals.length - 1 - 7; i >= 0; i -= 7) weekdayVals.unshift(dailyVals[i]);
+  const dailyTips: ChartTip[] = data.dailySessions.map((d, i) => ({
+    title: dayTitle(d.day),
+    rows: [
+      { k: ts("charts.tt.sessionsRow"), v: fmtInt(d.value) },
+      { k: ts("charts.tt.rollingRow"), v: roll[i] == null ? "—" : fmtInt(roll[i] as number) },
+    ],
+  }));
+  const weekdayPts: { day: string; value: number }[] = [];
+  for (let i = dailyVals.length - 1 - 7; i >= 0; i -= 7) {
+    weekdayPts.unshift({ day: data.dailySessions[i].day, value: dailyVals[i] });
+  }
   const weekdayName =
     data.dailySessions.length > 0
       ? new Date(`${data.dailySessions[data.dailySessions.length - 1].day}T12:00:00Z`)
           .toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
       : "";
+  const weekdayTips: ChartTip[] = weekdayPts.map((p) => ({
+    title: dayTitle(p.day),
+    rows: [{ k: ts("charts.tt.sessionsRow"), v: fmtInt(p.value) }],
+  }));
+  const weekdayCurrentTip: ChartTip | null =
+    data.dailySessions.length > 0
+      ? {
+          title: dayTitle(data.dailySessions[data.dailySessions.length - 1].day),
+          rows: [
+            { k: ts("charts.tt.sessionsRow"), v: fmtInt(dailyVals[dailyVals.length - 1]) },
+          ],
+        }
+      : null;
+
+  // Weekly columns.
+  const weekTips: ChartTip[] = orders.weeks.map((w) => ({
+    title: ts("charts.tt.weekOfClosed", { date: weekLabel(w.weekStart) }),
+    rows: [{ k: ts("charts.tt.ordersRow"), v: fmtInt(w.value) }],
+  }));
+  const partialTip: ChartTip | null = orders.partial
+    ? {
+        title: ts("charts.tt.weekOf", { date: weekLabel(orders.partial.weekStart) }),
+        rows: [
+          { k: ts("charts.tt.ordersRow"), v: fmtInt(orders.partial.value) },
+          { k: ts("charts.tt.status"), v: ts("charts.tt.inProgressStatus") },
+        ],
+      }
+    : null;
 
   // Funnel plot: weekly conversion vs weekly sessions.
   const funnelPoints = conv.weeks
     .filter((w) => w.den > 0)
-    .map((w) => ({ n: w.den, p: w.den > 0 ? w.num / w.den : 0 }));
+    .map((w) => ({ n: w.den, p: w.den > 0 ? w.num / w.den : 0, weekStart: w.weekStart }));
   const pooledNum = conv.weeks.reduce((s, w) => s + w.num, 0);
   const pooledDen = conv.weeks.reduce((s, w) => s + w.den, 0);
   const p0 = pooledDen > 0 ? pooledNum / pooledDen : 0;
+  const funnelTips: ChartTip[] = funnelPoints.map((q) => {
+    const se = Math.sqrt((p0 * (1 - p0)) / Math.max(q.n, 1));
+    const out3 = Math.abs(q.p - p0) > 3 * se;
+    return {
+      title: `${ts("charts.tt.weekOf", { date: weekLabel(q.weekStart) })} · ${fmtInt(q.n)} ${ts("charts.tt.sessionsUnit")}`,
+      rows: [
+        { k: ts("metric.session_conversion"), v: fmtPct(q.p) },
+        { k: ts("charts.tt.naiveDelta"), v: p0 > 0 ? fmtSignedPct(((q.p - p0) / p0) * 100) : "—" },
+        {
+          k: ts("charts.tt.honestReading"),
+          v: out3 ? ts("charts.tt.funnelSignal") : ts("charts.tt.funnelNoise"),
+        },
+      ],
+    };
+  });
 
   const MetricChips = (
     <div className="ov-chips">
@@ -303,11 +411,11 @@ export default async function SignalsDashboardPage({
                     ucl={focus.baseline.ucl}
                     lcl={focus.baseline.lcl}
                     badIdx={badIdx}
-                    fmt={focusFmt}
-                    centreText={ts("charts.centre")}
-                    upperText={ts("charts.upper")}
-                    lowerText={ts("charts.lower")}
+                    upperLabel={`${ts("charts.upper")} ${focusFmt(focus.baseline.ucl)}`}
+                    centreLabel={`${ts("charts.centre")} ${focusFmt(focus.baseline.cl)}`}
+                    lowerLabel={`${ts("charts.lower")} ${focusFmt(focus.baseline.lcl)}`}
                     signalText={ts("charts.signalOut")}
+                    tips={focusTips}
                   />
                   <div className="sig-note">{ts("charts.controlNote")}</div>
                 </>
@@ -331,6 +439,7 @@ export default async function SignalsDashboardPage({
                     thresholdText={ts("charts.wowThreshold", {
                       pct: `${wowThreshold > 0 ? "+" : ""}${wowThreshold}%`,
                     })}
+                    tips={wowTips}
                   />
                   <div className="sig-note">{ts("charts.wowNote")}</div>
                 </div>
@@ -346,6 +455,7 @@ export default async function SignalsDashboardPage({
                     crossIdx={badCross}
                     limitText={ts("charts.cusumLimit")}
                     alarmText={ts("charts.cusumAlarm")}
+                    tips={cusumTips}
                   />
                   <div className="sig-note">{ts("charts.cusumNote")}</div>
                 </div>
@@ -374,6 +484,7 @@ export default async function SignalsDashboardPage({
                     daily={dailyVals}
                     rolling={roll}
                     endLabel={lastRoll != null ? ts("charts.perDay", { n: fmtInt(lastRoll) }) : ""}
+                    tips={dailyTips}
                   />
                   <div className="sig-note">{ts("charts.rhythmNote")}</div>
                 </div>
@@ -384,11 +495,13 @@ export default async function SignalsDashboardPage({
                       {ts("charts.weekdayTitle", { weekday: weekdayName })}
                     </span>
                   </div>
-                  {weekdayVals.length >= 2 ? (
+                  {weekdayPts.length >= 2 && weekdayCurrentTip ? (
                     <WeekdayStrip
-                      values={weekdayVals}
+                      values={weekdayPts.map((p) => p.value)}
                       current={dailyVals[dailyVals.length - 1]}
                       currentText={ts("charts.thisDay", { weekday: weekdayName })}
+                      tips={weekdayTips}
+                      currentTip={weekdayCurrentTip}
                     />
                   ) : (
                     <div className="tile-empty">{ts("noData")}</div>
@@ -419,7 +532,8 @@ export default async function SignalsDashboardPage({
                 partialValue={orders.partial?.value ?? null}
                 partialLabel={orders.partial ? weekLabel(orders.partial.weekStart) : ""}
                 partialTag={ts("charts.inProgress")}
-                fmt={fmtInt}
+                tips={weekTips}
+                partialTip={partialTip}
               />
               <div className="sig-note">{ts("charts.weeksNote")}</div>
             </div>
@@ -436,12 +550,13 @@ export default async function SignalsDashboardPage({
                     <span className="k"><span className="pt bad" />{ts("charts.legendOutside")}</span>
                   </div>
                   <FunnelPlot
-                    points={funnelPoints}
+                    points={funnelPoints.map((q) => ({ n: q.n, p: q.p }))}
                     p0={p0}
                     latestIdx={funnelPoints.length - 1}
                     overallText={ts("charts.funnelOverall")}
                     axisText={ts("charts.funnelAxis")}
                     signalText={ts("charts.funnelSignal")}
+                    tips={funnelTips}
                   />
                   <div className="sig-note">{ts("charts.funnelNote")}</div>
                 </>

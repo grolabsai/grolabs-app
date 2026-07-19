@@ -120,6 +120,43 @@
   width: 100%;
   height: auto;
 }
+
+/* Hover/focus tooltip for the interactive charts */
+.gro-id .sig-tt {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  min-width: 140px;
+  max-width: 240px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: rgba(16, 16, 18, 0.96);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.gro-id .sig-tt .t {
+  color: var(--t3);
+  font-size: 10.5px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+.gro-id .sig-tt .r {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+}
+.gro-id .sig-tt .r .n {
+  color: var(--t2);
+}
+.gro-id .sig-tt .r .v {
+  color: var(--strong);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .gro-id .sigchart text {
   font-family: inherit;
   letter-spacing: 0.02em;

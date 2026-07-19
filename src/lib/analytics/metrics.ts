@@ -228,14 +228,14 @@ export const METRICS: readonly MetricDef[] = [
     key: "revenue_per_session_registered", label: "Revenue / session (registered)",
     description: "Order revenue from registered users ÷ their sessions (registered = any event carried account_id, per instance_user_breakdown).",
     grain: "session", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
-    kind: "rate", buildable: "now", materialized: false, unit: "count",
+    kind: "rate", buildable: "needs_instrumentation", materialized: false, unit: "count",
     blockedReason: "Needs the order→identity join (account_id classification) in metric_daily_source. Slated for the next catalog iteration.",
   },
   {
     key: "revenue_per_session_anonymous", label: "Revenue / session (anonymous)",
     description: "Order revenue from never-registered users ÷ their sessions — the complement of the registered split.",
     grain: "session", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
-    kind: "rate", buildable: "now", materialized: false, unit: "count",
+    kind: "rate", buildable: "needs_instrumentation", materialized: false, unit: "count",
     blockedReason: "Needs the order→identity join (account_id classification) in metric_daily_source. Slated for the next catalog iteration.",
   },
   {

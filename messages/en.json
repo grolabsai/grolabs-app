@@ -628,7 +628,101 @@
       "traffic": "Traffic",
       "search": "Search",
       "overview": "Overview",
-      "carts": "Carts"
+      "carts": "Carts",
+      "signals": "Signals"
+    },
+    "signals": {
+      "header": {
+        "eyebrow": "Main dashboard",
+        "title": "Are we improving?",
+        "freshness": "Complete weeks (Mon–Sun) · through {date}"
+      },
+      "sections": {
+        "verdict": "Verdict",
+        "verdictMeta": "closed weeks · accumulated evidence, not point deltas",
+        "deepdive": "Deep dive",
+        "deepdiveMeta": "process behaviour · slow-drift detection",
+        "rhythm": "Rhythm",
+        "rhythmMeta": "why day-vs-day comparisons mislead",
+        "weeks": "Complete weeks & small samples",
+        "weeksMeta": "the honest comparison unit · rates vs the data they rest on"
+      },
+      "metric": {
+        "total_sales": "Total sales",
+        "orders": "Orders",
+        "sessions": "Sessions",
+        "session_conversion": "Conversion",
+        "search_ctr": "Search CTR",
+        "no_result_rate": "No-result rate"
+      },
+      "state": {
+        "improving": "Improving",
+        "stable": "Stable",
+        "declining": "Declining",
+        "insufficient": "Not enough data"
+      },
+      "sentence": {
+        "limit_low": "Last week fell outside the normal range ({drift} vs baseline).",
+        "limit_high": "Last week rose outside the normal range ({drift} vs baseline).",
+        "run_low": "{weeks} weeks in a row below baseline — accumulated {drift}.",
+        "run_high": "{weeks} weeks in a row above baseline — accumulated {drift}.",
+        "cusum_low": "Small weekly drops have accumulated to {drift} vs baseline — no single week looked alarming.",
+        "cusum_high": "Small weekly gains have accumulated to {drift} vs baseline.",
+        "stable": "Inside its normal range across {weeks} complete weeks.",
+        "insufficient": "Only {weeks} complete weeks — {min} needed to judge.",
+        "lowVolume": "Fewer than {min} events last week, so counts are shown instead of a rate."
+      },
+      "verdict": {
+        "declining": "Getting worse: {metrics}",
+        "improving": "Improving: {metrics}",
+        "steady": "Steady — no reliable change signal this week",
+        "insufficient": "Collecting data — not enough complete weeks yet",
+        "partDeclining": "{metric}: {sentence}",
+        "partImproving": "{metric}: {sentence}",
+        "partStable": "Everything else is inside its normal range."
+      },
+      "charts": {
+        "controlTitle": "Process behaviour — weekly {metric}",
+        "controlNote": "The band is the normal range computed from the baseline weeks. Movement inside it is noise by definition; a verdict changes only when a week leaves the band, a long run sits one side of centre, or drift accumulates (below).",
+        "centre": "centre",
+        "upper": "upper limit",
+        "lower": "lower limit",
+        "signalOut": "outside the normal range",
+        "legendWeekly": "weekly value",
+        "legendBand": "normal range (process limits)",
+        "legendCentre": "centre (baseline mean)",
+        "legendSignal": "signal",
+        "wowTitle": "Week-over-week change — the detector that misses slow drift",
+        "wowThreshold": "point alarm {pct}",
+        "wowNote": "Each bar compares one week to the one before. A slow decline never trips this alarm — six weeks of −1% each stay invisible here.",
+        "cusumTitle": "Accumulated drift (CUSUM)",
+        "cusumLimit": "decision limit",
+        "cusumAlarm": "fires",
+        "cusumNote": "Adds up every small shortfall below the baseline. Sustained drift crosses the decision limit weeks before any single-week alarm would fire.",
+        "rhythmTitle": "Daily sessions vs the rolling week",
+        "legendDaily": "daily sessions",
+        "legendRolling": "7-day rolling average",
+        "perDay": "{n}/day",
+        "rhythmNote": "Days of the week have their own rhythm, so any two adjacent days differ for reasons that have nothing to do with performance. The rolling line is the honest trend.",
+        "weekdayTitle": "Same weekday — recent {weekday}s",
+        "thisDay": "this {weekday}",
+        "weekdayNote": "Weekday-aligned context (this weekday vs the same weekday in past weeks). One day vs one day informs, but never alarms.",
+        "weeksTitle": "Orders per complete week",
+        "inProgress": "in progress",
+        "legendClosed": "closed week",
+        "legendPartial": "in progress — excluded",
+        "weeksNote": "The current week appears but is excluded from every comparison and signal until it closes on Sunday.",
+        "funnelTitle": "Weekly conversion vs sessions — funnel plot",
+        "funnelOverall": "overall",
+        "funnelAxis": "sessions in the week (the denominator)",
+        "funnelSignal": "outside limits — signal",
+        "legendWeeks": "closed weeks",
+        "legendLatest": "latest week",
+        "legendOutside": "outside limits",
+        "funnelNote": "Every week is judged against limits that widen as the denominator shrinks: an extreme rate on few sessions is noise, while a modest deviation on many sessions is a real signal."
+      },
+      "noData": "No analytics data yet for this store.",
+      "insufficientChart": "Charts unlock at {min} complete weeks."
     },
     "traffic": {
       "header": {

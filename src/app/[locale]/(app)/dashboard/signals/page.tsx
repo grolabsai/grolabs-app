@@ -19,6 +19,7 @@ import { fmtInt, fmtPct, fmtMoney, fmtSignedPct, fmtSignedPp } from "@/component
 import { SignalSpark, weekLabel } from "@/components/dashboard/insights/signal-charts";
 import {
   ControlChart,
+  type PointTier,
   WowBars,
   CusumChart,
   DailyRollingChart,
@@ -168,15 +169,20 @@ export default async function SignalsDashboardPage({
   const focusFmt = fmtFor(focus);
   const focusIsRate = focus.def.kind === "rate";
   const badIsLow = focus.def.good === "up";
-  const badIdx =
+  // Per-week color tier (the ratified color code, direction-aware): outside
+  // the band on the bad side = red; outside on the good side = green; inside
+  // the band but on the weak side of centre = yellow; otherwise neutral blue.
+  const tiers: PointTier[] =
     focus.baseline === null
       ? []
-      : focus.outside.filter((i) =>
-          badIsLow
-            ? focus.values[i] < focus.baseline!.lcl
-            : focus.values[i] > focus.baseline!.ucl,
-        );
-  const badSet = new Set(badIdx);
+      : focus.values.map((val) => {
+          const b = focus.baseline!;
+          const belowBand = val < b.lcl, aboveBand = val > b.ucl;
+          if (badIsLow ? belowBand : aboveBand) return "bad";
+          if (badIsLow ? aboveBand : belowBand) return "good";
+          if (badIsLow ? val < b.cl : val > b.cl) return "warn";
+          return "neutral";
+        });
   const badCusum = badIsLow ? focus.cusumDown : focus.cusumUp;
   const badCross = badIsLow ? focus.cusumDownCross : focus.cusumUpCross;
   const wowThreshold = badIsLow ? -5 : 5;
@@ -196,7 +202,7 @@ export default async function SignalsDashboardPage({
             { k: ts("charts.tt.vsCentre"), v: vsCentre(val, focus.baseline!.cl) },
             {
               k: ts("charts.tt.reading"),
-              v: badSet.has(i) ? ts("charts.tt.readingSignal") : ts("charts.tt.readingNoise"),
+              v: ts(`charts.tt.tier_${tiers[i] ?? "neutral"}`),
             },
           ],
         }));
@@ -402,7 +408,9 @@ export default async function SignalsDashboardPage({
                     <span className="k"><span className="ln" />{ts("charts.legendWeekly")}</span>
                     <span className="k"><span className="sw" />{ts("charts.legendBand")}</span>
                     <span className="k"><span className="ln ctr" />{ts("charts.legendCentre")}</span>
+                    <span className="k"><span className="pt warn" />{ts("charts.legendWarn")}</span>
                     <span className="k"><span className="pt bad" />{ts("charts.legendSignal")}</span>
+                    <span className="k"><span className="pt good" />{ts("charts.legendGoodBreak")}</span>
                   </div>
                   <ControlChart
                     labels={focusLabels}
@@ -410,7 +418,7 @@ export default async function SignalsDashboardPage({
                     cl={focus.baseline.cl}
                     ucl={focus.baseline.ucl}
                     lcl={focus.baseline.lcl}
-                    badIdx={badIdx}
+                    tiers={tiers}
                     upperLabel={`${ts("charts.upper")} ${focusFmt(focus.baseline.ucl)}`}
                     centreLabel={`${ts("charts.centre")} ${focusFmt(focus.baseline.cl)}`}
                     lowerLabel={`${ts("charts.lower")} ${focusFmt(focus.baseline.lcl)}`}

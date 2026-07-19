@@ -744,8 +744,14 @@
           "naiveDelta": "Delta badge would say",
           "honestReading": "Honest reading",
           "funnelSignal": "outside 3σ — signal",
-          "funnelNoise": "inside limits — noise"
-        }
+          "funnelNoise": "inside limits — noise",
+          "tier_good": "outside the normal range — in the good direction",
+          "tier_neutral": "inside the normal range — noise",
+          "tier_warn": "weak side of centre — still within the normal range",
+          "tier_bad": "outside the normal range — signal"
+        },
+        "legendWarn": "weak side of centre",
+        "legendGoodBreak": "beyond the range — good"
       },
       "noData": "No analytics data yet for this store.",
       "insufficientChart": "Charts unlock at {min} complete weeks."

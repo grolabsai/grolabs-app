@@ -112,7 +112,14 @@
 .gro-id .sig-legend .pt.mut { background: rgba(237, 234, 224, 0.35); }
 .gro-id .sig-legend .pt.good { background: var(--success); }
 
-.gro-id .sigchart { display: block; }
+/* The global stylesheet's svg fallback (svg { width: 1em; height: 1em }) beats
+   presentation attributes, so the size must be set here in CSS. height:auto +
+   the viewBox keeps each chart's aspect ratio. */
+.gro-id .sigchart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .gro-id .sigchart text {
   font-family: inherit;
   letter-spacing: 0.02em;

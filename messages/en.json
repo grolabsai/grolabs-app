@@ -653,7 +653,9 @@
         "sessions": "Sessions",
         "session_conversion": "Conversion",
         "search_ctr": "Search CTR",
-        "no_result_rate": "No-result rate"
+        "no_result_rate": "No-result rate",
+        "revenue_per_session": "Revenue / session",
+        "revenue_per_user": "Revenue / user"
       },
       "state": {
         "improving": "Improving",

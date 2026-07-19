@@ -207,11 +207,36 @@ export const METRICS: readonly MetricDef[] = [
     blockedReason: "Journeys span days/sessions — needs an identity-spanning view, not a clean per-day grain. Deferred.",
   },
   {
-    key: "revenue_per_session", label: "Revenue per session",
-    description: "Revenue ÷ sessions (matched population).",
+    // Decision 2026-07-19 (conversion-measurement foundations §14): the old
+    // "events carry no revenue amount" blocker went stale when sales_order
+    // landed — revenue ÷ population is the KPI that catches basket-size
+    // uplift invisible to conversion rates.
+    key: "revenue_per_session", label: "Revenue / session",
+    description: "Order revenue ÷ sessions. Moves when baskets grow even if conversion doesn't — the revenue-efficiency read.",
     grain: "session", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
-    kind: "aggregate", buildable: "needs_instrumentation", materialized: false, unit: "count",
-    blockedReason: "Events carry no revenue amount.",
+    kind: "rate", buildable: "now", materialized: true, unit: "count",
+    numeratorLabel: "order revenue", denominatorLabel: "sessions",
+  },
+  {
+    key: "revenue_per_user", label: "Revenue / user",
+    description: "Order revenue ÷ distinct users seen that day. The per-person twin of revenue/session.",
+    grain: "user", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
+    kind: "rate", buildable: "now", materialized: true, unit: "count",
+    numeratorLabel: "order revenue", denominatorLabel: "users",
+  },
+  {
+    key: "revenue_per_session_registered", label: "Revenue / session (registered)",
+    description: "Order revenue from registered users ÷ their sessions (registered = any event carried account_id, per instance_user_breakdown).",
+    grain: "session", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
+    kind: "rate", buildable: "now", materialized: false, unit: "count",
+    blockedReason: "Needs the order→identity join (account_id classification) in metric_daily_source. Slated for the next catalog iteration.",
+  },
+  {
+    key: "revenue_per_session_anonymous", label: "Revenue / session (anonymous)",
+    description: "Order revenue from never-registered users ÷ their sessions — the complement of the registered split.",
+    grain: "session", sourceTier: "spine", outcomeFamily: "revenue", fence: "grain",
+    kind: "rate", buildable: "now", materialized: false, unit: "count",
+    blockedReason: "Needs the order→identity join (account_id classification) in metric_daily_source. Slated for the next catalog iteration.",
   },
   {
     key: "reformulation_rate", label: "Reformulation rate",

@@ -18,6 +18,9 @@ actors:
   - name: Integration-test synthetic tenant
     type: system
     definition: "Tenant/instance 99999, storefront_domain test.local. Reserved exclusively for the vitest integration suite; never repurpose."
+  - name: Sample data set (demo)
+    type: system
+    definition: "Tenant 7, kind customer, no domain. Owns instance 15 'Sample data set': directly seeded metric_daily demo rows (no raw events) used to demo the Signals/Overview dashboards with 12 closed weeks of curated history. Member: tunchog@gmail.com (owner)."
 rules:
   - id: R-1
     statement: "Instance 0 is the system template (kind=template, is_active=false), owned by the template_owner tenant. It seeds new customer instances and is never a customer surface."
@@ -39,6 +42,10 @@ rules:
     statement: "The former Wazú tenant (tenant 2, instances 1,3,4,5,6,8,9,10) was deleted from live tables on 2026-07-04; its row snapshot lives in the graveyard.wazu_* schema in the same DB and is dropped only after a stability window."
     truth: true
     rationale: "MVP testing plan Task 1 (Notion), executed 2026-07-04."
+  - id: R-6
+    statement: "Instance 15 (Sample data set) carries DIRECTLY-SEEDED metric_daily rows only — no analytics_event/query_log/sales_order backing. Never point plugins, ingest, or refresh_metric_daily backfills at it: any refresh_metric_daily(day) call deletes that day's rows for ALL instances and rebuilds from raw sources, which for instance 15 means permanent loss for that day."
+    truth: true
+    rationale: "Seeded 2026-07-18 (session: signals dashboard demo). The nightly cron only refreshes the trailing 3 days, so the seeded closed weeks persist; trailing days naturally evaporate."
 useCases:
   - id: T-1
     title: "Resolve which instance is safe to test against"
@@ -58,6 +65,12 @@ useCases:
     when: "The contributor queries the graveyard.wazu_* tables in the same DB"
     then: "The row snapshot from 2026-07-04 is available until the graveyard is dropped after the stability window"
     verifies: [R-5]
+  - id: T-4
+    title: "Demo the Signals dashboard with meaningful history"
+    given: "Someone needs to show the Signals tab (closed-week verdicts, CUSUM drift, funnel plot) with enough weeks to be meaningful"
+    when: "They switch to instance 15 (Sample data set)"
+    then: "12 curated closed weeks render every signal state (conversion declining via slow drift, no-result rate improving, CTR stable) without touching real or test-plugin data"
+    verifies: [R-6]
 ---
 
 # GroLabs — Instances & tenants (canonical map)
@@ -82,6 +95,7 @@ flowchart LR
     T1["tenant 1 · GroLabs<br/>template_owner · grolabs.ai"] --> I0["instance 0<br/>GRO Scout Template (System)<br/>kind=template · is_active=false"]
     T3["tenant 3 · HPC<br/>customer · www.hpcenlinea.com.gt"] --> I11["instance 11 · HPC<br/>active — REAL CUSTOMER"]
     T4["tenant 4 · GroLabs.io (Test)<br/>customer · www.grolabs.io"] --> I12["instance 12<br/>GroLabs.io Test Storefront<br/>active — TEST SITE"]
+    T7["tenant 7 · Sample data set<br/>customer · no domain"] --> I15["instance 15 · Sample data set<br/>active — DEMO METRICS ONLY"]
     T9["tenant 99999 · Integration tests<br/>(synthetic)"] --> I9["instance 99999<br/>storefront_domain test.local"]
   end
   subgraph graveyard["graveyard schema (same DB)"]
@@ -105,6 +119,7 @@ erDiagram
 | 3 · HPC | `customer` | `www.hpcenlinea.com.gt` | **11** | HPC | yes | **REAL CUSTOMER** |
 | 4 · GroLabs.io (Test) | `customer` | `www.grolabs.io` | **12** | GroLabs.io Test Storefront | yes | **TEST SITE** — live WordPress |
 | 4 · GroLabs.io (Test) | `customer` | `www.grolabs.io` | **13** | SDK Test (TestEcomSite) | yes | **SDK / PROPRIETARY-TRACK TEST** — BYO API + JS SDK |
+| 7 · Sample data set | `customer` | — | **15** | Sample data set | yes | **DEMO** — seeded metric_daily only, no raw events |
 | 99999 · Integration tests (synthetic) | — | — | **99999** | Integration tests (synthetic) | — | **VITEST FIXTURE** — never repurpose |
 
 ## Tenant 1 — GroLabs → instance 0 (template)
@@ -153,6 +168,10 @@ the fallback). Full rule with examples: `CLAUDE.md` §2 "Instance ID checking".
 - Purpose: a **live WordPress install** used to exercise the Meilisearch
   search/events plugins end-to-end, and the target for future Playwright E2E
   runs (MVP testing plan chose Playwright over Browserless for this).
+- **Analytics on 12 are real-plugin-only since 2026-07-18**: the 2.5-month
+  synthetic analytics seed (origin `demo.grolabs.io`, 2026-07-18 morning) was
+  wiped the same day and `metric_daily` rebuilt from raw sources; longitudinal
+  demo data now lives on instance 15, not here.
 
 ## Tenant 4 — instance 13 (SDK / proprietary-track test)
 
@@ -171,6 +190,23 @@ the fallback). Full rule with examples: `CLAUDE.md` §2 "Instance ID checking".
 - Doubles as the working prototype of the **merchant sandbox instance**
   model (mode-by-credential, dev origins allowed) from the external-platform
   design discussion.
+
+## Tenant 7 — Sample data set → instance 15 (demo metrics)
+
+- `tenant.kind = customer`, no domain; instance 15 **"Sample data set"**,
+  active, timezone `America/Guatemala`, currency USD.
+- Created + seeded **2026-07-18** to demo the **Signals** dashboard: 12 closed
+  Mon–Sun weeks + the then-current partial week (2026-04-20 → 07-17) of
+  `metric_daily` rows across 12 metric keys, with a curated narrative —
+  sessions improving, **conversion declining via slow drift** (every WoW drop
+  under 5%, CUSUM + limit signals fire), no-result rate improving, CTR stable.
+- **Seeded directly into `metric_daily` — there are NO raw events behind it.**
+  Consequences: the Overview users donut and Carts tab are empty here, and any
+  `refresh_metric_daily(day)` touching a seeded day erases that day for this
+  instance permanently (the function rebuilds ALL instances per day from raw
+  sources). The nightly cron refreshes only the trailing 3 days, so the closed
+  weeks persist; trailing partial-week days evaporate naturally.
+- Member: `tunchog@gmail.com` (owner). Reached via the instance switcher.
 
 ## Tenant/instance 99999 — Integration tests (synthetic)
 

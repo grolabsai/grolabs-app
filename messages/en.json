@@ -3275,7 +3275,17 @@
       "invalidName": "Enter a valid instance name.",
       "unauthorized": "You are not allowed to create customers.",
       "saveFailed": "Could not save the change. Try again."
-    }
+    },
+    "instanceFilterLabel": "Instance",
+    "instanceAll": "All instances",
+    "noUsersInInstance": "No users on this instance.",
+    "instancesLabel": "Instances:",
+    "instancesNone": "No instance access",
+    "setPasswordLabel": "New password",
+    "setPassword": "Set password",
+    "passwordSet": "Password set",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "ssoPasswordNote": "Signs in with {provider}. Setting a password also enables email + password sign-in for this user."
   },
   "equipo": {
     "title": "Team",

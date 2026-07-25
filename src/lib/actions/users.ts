@@ -541,6 +541,8 @@ export type AdminTenantUser = {
   mustChangePassword: boolean;
   provider: string; // 'email' | 'google' | 'azure' | …
   lastSignInAt: string | null;
+  /** Instances of THIS tenant the user has an active instance_member row on. */
+  instanceIds: number[];
 };
 
 export type TenantDetail = {
@@ -628,6 +630,29 @@ export async function getTenantDetailForAdmin(tenantId: number): Promise<
     .eq("tenant_id", tenantId);
   if (mErr) return { ok: false, error: mErr.message };
 
+  // Active instance memberships on this tenant's instances, per user — lets the
+  // screen answer "who belongs to instance X".
+  const instanceIds = ((instRows ?? []) as { instance_id: number }[]).map(
+    (i) => i.instance_id,
+  );
+  const membershipByUser = new Map<string, number[]>();
+  if (instanceIds.length > 0) {
+    const { data: imRows } = await admin
+      .from("instance_member")
+      .select("user_id, instance_id, is_active")
+      .in("instance_id", instanceIds);
+    for (const r of (imRows ?? []) as {
+      user_id: string;
+      instance_id: number;
+      is_active: boolean;
+    }[]) {
+      if (!r.is_active) continue;
+      const list = membershipByUser.get(r.user_id) ?? [];
+      list.push(r.instance_id);
+      membershipByUser.set(r.user_id, list);
+    }
+  }
+
   const members = (memberRows ?? []) as { user_id: string; role: string; is_active: boolean }[];
   const users: AdminTenantUser[] = await Promise.all(
     members.map(async (m) => {
@@ -647,6 +672,7 @@ export async function getTenantDetailForAdmin(tenantId: number): Promise<
         mustChangePassword: meta.must_change_password === true,
         provider: (u?.app_metadata?.provider as string | undefined) ?? "email",
         lastSignInAt: u?.last_sign_in_at ?? null,
+        instanceIds: (membershipByUser.get(m.user_id) ?? []).sort((a, b) => a - b),
       };
     }),
   );
@@ -715,6 +741,38 @@ export async function adminResetUserPassword(
   });
   if (error) return { ok: false, error: "save_failed", message: error.message };
   return { ok: true, password };
+}
+
+const SET_PASSWORD_MIN_LEN = 8;
+
+/**
+ * Set a user's password to a value the operator chose. Unlike the random reset
+ * above, this is a deliberate credential hand-off: the flag that forces a
+ * change on next login is CLEARED, and it works for SSO-born accounts too —
+ * setting a password on a Google/Microsoft user enables email+password sign-in
+ * alongside the provider (user-management.md §3.1).
+ */
+export async function adminSetUserPassword(
+  tenantId: number,
+  userId: string,
+  password: string,
+): Promise<AdminUserMutateResult> {
+  const gate = await gateGroLabsAdmin();
+  if (!gate.ok) return { ok: false, error: "unauthorized" };
+  const admin = gate.admin;
+  if (!(await userBelongsToTenant(admin, tenantId, userId))) {
+    return { ok: false, error: "not_found" };
+  }
+  if (password.length < SET_PASSWORD_MIN_LEN) {
+    return { ok: false, error: "invalid" };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password,
+    user_metadata: { must_change_password: false },
+  });
+  if (error) return { ok: false, error: "save_failed", message: error.message };
+  return { ok: true };
 }
 
 /** Change a user's tenant role (admin | member) + cascade to instance rows. */

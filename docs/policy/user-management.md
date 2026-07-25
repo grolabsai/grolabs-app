@@ -294,11 +294,23 @@ Tenant-Admin actions:
   `must_change_password=true`, returns the one-time password to show once.
   Disabled in the UI for SSO accounts (`app_metadata.provider !== 'email'`),
   which have no password.
+- `adminSetUserPassword(tenantId, userId, password)` — sets a password the
+  operator **typed** (min 8 chars) and **clears** `must_change_password` (the
+  operator chose it deliberately; forcing a change would defeat the purpose).
+  Unlike the random reset, this **is** enabled for SSO-born accounts: setting a
+  password on a Google/Microsoft user enables email + password sign-in
+  alongside the provider. Primary use: giving staff/test accounts a known
+  password for local login without OAuth.
 - `adminSetTenantUserRole(tenantId, userId, role)` — `admin | member`, cascaded
   to the tenant's `instance_member` rows.
 - `adminSetTenantUserActive(tenantId, userId, active)` — toggles
   `tenant_member.is_active` + the tenant's `instance_member` rows (clears
   `is_current` on deactivate).
+
+The detail screen also answers "**who belongs to instance X**": each user row
+carries its active `instance_member` rows (badges of the tenant's instance
+names), and an instance selector above the list narrows it to one instance's
+members.
 
 Email change is intentionally **out of scope** here — email is the Article-3
 identity key; changing it is a separate, higher-risk flow.

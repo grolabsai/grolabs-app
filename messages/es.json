@@ -3275,7 +3275,17 @@
       "invalidName": "Ingresá un nombre de instancia válido.",
       "unauthorized": "No tenés permiso para crear clientes.",
       "saveFailed": "No se pudo guardar el cambio. Intentá de nuevo."
-    }
+    },
+    "instanceFilterLabel": "Instancia",
+    "instanceAll": "Todas las instancias",
+    "noUsersInInstance": "No hay usuarios en esta instancia.",
+    "instancesLabel": "Instancias:",
+    "instancesNone": "Sin acceso a instancias",
+    "setPasswordLabel": "Nueva contraseña",
+    "setPassword": "Establecer contraseña",
+    "passwordSet": "Contraseña establecida",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+    "ssoPasswordNote": "Inicia sesión con {provider}. Establecer una contraseña también habilita el acceso con correo y contraseña para este usuario."
   },
   "equipo": {
     "title": "Equipo",

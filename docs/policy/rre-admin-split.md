@@ -226,7 +226,7 @@ distinguishes the two surfaces.
 | Host | Renders | Default landing |
 |---|---|---|
 | `app.grolabs.ai` (+ `grolabs.ai`, previews, localhost) | `(app)` group (RRE) | `/dashboard` |
-| `admin.grolabs.ai` | `(admin)` group | `/prospects` (or `/content/posts`) |
+| `admin.grolabs.ai` (+ `admin.localhost` in local dev — browsers resolve `*.localhost` to 127.0.0.1, so `http://admin.localhost:3030` needs no /etc/hosts entry) | `(admin)` group | `/prospects` (or `/content/posts`) |
 | a tenant's bound `instance.domain` (e.g. `wazu.com`) | public `/blog/**`, sitemap, rss, llms.txt | — |
 
 The admin-host root redirect is **auth-aware**: an authenticated visitor

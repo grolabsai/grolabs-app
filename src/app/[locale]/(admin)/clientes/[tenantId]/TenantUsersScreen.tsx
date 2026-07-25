@@ -15,6 +15,7 @@ import { FloatingLabelSelect } from "@/components/ui/floating-label-select";
 import {
   adminUpdateUserName,
   adminResetUserPassword,
+  adminSetUserPassword,
   adminSetTenantUserRole,
   adminSetTenantUserActive,
   type AdminTenantUser,
@@ -39,6 +40,13 @@ export function TenantUsersScreen({
   const t = useTranslations("clientes");
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
+  // "all" or an instanceId — narrows the list to that instance's members.
+  const [instanceFilter, setInstanceFilter] = useState<string>("all");
+
+  const visibleUsers =
+    instanceFilter === "all"
+      ? initialUsers
+      : initialUsers.filter((u) => u.instanceIds.includes(Number(instanceFilter)));
 
   return (
     <div className="grid gap-6" style={{ maxWidth: 880 }}>
@@ -75,17 +83,39 @@ export function TenantUsersScreen({
           <CardTitle>{t("usersTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
+          {tenant.instances.length > 0 ? (
+            <div className="mb-4" style={{ maxWidth: 320 }}>
+              <FloatingLabelSelect
+                id="instance-filter"
+                label={t("instanceFilterLabel")}
+                value={instanceFilter}
+                onChange={(e) => setInstanceFilter(e.target.value)}
+              >
+                <option value="all">{t("instanceAll")}</option>
+                {tenant.instances.map((i) => (
+                  <option key={i.instanceId} value={String(i.instanceId)}>
+                    {i.name || `#${i.instanceId}`}
+                  </option>
+                ))}
+              </FloatingLabelSelect>
+            </div>
+          ) : null}
           {initialUsers.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--gl-text-secondary)" }}>
               {t("noUsers")}
             </p>
+          ) : visibleUsers.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--gl-text-secondary)" }}>
+              {t("noUsersInInstance")}
+            </p>
           ) : (
             <div className="grid gap-1">
-              {initialUsers.map((u) => (
+              {visibleUsers.map((u) => (
                 <UserRow
                   key={u.userId}
                   tenantId={tenant.tenantId}
                   user={u}
+                  instances={tenant.instances}
                   open={openId === u.userId}
                   onToggle={() =>
                     setOpenId((id) => (id === u.userId ? null : u.userId))
@@ -104,12 +134,14 @@ export function TenantUsersScreen({
 function UserRow({
   tenantId,
   user,
+  instances,
   open,
   onToggle,
   onChanged,
 }: {
   tenantId: number;
   user: AdminTenantUser;
+  instances: TenantDetail["instances"];
   open: boolean;
   onToggle: () => void;
   onChanged: () => void;
@@ -120,8 +152,12 @@ function UserRow({
     user.role === "admin" || user.role === "owner" ? "admin" : "member",
   );
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const [pending, startTransition] = useTransition();
   const isSSO = user.provider !== "email";
+  const userInstances = instances.filter((i) =>
+    user.instanceIds.includes(i.instanceId),
+  );
 
   function saveName() {
     startTransition(async () => {
@@ -157,6 +193,21 @@ function UserRow({
       }
       setTempPassword(res.password);
       toast.success(t("passwordReset"));
+      onChanged();
+    });
+  }
+
+  function setPassword() {
+    startTransition(async () => {
+      const res = await adminSetUserPassword(tenantId, user.userId, newPassword);
+      if (!res.ok) {
+        toast.error(
+          res.error === "invalid" ? t("passwordTooShort") : t("errors.saveFailed"),
+        );
+        return;
+      }
+      setNewPassword("");
+      toast.success(t("passwordSet"));
       onChanged();
     });
   }
@@ -215,6 +266,23 @@ function UserRow({
 
       {open ? (
         <div className="grid gap-4 px-2 pb-4 pt-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs" style={{ color: "var(--gl-text-secondary)" }}>
+              {t("instancesLabel")}
+            </span>
+            {userInstances.length === 0 ? (
+              <span className="text-xs" style={{ color: "var(--gl-text-secondary)" }}>
+                {t("instancesNone")}
+              </span>
+            ) : (
+              userInstances.map((i) => (
+                <Badge key={i.instanceId} variant="secondary">
+                  {i.name || `#${i.instanceId}`}
+                </Badge>
+              ))
+            )}
+          </div>
+
           <div className="flex items-end gap-2">
             <FloatingLabelInput
               id={`name-${user.userId}`}
@@ -299,6 +367,32 @@ function UserRow({
                   </Button>
                 </div>
               </div>
+            ) : null}
+
+            <div className="flex items-end gap-2">
+              <FloatingLabelInput
+                id={`setpw-${user.userId}`}
+                label={t("setPasswordLabel")}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                maxLength={72}
+                autoComplete="off"
+                wrapperClassName="flex-1"
+                disabled={pending}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={setPassword}
+                disabled={pending || newPassword.length === 0}
+              >
+                {t("setPassword")}
+              </Button>
+            </div>
+            {isSSO ? (
+              <p className="text-xs" style={{ color: "var(--gl-text-secondary)" }}>
+                {t("ssoPasswordNote", { provider: user.provider })}
+              </p>
             ) : null}
           </div>
         </div>

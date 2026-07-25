@@ -22,16 +22,21 @@ import { routing } from "./i18n/routing";
 const intlMiddleware = createIntlMiddleware(routing);
 
 /**
- * Host that renders the GroLabs admin surface (the `(admin)` route group).
- * A static infrastructure allow-list constant — deliberately NOT a DB lookup
+ * Hosts that render the GroLabs admin surface (the `(admin)` route group).
+ * A static infrastructure allow-list — deliberately NOT a DB lookup
  * (unlike instance.domain, used for the public blog), per
  * docs/policy/rre-admin-split.md §3.3 / §6.
+ *
+ * `admin.localhost` is the local-dev admin host: browsers resolve any
+ * *.localhost name to 127.0.0.1 (RFC 6761), so http://admin.localhost:3030
+ * serves the admin surface with no /etc/hosts entry. Authorization is
+ * unaffected — the (admin) layout still gates on isGroLabsAdmin().
  */
-const ADMIN_HOST = "admin.grolabs.ai";
+const ADMIN_HOSTS = new Set(["admin.grolabs.ai", "admin.localhost"]);
 
 /**
  * Path prefixes (locale-stripped) owned by the `(admin)` group. Reachable
- * only on ADMIN_HOST; they 404 on every other host.
+ * only on an ADMIN_HOSTS host; they 404 on every other host.
  */
 const ADMIN_PREFIXES = ["/content", "/prospects", "/clientes"];
 
@@ -108,7 +113,7 @@ export async function middleware(request: NextRequest) {
   // `(admin)` group + public surfaces; every other host serves only the RRE
   // `(app)` group + public surfaces. Mismatches 404 as if the route did not
   // exist on this host. API routes never reach here (excluded by the matcher).
-  const isAdminHost = hostFromRequest(request) === ADMIN_HOST;
+  const isAdminHost = ADMIN_HOSTS.has(hostFromRequest(request));
   const logical = stripLocale(request.nextUrl.pathname);
 
   const isAdminPath = matchesPrefix(logical, ADMIN_PREFIXES);

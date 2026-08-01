@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
-import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
 import { buildAuthUrl, resolveRedirectUri } from "@/lib/integrations/ga4/client";
 
 export const runtime = "nodejs";
@@ -21,24 +21,14 @@ const STATE_COOKIE = "ga4_oauth_state";
 const STATE_TTL_SECONDS = 600;
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  // Resolve via the canonical is_current resolver — the old is_active filter
+  // matched several rows for multi-instance users, so .maybeSingle() errored
+  // and this route bounced every Connect click to /login (see
+  // configuration/ga4/actions.ts resolveInstance for the same fix).
+  const instanceId = await currentInstanceId();
+  if (instanceId == null) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
-
-  const { data: membership } = await supabase
-    .from("instance_member")
-    .select("instance_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!membership) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-  const instanceId: number = membership.instance_id;
 
   const nonce = randomBytes(24).toString("base64url");
   const statePayload = `${instanceId}:${nonce}`;

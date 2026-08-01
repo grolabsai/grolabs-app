@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Ga4Config } from "@/lib/integrations/ga4/types";
+import { listGa4PropertyOptions } from "@/lib/integrations/ga4/fetchers";
 import { Ga4Form } from "./_form";
 
 /**
@@ -37,18 +38,28 @@ export default async function Ga4ConfigPage() {
 
   const { data: instanceRow } = await supabase
     .from("instance")
-    .select("integrations_config")
+    .select("name, integrations_config")
     .eq("instance_id", instanceId)
     .maybeSingle();
 
   const ga4: Ga4Config =
     (instanceRow?.integrations_config as { ga4?: Ga4Config })?.ga4 ?? {};
+  const instanceName = (instanceRow?.name as string | null) ?? "";
 
   const { data: refreshTok } = await supabase.rpc("ga4_get_refresh_token", {
     p_instance_id: instanceId,
   });
   const hasRefreshToken =
     typeof refreshTok === "string" && refreshTok.length > 0;
+
+  // Resolve the property list server-side so the picker renders ready. Skipped
+  // when there's nothing to list or the grant is known-dead — both render other
+  // states anyway. Returns null on any failure; the form falls back to manual
+  // numeric entry.
+  const properties =
+    hasRefreshToken && ga4.needs_reauth !== true
+      ? await listGa4PropertyOptions(instanceId)
+      : null;
 
   return (
     <div className="s-page-content">
@@ -67,8 +78,12 @@ export default async function Ga4ConfigPage() {
               lastPullStatus: ga4.last_pull_status,
               lastPullError: ga4.last_pull_error,
               lastPullLatencyMs: ga4.last_pull_latency_ms,
+              needsReauth: ga4.needs_reauth === true,
+              reauthReason: ga4.reauth_reason ?? undefined,
             }}
             hasRefreshToken={hasRefreshToken}
+            instanceName={instanceName}
+            initialProperties={properties}
           />
         </CardContent>
       </Card>

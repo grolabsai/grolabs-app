@@ -14,9 +14,12 @@ import { createClient } from "@/lib/supabase/server";
 import {
   refreshAccessToken,
   runRealtimeReport,
+  listAccountSummaries,
   Ga4ApiError,
   Ga4OAuthError,
+  type Ga4PropertySummary,
 } from "./client";
+import { clearGa4NeedsReauth, handleGa4TokenError } from "./reauth";
 import {
   REALTIME_WINDOW_MINUTES,
   TIMESERIES_DAYS,
@@ -652,6 +655,33 @@ export interface RealtimeActiveUsers {
  * Live call to GA4 Realtime API. Used by the right-now widget; degrade
  * gracefully on error per policy §7.
  */
+/**
+ * Property options for the picker on /configuration/ga4, resolved on the
+ * SERVER so the form renders with the list already in hand — no client
+ * round-trip, no loading flicker, and no setState-in-effect.
+ *
+ * Returns null (never throws) when the list can't be fetched — no token yet,
+ * Google unreachable, or a dead grant. The form falls back to manual numeric
+ * entry in every one of those cases, so this is never a dead end.
+ */
+export async function listGa4PropertyOptions(
+  instanceId: number,
+): Promise<Ga4PropertySummary[] | null> {
+  const supabase = await createClient();
+  try {
+    const { data: refreshTok } = await supabase.rpc("ga4_get_refresh_token", {
+      p_instance_id: instanceId,
+    });
+    if (!refreshTok || typeof refreshTok !== "string") return null;
+    const { access_token } = await refreshAccessToken(refreshTok);
+    await clearGa4NeedsReauth(instanceId);
+    return await listAccountSummaries(access_token);
+  } catch (err) {
+    await handleGa4TokenError(instanceId, err);
+    return null;
+  }
+}
+
 export async function getRealtimeActiveUsers(
   instanceId: number,
 ): Promise<RealtimeActiveUsers> {
@@ -669,6 +699,7 @@ export async function getRealtimeActiveUsers(
       return { ok: false, activeUsers: null, error: "no_refresh_token" };
     }
     const { access_token } = await refreshAccessToken(refreshTok);
+    await clearGa4NeedsReauth(instanceId);
     const r = await runRealtimeReport({
       propertyId: cfg.property_id,
       accessToken: access_token,
@@ -682,8 +713,12 @@ export async function getRealtimeActiveUsers(
     const value = Number(r.rows?.[0]?.metricValues?.[0]?.value ?? 0);
     return { ok: true, activeUsers: Number.isFinite(value) ? value : 0 };
   } catch (err) {
-    const msg =
-      err instanceof Ga4ApiError
+    // A dead refresh token surfaces here too — the realtime widget polls every
+    // 30s, so it is often the FIRST place a revoked grant shows up.
+    const needsReauth = await handleGa4TokenError(instanceId, err);
+    const msg = needsReauth
+      ? "needs_reauth"
+      : err instanceof Ga4ApiError
         ? `api_${err.status}`
         : err instanceof Ga4OAuthError
           ? "oauth_error"

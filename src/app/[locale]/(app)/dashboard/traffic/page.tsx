@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { currentInstanceId } from "@/lib/instance";
+import { createClient } from "@/lib/supabase/server";
 import { NoAccess } from "@/components/auth/NoAccess";
 import { TIMESERIES_DAYS } from "@/lib/integrations/ga4/constants";
 import {
@@ -72,6 +73,17 @@ export default async function TrafficDashboardPage() {
     </>
   );
 
+  // Name the instance explicitly. An empty Traffic tab reads as "the feature is
+  // broken" when the real answer is "you are on an instance that has no GA4
+  // connection" — that exact confusion is what motivated this.
+  const supabase = await createClient();
+  const { data: instanceRow } = await supabase
+    .from("instance")
+    .select("name")
+    .eq("instance_id", instanceId)
+    .maybeSingle();
+  const instanceName = (instanceRow?.name as string | null) ?? "";
+
   const connected = await isGa4Connected(instanceId);
   if (!connected) {
     return (
@@ -80,6 +92,7 @@ export default async function TrafficDashboardPage() {
         <InsightsReveal>
           <div className="tile connect">
             <h2>{tt("notConnected.title")}</h2>
+            <p>{tt("notConnected.forInstance", { instance: instanceName })}</p>
             <p>{tt("notConnected.body")}</p>
             <Link href="/configuration/ga4">{tt("notConnected.cta")}</Link>
           </div>
@@ -199,6 +212,31 @@ export default async function TrafficDashboardPage() {
             <RealtimeHeader label={tt("header.realtime")} />
           </div>
         </div>
+
+        {/* Reconnect notice — non-blocking. The charts below are real data, just
+            frozen at the last successful pull, so we say that rather than
+            pretending everything is current. */}
+        {cfg?.needs_reauth ? (
+          <div
+            style={{
+              gridColumn: "span 12",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 12px",
+              margin: "0 0 8px",
+              borderRadius: "var(--gl-radius-md)",
+              background: "var(--gl-warning-bg)",
+              color: "var(--gl-warning-text)",
+              fontSize: 12,
+            }}
+          >
+            <span>{tt("reauth.notice")}</span>
+            <Link href="/configuration/ga4" style={{ textDecoration: "underline" }}>
+              {tt("reauth.cta")}
+            </Link>
+          </div>
+        ) : null}
 
         {/* Data freshness — one continuous line (full grid width), never wraps. */}
         <div

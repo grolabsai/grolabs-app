@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { SEARCH_PROVIDERS, STORE_PLATFORMS } from "@/lib/instance-services";
 
 /**
  * Instance property edits.
@@ -43,6 +44,12 @@ export async function updateInstanceProperties(args: {
   primaryLocale: string;
   defaultCurrency: string;
   timezone: string;
+  storePlatform: string;
+  searchProvider: string;
+  serviceCatalog: boolean;
+  serviceAnalytics: boolean;
+  serviceSearch: boolean;
+  servicePricing: boolean;
 }): Promise<UpdateInstanceResult> {
   const supabase = await createClient();
   const {
@@ -65,6 +72,15 @@ export async function updateInstanceProperties(args: {
     return { ok: false, error: "invalid_currency" };
   }
 
+  // Validate against the same lists the DB CHECK constraints enforce, so a bad
+  // value fails with a readable message instead of a Postgres constraint error.
+  if (!(STORE_PLATFORMS as readonly string[]).includes(args.storePlatform)) {
+    return { ok: false, error: "invalid_store_platform" };
+  }
+  if (!(SEARCH_PROVIDERS as readonly string[]).includes(args.searchProvider)) {
+    return { ok: false, error: "invalid_search_provider" };
+  }
+
   // `select()` so we can tell "RLS refused" (zero rows) apart from success.
   // Without it a forbidden update looks identical to a successful one.
   const { data, error } = await supabase
@@ -74,6 +90,12 @@ export async function updateInstanceProperties(args: {
       primary_locale: primaryLocale,
       default_currency: defaultCurrency,
       timezone,
+      store_platform: args.storePlatform,
+      search_provider: args.searchProvider,
+      service_catalog: args.serviceCatalog,
+      service_analytics: args.serviceAnalytics,
+      service_search: args.serviceSearch,
+      service_pricing: args.servicePricing,
       updated_at: new Date().toISOString(),
     })
     .eq("instance_id", args.instanceId)
@@ -82,6 +104,10 @@ export async function updateInstanceProperties(args: {
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: "not_permitted" };
 
-  revalidatePath("/configuration/properties");
+  // Revalidate the LAYOUT, not just this page: the service flags and platform
+  // decide which items the sidebar renders, and the sidebar lives in the (app)
+  // layout. Revalidating only the page would save the change but leave the
+  // navigation stale until a hard reload.
+  revalidatePath("/", "layout");
   return { ok: true };
 }

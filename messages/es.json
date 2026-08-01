@@ -1987,7 +1987,10 @@
         "integrations": "Integraciones configuradas",
         "lastSearchSync": "Última sincronización de búsqueda",
         "createdAt": "Creado",
-        "updatedAt": "Actualizado"
+        "updatedAt": "Actualizado",
+        "storePlatform": "Plataforma de tienda",
+        "searchProvider": "Proveedor de búsqueda",
+        "services": "Servicios"
       },
       "locks": {
         "tenantDomain": "El dominio del tenant es la clave de identidad que restringe el inicio de sesión SSO. Cambiarlo afecta quién puede entrar, por lo que no se edita desde esta pantalla.",
@@ -2016,7 +2019,28 @@
         "invalid_timezone": "Usa una zona horaria IANA como America/Guatemala o UTC.",
         "invalid_locale": "Usa un idioma como en o es-GT.",
         "invalid_currency": "Usa un código de moneda de 3 letras como USD o GTQ.",
-        "not_permitted": "Necesitas el rol de propietario o administrador en esta instancia."
+        "not_permitted": "Necesitas el rol de propietario o administrador en esta instancia.",
+        "invalid_store_platform": "Elige una de las plataformas de tienda soportadas.",
+        "invalid_search_provider": "Elige Algolia o Meilisearch."
+      },
+      "storePlatform": {
+        "shopify": "Shopify",
+        "woocommerce": "WooCommerce",
+        "medusa": "Medusa",
+        "proprietary": "Propietaria"
+      },
+      "searchProvider": {
+        "algolia": "Algolia (cuenta del comercio)",
+        "meilisearch": "A través de GroLabs (Meilisearch)"
+      },
+      "services": {
+        "heading": "Servicios contratados",
+        "hint": "Determinan qué aparece en el menú izquierdo para esta instancia.",
+        "catalog": "Catálogo",
+        "analytics": "Google Analytics",
+        "search": "Búsqueda",
+        "pricing": "Precios",
+        "none": "Ninguno"
       }
     }
   },

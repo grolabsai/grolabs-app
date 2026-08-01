@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentInstanceServices } from "@/lib/instance-services.server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlgoliaForm } from "./_form";
 
@@ -31,6 +32,13 @@ export default async function AlgoliaConfigPage() {
   if (!membership) redirect("/login");
 
   const instanceId: number = membership.instance_id;
+
+  // Mirror of the guard on the Meilisearch screen: if this instance isn't
+  // modelled as an Algolia one, send the user to the screen that matches.
+  const services = await getCurrentInstanceServices(instanceId);
+  if (services.searchProvider !== "algolia") {
+    redirect("/configuration/search");
+  }
 
   // ── Load existing config ────────────────────────────────────────────────────
   const { data: instanceRow } = await supabase

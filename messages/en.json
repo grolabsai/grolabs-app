@@ -1987,7 +1987,10 @@
         "integrations": "Configured integrations",
         "lastSearchSync": "Last search sync",
         "createdAt": "Created",
-        "updatedAt": "Updated"
+        "updatedAt": "Updated",
+        "storePlatform": "Store platform",
+        "searchProvider": "Search provider",
+        "services": "Services"
       },
       "locks": {
         "tenantDomain": "The tenant domain is the identity key used to restrict SSO sign-in. Changing it affects who can log in, so it is not editable from this screen.",
@@ -2016,7 +2019,28 @@
         "invalid_timezone": "Use an IANA timezone such as America/Guatemala or UTC.",
         "invalid_locale": "Use a locale such as en or es-GT.",
         "invalid_currency": "Use a 3-letter currency code such as USD or GTQ.",
-        "not_permitted": "You need the owner or admin role on this instance."
+        "not_permitted": "You need the owner or admin role on this instance.",
+        "invalid_store_platform": "Pick one of the supported store platforms.",
+        "invalid_search_provider": "Pick either Algolia or Meilisearch."
+      },
+      "storePlatform": {
+        "shopify": "Shopify",
+        "woocommerce": "WooCommerce",
+        "medusa": "Medusa",
+        "proprietary": "Proprietary"
+      },
+      "searchProvider": {
+        "algolia": "Algolia (merchant's own account)",
+        "meilisearch": "Through GroLabs (Meilisearch)"
+      },
+      "services": {
+        "heading": "Contracted services",
+        "hint": "These decide what appears in the left menu for this instance.",
+        "catalog": "Catalog",
+        "analytics": "Google Analytics",
+        "search": "Search",
+        "pricing": "Pricing",
+        "none": "None"
       }
     }
   },

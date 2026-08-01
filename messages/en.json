@@ -873,7 +873,12 @@
       "notConnected": {
         "title": "Connect Google Analytics",
         "body": "Connect a GA4 property to see this instance’s traffic, audience, and alerts.",
-        "cta": "Connect Google Analytics"
+        "cta": "Connect Google Analytics",
+        "forInstance": "You are viewing {instance}."
+      },
+      "reauth": {
+        "notice": "Google access expired — these figures are frozen at the last successful update.",
+        "cta": "Reconnect"
       }
     },
     "overview": {
@@ -1805,11 +1810,17 @@
         "intro": "Connect a GA4 property (read-only) to pull daily traffic metrics and enable health alerts.",
         "bulletDaily": "Sessions, users, engagement, top pages — refreshed every 6 hours.",
         "bulletAlerts": "Auto-alerts when sessions, engagement, or channel mix change meaningfully.",
-        "bulletRealtime": "Live active-users widget on the traffic dashboard."
+        "bulletRealtime": "Live active-users widget on the traffic dashboard.",
+        "forInstance": "You are connecting Google Analytics for {instance}."
       },
       "fields": {
         "propertyId": "GA4 property ID",
-        "propertyIdHint": "Numeric ID of your GA4 property (Admin → Property settings). Digits only."
+        "propertyIdHint": "Numeric ID of your GA4 property (Admin → Property settings). Digits only.",
+        "property": "GA4 property",
+        "enterManually": "Enter a property ID manually instead",
+        "chooseFromList": "Choose from your properties instead",
+        "loadingProperties": "Loading your properties…",
+        "retryList": "Load my properties from Google"
       },
       "postConnect": {
         "stepBadge": "Step 1 of 2 · Account connected",
@@ -1834,7 +1845,8 @@
         "savePropertyId": "Save ID",
         "test": "Test connection",
         "pullNow": "Pull now",
-        "disconnect": "Disconnect"
+        "disconnect": "Disconnect",
+        "reconnect": "Reconnect Google Analytics"
       },
       "disconnect": {
         "confirm": "Disconnect Google Analytics? This deletes the stored token and stops pulls."
@@ -1850,7 +1862,9 @@
         "testFailed": "Test failed",
         "pullSuccess": "Pull succeeded",
         "pullFailed": "Pull failed",
-        "pullSummary": "{rows} rows written"
+        "pullSummary": "{rows} rows written",
+        "propertyListFailed": "Could not load your GA4 properties",
+        "historyDiscarded": "Discarded {rows} rows from the previous property"
       },
       "oauthErrors": {
         "generic": "Try connecting again.",
@@ -1862,6 +1876,14 @@
         "exchange_failed": "Token exchange with Google failed.",
         "no_refresh_token": "Google did not return a refresh token.",
         "save_failed": "Could not save credentials."
+      },
+      "reauth": {
+        "badge": "Google access expired",
+        "body": "Google no longer accepts the saved authorisation for {instance}, so traffic data has stopped updating.",
+        "anyAccount": "Reconnect with any Google account that can view this property. Your property choice and existing history are kept."
+      },
+      "propertyChange": {
+        "confirm": "Changing the property discards the traffic history already stored for this instance, because it belongs to the previous property. A fresh backfill starts immediately. Continue?"
       }
     },
     "events": {

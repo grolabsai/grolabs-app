@@ -97,6 +97,15 @@ export interface Ga4Config {
   last_pull_status?: "ok" | "error";
   last_pull_error?: string;
   last_pull_latency_ms?: number;
+  /**
+   * Set when Google rejected the stored refresh token as permanently dead
+   * (invalid_grant). The connection needs a fresh consent — property_id and
+   * snapshot history are deliberately preserved so reconnecting restores the
+   * setup rather than wiping it. Written only via ga4_set_reauth_state.
+   */
+  needs_reauth?: boolean;
+  reauth_reason?: string | null;
+  reauth_at?: string | null;
 }
 
 // ── Pull / poll outputs ──────────────────────────────────────────────────────

@@ -873,7 +873,12 @@
       "notConnected": {
         "title": "Conecta Google Analytics",
         "body": "Conecta una propiedad de GA4 para ver el tráfico, la audiencia y las alertas de esta instancia.",
-        "cta": "Conectar Google Analytics"
+        "cta": "Conectar Google Analytics",
+        "forInstance": "Estás viendo {instance}."
+      },
+      "reauth": {
+        "notice": "El acceso de Google caducó — estas cifras están congeladas en la última actualización correcta.",
+        "cta": "Reconectar"
       }
     },
     "overview": {
@@ -1805,11 +1810,17 @@
         "intro": "Conecta una propiedad de GA4 (cuenta de solo lectura) para extraer las métricas diarias de tráfico y habilitar las alertas de salud.",
         "bulletDaily": "Sesiones, usuarios, engagement y páginas top — actualizado cada 6 horas.",
         "bulletAlerts": "Alertas automáticas cuando las sesiones, el engagement o el mix de canales cambian de forma significativa.",
-        "bulletRealtime": "Widget de usuarios activos en vivo en el panel de tráfico."
+        "bulletRealtime": "Widget de usuarios activos en vivo en el panel de tráfico.",
+        "forInstance": "Estás conectando Google Analytics para {instance}."
       },
       "fields": {
         "propertyId": "ID de propiedad GA4",
-        "propertyIdHint": "El ID numérico de tu propiedad GA4 (Admin → Property settings). Solo dígitos."
+        "propertyIdHint": "El ID numérico de tu propiedad GA4 (Admin → Property settings). Solo dígitos.",
+        "property": "Propiedad de GA4",
+        "enterManually": "Introducir un ID de propiedad manualmente",
+        "chooseFromList": "Elegir de entre tus propiedades",
+        "loadingProperties": "Cargando tus propiedades…",
+        "retryList": "Cargar mis propiedades desde Google"
       },
       "postConnect": {
         "stepBadge": "Paso 1 de 2 · Cuenta conectada",
@@ -1834,7 +1845,8 @@
         "savePropertyId": "Guardar ID",
         "test": "Probar conexión",
         "pullNow": "Extraer ahora",
-        "disconnect": "Desconectar"
+        "disconnect": "Desconectar",
+        "reconnect": "Reconectar Google Analytics"
       },
       "disconnect": {
         "confirm": "¿Desconectar Google Analytics? Esto borra el token y detiene las extracciones."
@@ -1850,7 +1862,9 @@
         "testFailed": "Falló la prueba",
         "pullSuccess": "Extracción exitosa",
         "pullFailed": "Falló la extracción",
-        "pullSummary": "{rows} filas escritas"
+        "pullSummary": "{rows} filas escritas",
+        "propertyListFailed": "No se pudieron cargar tus propiedades de GA4",
+        "historyDiscarded": "Se descartaron {rows} filas de la propiedad anterior"
       },
       "oauthErrors": {
         "generic": "Vuelve a intentar la conexión.",
@@ -1862,6 +1876,14 @@
         "exchange_failed": "Falló el intercambio de tokens con Google.",
         "no_refresh_token": "Google no devolvió refresh token.",
         "save_failed": "No se pudieron guardar las credenciales."
+      },
+      "reauth": {
+        "badge": "Acceso de Google caducado",
+        "body": "Google ya no acepta la autorización guardada para {instance}, por lo que los datos de tráfico dejaron de actualizarse.",
+        "anyAccount": "Reconecta con cualquier cuenta de Google que pueda ver esta propiedad. Se conservan la propiedad elegida y el historial existente."
+      },
+      "propertyChange": {
+        "confirm": "Cambiar la propiedad descarta el historial de tráfico ya almacenado para esta instancia, porque pertenece a la propiedad anterior. Se iniciará una recarga inmediata. ¿Continuar?"
       }
     },
     "events": {

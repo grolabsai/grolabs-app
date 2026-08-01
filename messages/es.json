@@ -1820,7 +1820,8 @@
         "enterManually": "Introducir un ID de propiedad manualmente",
         "chooseFromList": "Elegir de entre tus propiedades",
         "loadingProperties": "Cargando tus propiedades…",
-        "retryList": "Cargar mis propiedades desde Google"
+        "retryList": "Cargar mis propiedades desde Google",
+        "listUnavailable": "No se pudo cargar tu lista de propiedades:"
       },
       "postConnect": {
         "stepBadge": "Paso 1 de 2 · Cuenta conectada",

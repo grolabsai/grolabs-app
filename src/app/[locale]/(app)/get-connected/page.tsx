@@ -25,10 +25,14 @@ async function readGuide(name: string): Promise<string> {
 
 export default async function GetConnectedPage() {
   const t = await getTranslations("getConnected");
-  const [intro, wordpress, proprietary] = await Promise.all([
+  // Google Analytics is platform-independent — the steps are identical for
+  // WordPress and proprietary stores — so it is loaded once and appended to
+  // whichever track the merchant chose, rather than duplicated in both guides.
+  const [intro, wordpress, proprietary, googleAnalytics] = await Promise.all([
     readGuide("README.md"),
     readGuide("wordpress.md"),
     readGuide("proprietary.md"),
+    readGuide("google-analytics.md"),
   ]);
 
   return (
@@ -37,7 +41,12 @@ export default async function GetConnectedPage() {
       <p style={{ fontSize: 13, color: "var(--gl-text-secondary)", marginBottom: 20 }}>
         {t("subtitle")}
       </p>
-      <GetConnectedClient intro={intro} wordpress={wordpress} proprietary={proprietary} />
+      <GetConnectedClient
+        intro={intro}
+        wordpress={wordpress}
+        proprietary={proprietary}
+        googleAnalytics={googleAnalytics}
+      />
     </div>
   );
 }

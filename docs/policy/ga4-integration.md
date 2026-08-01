@@ -566,8 +566,14 @@ connects.
 |---|---|---|
 | 1 | **Analytics Data API** (`analyticsdata.googleapis.com`) enabled | ✅ done — daily pulls and the realtime widget depend on it |
 | 2 | **Analytics Admin API** (`analyticsadmin.googleapis.com`) enabled | ✅ done 2026-08-01 — required by the property picker |
-| 3 | OAuth consent screen published (`In production`, not `Testing`) | ⛔ **verify** — see below |
+| 3 | OAuth consent screen published (`In production`, not `Testing`) | ✅ confirmed 2026-08-01 by the owner — refresh tokens are long-lived |
 | 4 | OAuth verification for the sensitive scope | ⛔ **not started** — see below |
+
+Merchant-facing connection steps live in
+`docs/guides/implementation/google-analytics.md`, rendered on **Get Connected**
+after whichever platform track the merchant chose (the steps are identical on
+every platform). That guide deliberately contains none of the Cloud-project
+items above — a merchant cannot act on them and should never be asked to.
 
 ### 17.0 Two separate GA4 APIs — both must be enabled
 
@@ -604,9 +610,17 @@ Admin API once when they built the feature.
 
 **Publishing status must be `In production`, not `Testing`.** While the consent
 screen sits in Testing, Google expires every issued refresh token after **7
-days** and caps the app at 100 test users. That expiry is invisible in our UI:
-the token simply stops working and pulls fail until someone reconnects. With the
-app published, refresh tokens are long-lived.
+days** and caps the app at 100 test users. With the app published, refresh
+tokens are long-lived.
+
+**Status: published — confirmed by the owner on 2026-08-01.** If this is ever
+flipped back to Testing, every merchant would silently need to reconnect weekly.
+
+Note that the 7-day expiry is no longer *invisible* if it happens: an expired
+token fails with `invalid_grant`, which §17.2 classifies as permanent, so the
+UI would show a reconnect prompt and a `backend_operation` row would be
+written. Publishing is still the fix — surfacing the failure is not the same as
+not having it.
 
 **OPEN — OAuth verification is not done.** `analytics.readonly` is a
 Google-classified **sensitive** scope. An `External` app in production that

@@ -43,10 +43,13 @@ export function GetConnectedClient({
   intro,
   wordpress,
   proprietary,
+  googleAnalytics,
 }: {
   intro: string;
   wordpress: string;
   proprietary: string;
+  /** Platform-independent — appended to whichever track was chosen. */
+  googleAnalytics: string;
 }) {
   const t = useTranslations("getConnected");
   const platform = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -111,6 +114,19 @@ export function GetConnectedClient({
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {platform === "wordpress" ? wordpress : proprietary}
         </ReactMarkdown>
+      </div>
+
+      {/* Google Analytics — same steps on every platform, so it follows the
+          chosen track rather than being duplicated inside both guides. */}
+      <hr
+        style={{
+          border: "none",
+          borderTop: "0.5px solid var(--gl-border)",
+          margin: "28px 0",
+        }}
+      />
+      <div className="prose prose-sm max-w-none gl-guide-md">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{googleAnalytics}</ReactMarkdown>
       </div>
     </div>
   );

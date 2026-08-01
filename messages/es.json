@@ -1951,6 +1951,72 @@
         "values": "Algunos valores están fuera de rango",
         "db": "No se pudo guardar — intenta de nuevo"
       }
+    },
+    "properties": {
+      "navLabel": "Propiedades",
+      "title": "Propiedades de tenant e instancias",
+      "subtitle": "Lo que la base de datos realmente contiene para tu tenant y cada una de sus instancias.",
+      "yes": "Sí",
+      "no": "No",
+      "tenant": {
+        "heading": "Tenant",
+        "readOnly": "Solo lectura"
+      },
+      "instances": {
+        "heading": "Instancias ({count})",
+        "current": "Actual",
+        "inactive": "Inactiva",
+        "editableHint": "Se pueden editar nombre, idioma, moneda y zona horaria. Los campos con candado son de solo lectura — pasa el cursor para ver por qué.",
+        "readOnlyHint": "Necesitas el rol de propietario o administrador en una instancia para editar sus propiedades."
+      },
+      "fields": {
+        "tenantId": "ID de tenant",
+        "instanceId": "ID de instancia",
+        "name": "Nombre",
+        "slug": "Slug",
+        "kind": "Tipo",
+        "domain": "Dominio",
+        "plan": "Plan",
+        "isActive": "Activa",
+        "primaryLocale": "Idioma principal",
+        "supportedLocales": "Idiomas soportados",
+        "defaultCurrency": "Moneda predeterminada",
+        "timezone": "Zona horaria",
+        "storefrontDomains": "Dominios de tienda",
+        "integrations": "Integraciones configuradas",
+        "lastSearchSync": "Última sincronización de búsqueda",
+        "createdAt": "Creado",
+        "updatedAt": "Actualizado"
+      },
+      "locks": {
+        "tenantDomain": "El dominio del tenant es la clave de identidad que restringe el inicio de sesión SSO. Cambiarlo afecta quién puede entrar, por lo que no se edita desde esta pantalla.",
+        "instanceDomain": "El dominio de la instancia dirige el enrutamiento del blog por host. Cambiarlo puede enviar un sitio publicado a la instancia equivocada, por lo que no se edita desde esta pantalla.",
+        "kind": "Derivado del tipo de tenant por un trigger de base de datos — editarlo aquí se revertiría silenciosamente.",
+        "slug": "Referenciado en otros lugares como identificador estable.",
+        "plan": "Estado de facturación, gestionado fuera de esta pantalla.",
+        "isActive": "Estado estructural — desactivar una instancia afecta el acceso y los trabajos programados.",
+        "supportedLocales": "Gestionado con la configuración de idiomas.",
+        "storefrontDomains": "Se usa para atribuir eventos de tienda entrantes a esta instancia.",
+        "integrations": "Cada integración se configura en su propia pantalla. Aquí solo se muestran los nombres — nunca los valores."
+      },
+      "actions": {
+        "edit": "Editar",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "toast": {
+        "saved": "Se guardó {name}",
+        "saveFailed": "No se pudo guardar"
+      },
+      "errors": {
+        "unauthenticated": "Tu sesión expiró — inicia sesión de nuevo.",
+        "name_required": "El nombre no puede estar vacío.",
+        "name_too_long": "El nombre es demasiado largo (máx. 120 caracteres).",
+        "invalid_timezone": "Usa una zona horaria IANA como America/Guatemala o UTC.",
+        "invalid_locale": "Usa un idioma como en o es-GT.",
+        "invalid_currency": "Usa un código de moneda de 3 letras como USD o GTQ.",
+        "not_permitted": "Necesitas el rol de propietario o administrador en esta instancia."
+      }
     }
   },
   "sync": {

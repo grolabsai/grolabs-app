@@ -1951,6 +1951,72 @@
         "values": "Some values are out of range",
         "db": "Could not save — try again"
       }
+    },
+    "properties": {
+      "navLabel": "Properties",
+      "title": "Tenant & instance properties",
+      "subtitle": "What the database actually holds for your tenant and each of its instances.",
+      "yes": "Yes",
+      "no": "No",
+      "tenant": {
+        "heading": "Tenant",
+        "readOnly": "Read-only"
+      },
+      "instances": {
+        "heading": "Instances ({count})",
+        "current": "Current",
+        "inactive": "Inactive",
+        "editableHint": "Name, locale, currency and timezone can be edited. Fields with a padlock are read-only — hover for why.",
+        "readOnlyHint": "You need the owner or admin role on an instance to edit its properties."
+      },
+      "fields": {
+        "tenantId": "Tenant ID",
+        "instanceId": "Instance ID",
+        "name": "Name",
+        "slug": "Slug",
+        "kind": "Kind",
+        "domain": "Domain",
+        "plan": "Plan",
+        "isActive": "Active",
+        "primaryLocale": "Primary locale",
+        "supportedLocales": "Supported locales",
+        "defaultCurrency": "Default currency",
+        "timezone": "Timezone",
+        "storefrontDomains": "Storefront domains",
+        "integrations": "Configured integrations",
+        "lastSearchSync": "Last search sync",
+        "createdAt": "Created",
+        "updatedAt": "Updated"
+      },
+      "locks": {
+        "tenantDomain": "The tenant domain is the identity key used to restrict SSO sign-in. Changing it affects who can log in, so it is not editable from this screen.",
+        "instanceDomain": "The instance domain drives blog host routing. Changing it can send a published site to the wrong instance, so it is not editable from this screen.",
+        "kind": "Derived from the tenant kind by a database trigger — editing it here would be silently reverted.",
+        "slug": "Referenced elsewhere as a stable identifier.",
+        "plan": "Billing state, managed outside this screen.",
+        "isActive": "Structural state — deactivating an instance affects access and scheduled jobs.",
+        "supportedLocales": "Managed with the locale configuration.",
+        "storefrontDomains": "Used to attribute incoming storefront events to this instance.",
+        "integrations": "Each integration is configured on its own screen. Only the names are shown here — never the values."
+      },
+      "actions": {
+        "edit": "Edit",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "toast": {
+        "saved": "Saved {name}",
+        "saveFailed": "Could not save"
+      },
+      "errors": {
+        "unauthenticated": "Your session expired — sign in again.",
+        "name_required": "Name cannot be empty.",
+        "name_too_long": "Name is too long (120 characters max).",
+        "invalid_timezone": "Use an IANA timezone such as America/Guatemala or UTC.",
+        "invalid_locale": "Use a locale such as en or es-GT.",
+        "invalid_currency": "Use a 3-letter currency code such as USD or GTQ.",
+        "not_permitted": "You need the owner or admin role on this instance."
+      }
     }
   },
   "sync": {

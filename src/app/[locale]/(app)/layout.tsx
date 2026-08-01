@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { loadSwitcherInstances } from "@/lib/shell/switcher";
 import { isCurrentTenantAdmin } from "@/lib/auth/roles";
+import { getCurrentInstanceServices } from "@/lib/instance-services.server";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { AgentPanel } from "@/components/shell/AgentPanel";
@@ -63,6 +64,10 @@ export default async function AppLayout({
   }
 
   const isTenantAdmin = await isCurrentTenantAdmin();
+  // The instance's service model shapes the nav — which groups and
+  // configuration items exist at all. Resolved here so it is fetched once per
+  // request and passed down, rather than re-queried per menu item.
+  const services = await getCurrentInstanceServices(currentInstanceId);
   const currentInstance =
     instances.find((i) => i.instanceId === currentInstanceId) ?? null;
   const instanceName = currentInstance?.name ?? "";
@@ -79,6 +84,7 @@ export default async function AppLayout({
           instances={instances}
           currentInstanceId={currentInstanceId}
           isTenantAdmin={isTenantAdmin}
+          services={services}
         />
         <main className="s-main">
           <TopBar initials={initials} userEmail={user.email ?? ""} />

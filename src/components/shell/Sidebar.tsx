@@ -18,6 +18,7 @@ import {
 import { Icon } from "@/components/ui/icon";
 import { InstanceSwitcher, type InstanceListItem } from "./InstanceSwitcher";
 import { buildRreNav, buildAdminNav, type NavItem, type NavGroup } from "./nav";
+import type { InstanceServices } from "@/lib/instance-services";
 import { cn } from "@/lib/utils";
 
 const SECTION_STATE_KEY = "grolabs.sidebar.sections";
@@ -114,6 +115,7 @@ export function Sidebar({
   instances,
   currentInstanceId,
   isTenantAdmin = false,
+  services,
 }: {
   variant?: "rre" | "admin";
   instanceName: string;
@@ -121,6 +123,9 @@ export function Sidebar({
   currentInstanceId: number | null;
   // Tenant Admins see the RRE "Equipo" nav item (user-management.md §4).
   isTenantAdmin?: boolean;
+  // The instance's service model — decides which nav groups and configuration
+  // items exist. Resolved server-side in the (app) layout.
+  services?: InstanceServices;
 }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
@@ -129,7 +134,9 @@ export function Sidebar({
   const t = useTranslations();
 
   const NAV: NavGroup[] =
-    variant === "admin" ? buildAdminNav(t) : buildRreNav(t, { isTenantAdmin });
+    variant === "admin"
+      ? buildAdminNav(t)
+      : buildRreNav(t, { isTenantAdmin, services });
 
   // Single active href across all NAV. Longest matching href wins so
   // parent rows (e.g. /prospects) don't light up alongside their

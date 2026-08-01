@@ -7,7 +7,9 @@ import { Lock, Pencil, Check, X } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { FloatingLabelSelect } from "@/components/ui/floating-label-select";
 import { toast } from "@/components/ui/agent-toast";
+import { SEARCH_PROVIDERS, STORE_PLATFORMS } from "@/lib/instance-services";
 import type {
   InstanceProperties,
   TenantProperties,
@@ -65,6 +67,46 @@ function Field({
         {value || "—"}
       </span>
     </div>
+  );
+}
+
+/** Plain checkbox — a contracted service is on or off, and a native control
+ *  keeps it keyboard- and screen-reader-friendly without extra machinery. */
+function ServiceToggle({
+  id,
+  label,
+  checked,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        color: "var(--gl-text-strong)",
+        cursor: disabled ? "default" : "pointer",
+      }}
+    >
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ width: 14, height: 14, accentColor: "var(--gl-accent)" }}
+      />
+      {label}
+    </label>
   );
 }
 
@@ -181,12 +223,24 @@ function InstanceCard({
   const [locale, setLocale] = useState(instance.primary_locale);
   const [currency, setCurrency] = useState(instance.default_currency);
   const [timezone, setTimezone] = useState(instance.timezone);
+  const [storePlatform, setStorePlatform] = useState(instance.store_platform);
+  const [searchProvider, setSearchProvider] = useState(instance.search_provider);
+  const [svcCatalog, setSvcCatalog] = useState(instance.service_catalog);
+  const [svcAnalytics, setSvcAnalytics] = useState(instance.service_analytics);
+  const [svcSearch, setSvcSearch] = useState(instance.service_search);
+  const [svcPricing, setSvcPricing] = useState(instance.service_pricing);
 
   function reset() {
     setName(instance.name);
     setLocale(instance.primary_locale);
     setCurrency(instance.default_currency);
     setTimezone(instance.timezone);
+    setStorePlatform(instance.store_platform);
+    setSearchProvider(instance.search_provider);
+    setSvcCatalog(instance.service_catalog);
+    setSvcAnalytics(instance.service_analytics);
+    setSvcSearch(instance.service_search);
+    setSvcPricing(instance.service_pricing);
     setEditing(false);
   }
 
@@ -198,6 +252,12 @@ function InstanceCard({
         primaryLocale: locale,
         defaultCurrency: currency,
         timezone,
+        storePlatform,
+        searchProvider,
+        serviceCatalog: svcCatalog,
+        serviceAnalytics: svcAnalytics,
+        serviceSearch: svcSearch,
+        servicePricing: svcPricing,
       });
       if (r.ok) {
         toast.success(t("toast.saved", { name }));
@@ -300,11 +360,106 @@ function InstanceCard({
             onChange={(e) => setTimezone(e.target.value)}
             disabled={pending}
           />
+          <FloatingLabelSelect
+            id={`store-${instance.instance_id}`}
+            label={t("fields.storePlatform")}
+            value={storePlatform}
+            onChange={(e) => setStorePlatform(e.target.value)}
+            disabled={pending}
+          >
+            {STORE_PLATFORMS.map((p) => (
+              <option key={p} value={p}>
+                {t(`storePlatform.${p}` as never)}
+              </option>
+            ))}
+          </FloatingLabelSelect>
+          <FloatingLabelSelect
+            id={`search-${instance.instance_id}`}
+            label={t("fields.searchProvider")}
+            value={searchProvider}
+            onChange={(e) => setSearchProvider(e.target.value)}
+            disabled={pending}
+          >
+            {SEARCH_PROVIDERS.map((p) => (
+              <option key={p} value={p}>
+                {t(`searchProvider.${p}` as never)}
+              </option>
+            ))}
+          </FloatingLabelSelect>
+
+          {/* Contracted services — these decide what the left menu contains,
+              so the consequence is stated rather than left to be discovered. */}
+          <div style={{ gridColumn: "1 / -1" }}>
+            <p
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--gl-text-strong)",
+                margin: "4px 0 2px",
+              }}
+            >
+              {t("services.heading")}
+            </p>
+            <p style={{ fontSize: 11, color: "var(--gl-text-tertiary)", margin: "0 0 8px" }}>
+              {t("services.hint")}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+              <ServiceToggle
+                id={`svc-catalog-${instance.instance_id}`}
+                label={t("services.catalog")}
+                checked={svcCatalog}
+                onChange={setSvcCatalog}
+                disabled={pending}
+              />
+              <ServiceToggle
+                id={`svc-analytics-${instance.instance_id}`}
+                label={t("services.analytics")}
+                checked={svcAnalytics}
+                onChange={setSvcAnalytics}
+                disabled={pending}
+              />
+              <ServiceToggle
+                id={`svc-search-${instance.instance_id}`}
+                label={t("services.search")}
+                checked={svcSearch}
+                onChange={setSvcSearch}
+                disabled={pending}
+              />
+              <ServiceToggle
+                id={`svc-pricing-${instance.instance_id}`}
+                label={t("services.pricing")}
+                checked={svcPricing}
+                onChange={setSvcPricing}
+                disabled={pending}
+              />
+            </div>
+          </div>
         </div>
       ) : (
         <div style={GRID}>
           <Field label={t("fields.instanceId")} value={String(instance.instance_id)} mono />
           <Field label={t("fields.name")} value={instance.name} />
+          <Field
+            label={t("fields.storePlatform")}
+            value={t(`storePlatform.${instance.store_platform}` as never)}
+          />
+          <Field
+            label={t("fields.searchProvider")}
+            value={t(`searchProvider.${instance.search_provider}` as never)}
+          />
+          <Field
+            label={t("fields.services")}
+            value={
+              [
+                instance.service_catalog ? t("services.catalog") : null,
+                instance.service_analytics ? t("services.analytics") : null,
+                instance.service_search ? t("services.search") : null,
+                instance.service_pricing ? t("services.pricing") : null,
+              ]
+                .filter(Boolean)
+                .join(", ") || t("services.none")
+            }
+          />
           <Field
             label={t("fields.slug")}
             value={instance.slug}

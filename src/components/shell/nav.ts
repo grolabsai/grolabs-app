@@ -1,5 +1,9 @@
 import type { Route } from "next";
 import {
+  DEFAULT_SERVICES,
+  type InstanceServices,
+} from "@/lib/instance-services";
+import {
   Package,
   LayoutList,
   LayoutDashboard,
@@ -68,6 +72,8 @@ export type NavGroup = {
 // next-intl translator with no bound namespace — pass full dotted keys.
 type T = (key: string) => string;
 
+export type { InstanceServices };
+
 /**
  * RRE nav (app.grolabs.ai). The user-facing app surface. Excludes the moved
  * admin sections (Contenido, Prospectos) and the Sistema → Estilo style-guide
@@ -75,22 +81,64 @@ type T = (key: string) => string;
  */
 export function buildRreNav(
   t: T,
-  opts?: { isTenantAdmin?: boolean },
+  opts?: { isTenantAdmin?: boolean; services?: InstanceServices },
 ): NavGroup[] {
-  // The "Equipo" (team management) item is visible only to Tenant Admins —
-  // the screen itself re-checks is_tenant_admin server-side. Per
-  // docs/policy/user-management.md §4.
+  // The instance's service model decides what belongs in this nav. Defaults are
+  // all-on, so a failed lookup shows the full menu rather than silently
+  // collapsing it — see DEFAULT_SERVICES.
+  const svc = opts?.services ?? DEFAULT_SERVICES;
+
   const configurationItems: NavItem[] = [
     { href: "/configuration/properties" as Route, label: t("configuration.properties.navLabel"), icon: IdCard, useIconWrapper: true },
+    // Get Connected sits here, directly after Properties: it is the setup
+    // guide for what Properties declares, so the two belong together.
+    { href: "/get-connected" as Route, label: t("nav.getConnected"), icon: PlugZap, useIconWrapper: true },
     { href: "/configuration/analysis" as Route, label: t("configuration.analysis.navLabel"), icon: SlidersHorizontal, useIconWrapper: true },
-    { href: "/configuration/search" as Route, label: t("configuration.search.navLabel"), icon: Telescope, useIconWrapper: true },
-    { href: "/configuration/algolia" as Route, label: t("configuration.algolia.navLabel"), icon: Search },
-    { href: "/configuration/woocommerce" as Route, label: t("nav.woocommerce"), icon: ShoppingBag },
-    { href: "/configuration/ga4" as Route, label: t("configuration.ga4.navLabel"), icon: LineChart, useIconWrapper: true },
+  ];
+
+  // ── Search — ONE item whose destination depends on the provider ───────────
+  // Algolia and Meilisearch are two standing connection modes, not a
+  // migration, so the user sees a single "Search" entry that opens whichever
+  // screen matches this instance. Both pages guard against being reached
+  // directly for the wrong provider.
+  if (svc.search) {
+    configurationItems.push(
+      svc.searchProvider === "algolia"
+        ? { href: "/configuration/algolia" as Route, label: t("configuration.search.navLabel"), icon: Search }
+        : { href: "/configuration/search" as Route, label: t("configuration.search.navLabel"), icon: Telescope, useIconWrapper: true },
+    );
+  }
+
+  // ── Platform-specific configuration ──────────────────────────────────────
+  // WooCommerce is the only platform with a configuration screen in this app
+  // today; Shopify and Medusa integrations live in their own repos. As those
+  // gain screens, they slot in here on the same condition.
+  if (svc.storePlatform === "woocommerce") {
+    configurationItems.push({
+      href: "/configuration/woocommerce" as Route,
+      label: t("nav.woocommerce"),
+      icon: ShoppingBag,
+    });
+  }
+
+  if (svc.analytics) {
+    configurationItems.push({
+      href: "/configuration/ga4" as Route,
+      label: t("configuration.ga4.navLabel"),
+      icon: LineChart,
+      useIconWrapper: true,
+    });
+  }
+
+  configurationItems.push(
     { href: "/configuration/system-health" as Route, label: t("configuration.systemHealth.navLabel"), icon: Activity, useIconWrapper: true },
     { href: "/configuration/events" as Route, label: t("configuration.events.navLabel"), icon: ScrollText, useIconWrapper: true },
     { href: null, label: t("nav.storeSettings"), icon: Settings },
-  ];
+  );
+
+  // The "Equipo" (team management) item is visible only to Tenant Admins —
+  // the screen itself re-checks is_tenant_admin server-side. Per
+  // docs/policy/user-management.md §4.
   if (opts?.isTenantAdmin) {
     configurationItems.push({
       href: "/configuration/equipo" as Route,
@@ -100,7 +148,7 @@ export function buildRreNav(
     });
   }
 
-  return [
+  const groups: (NavGroup | null)[] = [
     {
       key: "dashboard",
       title: t("nav.dashboard"),
@@ -109,21 +157,8 @@ export function buildRreNav(
         { href: "/dashboard" as Route, label: t("nav.dashboard"), icon: LayoutDashboard },
       ],
     },
-    // Onboarding guide — the platform-fork implementation manual. Becomes
-    // the live per-integration checklist in the M3 iteration.
-    {
-      key: "getConnected",
-      title: t("nav.getConnected"),
-      flat: true,
-      items: [
-        {
-          href: "/get-connected" as Route,
-          label: t("nav.getConnected"),
-          icon: PlugZap,
-          useIconWrapper: true,
-        },
-      ],
-    },
+    // Get Connected used to be a top-level group; it now lives inside
+    // Configuration, directly after Properties.
     // Conversion (funnel) hidden per request 2026-06-12 — restore this block
     // when the funnel surface is ready to show.
     // {
@@ -134,7 +169,7 @@ export function buildRreNav(
     //     { href: "/funnel" as Route, label: t("nav.funnel"), icon: Workflow, useIconWrapper: true },
     //   ],
     // },
-    {
+    !svc.catalog ? null : {
       key: "catalog",
       title: t("nav.catalog"),
       icon: Layers,
@@ -148,7 +183,7 @@ export function buildRreNav(
         { href: null, label: t("nav.matchingRules"), icon: GitMerge },
       ],
     },
-    {
+    !svc.pricing ? null : {
       key: "pricing",
       title: t("nav.pricing"),
       icon: DollarSign,
@@ -189,6 +224,8 @@ export function buildRreNav(
       items: configurationItems,
     },
   ];
+
+  return groups.filter((g): g is NavGroup => g !== null);
 }
 
 /**

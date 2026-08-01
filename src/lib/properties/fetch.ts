@@ -44,6 +44,13 @@ export interface InstanceProperties {
   last_search_sync_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Service model — see @/lib/instance-services and migration 20260801170000. */
+  store_platform: string;
+  search_provider: string;
+  service_catalog: boolean;
+  service_analytics: boolean;
+  service_search: boolean;
+  service_pricing: boolean;
   /**
    * Names of the configured integration keys only — never their values.
    * integrations_config can hold API keys, so the screen shows *that* an
@@ -121,7 +128,7 @@ export async function getPropertiesView(): Promise<PropertiesView> {
   const { data: instanceRows } = await supabase
     .from("instance")
     .select(
-      "instance_id, tenant_id, name, slug, kind, domain, plan, is_active, primary_locale, supported_locales, default_currency, timezone, storefront_domains, last_search_sync_at, created_at, updated_at, integrations_config",
+      "instance_id, tenant_id, name, slug, kind, domain, plan, is_active, primary_locale, supported_locales, default_currency, timezone, storefront_domains, last_search_sync_at, created_at, updated_at, integrations_config, store_platform, search_provider, service_catalog, service_analytics, service_search, service_pricing",
     )
     .eq("tenant_id", tenantId)
     .order("instance_id");
@@ -146,6 +153,12 @@ export async function getPropertiesView(): Promise<PropertiesView> {
       created_at: r.created_at as string,
       updated_at: r.updated_at as string,
       configured_integrations: Object.keys(cfg).sort(),
+      store_platform: (r.store_platform as string) ?? "proprietary",
+      search_provider: (r.search_provider as string) ?? "meilisearch",
+      service_catalog: r.service_catalog !== false,
+      service_analytics: r.service_analytics !== false,
+      service_search: r.service_search !== false,
+      service_pricing: r.service_pricing !== false,
     };
   });
 

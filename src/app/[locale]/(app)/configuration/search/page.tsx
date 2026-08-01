@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentInstanceServices } from "@/lib/instance-services.server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ping } from "@/lib/search/meilisearch-client";
 import { indexUidFor } from "@/lib/search/types";
@@ -48,6 +49,14 @@ export default async function SearchConfigPage() {
   if (!membership) redirect("/login");
 
   const instanceId: number = membership.instance_id;
+
+  // This is the Meilisearch ("through us") screen. If the instance is modelled
+  // as an Algolia one, send the user to the screen that matches — a stale
+  // bookmark shouldn't show configuration for the wrong provider.
+  const services = await getCurrentInstanceServices(instanceId);
+  if (services.searchProvider === "algolia") {
+    redirect("/configuration/algolia");
+  }
 
   const { data: instanceRow } = await supabase
     .from("instance")

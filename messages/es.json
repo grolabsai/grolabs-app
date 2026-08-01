@@ -1875,7 +1875,11 @@
       "empty": "Aún no hay eventos registrados para esta instancia.",
       "tabEvents": "Eventos",
       "tabSearches": "Búsquedas",
-      "tabCarts": "Carritos"
+      "tabCarts": "Carritos",
+      "recordDetail": "Detalle del registro",
+      "copyJson": "Copiar JSON",
+      "copied": "Copiado",
+      "close": "Cerrar"
     },
     "analysis": {
       "navLabel": "Análisis",

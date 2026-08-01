@@ -40,6 +40,24 @@ const STATUS_COLOR: Record<string, string> = {
   abandoned: "var(--gl-danger, #e0483b)", recovered: "var(--gl-warning, #d8a23a)",
 };
 
+// Preferred field order for the record-detail modal; unknown keys append
+// alphabetically so new API fields show up without a code change.
+const DETAIL_ORDER = [
+  "id", "created_at", "event_type", "event_name", "placement", "query_uid",
+  "object_id", "object_name", "position", "quantity", "value", "order_id",
+  "cart_id", "user_id", "account_id", "origin", "query", "total_hits",
+  "is_committed", "commit_reason", "intent_group_id", "status", "item_count",
+  "total_quantity", "last_event_at",
+];
+function orderedEntries(data: Record<string, unknown>): [string, unknown][] {
+  const keys = Object.keys(data);
+  keys.sort((a, b) => {
+    const ia = DETAIL_ORDER.indexOf(a); const ib = DETAIL_ORDER.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib) || a.localeCompare(b);
+  });
+  return keys.map((k) => [k, data[k]]);
+}
+
 function short(s: string | null, n = 10): string { if (!s) return "·"; return s.length > n ? s.slice(0, n) + "…" : s; }
 function money(v: number | null): string { return v == null ? "·" : `$${Number(v).toLocaleString("en-US")}`; }
 function clock(iso: string): string { return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
@@ -52,6 +70,8 @@ export function EventsLogLive() {
   const [searches, setSearches] = useState<SearchRow[]>([]);
   const [carts, setCarts] = useState<CartRow[]>([]);
   const [selCart, setSelCart] = useState<{ cart: CartRow | null; events: CartEventRow[] } | null>(null);
+  const [selRec, setSelRec] = useState<Record<string, unknown> | null>(null);
+  const [copied, setCopied] = useState(false);
   const [live, setLive] = useState(true);
   const [updated, setUpdated] = useState<string>("");
   const [err, setErr] = useState(false);
@@ -93,6 +113,18 @@ export function EventsLogLive() {
     return () => { if (timer.current) clearInterval(timer.current); };
   }, [live, refresh, selCart]);
 
+  useEffect(() => {
+    if (!selRec) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSelRec(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selRec]);
+
+  const openRec = useCallback((data: unknown) => {
+    setCopied(false);
+    setSelRec(data as Record<string, unknown>);
+  }, []);
+
   const count = tab === "events" ? rows.length : tab === "searches" ? searches.length : carts.length;
 
   const cell: React.CSSProperties = { padding: "6px 10px", fontSize: 11.5, fontFamily: "var(--gl-font-mono)", color: "var(--gl-text-secondary)", whiteSpace: "nowrap", borderBottom: "0.5px solid var(--gl-border)" };
@@ -127,7 +159,7 @@ export function EventsLogLive() {
             <tbody>
               {rows.length === 0 ? <tr><td colSpan={14} style={{ ...cell, textAlign: "center", color: "var(--gl-text-tertiary)", padding: 28 }}>{t("empty")}</td></tr>
               : rows.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} onClick={() => openRec(r)} style={{ cursor: "pointer" }}>
                   <td style={cell}><span style={{ color: "var(--gl-text-primary)" }}>{clock(r.created_at)}</span> <span style={{ color: "var(--gl-text-tertiary)" }}>{day(r.created_at)}</span></td>
                   <td style={cell}><span style={{ color: TYPE_COLOR[r.event_type ?? ""] ?? "var(--gl-text-secondary)", fontWeight: 600 }}>{r.event_type ?? "·"}</span></td>
                   <td style={{ ...cell, color: "var(--gl-text-primary)" }}>{r.event_name ?? "·"}</td>
@@ -135,7 +167,7 @@ export function EventsLogLive() {
                   <td style={cell} title={r.user_id ?? ""}>{short(r.user_id)}</td>
                   <td style={cell} title={r.account_id ?? ""}>{short(r.account_id)}</td>
                   <td style={cell} title={r.object_name ?? r.object_id ?? ""}>{short(r.object_name ?? r.object_id, 16)}</td>
-                  <td style={{ ...cell, cursor: r.cart_id ? "pointer" : undefined, color: r.cart_id ? "var(--gl-info, #7fb0c9)" : undefined }} title={r.cart_id ?? ""} onClick={() => r.cart_id && (setTab("carts"), openCart(r.cart_id))}>{short(r.cart_id)}</td>
+                  <td style={{ ...cell, cursor: r.cart_id ? "pointer" : undefined, color: r.cart_id ? "var(--gl-info, #7fb0c9)" : undefined }} title={r.cart_id ?? ""} onClick={(e) => { if (r.cart_id) { e.stopPropagation(); setTab("carts"); openCart(r.cart_id); } }}>{short(r.cart_id)}</td>
                   <td style={cell} title={r.order_id ?? ""}>{short(r.order_id)}</td>
                   <td style={{ ...cell, color: r.value != null ? "var(--gl-success, #5fbf6a)" : undefined }}>{money(r.value)}</td>
                   <td style={cell}>{r.quantity ?? "·"}</td>
@@ -157,7 +189,7 @@ export function EventsLogLive() {
             <tbody>
               {searches.length === 0 ? <tr><td colSpan={9} style={{ ...cell, textAlign: "center", color: "var(--gl-text-tertiary)", padding: 28 }}>{t("empty")}</td></tr>
               : searches.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} onClick={() => openRec(r)} style={{ cursor: "pointer" }}>
                   <td style={cell}><span style={{ color: "var(--gl-text-primary)" }}>{clock(r.created_at)}</span> <span style={{ color: "var(--gl-text-tertiary)" }}>{day(r.created_at)}</span></td>
                   <td style={{ ...cell, color: "var(--gl-text-primary)" }} title={r.query ?? ""}>{short(r.query, 28)}</td>
                   <td style={{ ...cell, color: r.total_hits === 0 ? "var(--gl-danger, #e0483b)" : "var(--gl-text-secondary)" }}>{r.total_hits ?? "·"}</td>
@@ -220,7 +252,7 @@ export function EventsLogLive() {
               <tbody>
                 {selCart.events.length === 0 ? <tr><td colSpan={8} style={{ ...cell, textAlign: "center", color: "var(--gl-text-tertiary)", padding: 28 }}>{t("empty")}</td></tr>
                 : selCart.events.map((e) => (
-                  <tr key={e.id}>
+                  <tr key={e.id} onClick={() => openRec(e)} style={{ cursor: "pointer" }}>
                     <td style={cell}><span style={{ color: "var(--gl-text-primary)" }}>{clock(e.created_at)}</span> <span style={{ color: "var(--gl-text-tertiary)" }}>{day(e.created_at)}</span></td>
                     <td style={cell}><span style={{ color: TYPE_COLOR[e.event_type ?? ""] ?? "var(--gl-text-secondary)", fontWeight: 600 }}>{e.event_type ?? "·"}</span></td>
                     <td style={{ ...cell, color: "var(--gl-text-primary)" }}>{e.event_name ?? "·"}</td>
@@ -229,6 +261,53 @@ export function EventsLogLive() {
                     <td style={cell} title={e.placement ?? ""}>{short(e.placement, 16)}</td>
                     <td style={{ ...cell, color: e.value != null ? "var(--gl-success, #5fbf6a)" : undefined }}>{money(e.value)}</td>
                     <td style={cell} title={e.order_id ?? ""}>{short(e.order_id)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── RECORD DETAIL (modal) ── */}
+      {selRec && (
+        <div
+          onClick={() => setSelRec(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            style={{ background: "var(--gl-surface)", border: "0.5px solid var(--gl-border)", borderRadius: "var(--gl-radius-lg)", width: "min(680px, 100%)", maxHeight: "82vh", overflow: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.45)" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 18px", borderBottom: "0.5px solid var(--gl-border)", position: "sticky", top: 0, background: "var(--gl-surface)", zIndex: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gl-text-primary)" }}>{t("recordDetail")}</span>
+              {typeof selRec.event_name === "string" && selRec.event_name && (
+                <span style={{ fontSize: 12, fontFamily: "var(--gl-font-mono)", color: TYPE_COLOR[String(selRec.event_type ?? "")] ?? "var(--gl-text-secondary)" }}>{selRec.event_name}</span>
+              )}
+              <span style={{ flex: 1 }} />
+              <button
+                onClick={() => { navigator.clipboard.writeText(JSON.stringify(selRec, null, 2)).then(() => setCopied(true)).catch(() => {}); }}
+                style={{ padding: "4px 10px", borderRadius: "var(--gl-radius-md)", border: "0.5px solid var(--gl-border)", background: "transparent", color: copied ? "var(--gl-success, #5fbf6a)" : "var(--gl-text-secondary)", fontSize: 11.5, cursor: "pointer" }}
+              >
+                {copied ? t("copied") : t("copyJson")}
+              </button>
+              <button
+                onClick={() => setSelRec(null)}
+                style={{ padding: "4px 10px", borderRadius: "var(--gl-radius-md)", border: "0.5px solid var(--gl-border)", background: "transparent", color: "var(--gl-text-secondary)", fontSize: 11.5, cursor: "pointer" }}
+              >
+                {t("close")}
+              </button>
+            </div>
+            <table style={{ borderCollapse: "collapse", width: "100%" }}>
+              <tbody>
+                {orderedEntries(selRec).map(([k, v]) => (
+                  <tr key={k}>
+                    <td style={{ padding: "7px 18px", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--gl-text-tertiary)", whiteSpace: "nowrap", verticalAlign: "top", borderBottom: "0.5px solid var(--gl-border)", width: 1 }}>{k}</td>
+                    <td style={{ padding: "7px 18px", fontSize: 12, fontFamily: "var(--gl-font-mono)", color: v == null || v === "" ? "var(--gl-text-tertiary)" : "var(--gl-text-primary)", wordBreak: "break-all", borderBottom: "0.5px solid var(--gl-border)" }}>
+                      {v == null || v === "" ? "·" : String(v)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

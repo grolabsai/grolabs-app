@@ -1875,7 +1875,11 @@
       "empty": "No events recorded yet for this instance.",
       "tabEvents": "Events",
       "tabSearches": "Searches",
-      "tabCarts": "Carts"
+      "tabCarts": "Carts",
+      "recordDetail": "Record detail",
+      "copyJson": "Copy JSON",
+      "copied": "Copied",
+      "close": "Close"
     },
     "analysis": {
       "navLabel": "Analysis",

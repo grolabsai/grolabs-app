@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
+import { NoAccess } from "@/components/auth/NoAccess";
 import {
   Card,
   CardContent,
@@ -26,19 +27,13 @@ export default async function Ga4ConfigPage() {
   const t = await getTranslations("configuration.ga4");
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: membership } = await supabase
-    .from("instance_member")
-    .select("instance_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!membership) redirect("/login");
-  const instanceId: number = membership.instance_id;
+  // Resolve via the canonical self-healing resolver (same as
+  // dashboard/traffic/page.tsx). The old is_active .maybeSingle() lookup
+  // errored for multi-instance users and redirected them to /login, so this
+  // page (and its pre-connect CTA) never rendered. Never redirect an
+  // authenticated user to /login here — it bounces back and loops.
+  const instanceId = await currentInstanceId();
+  if (instanceId == null) return <NoAccess />;
 
   const { data: instanceRow } = await supabase
     .from("instance")

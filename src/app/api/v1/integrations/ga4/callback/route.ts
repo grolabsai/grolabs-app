@@ -64,13 +64,17 @@ export async function GET(req: NextRequest) {
   if (!user) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
+  // Verify the caller is a member of the instance the state cookie bound the
+  // flow to. Scoped to that instance_id — an unscoped is_active lookup with
+  // .maybeSingle() errors for multi-instance users (several rows match).
   const { data: membership } = await supabase
     .from("instance_member")
     .select("instance_id")
     .eq("user_id", user.id)
+    .eq("instance_id", instanceId)
     .eq("is_active", true)
     .maybeSingle();
-  if (!membership || membership.instance_id !== instanceId) {
+  if (!membership) {
     return redirectWithError(req, "membership_mismatch");
   }
 

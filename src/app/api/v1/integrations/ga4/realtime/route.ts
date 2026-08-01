@@ -9,26 +9,16 @@
  */
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { currentInstanceId } from "@/lib/instance";
 import { getRealtimeActiveUsers } from "@/lib/integrations/ga4/fetchers";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, activeUsers: null, error: "unauth" });
-  }
-  const { data: membership } = await supabase
-    .from("instance_member")
-    .select("instance_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!membership) {
+  // Canonical is_current resolver — the old is_active .maybeSingle() lookup
+  // errored for multi-instance users and this route reported no_membership.
+  const instanceId = await currentInstanceId();
+  if (instanceId == null) {
     return NextResponse.json({
       ok: false,
       activeUsers: null,
@@ -36,7 +26,7 @@ export async function GET() {
     });
   }
 
-  const result = await getRealtimeActiveUsers(membership.instance_id);
+  const result = await getRealtimeActiveUsers(instanceId);
   const res = NextResponse.json(result);
   res.headers.set("Cache-Control", "no-store");
   return res;

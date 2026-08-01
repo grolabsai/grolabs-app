@@ -44,11 +44,47 @@ export class Ga4ConfigError extends Error {
 
 export class Ga4OAuthError extends Error {
   readonly cause?: unknown;
-  constructor(message: string, cause?: unknown) {
+  /**
+   * True only when Google told us the stored refresh token itself is dead
+   * (revoked, expired, or the granting account lost access to the property).
+   * That is PERMANENT — the user must reconnect; no amount of retrying helps.
+   *
+   * False for transient trouble (5xx, 429, network) — those must NOT nag the
+   * user to reconnect, because the connection is fine and the next pull will
+   * likely succeed.
+   */
+  readonly needsReauth: boolean;
+  /** Google's structured `error` field, e.g. "invalid_grant". */
+  readonly googleError?: string;
+  constructor(
+    message: string,
+    cause?: unknown,
+    opts?: { needsReauth?: boolean; googleError?: string },
+  ) {
     super(message);
     this.name = "Ga4OAuthError";
     this.cause = cause;
+    this.needsReauth = opts?.needsReauth ?? false;
+    this.googleError = opts?.googleError;
   }
+}
+
+/**
+ * Does a token-endpoint failure mean the refresh token is permanently dead?
+ *
+ * Google signals that one specific way: HTTP 400 with `error=invalid_grant`.
+ * We deliberately do NOT treat anything else as permanent —
+ *   - `invalid_client` / `unauthorized_client` are OUR misconfiguration, not
+ *     the user's, and reconnecting wouldn't fix them;
+ *   - 5xx / 429 / network failures are transient by definition.
+ * Classifying too broadly would push users through a pointless reconnect and
+ * mask a real outage, so when in doubt we treat a failure as transient.
+ */
+export function isPermanentGrantFailure(
+  status: number,
+  googleError?: string,
+): boolean {
+  return status === 400 && googleError === "invalid_grant";
 }
 
 export class Ga4ApiError extends Error {
@@ -191,8 +227,14 @@ export async function refreshAccessToken(
     | null;
 
   if (!res.ok || !json || !json.access_token) {
+    const googleError = json?.error;
     throw new Ga4OAuthError(
-      `Refresh failed (${res.status}): ${json?.error_description ?? json?.error ?? "unknown"}`,
+      `Refresh failed (${res.status}): ${json?.error_description ?? googleError ?? "unknown"}`,
+      undefined,
+      {
+        needsReauth: isPermanentGrantFailure(res.status, googleError),
+        googleError,
+      },
     );
   }
   return json;
@@ -341,4 +383,88 @@ export function resolveRedirectUri(requestOrigin: string): string {
     process.env.GOOGLE_OAUTH_REDIRECT_URI ??
     `${requestOrigin}/api/v1/integrations/ga4/callback`
   );
+}
+
+// ── Admin API — property discovery ───────────────────────────────────────────
+
+const ADMIN_API_BASE = "https://analyticsadmin.googleapis.com/v1beta";
+
+/** One GA4 property the connected Google account can read. */
+export interface Ga4PropertySummary {
+  /** Digits only — the same shape we store in integrations_config.ga4. */
+  propertyId: string;
+  /** Property name as shown in the GA4 UI, e.g. "GroLabs.ai — Web". */
+  displayName: string;
+  /** Owning account name — users with several accounts need it to disambiguate. */
+  accountName: string;
+}
+
+interface AccountSummariesResponse {
+  accountSummaries?: {
+    account?: string;
+    displayName?: string;
+    propertySummaries?: { property?: string; displayName?: string }[];
+  }[];
+  nextPageToken?: string;
+}
+
+/**
+ * List every GA4 property the access token can reach, flattened across
+ * accounts. Powers the property picker on /configuration/ga4 so the user
+ * chooses from a named list instead of pasting a 9-digit number.
+ *
+ * Uses the SAME `analytics.readonly` scope the integration already requests —
+ * the Admin API's read endpoints are covered by it, so this needs no
+ * re-consent and existing connections keep working untouched.
+ *
+ * Paginates to completion; a merchant with many accounts must still see all
+ * their properties.
+ */
+export async function listAccountSummaries(
+  accessToken: string,
+): Promise<Ga4PropertySummary[]> {
+  const out: Ga4PropertySummary[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const params = new URLSearchParams({ pageSize: "200" });
+    if (pageToken) params.set("pageToken", pageToken);
+
+    let res: Response;
+    try {
+      res = await fetch(`${ADMIN_API_BASE}/accountSummaries?${params}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+    } catch (err) {
+      throw new Ga4ApiError("Network error listing GA4 properties", 0, err);
+    }
+
+    const json = (await res.json().catch(() => null)) as
+      | (AccountSummariesResponse & { error?: { message?: string } })
+      | null;
+
+    if (!res.ok || !json) {
+      throw new Ga4ApiError(
+        `accountSummaries failed (${res.status}): ${json?.error?.message ?? "unknown"}`,
+        res.status,
+        json,
+      );
+    }
+
+    for (const acc of json.accountSummaries ?? []) {
+      for (const prop of acc.propertySummaries ?? []) {
+        // `property` arrives as "properties/123456789" — store digits only.
+        const propertyId = (prop.property ?? "").split("/")[1] ?? "";
+        if (!propertyId) continue;
+        out.push({
+          propertyId,
+          displayName: prop.displayName ?? propertyId,
+          accountName: acc.displayName ?? "",
+        });
+      }
+    }
+    pageToken = json.nextPageToken;
+  } while (pageToken);
+
+  return out;
 }

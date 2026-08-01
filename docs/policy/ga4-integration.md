@@ -551,3 +551,78 @@ this"). The donut container's `class="ring"` collides with Tailwind's `ring`
 utility (it paints a blue box-shadow — the long-standing "blue square");
 `.gro-id .ring { box-shadow: none }` suppresses it. The right-side Assistant
 panel uses the theme-aware `--gl-panel` gray (not stark white) — `globals.css`.
+
+---
+
+## 17. Google Cloud OAuth consent screen — operational prerequisite (2026-08-01)
+
+**This is a one-time GroLabs-side setting on our own Google Cloud project.
+Merchants never create an OAuth app — they only consent to ours.** Nothing in
+this section is a per-merchant task.
+
+**Publishing status must be `In production`, not `Testing`.** While the consent
+screen sits in Testing, Google expires every issued refresh token after **7
+days** and caps the app at 100 test users. That expiry is invisible in our UI:
+the token simply stops working and pulls fail until someone reconnects. With the
+app published, refresh tokens are long-lived.
+
+**OPEN — OAuth verification is not done.** `analytics.readonly` is a
+Google-classified **sensitive** scope. An `External` app in production that
+requests a sensitive scope needs Google's OAuth verification review; until it
+passes, users see the "Google hasn't verified this app" interstitial and the app
+is capped at 100 users. Verification requires a published privacy policy, domain
+verification, and sometimes a demo video, and can take weeks. **Status: not
+started.** Start it before onboarding merchants at any scale.
+
+Setting the app to `Internal` avoids verification entirely but restricts
+sign-in to the GroLabs Workspace org, which would prevent merchants from
+connecting their own accounts — so it is not an option for this integration.
+
+**Merchant-facing connect instructions are only these three steps:** sign in
+with a Google account that has at least Viewer access to the GA4 property,
+approve the consent screen, then pick the property from the dropdown.
+
+### 17.1 Reconnect flow (expired or revoked tokens)
+
+Publishing removes the *guaranteed* 7-day expiry but not every failure mode: a
+user can revoke access in their Google security settings, the granting account
+can lose view access to the property, ~6 months of disuse expires a token, and
+some password changes invalidate grants. The reconnect path is therefore
+**permanent**, not a workaround for the Testing status.
+
+- Google signals a dead refresh token exactly one way: **HTTP 400 with
+  `error=invalid_grant`**. `isPermanentGrantFailure()` in `ga4/client.ts` treats
+  only that as permanent. 5xx, 429, network failures — and `invalid_client` /
+  `unauthorized_client`, which are *our* misconfiguration — are transient and
+  must never prompt a reconnect.
+- On a permanent failure, `ga4_set_reauth_state` (migration `20260801090555`)
+  sets `integrations_config.ga4.needs_reauth` + `reauth_reason` + `reauth_at`,
+  and the failure is recorded in `backend_operation` as `ga4_reauth_required`.
+  Every token-refresh path feeds this: the nightly poll, the on-demand pull, the
+  realtime widget, the test action, and the property list call.
+- Any successful refresh clears the flag, so a connection that recovers stops
+  nagging with no user action.
+- **A reconnect never destroys anything.** `ga4_save_credentials` now preserves
+  an existing `property_id` when called with an empty one (the OAuth callback
+  always passes empty, because Google's consent screen does not return a
+  property). Before this migration, reconnecting silently blanked the configured
+  property and orphaned the instance's history.
+
+### 17.2 Property picker + the data-invalidation rule
+
+`/configuration/ga4` lists properties by name via the Admin API
+(`GET /v1beta/accountSummaries`, paginated). This uses the **existing**
+`analytics.readonly` scope — the Admin API's read endpoints are covered by it,
+so no re-consent is needed and existing connections keep working. Manual numeric
+entry remains as a fallback whenever the list call fails or returns nothing.
+
+**Changing the property purges that instance's GA4 history.** Every row in
+`ga4_session_daily`, `ga4_traffic_daily`, `ga4_page_daily`, `ga4_geo_daily`,
+`ga4_device_daily` and `ga4_alert` belongs to the *previous* property; keeping
+them would blend two different sites into one dashboard — a worse failure than
+the friction the picker removes. The user confirms explicitly, the rows are
+deleted, and a fresh `BACKFILL_DAYS` pull starts immediately.
+
+This purge applies **only to a deliberate property change**. A first-time set
+purges nothing (there is nothing to purge), and a reconnect of the same property
+purges nothing by design.

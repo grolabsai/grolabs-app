@@ -21,6 +21,7 @@ import {
   Ga4OAuthError,
   type RunReportResponse,
 } from "./client";
+import { clearGa4NeedsReauth, handleGa4TokenError } from "./reauth";
 import { POLL_TRAILING_DAYS, TOP_PAGES_LIMIT } from "./constants";
 import type {
   Ga4DeviceDailyRow,
@@ -448,6 +449,9 @@ export async function pullForInstance(args: {
       );
     }
     const { access_token } = await refreshAccessToken(refreshTok);
+    // The token still works — retire any stale "reconnect needed" flag so a
+    // connection that recovers stops nagging without user action.
+    await clearGa4NeedsReauth(instanceId);
 
     const dates = daysBack(trailingDays);
     for (const date of dates) {
@@ -511,6 +515,10 @@ export async function pullForInstance(args: {
     } catch {
       // best-effort — don't mask the original error
     }
+
+    // If Google said the refresh token itself is dead, persist that so the UI
+    // can prompt for a reconnect. Transient failures fall through untouched.
+    await handleGa4TokenError(instanceId, err);
 
     return {
       instanceId,

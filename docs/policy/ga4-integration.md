@@ -554,11 +554,53 @@ panel uses the theme-aware `--gl-panel` gray (not stark white) — `globals.css`
 
 ---
 
-## 17. Google Cloud OAuth consent screen — operational prerequisite (2026-08-01)
+## 17. Google Cloud project — operational prerequisites (2026-08-01)
 
-**This is a one-time GroLabs-side setting on our own Google Cloud project.
-Merchants never create an OAuth app — they only consent to ours.** Nothing in
-this section is a per-merchant task.
+**These are one-time GroLabs-side settings on our own Google Cloud project
+(`380872502519`). Merchants never create an OAuth app or enable an API — they
+only consent to ours.** Nothing in this section is a per-merchant task, and
+getting these right once removes the friction for every merchant who ever
+connects.
+
+| # | Prerequisite | Status |
+|---|---|---|
+| 1 | **Analytics Data API** (`analyticsdata.googleapis.com`) enabled | ✅ done — daily pulls and the realtime widget depend on it |
+| 2 | **Analytics Admin API** (`analyticsadmin.googleapis.com`) enabled | ✅ done 2026-08-01 — required by the property picker |
+| 3 | OAuth consent screen published (`In production`, not `Testing`) | ⛔ **verify** — see below |
+| 4 | OAuth verification for the sensitive scope | ⛔ **not started** — see below |
+
+### 17.0 Two separate GA4 APIs — both must be enabled
+
+GA4 exposes its read surface through **two independent APIs**, each enabled
+separately in the Cloud project:
+
+- **Data API** (`analyticsdata.googleapis.com`) — metrics. Powers `runReport`
+  (daily snapshots) and `runRealtimeReport` (the live widget).
+- **Admin API** (`analyticsadmin.googleapis.com`) — metadata. Powers
+  `accountSummaries`, which is how the property picker lists properties by name.
+
+Enabling one does NOT enable the other, and the failure is asymmetric and
+confusing: traffic data flows perfectly while the property picker silently
+falls back to manual entry. That is exactly what happened on 2026-08-01 — the
+Data API had been enabled since the integration was built, the Admin API had
+never been called before, and Google answered `accountSummaries` with:
+
+```
+403 PERMISSION_DENIED — Google Analytics Admin API has not been used in
+project 380872502519 before or it is disabled.
+```
+
+Failures of this call are recorded in `backend_operation` as
+`ga4_property_list_failed` with Google's full response body, which carries the
+direct enablement URL. Check there first if the picker ever degrades to a text
+box again.
+
+**Api enablement is per-Cloud-project, not per-user and not per-merchant.**
+This is why the same picker works out of the box in other platforms' GA4
+integrations: the call runs in *their* Cloud project, where they enabled the
+Admin API once when they built the feature.
+
+### 17.1 Consent screen publishing status
 
 **Publishing status must be `In production`, not `Testing`.** While the consent
 screen sits in Testing, Google expires every issued refresh token after **7
@@ -582,7 +624,7 @@ connecting their own accounts — so it is not an option for this integration.
 with a Google account that has at least Viewer access to the GA4 property,
 approve the consent screen, then pick the property from the dropdown.
 
-### 17.1 Reconnect flow (expired or revoked tokens)
+### 17.2 Reconnect flow (expired or revoked tokens)
 
 Publishing removes the *guaranteed* 7-day expiry but not every failure mode: a
 user can revoke access in their Google security settings, the granting account
@@ -608,7 +650,7 @@ some password changes invalidate grants. The reconnect path is therefore
   property). Before this migration, reconnecting silently blanked the configured
   property and orphaned the instance's history.
 
-### 17.2 Property picker + the data-invalidation rule
+### 17.3 Property picker + the data-invalidation rule
 
 `/configuration/ga4` lists properties by name via the Admin API
 (`GET /v1beta/accountSummaries`, paginated). This uses the **existing**

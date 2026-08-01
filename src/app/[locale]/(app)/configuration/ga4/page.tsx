@@ -56,10 +56,15 @@ export default async function Ga4ConfigPage() {
   // when there's nothing to list or the grant is known-dead — both render other
   // states anyway. Returns null on any failure; the form falls back to manual
   // numeric entry.
-  const properties =
+  const propertyOptions =
     hasRefreshToken && ga4.needs_reauth !== true
       ? await listGa4PropertyOptions(instanceId)
       : null;
+  const properties = propertyOptions?.ok ? propertyOptions.properties : null;
+  // Surfaced in the UI rather than swallowed — a picker that silently degrades
+  // to a text box is indistinguishable from a picker that was never built.
+  const propertyError =
+    propertyOptions && !propertyOptions.ok ? propertyOptions.reason : undefined;
 
   return (
     <div className="s-page-content">
@@ -84,6 +89,7 @@ export default async function Ga4ConfigPage() {
             hasRefreshToken={hasRefreshToken}
             instanceName={instanceName}
             initialProperties={properties}
+            propertyError={propertyError}
           />
         </CardContent>
       </Card>

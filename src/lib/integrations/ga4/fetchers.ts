@@ -20,6 +20,7 @@ import {
   type Ga4PropertySummary,
 } from "./client";
 import { clearGa4NeedsReauth, handleGa4TokenError } from "./reauth";
+import { recordBackendOperation } from "@/lib/observability/backend-operation";
 import {
   REALTIME_WINDOW_MINUTES,
   TIMESERIES_DAYS,
@@ -655,30 +656,67 @@ export interface RealtimeActiveUsers {
  * Live call to GA4 Realtime API. Used by the right-now widget; degrade
  * gracefully on error per policy §7.
  */
+export type Ga4PropertyOptions =
+  | { ok: true; properties: Ga4PropertySummary[] }
+  | { ok: false; reason: string };
+
 /**
  * Property options for the picker on /configuration/ga4, resolved on the
  * SERVER so the form renders with the list already in hand — no client
  * round-trip, no loading flicker, and no setState-in-effect.
  *
- * Returns null (never throws) when the list can't be fetched — no token yet,
- * Google unreachable, or a dead grant. The form falls back to manual numeric
- * entry in every one of those cases, so this is never a dead end.
+ * Never throws. On failure it returns the REASON rather than a bare null:
+ * the first version swallowed the error, so a failed list was indistinguishable
+ * from "you have no properties" and left nothing to debug from. Silent failure
+ * is exactly what the durable-logging rule exists to prevent, so every failure
+ * here is also written to backend_operation.
+ *
+ * The form falls back to manual numeric entry in every failure case, so this
+ * is never a dead end — but now it can say why.
  */
 export async function listGa4PropertyOptions(
   instanceId: number,
-): Promise<Ga4PropertySummary[] | null> {
+): Promise<Ga4PropertyOptions> {
   const supabase = await createClient();
   try {
     const { data: refreshTok } = await supabase.rpc("ga4_get_refresh_token", {
       p_instance_id: instanceId,
     });
-    if (!refreshTok || typeof refreshTok !== "string") return null;
+    if (!refreshTok || typeof refreshTok !== "string") {
+      return { ok: false, reason: "no_refresh_token" };
+    }
     const { access_token } = await refreshAccessToken(refreshTok);
     await clearGa4NeedsReauth(instanceId);
-    return await listAccountSummaries(access_token);
+    const properties = await listAccountSummaries(access_token);
+    return { ok: true, properties };
   } catch (err) {
     await handleGa4TokenError(instanceId, err);
-    return null;
+
+    // Google's 403 for a disabled API carries the enablement URL in its body,
+    // which is the single most useful string when this goes wrong — keep the
+    // whole message rather than collapsing it to a status code.
+    const reason =
+      err instanceof Ga4ApiError
+        ? `${err.status}: ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : "unknown_error";
+
+    console.error("[ga4] property list failed:", reason);
+    try {
+      await recordBackendOperation({
+        instanceId,
+        operationType: "ga4_property_list_failed",
+        status: "failed",
+        errorMessage: reason,
+        responsePayload:
+          err instanceof Ga4ApiError ? (err.body ?? null) : null,
+      });
+    } catch (logErr) {
+      console.error("[ga4] failed to log property-list failure:", logErr);
+    }
+
+    return { ok: false, reason };
   }
 }
 

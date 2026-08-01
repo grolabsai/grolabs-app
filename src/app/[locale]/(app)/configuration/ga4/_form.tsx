@@ -57,6 +57,9 @@ type Props = {
   /** Properties the stored token can reach, resolved server-side. `null`
    *  means "couldn't list them" — the form falls back to manual entry. */
   initialProperties: Ga4PropertySummary[] | null;
+  /** Why the list couldn't be fetched, shown verbatim so a failure is
+   *  diagnosable instead of looking like "there is no picker". */
+  propertyError?: string;
 };
 
 export function Ga4Form({
@@ -64,6 +67,7 @@ export function Ga4Form({
   hasRefreshToken,
   instanceName,
   initialProperties,
+  propertyError,
 }: Props) {
   const t = useTranslations("configuration.ga4");
   const params = useSearchParams();
@@ -364,6 +368,18 @@ export function Ga4Form({
             >
               {t("fields.propertyIdHint")}
             </p>
+            {propertyError ? (
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--gl-warning-text)",
+                  marginTop: 6,
+                  wordBreak: "break-word",
+                }}
+              >
+                {t("fields.listUnavailable")} {propertyError}
+              </p>
+            ) : null}
             {properties !== null && properties.length > 0 ? (
               <button
                 type="button"

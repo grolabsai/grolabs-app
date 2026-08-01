@@ -1820,7 +1820,8 @@
         "enterManually": "Enter a property ID manually instead",
         "chooseFromList": "Choose from your properties instead",
         "loadingProperties": "Loading your properties…",
-        "retryList": "Load my properties from Google"
+        "retryList": "Load my properties from Google",
+        "listUnavailable": "Couldn’t load your property list:"
       },
       "postConnect": {
         "stepBadge": "Step 1 of 2 · Account connected",

@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:isolation": "node scripts/test-tenant-isolation.mjs",
     "smoke:calcom": "node scripts/calcom-webhook-smoke.mjs",
     "test:smoke": "playwright test",
     "test:e2e": "playwright test --config playwright-e2e.config.ts",

@@ -56,7 +56,7 @@ The atomic data unit is **instance**, not tenant.
 **Canonical live tenant/instance map:** [`docs/state/instances.md`](docs/state/instances.md) — which tenant/instance rows exist in production (project `scout`), what each is for (template 0 / real customer HPC 11 / test storefront 12 / synthetic 99999), and which ids are burned (deleted Wazú, snapshot in the `graveyard` schema). Read it before touching, testing against, or creating tenant/instance rows.
 
 - Every operational table has `instance_id` (FK → `instance`). `tenant_id` appears only in the initial schema migration and legacy join tables — do not use it in new code.
-- `instance_member` is the security perimeter. A user can belong to multiple instances; RLS reads `instance_id` from the JWT claim.
+- `instance_member` is the security perimeter. A user can belong to multiple instances; RLS resolves the active one through `public.current_instance_id()`, which reads the user's `instance_member` row `WHERE is_current = true` — **not** a JWT claim. That means `instance_member` write policies are load-bearing: anyone who can change their own `is_current` (or insert a row) changes what every RLS policy lets them see.
 - Never write `WHERE instance_id = X` in application code. RLS enforces isolation automatically.
 - The `service-role` Supabase client (bypasses RLS) is reserved for admin flows only: copy-on-signup, bulk imports, reconciliation. Never for normal reads.
 - Template categories/attributes exist for seeding new instances during onboarding. They are never visible to tenants in normal operation.

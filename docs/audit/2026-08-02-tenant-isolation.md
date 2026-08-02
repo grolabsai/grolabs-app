@@ -2,7 +2,7 @@
 application: core-app
 module: Security
 title: "Audit — tenant isolation (M1 go-live P0)"
-status: Findings — 1 critical open
+status: "Findings — 1 critical open, 1 latent"
 owner: "Tuncho"
 audience: "Anyone deciding whether GroLabs is safe to put a real customer on."
 scope: "Executed 2026-08-02 against the live production DB (project scout, ixbbhwtpnebrhquunege) using scripts/test-tenant-isolation.mjs. Covers tenant/instance data isolation only — not authn, not the WordPress plugins, not scale."

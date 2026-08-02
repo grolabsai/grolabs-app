@@ -170,11 +170,78 @@ Most of this looks **deliberate and correct**:
 - `prompt_template` — `blog.md` specifies instance-0 fallback for prompt resolution.
 - `diagnostic_*`, `vertical_*`, `fix_recommendation` — `prospectos.md` specifies the catalog tables as "per-instance + instance-0 fallthrough".
 
-That accounts for 14 of 15. **`brand_system` is the one I can't tie to a
-policy doc** — worth confirming that template brand data is meant to be world-
-readable.
+That accounts for 14 of 15, and I read the policies to confirm rather than
+assuming. They use the correct fallthrough shape — instance-0 rows readable by
+all authenticated users, per-instance rows readable **only by members of that
+instance**:
 
-No action assumed here; this is flagged for a decision, not filed as a defect.
+```sql
+-- prompt_template_read (20260523000004_prompt_template.sql:37), representative
+using (
+  instance_id = 0
+  or exists (select 1 from public.instance_member im
+             where im.instance_id = prompt_template.instance_id
+               and im.user_id = auth.uid())
+)
+```
+
+`diagnostic_check` and `fix_recommendation` additionally grant **`anon`** read
+on instance-0 rows (`20260526000001:63-69`) — deliberate, so the public
+landing-page diagnostic widget works without a login (`prospectos.md`).
+
+### `brand_system` is the exception — and it is a latent defect
+
+`supabase/migrations/20260523000005_brand_system.sql:59`:
+
+```sql
+create policy brand_system_select_public on public.brand_system
+  for select
+  using (true);
+```
+
+This is **not** template fallthrough. There is no instance predicate and no
+`to authenticated` clause, so it resolves to *every row, of every instance,
+readable by everyone — including anonymous users*. Writes are correctly
+member-gated; reads are wide open.
+
+Harmless **today**: the table holds exactly one row, instance 0, GroLabs' own
+public brand identity (display name, tagline, colors, fonts, voice guide).
+Nothing of anyone else's is exposed because nothing of anyone else's exists.
+
+But `blog.md` lists per-instance `brand_system` (voice guide, colors, fonts) on
+the backlog. **The day a customer saves a brand system, it becomes world-
+readable to unauthenticated users.** The Tier 3 sweep cannot catch this today
+precisely because there are no per-instance rows to expose — the same way it
+would have missed the three views had instance 16 carried no events.
+
+Same class as Finding 1, not yet armed. Suggested fix, matching the pattern the
+other 14 tables already use:
+
+```sql
+drop policy brand_system_select_public on public.brand_system;
+create policy brand_system_read on public.brand_system
+  for select to authenticated
+  using (
+    instance_id = 0
+    or exists (select 1 from public.instance_member im
+               where im.instance_id = brand_system.instance_id
+                 and im.user_id = auth.uid())
+  );
+```
+
+If anonymous read of the *template* brand is actually required (e.g. public
+blog pages styling themselves from instance 0), keep an `anon` policy scoped to
+`instance_id = 0` only — the way `diagnostic_check` does it.
+
+### A judgment call, not a defect
+
+`prompt_template` is correctly scoped, but instance 0 holds your prompt
+engineering — `blog.system_prompt`, `blog.voice_default`, the rewrite and
+image-transform prompts (18 rows). By design, every authenticated customer can
+read all of it. That is the fallthrough working as specified in `blog.md`, not
+a bug. It is worth a deliberate decision about whether those prompts are IP you
+would rather not hand to tenants; if so, the fix is moving the sensitive ones
+server-side, not changing RLS.
 
 ---
 

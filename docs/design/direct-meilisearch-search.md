@@ -514,7 +514,14 @@ connection.**
 > installed, and owning our own analytics instead of reading Meilisearch's dashboard.
 > None of it is Meilisearch's, and none of it is required to connect a single store.
 
-18a. **Authenticate the ingest endpoint.** Require a bearer credential on
+18a. **LANDED 2026-11-02.** `/api/v1/events` requires `Authorization: Bearer
+    <storefront search key>` whenever the instance holds a live key; instances without
+    one are unaffected, so legacy callers keep working. Preflight advertises
+    `Authorization`. Verified: no bearer 403, wrong bearer 403, raw key without the
+    scheme 403, correct bearer 202, keyless instance 202. SEC-003 drops to medium and
+    stays open — the credential is public, so this stops blind forgery against a
+    guessed domain, not a determined attacker. Original wording:
+    **Authenticate the ingest endpoint.** Require a bearer credential on
     `/api/v1/events` instead of trusting `Origin` alone — see SEC-003. Cheap, entirely
     within our control, and it closes the only finding here that deserves the word
     vulnerability. Keep the origin check as a filter; it is simply not an

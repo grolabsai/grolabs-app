@@ -837,6 +837,102 @@ export async function generateInstanceEventsToken(
   }
 }
 
+// ── Per-instance search keys (permanent, revocable) ─────────────────────
+
+/**
+ * The storefront's own credential, per docs/design/direct-meilisearch-search.md.
+ *
+ * Distinct from the tenant tokens above in three ways that matter:
+ *   - it is a real Meilisearch API key, so it can be revoked individually
+ *     (tokens cannot — there is no token API, only the parent key);
+ *   - it never expires, because nothing on a schedule may be able to break a
+ *     merchant's search;
+ *   - it is scoped to one index, which is the whole tenant boundary now that
+ *     every instance has its own `inst_N`.
+ *
+ * `actions: ["search"]` covers BOTH searching and submitting analytics events
+ * — Meilisearch's `/events` endpoint accepts a search-scoped key, which is why
+ * EVENTS_KEY_ACTION above is "search" too. One key, both jobs.
+ */
+
+/**
+ * Deterministic, operator-readable name. Manual deletion in the Meilisearch
+ * console is the enforcement path, so the key has to be findable by a human
+ * who knows only the instance id.
+ */
+export function searchKeyNameFor(instanceId: number): string {
+  return `grolabs-inst-${instanceId}`;
+}
+
+export type MeilisearchSearchKey = { uid: string; key: string; name: string };
+
+/**
+ * Create the permanent search key for one instance. Caller owns persistence
+ * — see src/lib/search/search-key.ts, which is the only thing that should
+ * call this.
+ */
+export async function createInstanceSearchKey(
+  instanceId: number
+): Promise<MeilisearchSearchKey> {
+  const client = getClient();
+  const name = searchKeyNameFor(instanceId);
+  try {
+    const created = await client.createKey({
+      name,
+      description:
+        `Permanent storefront key for instance ${instanceId}: direct search + event submission, ` +
+        `one index, no expiry. Delete this key to cut the instance off.`,
+      actions: ["search"],
+      indexes: [indexUidFor(instanceId)],
+      expiresAt: null,
+    });
+    return { uid: created.uid, key: created.key, name };
+  } catch (err) {
+    throw new MeilisearchOpError(`createInstanceSearchKey(${instanceId}) failed`, err);
+  }
+}
+
+/**
+ * Delete a key by uid. A 404 resolves successfully: the operator deleting the
+ * key by hand in the console is the expected path, so "already gone" is the
+ * outcome we wanted, not an error.
+ */
+export async function deleteKeyByUid(uid: string): Promise<void> {
+  const client = getClient();
+  try {
+    await client.deleteKey(uid);
+  } catch (err) {
+    if (err instanceof MeilisearchApiError && err.response.status === 404) return;
+    throw new MeilisearchOpError(`deleteKeyByUid(${uid}) failed`, err);
+  }
+}
+
+/**
+ * Whether a key still exists upstream, with its scope. Lets the configuration
+ * panel distinguish "live" from "deleted in the console behind our back" —
+ * without it, a hand-revoked instance would still read as active in our UI.
+ */
+export async function describeKeyByUid(uid: string): Promise<{
+  uid: string;
+  name: string | null;
+  actions: string[];
+  indexes: string[];
+} | null> {
+  const client = getClient();
+  try {
+    const k = await client.getKey(uid);
+    return {
+      uid: k.uid,
+      name: k.name ?? null,
+      actions: [...k.actions],
+      indexes: [...k.indexes],
+    };
+  } catch (err) {
+    if (err instanceof MeilisearchApiError && err.response.status === 404) return null;
+    throw new MeilisearchOpError(`describeKeyByUid(${uid}) failed`, err);
+  }
+}
+
 // ── Test seam ─────────────────────────────────────────────────────────────────
 
 /**

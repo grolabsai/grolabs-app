@@ -12,6 +12,10 @@ import {
 } from "@/lib/search/meilisearch-client";
 import { indexAllForInstance } from "@/lib/search/indexer";
 import {
+  getOrCreateInstanceSearchKey,
+  revokeInstanceSearchKey,
+} from "@/lib/search/search-key";
+import {
   FACET_ALLOWLIST,
   buildMeilisearchFilter,
   sanitizeFacets,
@@ -1071,5 +1075,86 @@ export async function runFullBackfill(instanceId: number): Promise<RunBackfillRe
     return { ok: true, indexed: result.indexed, failed: result.failed };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "unknown" };
+  }
+}
+
+// ── Storefront search key (direct-to-Meilisearch) ─────────────────────────
+
+/**
+ * Per docs/design/direct-meilisearch-search.md Phase 1, steps 3-4.
+ *
+ * The permanent per-instance key the storefront carries so it can query
+ * Meilisearch without us in the path. Provisioning is explicit (never a
+ * side-effect of rendering the screen) and revocation is the manual
+ * enforcement path — there is no expiry and no renewal, so this panel and the
+ * Meilisearch console are the only places the credential's life is decided.
+ */
+
+/** Membership check that also hands back the acting user, for the audit columns. */
+async function authorizeMembershipUser(instanceId: number): Promise<string | null> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data: membership } = await sb
+    .from("instance_member")
+    .select("instance_id")
+    .eq("user_id", user.id)
+    .eq("instance_id", instanceId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return membership ? user.id : null;
+}
+
+export type ProvisionSearchKeyResult =
+  | { ok: true; keyValue: string; keyName: string }
+  | { ok: false; error: "unauthorized" | "provision_failed"; message?: string };
+
+export async function provisionSearchKey(
+  instanceId: number
+): Promise<ProvisionSearchKeyResult> {
+  const userId = await authorizeMembershipUser(instanceId);
+  if (!userId) return { ok: false, error: "unauthorized" };
+
+  try {
+    const record = await getOrCreateInstanceSearchKey(instanceId, userId);
+    revalidatePath("/configuration/search");
+    return { ok: true, keyValue: record.keyValue, keyName: record.keyName };
+  } catch (err) {
+    return {
+      ok: false,
+      error: "provision_failed",
+      message: err instanceof Error ? err.message : "unknown",
+    };
+  }
+}
+
+export type RevokeSearchKeyResult =
+  | { ok: true; revoked: boolean }
+  | { ok: false; error: "unauthorized" | "revoke_failed"; message?: string };
+
+/**
+ * Deletes the key in Meilisearch and marks the row revoked. Tolerates the key
+ * already being gone upstream, which is the case when an operator deleted it
+ * by hand — the row still has to end up marked, or this panel keeps claiming
+ * the instance is live.
+ */
+export async function revokeSearchKey(
+  instanceId: number
+): Promise<RevokeSearchKeyResult> {
+  const userId = await authorizeMembershipUser(instanceId);
+  if (!userId) return { ok: false, error: "unauthorized" };
+
+  try {
+    const revoked = await revokeInstanceSearchKey(instanceId, userId);
+    revalidatePath("/configuration/search");
+    return { ok: true, revoked };
+  } catch (err) {
+    return {
+      ok: false,
+      error: "revoke_failed",
+      message: err instanceof Error ? err.message : "unknown",
+    };
   }
 }

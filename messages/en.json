@@ -1757,6 +1757,56 @@
           "unmatchedTitle": "\"{token}\" does not match any attribute of this result"
         }
       },
+      "storefrontKey": {
+        "cardTitle": "Storefront key",
+        "cardDescription": "The permanent key the storefront carries so shoppers reach Meilisearch directly, without passing through GroLabs. It never expires and is never renewed — deleting it is how an instance is cut off.",
+        "state": {
+          "liveLabel": "LIVE",
+          "liveBody": "This storefront can search. Confirmed against Meilisearch when this page loaded.",
+          "missingLabel": "NOT ISSUED",
+          "missingBody": "This instance has no storefront key, so its storefront cannot search Meilisearch directly.",
+          "revokedLabel": "REVOKED",
+          "revokedBody": "The key was revoked on {date}. This storefront cannot search until a new key is issued.",
+          "goneLabel": "DELETED IN MEILISEARCH",
+          "goneBody": "We hold a key that no longer exists in Meilisearch — it was deleted there by hand. This storefront's searches are already failing. Record the revocation, or issue a replacement.",
+          "unverifiedLabel": "UNVERIFIED",
+          "unverifiedBody": "We hold a key but could not reach Meilisearch to confirm it still exists. This says nothing either way about whether search is working."
+        },
+        "fields": {
+          "key": "Key",
+          "keyName": "Name in Meilisearch",
+          "host": "Host",
+          "indexUid": "Index",
+          "created": "Issued",
+          "revoked": "Revoked",
+          "uid": "Key uid"
+        },
+        "pasteHint": "Paste this into the Shopify theme block settings, beside the instance id. It is read-only, scoped to this one index, and public by design.",
+        "actions": {
+          "provision": "Issue key",
+          "provisioning": "Issuing…",
+          "reissue": "Issue new key",
+          "revoke": "Revoke key",
+          "revoking": "Revoking…",
+          "markRevoked": "Record revocation",
+          "copy": "Copy",
+          "copied": "Copied"
+        },
+        "confirm": {
+          "body": "The storefront stops returning results within seconds. The catalog index is untouched, and a new key can be issued at any time.",
+          "cancel": "Cancel"
+        },
+        "history": {
+          "title": "REVOCATION HISTORY",
+          "row": "{name} · issued {created} · revoked {revoked}"
+        },
+        "toast": {
+          "provisioned": "Storefront key issued",
+          "revoked": "Storefront key revoked",
+          "alreadyRevoked": "There was no live key to revoke",
+          "failed": "Could not complete that: {message}"
+        }
+      },
       "requestLog": {
         "cardTitle": "Recent requests",
         "cardDescription": "Every call /api/v1/search receives from the WordPress plugin appears here within ~2 seconds. Denied requests show the reason.",

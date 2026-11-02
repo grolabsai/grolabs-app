@@ -209,6 +209,31 @@ Variable products are attributed to **parent** product_id since that's what the 
 
 ## 4. Token lifecycle
 
+> **SUPERSEDED for direct-mode storefronts, 2026-11-02.** This section is an Active
+> policy decision, so the original is kept verbatim below rather than rewritten; it
+> still describes the WordPress plugin and any storefront without a key. What changed,
+> per [`direct-meilisearch-search.md`](../design/direct-meilisearch-search.md):
+>
+> - **There is no token.** A storefront configured for direct mode carries a permanent,
+>   search-only Meilisearch API key in its theme settings. It never expires and is
+>   never refreshed, so the fetch, the cache, the 60-second skew and the in-flight
+>   deduplication below all describe machinery that no longer runs. `/api/v1/events/token`
+>   is retained only for back-compat.
+> - **One key covers search AND events** — Meilisearch's `/events` accepts a
+>   search-scoped key, which is what removed the per-page-load round-trip to GroLabs.
+> - **"Event loss is acceptable for this signal" no longer holds.** It was true when
+>   `query_log` was written server-side by the proxy and these events were only
+>   relevance feedback. In direct mode a reported event is the *only* record that a
+>   search happened, so telemetry is now batched with a localStorage retry queue, and
+>   its loss is measured rather than accepted (R-10, R-13, R-14). The `console.warn`-and-
+>   forget error path described below is specifically what Phase 5 replaced.
+> - **The last paragraph's threat model has shifted.** It reasons that an exposed token
+>   only lets a merchant write events for their own instance. That is still true, but
+>   the key is now public *by design* rather than merely exposable, so anyone who reads
+>   a storefront's page source can write events for that instance. Tracked as SEC-004.
+>
+> Original text follows.
+
 The Meilisearch tenant token is fetched by the plugin's events.js on first use and cached in memory for the page lifetime. Refresh logic:
 
 - Token includes `expires_at` (unix seconds). The cache invalidates 60 s before that to avoid using a token that expires mid-request.
@@ -224,6 +249,14 @@ Three places, each showing the same events from a different angle:
 1. **GroLabs admin → `/configuration/search` → "Eventos recientes" card** (RRE's local mirror, v0.7.0+ plugin required). 24h counts per event name plus the last 50 individual events with product names, position, and `queryUid`. Polled every 5 s.
 2. **Meilisearch Cloud → project → Analytics → Events** — the authoritative store. Filter by event name or `queryUid`. Events appear within seconds of the storefront emitting them.
 3. **Browser DevTools → Network tab** on the storefront. Filter to `events`. You should see **two** parallel POSTs per event in v0.7.0+: one to `{meili_host}/events` (Bearer-tokened) and one to `{GROLABS_API_HOST}/api/v1/events` (no auth header — origin-validated). Either failing independently is fine.
+
+   > **AMENDED 2026-11-02 — what you will actually see on a direct-mode storefront.**
+   > The GroLabs POST is **batched, not per-event**: it fires on 5s idle or when the
+   > page is hidden, carries an `events[]` array, and answers **202**, so looking for
+   > one POST per click will find nothing and conclude it is broken. It now **does**
+   > carry an `Authorization: Bearer` header (SEC-003) — "no auth header" above is
+   > stale. And there is **no** `/api/v1/events/token` request at all; seeing one means
+   > the storefront has no key configured and is on the legacy path.
 
 `console.warn` lines starting with `Grolabs:` in the DevTools Console call out specific failures (`Grolabs: token endpoint status …`, `Grolabs: <EventName> not recorded …`).
 
@@ -278,4 +311,8 @@ The "we don't see events" failure modes, in order of frequency:
 | v0.8.0 | Search POST to `/api/v1/search` now sends the anonymous `userId` (same localStorage session id the events use), so `query_log.user_id` populates for journey + intent stitching. Cache-buster bump required for the new `typeahead.js` to load. |
 | v0.9.0 | **Event-tracking foundations** ([`event-tracking.md`](../design/event-tracking.md)): un-gated own-store firing for all conversions + new `Removed from cart` (`cart_remove`); `account_id` (Option B identity), `cart_id`, `order_id` on `analytics_event`; committed-search marking + global click position on `query_log`. Meilisearch path unchanged (still `queryUid`-gated). |
 
-The flow described in this doc reflects v0.7.0+ behavior.
+| 2026-11-02 | **Direct-to-Meilisearch search** ([`direct-meilisearch-search.md`](../design/direct-meilisearch-search.md)): the Shopify storefront queries Meilisearch itself with a permanent search-only key and no longer calls `/api/v1/search`; tenant tokens are retired for configured storefronts; events are batched with a retry queue to `/api/v1/events`, now authenticated with a bearer; the GroLabs-side copy (`query_log`, `analytics_event`) is written by a drainer rather than inline. Affects §1, §4 and §5 above. |
+
+The flow described in this doc reflects v0.7.0+ behavior, **amended 2026-11-02** for
+direct-mode storefronts — see the notes in §4 and §5. The WordPress plugin is frozen
+(R-12) and still behaves exactly as originally written.

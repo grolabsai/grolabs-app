@@ -408,6 +408,18 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > time — the repo's own route-auth gate flags it as origin-bound-but-unthrottled, and
 > one request now carries up to 200 events.
 >
+> **The drain is NOT scheduled.** The `vercel.json` cron entry at `*/5 * * * *` was
+> rejected at deploy: the deployment failed with no build duration, which is a config
+> rejection rather than a build error, and every GA4 cron on this project is daily.
+> Vercel limits cron frequency by plan. The entry is removed so deploys pass; the route
+> works and can be called by hand with `CRON_SECRET`. Until a schedule exists,
+> `event_inbox` simply accumulates — which is what a durable buffer is for, and no
+> telemetry is lost. Two ways to schedule it, and this is a runtime decision:
+> **(a)** confirm the Vercel plan allows sub-daily crons and restore the entry;
+> **(b)** pg_cron + pg_net calling the route, which has no frequency limit and is
+> already how `search-probe` runs — at the cost of storing the app URL and
+> `CRON_SECRET` in the database, widening what SEC-002 covers.
+>
 > **Phase 5 landed 2026-11-02** (steps 16–17). `grolabs-search-core.js` carries the
 > telemetry queue: 5s idle flush, `keepalive` on `pagehide`/`visibilitychange`,
 > localStorage persistence, retry on the next page load. Searches report themselves

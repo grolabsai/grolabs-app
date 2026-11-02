@@ -384,7 +384,12 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > (`/indexes/inst_16/search`, `/events`) and the per-page `/api/v1/events/token`
 > round-trip is gone. Results page renders GroLabs cards and hides the native grid only
 > on arrival; with the breaker open, ZERO requests are made, the native grid stays
-> visible and the hide-style is never injected. Step 13 is open on decision 6 below.
+> visible and the hide-style is never injected.
+>
+> **Phase 3 step 13 landed 2026-11-02.** pg_net enabled; `search_probe_tick()` on
+> pg_cron every 5 minutes writes health + per-instance canary results to
+> `backend_operation` (health 200 / canary 200, 7ms). Security cost tracked as
+> SEC-002. **Phase 3 is complete.**
 >
 > **Phase 2 verified on the dev store 2026-11-02.** Instance 16's key provisioned
 > through the shipped path (`grolabs-inst-16`): 200 on `inst_16`, **403 on `inst_11`**
@@ -564,7 +569,18 @@ exists, an audit means looking in the Meilisearch console for keys scoped to
    a `maxTotalHits` raised above its 1000 default for any catalog that warrants it. This
    is a product decision that happens to set a performance cost, so it belongs to you,
    not to the implementation.
-6. **How the Meilisearch health probe actually runs (step 13).** The plan says
+6. **RESOLVED 2026-11-02 — in the database, via pg_net.** Chosen by the user for
+   speed, with the security cost logged as SEC-002 rather than absorbed silently.
+   Shipped in `20261102000002_search_probe.sql`: one `/health` probe plus a canary
+   search per instance holding a live key, using THAT instance's own key, so an
+   accidental revocation surfaces as a 403 here instead of as a merchant complaint.
+   Results land in `backend_operation` (status code only — never the body). A probe
+   that never returns is aged out and recorded as failed, because a wedged pg_net
+   worker must not look like silence, and silence is indistinguishable from healthy.
+   Verified end to end: health and canary both 200 at 7ms. The original framing is
+   kept below, since the trade-off it names is still live if SEC-002 cannot be closed.
+
+   The plan said
    "a pg_cron probe hitting Meilisearch `/health`". That is not possible as written:
    the project has `pg_cron` but NOT `pg_net` or `http`, so Postgres cannot make an
    outbound request at all (verified 2026-11-02). Two options, and this is a runtime

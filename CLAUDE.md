@@ -478,6 +478,15 @@ To extend the allow/deny lists, edit `.claude/settings.json`. Machine-local over
 
 Items here are intentional shortcuts or pre-rename artifacts that need follow-up. Update this list as debt is added or paid down.
 
+- **pg_net grants outbound HTTP to PUBLIC (SEC-002)** — enabled 2026-11-02 for the
+  Meilisearch health/canary probe (`search_probe_tick`, pg_cron). `net.http_get` /
+  `net.http_post` are executable by `anon` and `authenticated`; the `net` schema is not
+  exposed through PostgREST, so it is not directly callable, but it turns any
+  read-only injection into an exfiltration channel. **Cannot be revoked from a
+  migration** — schema `net` is owned by `supabase_admin` and a `REVOKE` from
+  `postgres` silently does nothing. Full detail and close-out steps:
+  [`docs/backlog/items/SEC-002.md`](docs/backlog/items/SEC-002.md).
+
 - **`instance.instance_id` sequence still named `tenant_tenant_id_seq`** — pre-rename artifact in the column default. Functional but misnamed. Fix via `ALTER SEQUENCE … RENAME TO instance_instance_id_seq` next time we touch the `instance` table for another reason.
 
 - **`instance.kind` is `text`, not an enum** — accepts `'customer'` and `'template'` by convention but with no DB-level enforcement. The funnel uses the `funnel_instance_type` enum for the same concept. Promote `instance.kind` to a real enum (`instance_kind`?) next time the `instance` table is migrated.

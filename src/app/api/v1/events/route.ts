@@ -81,7 +81,11 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
     res.headers.set("Access-Control-Allow-Origin", origin);
     res.headers.set("Vary", "Origin");
     res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    // Authorization is required here now (SEC-003). Omitting it from the
+    // preflight would fail every batch at the OPTIONS, before a single event
+    // was sent — and silently, because the storefront treats reporting as
+    // fire-and-forget.
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.headers.set("Access-Control-Max-Age", "600");
   }
   return res;
@@ -98,6 +102,64 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
 // it lets cart value be computed as adds − removes − purchases. See
 // docs/design/event-tracking.md.
 const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove", "view"]);
+
+// ── Reporter authentication (SEC-003) ────────────────────────────────────
+//
+// `Origin` is not an authenticator. A browser will not let a page lie about
+// its own origin, but nothing else is a browser: from curl it is a header you
+// type. Before this, anyone who knew a merchant's myshopify.com domain — which
+// is in the storefront's URL — could inject fabricated searches, clicks and
+// revenue for that instance.
+//
+// The credential is the instance's existing storefront search key, the one
+// already sitting in the theme block and the pixel settings. Reusing it means
+// no new merchant step, no second thing to paste, and no second thing to
+// forget. It also means revoking a merchant stops their telemetry as well as
+// their search, which is the behaviour the manual-cutoff design wants anyway
+// (R-9).
+//
+// REQUIRED ONLY WHERE A LIVE KEY EXISTS. An instance that has never been
+// provisioned is not on direct mode, still reports through the old
+// single-event path, and must keep working — the same "blank changes nothing"
+// rule Phase 2 follows. Instances convert to authenticated reporting the
+// moment they are given a key.
+//
+// Honest about the ceiling: this key is public by design — it ships in page
+// source. So this raises the bar from "knows the shop's domain" to "has read
+// that shop's page source", which defeats blind and scripted forgery but not a
+// determined attacker. Sealing it needs a signed, expiring token, which is
+// precisely the renewal machinery R-2 removed on purpose. See SEC-003 before
+// reaching for that.
+type ReportAuth = "ok" | "not_required" | "rejected";
+
+async function verifyReporter(
+  sb: ReturnType<typeof createServiceRoleClient>,
+  instanceId: number,
+  req: NextRequest,
+): Promise<ReportAuth> {
+  const { data, error } = await sb
+    .from("search_key")
+    .select("key_value")
+    .eq("instance_id", instanceId)
+    .is("revoked_at", null)
+    .maybeSingle();
+
+  if (error) {
+    // Fail OPEN, deliberately, and loudly. This endpoint is best-effort
+    // analytics: losing a merchant's telemetry because our own database
+    // hiccuped is a worse outcome than accepting an unverified event, and an
+    // attacker cannot cause this branch.
+    console.error("[events] reporter key lookup failed, accepting:", error.message);
+    return "not_required";
+  }
+
+  const expected = typeof data?.key_value === "string" ? data.key_value : null;
+  if (!expected) return "not_required"; // not on direct mode
+
+  const auth = req.headers.get("authorization") ?? "";
+  const presented = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  return presented && presented === expected ? "ok" : "rejected";
+}
 
 // ── Handler ──────────────────────────────────────────────────────────────
 
@@ -189,6 +251,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!row || !row.is_active) return deny(origin);
   const domains: string[] = Array.isArray(row.storefront_domains) ? row.storefront_domains : [];
   if (!domains.includes(host)) return deny(origin);
+
+  const reporter = await verifyReporter(sb, instanceId, req);
+  if (reporter === "rejected") {
+    // Same opaque body as every other denial here: a caller probing which
+    // instances exist, or whether their guessed key was close, learns nothing
+    // from the difference between "wrong key" and "wrong origin".
+    return deny(origin, 403);
+  }
 
   // Per-(instance, origin): a whole storefront's traffic shares this bucket,
   // so it is wide. It exists to stop one merchant's runaway loop from

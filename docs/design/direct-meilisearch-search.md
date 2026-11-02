@@ -566,15 +566,31 @@ working, telemetry queues, and the queue flushes with no loss on recovery. How w
 simulate the outage is an open decision below. Run T-4 and T-5 in the same session —
 revocation is the other half of the availability bet.
 
-**Phase 7 — cleanup**
+**Phase 7 — cleanup. LANDED 2026-11-02.** Documentation only; no code was removed, so
+the two-field rollback described in R-11 still works.
 
-19. Turn off dual-reporting; the proxy keeps serving ingest + back-compat only (R-11).
-20. Amend `search-proxy-event-pipeline.md` (§6 answered; §2's hot-path hardening is
-    mostly moot once the hot path is gone) and `docs/policy/search-foundations.md` §7
-    (the proxy is no longer the storefront's primary path). `search-events.md` §4
-    best-effort is superseded by R-10 — needs explicit sign-off per its own §8.
-21. `grolabs-web-sdk`: its README promises "search, browser, no key". Direct mode
-    contradicts that; the SDK needs a key story or an explicit two-mode README.
+19. **Moot.** Dual-reporting was never built — R-14 was satisfied by sequence numbers
+    instead (Phase 5), so there was nothing to turn off. The proxy keeps serving ingest
+    and back-compat exactly as R-11 intends.
+20. **Done.** `search-proxy-event-pipeline.md` §6 now records that its open question
+    was answered sideways (no proxy on the hot path at all), that §2's hardening is
+    moot, and that §5's "only cap" claim is wrong. `search-foundations.md` §7 carries
+    an amendment: the proxy is no longer the storefront's primary path, `query_log`
+    rows come from the drain, and the variant matcher is now also client-side.
+    `search-events.md` is an Active policy, so §4, §5 and §7 carry dated amendment
+    blocks with the original text kept verbatim rather than rewritten — §4's token
+    lifecycle no longer runs, §5's "two POSTs, no auth header" debugging instruction
+    would now mislead, and the version table records the change.
+    **Correction to this plan:** the sign-off was said to be required "per its own §8".
+    `search-events.md` has no §8 — it ends at §7 and contains no approval language.
+    The real requirement is CLAUDE.md §18 (decisions in an Active policy are locked),
+    which is why the amendments annotate rather than replace, and why the owner should
+    read them.
+21. **Done.** `grolabs-web-sdk` README now documents two search modes (proxied vs
+    direct) in a table, including which one survives a GroLabs outage, and states that
+    event reporting carries the search key as a bearer in direct mode. The same stale
+    claim in `src/index.ts`'s header — "no key is needed (or wanted) in the browser" —
+    is corrected: Origin is a filter, not an authenticator.
 
 ## Operator runbook — cutting an instance off
 

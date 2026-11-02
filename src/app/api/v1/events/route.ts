@@ -335,6 +335,9 @@ type InboxRow = {
   kind: string;
   payload: Record<string, unknown>;
   origin: string;
+  /** Per-session counter; a gap between delivered values is a lost event (R-14). */
+  seq: number | null;
+  session_id: string | null;
 };
 
 /**
@@ -394,6 +397,23 @@ async function acceptBatch(
       continue;
     }
 
+    // Lifted out of the payload into real columns so fidelity can be measured
+    // with a GROUP BY instead of a jsonb scan. Both are optional: an event
+    // without them still records, it just cannot be checked for gaps.
+    const seqRaw = e.seq;
+    const seq =
+      typeof seqRaw === "number" && Number.isFinite(seqRaw) && seqRaw >= 0
+        ? Math.round(seqRaw)
+        : null;
+    const sessionId =
+      typeof e.session_id === "string" && e.session_id.trim() !== ""
+        ? e.session_id.slice(0, 128)
+        : typeof e.userId === "string" && e.userId.trim() !== ""
+          ? e.userId.slice(0, 128)
+          : typeof e.user_id === "string" && e.user_id.trim() !== ""
+            ? e.user_id.slice(0, 128)
+            : null;
+
     rows.push({
       event_id: eventId,
       instance_id: instanceId,
@@ -403,6 +423,8 @@ async function acceptBatch(
       // is the only evidence of WHERE a reported event came from once the
       // request is gone.
       origin: host,
+      seq,
+      session_id: sessionId,
     });
   }
 

@@ -497,7 +497,32 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
     `telemetry_fidelity` view). Dual-reporting would have doubled every search-volume
     KPI and depressed CTR; see R-14.
 
-**Phase 6 — guardrail. BLOCKED 2026-11-02; no longer blocking Gate 1.**
+**Phase 6 — guardrail. RE-SCOPED 2026-11-02: the guardrail was pointed at the wrong
+connection.**
+
+> There are two connections, and only one of them is ours. **Store → Meilisearch** is
+> the standard, documented pattern every Meilisearch and Algolia user follows: a
+> search-only key in the browser, no infrastructure, no WAF, already rate limited by
+> the platform. **Store → `/api/v1/events`** is ours, and it authenticates by an
+> `Origin` header that anyone can type. The WAF was aimed at the first; the hole is in
+> the second. So step 18 is replaced by step 18a, and the original is kept below only
+> because its investigation is what falsified R-15.
+>
+> This also answers "why is this complicated?" — the direct connection is about thirty
+> lines and is boring on purpose. The complexity in Phases 1–5 is ours: multi-tenancy
+> (one project, many merchants), the promise that failure looks like the app was never
+> installed, and owning our own analytics instead of reading Meilisearch's dashboard.
+> None of it is Meilisearch's, and none of it is required to connect a single store.
+
+18a. **Authenticate the ingest endpoint.** Require a bearer credential on
+    `/api/v1/events` instead of trusting `Origin` alone — see SEC-003. Cheap, entirely
+    within our control, and it closes the only finding here that deserves the word
+    vulnerability. Keep the origin check as a filter; it is simply not an
+    authenticator. Note the credential is public either way, so this raises the bar
+    rather than sealing it; sealing needs expiring tokens, which R-2 deliberately
+    removed.
+
+**Phase 6 (original) — BLOCKED, retained for the record.**
 
 18. ~~WAF rate limit in front of the Meilisearch host, per IP.~~ **Cannot be built as
     specified** — it needs a custom domain, and Meilisearch Cloud offers those

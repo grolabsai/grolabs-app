@@ -173,7 +173,7 @@ rules:
   - id: R-31
     statement: "`shopify app deploy` CANNOT release this app today. Webhook `uri` values in shopify.app.toml are relative (/webhooks/products), so Shopify resolves them against `application_url` -- still the scaffold placeholder https://shopify.dev/apps/default-app-home -- and rejects all five as invalid. Releasing requires hosting the Remix app at a real URL first. Until then `shopify app dev` is the ONLY way to run current extension code on a store: it tunnels and rewrites the URLs (automatically_update_urls_on_dev = true) and serves the extension to a CLI-created development host theme, not to the live one."
     truth: true
-    rationale: "Hit 2026-11-02 attempting the Phase 2 release; both extensions bundled successfully first, so this is an app-config blocker, not an extension one. Two consequences beyond the release: the product webhooks have never been deliverable outside a dev session, so catalog sync on this store has only ever run from the manual full-sync button; and Gate 1 cannot be run against the LIVE theme, because the live theme loads the released extension version, which predates this work. The already-known backend-hosting item, surfacing as a hard blocker rather than a nice-to-have. SCOPED 2026-11-02 in shopify-apps/grolabs-shopify-search/docs/hosting.md: the app is two Prisma models with no long-running work, so the only real constraint is that SQLite holds the offline access token and must not sit on an ephemeral filesystem -- losing it stops webhooks and sync silently. Recommended Fly.io with a volume (zero code change; the Dockerfile is already correct). Two findings came out of the scoping: webhooks have NEVER been deliverable outside a dev session, so catalog freshness has always depended on someone pressing Run full sync; and the app is single-tenant per deployment, because grolabsConfig() reads GROLABS_INSTANCE_ID from the environment -- under 100 merchants means up to 100 deployments unless the instance is resolved from Session.shop instead."
+    rationale: "Hit 2026-11-02 attempting the Phase 2 release; both extensions bundled successfully first, so this is an app-config blocker, not an extension one. Two consequences beyond the release: the product webhooks have never been deliverable outside a dev session, so catalog sync on this store has only ever run from the manual full-sync button; and the LIVE theme still loads the previously released extension, so a gate run uses the CLI's development host theme instead -- a real storefront on a real theme, which is all either gate requires. R-31 blocks SHIPPING, not validating; see the note under Gate 1. The already-known backend-hosting item, surfacing as a hard blocker rather than a nice-to-have. SCOPED 2026-11-02 in shopify-apps/grolabs-shopify-search/docs/hosting.md: the app is two Prisma models with no long-running work, so the only real constraint is that SQLite holds the offline access token and must not sit on an ephemeral filesystem -- losing it stops webhooks and sync silently. Recommended Fly.io with a volume (zero code change; the Dockerfile is already correct). Two findings came out of the scoping: webhooks have NEVER been deliverable outside a dev session, so catalog freshness has always depended on someone pressing Run full sync; and the app is single-tenant per deployment, because grolabsConfig() reads GROLABS_INSTANCE_ID from the environment -- under 100 merchants means up to 100 deployments unless the instance is resolved from Session.shop instead."
 
 useCases:
   - id: T-1
@@ -557,9 +557,23 @@ network log shows no GroLabs token calls. Report the measured browser-loss ratio
 step 16.
 
 > **Gate 1 is no longer gated on Phase 6.** It was blocking because the WAF was
-> assumed to be missing and buildable; it is neither (R-15). Gate 1 may run once the
-> app is deployable (R-31), with the understanding that abuse is bounded by
-> Meilisearch's limiter and watched through billing rather than blocked by us.
+> assumed to be missing and buildable; it is neither (R-15). Abuse is bounded by
+> Meilisearch's own limiter and watched through billing rather than blocked by us.
+>
+> **Nor is either gate gated on R-31.** That was asserted here on 2026-11-02 and is
+> wrong, corrected the same day. Both gates run against instance 16 under
+> `shopify app dev`, which serves a real storefront on a real theme: nothing in either
+> gate requires a *released* extension. The Shopify app's backend is not in any runtime
+> path being gated either — it handles install, OAuth, webhooks and sync, while search
+> goes browser → Meilisearch and telemetry goes browser → the GroLabs core app, which
+> is already deployed on Vercel. And "take GroLabs down" in Gate 2 means that core app,
+> not the Shopify backend; with the Shopify side running locally the outage is if
+> anything *cleaner* to stage.
+>
+> Hosting (R-31) is needed to SHIP — to release the extension to a merchant who is not
+> this dev store, and to make webhooks deliverable at all — not to VALIDATE. It is a
+> pre-existing gap this work surfaced by being the first thing to attempt a release,
+> not a need this work created. Run the gates; decide hosting on its own merits.
 
 **Gate 2 — outage path (T-3)**: take GroLabs down deliberately, confirm search keeps
 working, telemetry queues, and the queue flushes with no loss on recovery. How we

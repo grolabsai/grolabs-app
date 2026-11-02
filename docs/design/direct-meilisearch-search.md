@@ -379,6 +379,13 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > deployable on its own (R-30). `tsc --noEmit` and `npm run build` clean in
 > `grolabs-shopify-search`. Nothing READS the new config yet — that is Phase 3.
 >
+> **Phase 3 steps 9–12 landed 2026-11-02** (`90960cf`), verified on dev store 16 under
+> `shopify app dev`: search and click both go straight to Meilisearch
+> (`/indexes/inst_16/search`, `/events`) and the per-page `/api/v1/events/token`
+> round-trip is gone. Results page renders GroLabs cards and hides the native grid only
+> on arrival; with the breaker open, ZERO requests are made, the native grid stays
+> visible and the hide-style is never injected. Step 13 is open on decision 6 below.
+>
 > **Phase 2 verified on the dev store 2026-11-02.** Instance 16's key provisioned
 > through the shipped path (`grolabs-inst-16`): 200 on `inst_16`, **403 on `inst_11`**
 > — the tenant boundary now proven against real instances, not only 99999. The embed
@@ -557,7 +564,29 @@ exists, an audit means looking in the Meilisearch console for keys scoped to
    a `maxTotalHits` raised above its 1000 default for any catalog that warrants it. This
    is a product decision that happens to set a performance cost, so it belongs to you,
    not to the implementation.
-6. **Whether telemetry goes through a Shopify App Proxy** (`/apps/grolabs/…`, a
+6. **How the Meilisearch health probe actually runs (step 13).** The plan says
+   "a pg_cron probe hitting Meilisearch `/health`". That is not possible as written:
+   the project has `pg_cron` but NOT `pg_net` or `http`, so Postgres cannot make an
+   outbound request at all (verified 2026-11-02). Two options, and this is a runtime
+   decision rather than an implementation detail, so it is yours:
+   **(a) enable `pg_net`** and keep the probe in the database, which keeps it running
+   even if the app is down — the case we most want to detect — at the cost of adding an
+   extension and doing HTTP from Postgres; **(b) a scheduled route handler** (Vercel
+   cron) that probes and writes `backend_operation`, which needs no new extension and is
+   easier to test, but cannot report when the thing hosting it is the thing that is
+   down. Note (b) also presumes the app is deployed, which R-31 says it currently is
+   not. Everything else in Phase 3 is independent of this choice and has shipped.
+7. **Whether the Shopify catalog ingest should emit `variation_summary`.** Discovered
+   while porting the matcher: `sync.server.ts` emits neither `variation_summary` nor
+   `variants[].variation_id`, so `pickMatchedVariation` returns null for every Shopify
+   product and the cards always show document-level price and stock. The proxy behaved
+   identically, so this is not a regression — variant-aware pricing has simply never
+   worked on Shopify. Either the ingest starts emitting both (and the matcher begins
+   earning the `variants` field we retrieve), or we accept document-level pricing on
+   Shopify and drop `variants` from `attributesToRetrieve` to stop paying for it on
+   every keystroke. Deciding to trim first would lock in the bug, so the product call
+   comes first.
+8. **Whether telemetry goes through a Shopify App Proxy** (`/apps/grolabs/…`, a
    same-origin path on the shop domain that Shopify forwards to our backend). It would
    make the beacon first-party and dodge the main cause of client-side loss. It does
    NOT survive a GroLabs outage — the proxy terminates at us — so it complements the

@@ -96,9 +96,14 @@ rules:
     truth: true
     rationale: "Direct mode turns server-observed truth into client-reported telemetry, so the loss rate is unknown until measured. The original plan -- report each committed search by BOTH paths and read the delta -- was rejected 2026-11-02 after checking what it would do to the data: (1) metric_daily_source counts committed searches as ROWS IN query_log, so a second row per search doubles every search-volume KPI for the whole rollout window and refresh_metric_daily materialises it nightly; (2) attribution is by query_uid ALONE, and the proxy mints its own query_uid from its own search, so every dual-reported row would look like a search nobody clicked -- depressing CTR while inflating volume. It would have corrupted the series it exists to protect, and cost a second Meilisearch search per committed query. Sequence numbers measure the same loss exactly rather than statistically, cost nothing, cover every event type rather than only committed searches, and touch no KPI table. Verified end to end: a batch sent as seq 1,2,4 reports delivered 3, missing 1, 25% loss. Honest limitation, which dual-reporting shared: loss at the TAIL of a session is invisible (no later event reveals the gap), and a session that delivered nothing is invisible entirely. This measures what batching loses, not absolute truth -- nothing client-side can measure that now."
   - id: R-15
-    statement: Rate limiting moves to a WAF in front of the Meilisearch host and must be live before any storefront traffic moves. The proxy's rate limiter is currently the only cap between a looping storefront and the shared cluster, and a permanent key has no expiry to bound abuse.
-    truth: unverified
-    rationale: search-proxy-event-pipeline.md §5 — the cost/runaway guardrail. Not yet built anywhere.
+    statement: "A WAF in front of the Meilisearch host is NOT AVAILABLE on the current plan, and the premise behind requiring one was wrong. Meilisearch Cloud already rate limits (x-ratelimit-limit: 4500, observed), and interposing our own edge needs a custom domain, which Meilisearch Cloud offers on-demand to Enterprise only. The residual exposure is therefore BILLING, not breach, and it is bounded by Meilisearch's own limiter plus pagination.maxTotalHits rather than by anything of ours."
+    truth: true
+    rationale: "Investigated 2026-11-02. The original claim -- that the proxy's rate limiter was 'the only cap between a looping storefront and the shared cluster' -- is false: every response from the project carries x-ratelimit-limit: 4500, and 300 concurrent /health requests returned 299 x 200 with no 429 and the budget unmoved, so the cap exists and is far above normal traffic. maxTotalHits is 1000 on inst_16, which bounds the response-size vector R-27 raised. What a permanent public key really buys an abuser is COST: the catalog is public data on a storefront, so there is nothing to steal, but Meilisearch Cloud bills per search beyond the plan's included volume. Putting Cloudflare in front would also reintroduce a GroLabs-controlled hop into the shopper's search path, which is the dependency R-1 exists to remove -- an edge CDN is far more reliable than our app, but it is still ours to break."
+  - id: R-32
+    statement: "Search abuse is INVISIBLE to GroLabs by construction. Detection used to be free because every search passed through the proxy; in direct mode a client hitting Meilisearch with the storefront key simply never reports itself, and nothing obliges it to. query_log now contains only what the storefront chose to tell us, so it can never show an attacker. The only ground truth is Meilisearch Cloud's own usage and billing."
+    truth: true
+    rationale: "Follows from R-1 + R-13, noticed 2026-11-02 while looking for what could replace the WAF. This is the real cost of leaving the request path, and it is not fixable from our side: any detection we build reads client-reported telemetry, which an abuser is under no obligation to send. It makes the Meilisearch Cloud usage dashboard and a billing alert load-bearing monitoring rather than housekeeping, and it means an unexplained gap between billed searches and reported searches is the abuse signal -- a comparison nobody is making today."
+
 
   - id: R-16
     statement: "The deadline is a latency budget, not a death detector — 1000ms for typeahead, 2500ms for a committed/results-page search, measured from request start. Meilisearch's own processing time is p50 6ms / p99 13ms / max 18ms across 574 logged searches, so a 5-second timeout would be ~270x the slowest response ever observed, and would make a slow incident WORSE than an outage: the shopper waits the full deadline and only then waits for the native search to run."
@@ -492,17 +497,37 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
     `telemetry_fidelity` view). Dual-reporting would have doubled every search-volume
     KPI and depressed CTR; see R-14.
 
-**Phase 6 — guardrail. Blocking before any traffic moves.**
+**Phase 6 — guardrail. BLOCKED 2026-11-02; no longer blocking Gate 1.**
 
-18. WAF rate limit in front of the Meilisearch host, per IP. Verify a synthetic flood
-    is throttled at the edge and never reaches the cluster. This matters more than it
-    did under the old design: the key is permanent, so nothing expires an abuser out.
+18. ~~WAF rate limit in front of the Meilisearch host, per IP.~~ **Cannot be built as
+    specified** — it needs a custom domain, and Meilisearch Cloud offers those
+    on-demand to Enterprise plans only. Investigation also showed the premise was
+    wrong (R-15): the project already rate limits at 4500, 300 concurrent requests
+    drew no 429, and `maxTotalHits` is 1000. The remaining exposure is COST, not
+    breach — the catalog is public data, but searches are billed. Three ways forward,
+    and the choice is the user's:
+    **(a)** Enterprise plan → custom domain → Cloudflare WAF. Real per-IP limiting, at
+    the price of a GroLabs-controlled hop returning to the shopper's search path (the
+    dependency R-1 removed) and an Enterprise bill.
+    **(b)** Accept it and monitor. Consistent with the decision this whole design
+    rests on — no automatic enforcement, manual revocation as the kill switch. Needs a
+    Meilisearch Cloud billing/usage alert, because R-32 means our own telemetry can
+    never show abuse.
+    **(c)** Route search through a Shopify App Proxy (open decision 8). Restores a
+    throttling point, and forfeits surviving a GroLabs outage, which was the point.
+    Until this is decided, the honest statement is that direct-mode search has no
+    per-IP cap of ours and is bounded only by Meilisearch's own limiter.
 
 **Gate 1 — positive path (T-1, T-2)** on instance 16: direct search returns results,
 latency measured against the proxy baseline, every search lands in `query_log` with the
 proxy's field set, the five-event funnel still attributes through a test order, and the
 network log shows no GroLabs token calls. Report the measured browser-loss ratio from
 step 16.
+
+> **Gate 1 is no longer gated on Phase 6.** It was blocking because the WAF was
+> assumed to be missing and buildable; it is neither (R-15). Gate 1 may run once the
+> app is deployable (R-31), with the understanding that abuse is bounded by
+> Meilisearch's limiter and watched through billing rather than blocked by us.
 
 **Gate 2 — outage path (T-3)**: take GroLabs down deliberately, confirm search keeps
 working, telemetry queues, and the queue flushes with no loss on recovery. How we

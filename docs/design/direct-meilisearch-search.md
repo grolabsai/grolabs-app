@@ -36,7 +36,7 @@ integrations:
     kind: external-service
     target: Drainer
     direction: out
-    purpose: "Search Performed" forwarding moves from the search route to the drainer. Same event, later.
+    purpose: The "Search Performed" forwarding moves from the search route to the drainer. Same event, later.
 
 rules:
   - id: R-1
@@ -123,7 +123,7 @@ rules:
   - id: R-21
     statement: "The theme block must emit <link rel=\"preconnect\"> (plus dns-prefetch as fallback) for the Meilisearch origin, so DNS + TLS complete during page load rather than on the shopper's first keystroke. This is the one place direct mode can be SLOWER than the proxy: Vercel terminates TLS at an edge POP near the shopper and then reaches Meilisearch over a warm pooled connection, whereas the browser must handshake (2 RTTs) directly with a region-pinned Meilisearch project. Confirm the project's region against where the merchant's shoppers actually are."
     truth: true
-    rationale: "Identified 2026-11-02. Warm requests are unambiguously faster; the cold first request is the exception, and preconnect is the standard remedy. Region now VERIFIED: the Meilisearch project is in **sfo** (San Francisco). For a Guatemalan shopper that is roughly 60-90ms of RTT, so a cold TLS handshake costs ~150-250ms before the 6ms query -- squarely in the range where the first search could lose to the proxy it replaces. Preconnect is not optional."
+    rationale: "Identified 2026-11-02. Warm requests are unambiguously faster; the cold first request is the exception, and preconnect is the standard remedy. Region now VERIFIED: the Meilisearch project is in **sfo** (San Francisco). For a Guatemalan shopper that is roughly 60-90ms of RTT, so a cold TLS handshake costs ~150-250ms before the 6ms query -- squarely in the range where the first search could lose to the proxy it replaces. Preconnect is not optional. Shipped 2026-11-02 with `crossorigin` -- an anonymous CORS fetch and a credentialled one use separate connection pools, so a preconnect without it opens a socket the search never reuses and the hint is a silent no-op. Known limitation: an app embed targets `body`, so the hints land late in the document rather than in `<head>`. They still precede the first search (typeahead needs a keystroke; the results block loads its own deferred script), but if T-10 shows the handshake still on the shopper's critical path, the next move is a separate `head`-target embed -- at the cost of one more block the merchant has to remember to enable."
   - id: R-22
     statement: "Direct search MUST set attributesToRetrieve, keeping only the fields the UI renders plus variants (the matcher needs them). Today the proxy consumes _matchesPosition server-side and drops it; sending it to the browser instead adds bytes per hit per keystroke. Untrimmed, payload gets worse than today; trimmed, it gets better — the proxy already ships whole documents, description included."
     truth: true
@@ -152,6 +152,14 @@ rules:
     statement: The proxy clamped limit to 1..100 and offset to >= 0. Direct mode has no such clamp — a client may ask for any page size — so pagination.maxTotalHits plus the WAF are the only remaining guards on page depth and response size.
     truth: true
     rationale: Follows from removing the proxy. Low severity (the catalog is public data) but it is a guard that silently disappears, and large page sizes are a cheap way to load the shared cluster.
+  - id: R-29
+    statement: "ONE credential, TWO delivery paths. The theme extension takes it as a merchant paste in the theme editor; the web pixel CANNOT -- its settings are built server-side by ensureWebPixel from the app's env (GROLABS_MEILISEARCH_HOST / GROLABS_SEARCH_KEY) and pushed through webPixelCreate/Update, because a pixel runs in a sandboxed worker with no access to theme settings. Both must be given the same two values or search and events disagree about whether direct mode is on."
+    truth: true
+    rationale: "Discovered 2026-11-02 implementing step 8. R-7 (\"reaches the storefront once, as configuration\") still holds -- it is one-time config either way, no fetch and no new scope -- but the mechanism is not uniform, and that asymmetry is a setup step a merchant can half-complete. The failure is quiet: a theme with both values searches directly while a pixel without them still fetches an events token per page, so the GroLabs round-trip R-5 removes comes back on the conversion path only. Documented in .env.example and README step 5; a single-source delivery (the app pushing theme settings via the Asset API) was not attempted -- it needs a scope R-7 explicitly avoids."
+  - id: R-30
+    statement: "Neither new setting may be declared required. The pixel schema and ensureWebPixel's settings object must agree field-for-field or Shopify rejects the mutation as INVALID_SETTINGS, and that same provisioning runs on every install -- so a `min` validation on a search field would fail pixel install on any deployment whose env lacks it, taking the catalog-sync path down with it. grolabsConfig() reads both through process.env rather than its throwing env() helper for the same reason."
+    truth: true
+    rationale: "Discovered 2026-11-02 implementing step 8, from the warning ensureWebPixel already carries in its own header. This is what keeps Phase 2 independently deployable: shipped with blank values, every storefront behaves exactly as it did before, and direct mode turns on per merchant by filling in two fields. A required field would have coupled this phase to a coordinated env rollout."
 
 useCases:
   - id: T-1
@@ -335,7 +343,16 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > `src/lib/search/search-key.ts` owns the lifecycle; the panel is on
 > `/configuration/search`; 8 integration tests pass against real Meilisearch
 > (including cross-instance refusal and detection of a key deleted by hand).
-> Typecheck and build green. Nothing is wired into a storefront yet — Phase 2 next.
+> Typecheck and build green. The panel has not been reviewed visually — it sits
+> behind login. Committed as `acb60ab` on `feat/signals-dashboard`.
+>
+> **Phase 2 landed 2026-11-02.** Both extensions now carry `search_key` +
+> `meilisearch_host`: the theme embed as merchant-pasted block settings, the pixel
+> through `grolabsConfig()` → `ensureWebPixel` (R-29). `embed.liquid` emits
+> `dns-prefetch` + `crossorigin` `preconnect` for the Meilisearch origin, gated on
+> both settings being present. Blank values change nothing anywhere, so this is
+> deployable on its own (R-30). `tsc --noEmit` and `npm run build` clean in
+> `grolabs-shopify-search`. Nothing READS the new config yet — that is Phase 3.
 
 **Phase 1 — permanent key provisioning (GroLabs side)**
 

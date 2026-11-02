@@ -123,7 +123,12 @@ rules:
   - id: R-21
     statement: "The theme block must emit <link rel=\"preconnect\"> (plus dns-prefetch as fallback) for the Meilisearch origin, so DNS + TLS complete during page load rather than on the shopper's first keystroke. This is the one place direct mode can be SLOWER than the proxy: Vercel terminates TLS at an edge POP near the shopper and then reaches Meilisearch over a warm pooled connection, whereas the browser must handshake (2 RTTs) directly with a region-pinned Meilisearch project. Confirm the project's region against where the merchant's shoppers actually are."
     truth: true
-    rationale: "Identified 2026-11-02. Warm requests are unambiguously faster; the cold first request is the exception, and preconnect is the standard remedy. Region now VERIFIED: the Meilisearch project is in **sfo** (San Francisco). For a Guatemalan shopper that is roughly 60-90ms of RTT, so a cold TLS handshake costs ~150-250ms before the 6ms query -- squarely in the range where the first search could lose to the proxy it replaces. Preconnect is not optional. Shipped 2026-11-02 with `crossorigin` -- an anonymous CORS fetch and a credentialled one use separate connection pools, so a preconnect without it opens a socket the search never reuses and the hint is a silent no-op. Known limitation: an app embed targets `body`, so the hints land late in the document rather than in `<head>`. They still precede the first search (typeahead needs a keystroke; the results block loads its own deferred script), but if T-10 shows the handshake still on the shopper's critical path, the next move is a separate `head`-target embed -- at the cost of one more block the merchant has to remember to enable."
+    rationale: "Identified 2026-11-02. Warm requests are unambiguously faster; the cold first request is the exception, and preconnect is the standard remedy. Region VERIFIED **sfo** (San Francisco), and the cost is now MEASURED from a dev machine on the operator's own network (2026-11-02, curl against inst_16) rather than estimated -- the earlier 150-250ms guess in this rationale was low by roughly 3x:
+
+      cold, new connection each time   588ms / 632ms / 873ms total   (TLS complete at 381-564ms)
+      warm, one reused connection      152ms / 147ms / 149ms total
+
+    So the handshake, not the query, is the entire cost: ~440-720ms of it. Against the retired proxy's p50 of 295-338ms that means a cold first search is roughly 2x SLOWER than the proxy it replaces, while every warm search is about 2x faster. The hint is not an optimisation, it is the difference between this change being a win and being a regression on the first search of a session -- which is the one a shopper actually notices. Shipped 2026-11-02 with `crossorigin` -- an anonymous CORS fetch and a credentialled one use separate connection pools, so a preconnect without it opens a socket the search never reuses and the hint is a silent no-op. Known limitation: an app embed targets `body`, so the hints land late in the document rather than in `<head>`. They still precede the first search (typeahead needs a keystroke; the results block loads its own deferred script), but if T-10 shows the handshake still on the shopper's critical path, the next move is a separate `head`-target embed -- at the cost of one more block the merchant has to remember to enable."
   - id: R-22
     statement: "Direct search MUST set attributesToRetrieve, keeping only the fields the UI renders plus variants (the matcher needs them). Today the proxy consumes _matchesPosition server-side and drops it; sending it to the browser instead adds bytes per hit per keystroke. Untrimmed, payload gets worse than today; trimmed, it gets better — the proxy already ships whole documents, description included."
     truth: true
@@ -301,6 +306,17 @@ sized for a cold connection on mobile — DNS + TLS before the 6ms query — not
 Meilisearch being slow, which it has never been. Warm requests will land near 60–160ms.
 No retry on typeahead: the next keystroke supersedes the request anyway.
 
+**But the 1000ms typeahead deadline depends on the preconnect working.** Measured cold
+request totals were 588ms, 632ms and 873ms (R-21) -- the worst within 15% of the
+deadline, on a perfectly healthy Meilisearch. Without a warm connection, a shopper's
+first keystroke can therefore trip a timeout that has nothing to do with Meilisearch
+being slow, and two of those in a row trip the 2-strikes breaker (R-18) and disable
+direct search for 60s on a healthy system. Two consequences: the `crossorigin`
+preconnect is load-bearing for correctness and not just speed, and T-8's breaker should
+be verified against *cold* first searches, not only against induced slowness. If the
+body-target hint (R-21) proves too late, the deadline has to rise before the breaker can
+be trusted.
+
 Then the error-class split (R-18) and the 2-strikes/60s breaker, so an incident costs a
 shopper one deadline rather than one per keystroke. And no `/health` pre-flight, ever
 (R-19) — detection for *us* is a pg_cron probe plus the `search_failed` records the
@@ -384,8 +400,12 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
     `Meili-Include-Metadata: true` — raw `fetch`, no SDK (R-23) — with
     `attributesToRetrieve` trimmed to the rendered fields plus `variants` (R-22). Apply
     the ported matcher; keep the render contract identical. Suppress native only on
-    results arrival, per R-20/R-24. CORS from the storefront is already proven by
-    today's events path.
+    results arrival, per R-20/R-24. CORS VERIFIED directly 2026-11-02, not inferred from
+    the events path: a preflight for `POST /indexes/inst_16/search` from
+    `https://grolabs-dordvapo.myshopify.com` returns `access-control-allow-origin: *`,
+    `access-control-allow-headers: authorization,content-type` and
+    `access-control-max-age: 86400`. No Meilisearch-side CORS configuration is needed,
+    and the day-long preflight cache means the OPTIONS round-trip is paid once.
 11. `grolabs-events.js` + the pixel: submit to Meilisearch `/events` with the config
     key; delete the token-fetch path.
 12. Failover, per R-16 through R-20: `AbortSignal.timeout(1000)` on typeahead, `2500` on

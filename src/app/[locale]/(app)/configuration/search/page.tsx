@@ -4,12 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ping } from "@/lib/search/meilisearch-client";
 import { indexUidFor } from "@/lib/search/types";
+import { getSearchKeyStatus } from "@/lib/search/search-key";
 import { getIndexingStatus, listEmulatorCategories } from "./actions";
 import { SearchSettingsForm } from "./_form";
 import { SearchPreview } from "./_search-preview";
 import { SearchRequestLog } from "./_request-log";
 import { SearchEventLog } from "./_event-log";
 import { SearchConfigTabs } from "./_tabs";
+import { StorefrontKeyPanel } from "./_storefront-key";
 import { SearchEmulator } from "./_emulator";
 import { SearchVolumeBlock } from "@/components/analytics/SearchVolumeBlock";
 import { NoResultRateBlock } from "@/components/analytics/NoResultRateBlock";
@@ -62,11 +64,15 @@ export default async function SearchConfigPage() {
   // Three concurrent server-side fetches — initial health probe, indexing
   // status snapshot, and the emulator's category list. All scoped to the
   // current instance.
-  const [initialHealth, initialStatus, emulatorCategories] = await Promise.all([
-    ping(),
-    getIndexingStatus(instanceId),
-    listEmulatorCategories(instanceId),
-  ]);
+  const [initialHealth, initialStatus, emulatorCategories, searchKeyStatus] =
+    await Promise.all([
+      ping(),
+      getIndexingStatus(instanceId),
+      listEmulatorCategories(instanceId),
+      // The key panel is a status readout; if it cannot be read, the rest of
+      // the settings page still has to render.
+      getSearchKeyStatus(instanceId).catch(() => null),
+    ]);
 
   const configurationPane = (
     <div className="flex flex-col gap-6">
@@ -104,6 +110,18 @@ export default async function SearchConfigPage() {
           </CardContent>
         </Card>
       </div>
+
+      {searchKeyStatus && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("storefrontKey.cardTitle")}</CardTitle>
+            <CardDescription>{t("storefrontKey.cardDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StorefrontKeyPanel instanceId={instanceId} status={searchKeyStatus} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

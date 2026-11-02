@@ -41,7 +41,8 @@
     "prospectsBenchmarks": "Benchmarks",
     "team": "Team",
     "accounts": "Accounts",
-    "clients": "Customers"
+    "clients": "Customers",
+    "getConnected": "Get connected"
   },
   "topbar": {
     "searchPlaceholder": "Search products, SKUs…",
@@ -637,7 +638,7 @@
         "freshness": "Complete weeks (Mon–Sun) · through {date}"
       },
       "sections": {
-        "verdict": "Verdict",
+        "verdict": "Weekly analysis",
         "verdictMeta": "closed weeks · accumulated evidence, not point deltas",
         "deepdive": "Deep dive",
         "deepdiveMeta": "process behaviour · slow-drift detection",
@@ -649,6 +650,7 @@
       "metric": {
         "total_sales": "Total sales",
         "orders": "Orders",
+        "aov": "AOV",
         "sessions": "Sessions",
         "session_conversion": "Conversion",
         "search_ctr": "Search CTR",
@@ -718,7 +720,34 @@
         "legendWeeks": "closed weeks",
         "legendLatest": "latest week",
         "legendOutside": "outside limits",
-        "funnelNote": "Every week is judged against limits that widen as the denominator shrinks: an extreme rate on few sessions is noise, while a modest deviation on many sessions is a real signal."
+        "funnelNote": "Every week is judged against limits that widen as the denominator shrinks: an extreme rate on few sessions is noise, while a modest deviation on many sessions is a real signal.",
+        "tt": {
+          "weekOf": "Week of {date}",
+          "weekOfClosed": "Week of {date} · closed",
+          "vsCentre": "vs centre",
+          "reading": "Reading",
+          "readingSignal": "outside the normal range — signal",
+          "readingNoise": "inside the normal range — noise",
+          "wowChange": "WoW change",
+          "alarm": "Point alarm at {pct}",
+          "alarmYes": "triggered",
+          "alarmNo": "not triggered",
+          "accumulated": "Accumulated drift",
+          "decisionLimit": "Decision limit",
+          "status": "Status",
+          "statusAlarm": "ALARM — sustained change",
+          "statusAccumulating": "accumulating",
+          "sessionsRow": "Sessions",
+          "rollingRow": "7-day average",
+          "ordersRow": "Orders",
+          "inProgressStatus": "in progress — excluded until Sunday",
+          "sessionsUnit": "sessions",
+          "naiveDelta": "Delta badge would say",
+          "honestReading": "Honest reading",
+          "funnelSignal": "outside 3σ — signal",
+          "funnelNoise": "inside limits — noise",
+          "weekRange": "Mon {start} – Sun {end}"
+        }
       },
       "noData": "No analytics data yet for this store.",
       "insufficientChart": "Charts unlock at {min} complete weeks."
@@ -1696,6 +1725,56 @@
         "match": {
           "matchedTitle": "\"{token}\" matches on: {attributes}",
           "unmatchedTitle": "\"{token}\" does not match any attribute of this result"
+        }
+      },
+      "storefrontKey": {
+        "cardTitle": "Storefront key",
+        "cardDescription": "The permanent key the storefront carries so shoppers reach Meilisearch directly, without passing through GroLabs. It never expires and is never renewed \u2014 deleting it is how an instance is cut off.",
+        "state": {
+          "liveLabel": "LIVE",
+          "liveBody": "This storefront can search. Confirmed against Meilisearch when this page loaded.",
+          "missingLabel": "NOT ISSUED",
+          "missingBody": "This instance has no storefront key, so its storefront cannot search Meilisearch directly.",
+          "revokedLabel": "REVOKED",
+          "revokedBody": "The key was revoked on {date}. This storefront cannot search until a new key is issued.",
+          "goneLabel": "DELETED IN MEILISEARCH",
+          "goneBody": "We hold a key that no longer exists in Meilisearch \u2014 it was deleted there by hand. This storefront's searches are already failing. Record the revocation, or issue a replacement.",
+          "unverifiedLabel": "UNVERIFIED",
+          "unverifiedBody": "We hold a key but could not reach Meilisearch to confirm it still exists. This says nothing either way about whether search is working."
+        },
+        "fields": {
+          "key": "Key",
+          "keyName": "Name in Meilisearch",
+          "host": "Host",
+          "indexUid": "Index",
+          "created": "Issued",
+          "revoked": "Revoked",
+          "uid": "Key uid"
+        },
+        "pasteHint": "Paste this into the Shopify theme block settings, beside the instance id. It is read-only, scoped to this one index, and public by design.",
+        "actions": {
+          "provision": "Issue key",
+          "provisioning": "Issuing\u2026",
+          "reissue": "Issue new key",
+          "revoke": "Revoke key",
+          "revoking": "Revoking\u2026",
+          "markRevoked": "Record revocation",
+          "copy": "Copy",
+          "copied": "Copied"
+        },
+        "confirm": {
+          "body": "The storefront stops returning results within seconds. The catalog index is untouched, and a new key can be issued at any time.",
+          "cancel": "Cancel"
+        },
+        "history": {
+          "title": "REVOCATION HISTORY",
+          "row": "{name} \u00b7 issued {created} \u00b7 revoked {revoked}"
+        },
+        "toast": {
+          "provisioned": "Storefront key issued",
+          "revoked": "Storefront key revoked",
+          "alreadyRevoked": "There was no live key to revoke",
+          "failed": "Could not complete that: {message}"
         }
       },
       "requestLog": {
@@ -3172,7 +3251,17 @@
       "invalidName": "Enter a valid instance name.",
       "unauthorized": "You are not allowed to create customers.",
       "saveFailed": "Could not save the change. Try again."
-    }
+    },
+    "instanceFilterLabel": "Instance",
+    "instanceAll": "All instances",
+    "noUsersInInstance": "No users on this instance.",
+    "instancesLabel": "Instances:",
+    "instancesNone": "No instance access",
+    "setPasswordLabel": "New password",
+    "setPassword": "Set password",
+    "passwordSet": "Password set",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "ssoPasswordNote": "Signs in with {provider}. Setting a password also enables email + password sign-in for this user."
   },
   "equipo": {
     "title": "Team",

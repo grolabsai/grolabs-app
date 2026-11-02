@@ -92,9 +92,9 @@ rules:
     truth: true
     rationale: Decided 2026-11-02. The earlier plan leaned on a WP server-side buffer for high-fidelity committed searches; dropping WordPress removes that lever entirely.
   - id: R-14
-    statement: Fidelity must be measured, not assumed — during rollout the storefront reports each committed search by both paths, and the delta is that instance's browser-loss ratio.
-    truth: unverified
-    rationale: Direct mode turns server-observed truth into client-reported telemetry. query_log is complete today; the replacement's loss rate is unknown until measured.
+    statement: "Fidelity must be measured, not assumed. The storefront stamps every event with a per-session sequence number; a gap between delivered values is a lost event, and sum(missing)/sum(delivered+missing) per instance is the browser-loss ratio. The `telemetry_fidelity` view computes it. SUPERSEDES the original dual-reporting design (see rationale)."
+    truth: true
+    rationale: "Direct mode turns server-observed truth into client-reported telemetry, so the loss rate is unknown until measured. The original plan -- report each committed search by BOTH paths and read the delta -- was rejected 2026-11-02 after checking what it would do to the data: (1) metric_daily_source counts committed searches as ROWS IN query_log, so a second row per search doubles every search-volume KPI for the whole rollout window and refresh_metric_daily materialises it nightly; (2) attribution is by query_uid ALONE, and the proxy mints its own query_uid from its own search, so every dual-reported row would look like a search nobody clicked -- depressing CTR while inflating volume. It would have corrupted the series it exists to protect, and cost a second Meilisearch search per committed query. Sequence numbers measure the same loss exactly rather than statistically, cost nothing, cover every event type rather than only committed searches, and touch no KPI table. Verified end to end: a batch sent as seq 1,2,4 reports delivered 3, missing 1, 25% loss. Honest limitation, which dual-reporting shared: loss at the TAIL of a session is invisible (no later event reveals the gap), and a session that delivered nothing is invisible entirely. This measures what batching loses, not absolute truth -- nothing client-side can measure that now."
   - id: R-15
     statement: Rate limiting moves to a WAF in front of the Meilisearch host and must be live before any storefront traffic moves. The proxy's rate limiter is currently the only cap between a looping storefront and the shared cluster, and a permanent key has no expiry to bound abuse.
     truth: unverified
@@ -403,6 +403,16 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > time — the repo's own route-auth gate flags it as origin-bound-but-unthrottled, and
 > one request now carries up to 200 events.
 >
+> **Phase 5 landed 2026-11-02** (steps 16–17). `grolabs-search-core.js` carries the
+> telemetry queue: 5s idle flush, `keepalive` on `pagehide`/`visibilitychange`,
+> localStorage persistence, retry on the next page load. Searches report themselves
+> from `core.search({ report })`; funnel events route through the same queue instead of
+> one POST each. 15 behavioural tests against the real file (`npm run test:queue` in
+> grolabs-shopify-search), including the two that matter — a failed flush RETAINS the
+> queue, and a leftover queue is delivered unprompted on the next page load.
+> **Step 17 was NOT built as specified** — see R-14 below and
+> `20261102000005_telemetry_fidelity.sql`.
+>
 > **Phase 2 verified on the dev store 2026-11-02.** Instance 16's key provisioned
 > through the shipped path (`grolabs-inst-16`): 200 on `inst_16`, **403 on `inst_11`**
 > — the tenant boundary now proven against real instances, not only 99999. The embed
@@ -477,7 +487,10 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 16. Batch queue in the extension: accumulate `search_performed` + funnel events, flush
     on 5s idle / page unload (`keepalive`), persist unsent batches to localStorage and
     retry on the next page view.
-17. Dual-report every committed search (direct + proxy) behind a flag, for R-14.
+17. ~~Dual-report every committed search (direct + proxy) behind a flag~~ — **replaced
+    2026-11-02 by per-session sequence numbers** (`event_inbox.seq`, the
+    `telemetry_fidelity` view). Dual-reporting would have doubled every search-volume
+    KPI and depressed CTR; see R-14.
 
 **Phase 6 — guardrail. Blocking before any traffic moves.**
 

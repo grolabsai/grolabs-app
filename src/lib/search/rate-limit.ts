@@ -62,3 +62,28 @@ export function searchIpBucketKey(ip: string): string {
 // re-mints a token every ~14 minutes.
 export const SEARCH_PER_INSTANCE_ORIGIN_PER_MIN = 600;
 export const SEARCH_PER_IP_PER_MIN = 1200;
+
+// ── Event reporting ────────────────────────────────────────────────────────
+//
+// Added when /api/v1/events gained the batch path (Phase 4 step 14). It
+// matters more than it did: one request now carries up to MAX_BATCH events, so
+// an unthrottled caller is an amplified insert, and direct-mode search removed
+// the proxy that used to throttle this traffic on the way past (R-27).
+//
+// Limits are per MINUTE and sized against a plausible shopper: a batch flushes
+// on 5s idle or page unload, so even a frantic session sends single-digit
+// batches a minute. A storefront's whole traffic shares the per-(instance,
+// origin) bucket, hence the wide allowance there and the tight one per IP.
+
+/** Bucket key for event reporting, scoped per (instance, origin). */
+export function eventsBucketKey(instanceId: number, origin: string): string {
+  return `evt:inst=${instanceId}:origin=${origin}`;
+}
+
+/** Bucket key for event reporting, scoped per client IP. */
+export function eventsIpBucketKey(ip: string): string {
+  return `evt:ip=${ip}`;
+}
+
+export const EVENTS_PER_INSTANCE_ORIGIN_PER_MIN = 1200;
+export const EVENTS_PER_IP_PER_MIN = 120;

@@ -152,7 +152,7 @@ rules:
   - id: R-26
     statement: "query_log.total_hits stores the RETURNED PAGE LENGTH (hits.length), not the result total — while the API response returns estimatedTotalHits to the caller under the same name. Zero-result detection is unaffected (0 is 0, whichever number it is), but any \"how many results did this query have\" reading is capped at the page size. Direct mode must pin this deliberately: keep total_hits meaning page length for series continuity and add estimated_total_hits alongside, or the KPI series silently changes meaning mid-migration."
     truth: true
-    rationale: "Verified 2026-11-02 at the logRequest insert (total_hits: input.hits?.length) against the response builder (total_hits: raw.estimatedTotalHits). Latent rather than manifested: across 574 logged searches the maximum total_hits is 12, because the test catalogs are small enough that no query has ever matched more than its page size. A real catalog would log 20 for a 500-match query."
+    rationale: "Verified 2026-11-02 at the logRequest insert (total_hits: input.hits?.length) against the response builder (total_hits: raw.estimatedTotalHits). Latent rather than manifested: across 574 logged searches the maximum total_hits is 12, because the test catalogs are small enough that no query has ever matched more than its page size. A real catalog would log 20 for a 500-match query. SETTLED 2026-11-02 in 20261102000004_event_inbox.sql, before any direct-mode row was written: total_hits keeps meaning page length (series continuity) and estimated_total_hits is a new nullable column for the whole-query figure. Both columns now carry a COMMENT saying which is which, because the names alone will mislead the next reader exactly as they misled this one. Historical rows stay NULL rather than being backfilled with a guess."
   - id: R-27
     statement: The proxy clamped limit to 1..100 and offset to >= 0. Direct mode has no such clamp — a client may ask for any page size — so pagination.maxTotalHits plus the WAF are the only remaining guards on page depth and response size.
     truth: true
@@ -391,6 +391,18 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > `backend_operation` (health 200 / canary 200, 7ms). Security cost tracked as
 > SEC-002. **Phase 3 is complete.**
 >
+> **Phase 4 landed 2026-11-02** (steps 14–15). `/api/v1/events` accepts a batch and
+> answers 202 into `event_inbox`; the single-event path is untouched. The drainer is
+> a cron ROUTE, not the pg_cron SQL function the plan sketched — it needs
+> `assignIntent` (TypeScript) and the PostHog forwarder, and porting the intent
+> heuristic into plpgsql would put a second copy of a deliberately-swappable
+> heuristic in the codebase. Verified end to end: a 3-event batch drained into
+> `query_log` + `analytics_event`, `total_hits` 3 vs `estimated_total_hits` 13 (R-26),
+> both searches in the batch sharing one `intent_group_id`, and a re-posted identical
+> batch double-counting nothing. Rate limiting added to `/api/v1/events` at the same
+> time — the repo's own route-auth gate flags it as origin-bound-but-unthrottled, and
+> one request now carries up to 200 events.
+>
 > **Phase 2 verified on the dev store 2026-11-02.** Instance 16's key provisioned
 > through the shipped path (`grolabs-inst-16`): 200 on `inst_16`, **403 on `inst_11`**
 > — the tenant boundary now proven against real instances, not only 99999. The embed
@@ -556,8 +568,12 @@ exists, an audit means looking in the Meilisearch console for keys scoped to
 
 1. **How we simulate the outage for Gate 2.** Pausing the Vercel production deployment
    is the most honest; a kill-flag that 503s every route is safer but tests less.
-2. **pgmq vs a plain `event_inbox` table.** The pipeline doc leans pgmq; a plain
-   append-only table is less to learn and enough at current volume.
+2. **RESOLVED 2026-11-02 — a plain `event_inbox` table.** Less to learn, inspectable
+   with a SELECT, and enough at current volume. The properties that mattered came from
+   the schema rather than the queue: `event_id` as primary key makes a retried batch
+   collide and be ignored instead of double-counted, and `attempts` + `last_error`
+   separate a poison message from a backlog. Revisit if volume ever makes the
+   oldest-unprocessed-first scan expensive.
 3. **Whether tenant-token minting survives at all.** It is the only path to filtered
    search (per-shopper visibility, B2B price groups, a shared index). Keeping the code
    costs nothing; relying on it again would reintroduce expiry.

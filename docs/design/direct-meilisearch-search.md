@@ -128,7 +128,7 @@ rules:
       cold, new connection each time   588ms / 632ms / 873ms total   (TLS complete at 381-564ms)
       warm, one reused connection      152ms / 147ms / 149ms total
 
-    So the handshake, not the query, is the entire cost: ~440-720ms of it. Against the retired proxy's p50 of 295-338ms that means a cold first search is roughly 2x SLOWER than the proxy it replaces, while every warm search is about 2x faster. The hint is not an optimisation, it is the difference between this change being a win and being a regression on the first search of a session -- which is the one a shopper actually notices. Shipped 2026-11-02 with `crossorigin` -- an anonymous CORS fetch and a credentialled one use separate connection pools, so a preconnect without it opens a socket the search never reuses and the hint is a silent no-op. Known limitation: an app embed targets `body`, so the hints land late in the document rather than in `<head>`. They still precede the first search (typeahead needs a keystroke; the results block loads its own deferred script), but if T-10 shows the handshake still on the shopper's critical path, the next move is a separate `head`-target embed -- at the cost of one more block the merchant has to remember to enable."
+    So the handshake, not the query, is the entire cost: ~440-720ms of it. Against the retired proxy's p50 of 295-338ms that means a cold first search is roughly 2x SLOWER than the proxy it replaces, while every warm search is about 2x faster. The hint is not an optimisation, it is the difference between this change being a win and being a regression on the first search of a session -- which is the one a shopper actually notices. Shipped 2026-11-02 with `crossorigin` -- an anonymous CORS fetch and a credentialled one use separate connection pools, so a preconnect without it opens a socket the search never reuses and the hint is a silent no-op. Known limitation: an app embed targets `body`, so the hints land late in the document rather than in `<head>`. They still precede the first search (typeahead needs a keystroke; the results block loads its own deferred script), but if T-10 shows the handshake still on the shopper's critical path, the next move is a separate `head`-target embed -- at the cost of one more block the merchant has to remember to enable. MEASURED IN A REAL STOREFRONT 2026-11-02 (dev store 16, Chrome, through the CLI theme proxy) and the hint WORKS: a first search fired 2.7s after page load cost 152ms against 814ms for one fired after the page had sat idle for minutes -- about 660ms saved, with Meilisearch reporting 0-5ms of processing in both. The body-target position is therefore not too late. But the warm connection has a shelf life: still warm after 16.7s idle (170ms), cold after several minutes (814ms). The exact expiry is unpinned and is the open part of T-10. Every navigation re-fires the hint, so the exposed case is the shopper who lands, lingers on one page, and only then searches."
   - id: R-22
     statement: "Direct search MUST set attributesToRetrieve, keeping only the fields the UI renders plus variants (the matcher needs them). Today the proxy consumes _matchesPosition server-side and drops it; sending it to the browser instead adds bytes per hit per keystroke. Untrimmed, payload gets worse than today; trimmed, it gets better — the proxy already ships whole documents, description included."
     truth: true
@@ -165,6 +165,10 @@ rules:
     statement: "Neither new setting may be declared required. The pixel schema and ensureWebPixel's settings object must agree field-for-field or Shopify rejects the mutation as INVALID_SETTINGS, and that same provisioning runs on every install -- so a `min` validation on a search field would fail pixel install on any deployment whose env lacks it, taking the catalog-sync path down with it. grolabsConfig() reads both through process.env rather than its throwing env() helper for the same reason."
     truth: true
     rationale: "Discovered 2026-11-02 implementing step 8, from the warning ensureWebPixel already carries in its own header. This is what keeps Phase 2 independently deployable: shipped with blank values, every storefront behaves exactly as it did before, and direct mode turns on per merchant by filling in two fields. A required field would have coupled this phase to a coordinated env rollout."
+  - id: R-31
+    statement: "`shopify app deploy` CANNOT release this app today. Webhook `uri` values in shopify.app.toml are relative (/webhooks/products), so Shopify resolves them against `application_url` -- still the scaffold placeholder https://shopify.dev/apps/default-app-home -- and rejects all five as invalid. Releasing requires hosting the Remix app at a real URL first. Until then `shopify app dev` is the ONLY way to run current extension code on a store: it tunnels and rewrites the URLs (automatically_update_urls_on_dev = true) and serves the extension to a CLI-created development host theme, not to the live one."
+    truth: true
+    rationale: "Hit 2026-11-02 attempting the Phase 2 release; both extensions bundled successfully first, so this is an app-config blocker, not an extension one. Two consequences beyond the release: the product webhooks have never been deliverable outside a dev session, so catalog sync on this store has only ever run from the manual full-sync button; and Gate 1 cannot be run against the LIVE theme, because the live theme loads the released extension version, which predates this work. The already-known backend-hosting item, surfacing as a hard blocker rather than a nice-to-have."
 
 useCases:
   - id: T-1
@@ -306,16 +310,21 @@ sized for a cold connection on mobile — DNS + TLS before the 6ms query — not
 Meilisearch being slow, which it has never been. Warm requests will land near 60–160ms.
 No retry on typeahead: the next keystroke supersedes the request anyway.
 
-**But the 1000ms typeahead deadline depends on the preconnect working.** Measured cold
-request totals were 588ms, 632ms and 873ms (R-21) -- the worst within 15% of the
-deadline, on a perfectly healthy Meilisearch. Without a warm connection, a shopper's
+**But the 1000ms typeahead deadline depends on the preconnect being warm.** Measured in
+a real storefront, a cold first search cost **814ms**, of which Meilisearch accounted for
+5ms (R-21) -- within 19% of the deadline, on a healthy cluster, in desktop Chrome. Without a warm connection, a shopper's
 first keystroke can therefore trip a timeout that has nothing to do with Meilisearch
 being slow, and two of those in a row trip the 2-strikes breaker (R-18) and disable
 direct search for 60s on a healthy system. Two consequences: the `crossorigin`
 preconnect is load-bearing for correctness and not just speed, and T-8's breaker should
-be verified against *cold* first searches, not only against induced slowness. If the
-body-target hint (R-21) proves too late, the deadline has to rise before the breaker can
-be trusted.
+be verified against *cold* first searches, not only against induced slowness. The hint is not too late -- it saves ~660ms while warm -- but it
+lapses on an idle page, so the exposed shopper is the one who lingers and then searches,
+exactly the one a deadline punishes. Two candidate remedies for Phase 3, neither yet
+decided: **re-warm on intent** (re-issue the preconnect, or send a throwaway request, on
+`focus` or the first keystroke in the search box, which buys the handshake during the
+min-chars and debounce window the typeahead already waits out), or **raise the typeahead
+deadline** past the cold cost. Re-warming is the better of the two: it makes the shopper
+faster rather than merely more patient.
 
 Then the error-class split (R-18) and the 2-strikes/60s breaker, so an incident costs a
 shopper one deadline rather than one per keystroke. And no `/health` pre-flight, ever
@@ -369,6 +378,15 @@ Each numbered item is one prompt's worth of work. Gates are blocking.
 > both settings being present. Blank values change nothing anywhere, so this is
 > deployable on its own (R-30). `tsc --noEmit` and `npm run build` clean in
 > `grolabs-shopify-search`. Nothing READS the new config yet — that is Phase 3.
+>
+> **Phase 2 verified on the dev store 2026-11-02.** Instance 16's key provisioned
+> through the shipped path (`grolabs-inst-16`): 200 on `inst_16`, **403 on `inst_11`**
+> — the tenant boundary now proven against real instances, not only 99999. The embed
+> renders in a live Dawn storefront with `meilisearchHost`, a 64-char `searchKey`,
+> `dns-prefetch`, and `preconnect` carrying `crossorigin="anonymous"`. A browser search
+> from the storefront origin returns 200 with hits. Release is BLOCKED on R-31, so this
+> ran under `shopify app dev` against the CLI's development host theme; the live theme
+> still serves the previously released extension and is untouched.
 
 **Phase 1 — permanent key provisioning (GroLabs side)**
 

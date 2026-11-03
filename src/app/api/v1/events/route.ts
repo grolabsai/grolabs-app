@@ -101,7 +101,10 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
 // 'cart_remove' is own-store-only (no Meilisearch path, no queryUid meaning) —
 // it lets cart value be computed as adds − removes − purchases. See
 // docs/design/event-tracking.md.
-const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove", "view"]);
+// 'filter' is own-store only, like cart_remove: a filter change is not
+// relevance feedback and has no queryUid, so the fence in events.js keeps it
+// away from Meilisearch without a special case here.
+const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove", "view", "filter"]);
 
 // ── Reporter authentication (SEC-003) ────────────────────────────────────
 //

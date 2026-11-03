@@ -282,6 +282,19 @@ Trust model: instance_id is public (like a Stripe publishable key). Origin valid
 7. GroLabs backend — search proxy endpoint
 Stage: 1. The WordPress plugin calls this endpoint, so it lands in the same stage as the plugin.
 Endpoint: `POST /api/v1/search`. The middle-layer endpoint the WordPress plugin calls. Proxies to Meilisearch with server-side tenant token management and adds the variant selection logic.
+
+> **AMENDED 2026-11-02 — no longer the storefront's primary path.** Per
+> [`direct-meilisearch-search.md`](../design/direct-meilisearch-search.md), a Shopify
+> storefront configured with a storefront search key queries Meilisearch **directly**
+> and never calls this endpoint — not even on failure, where it falls back to the
+> platform's own search rather than to us. This endpoint is retained for ingest,
+> back-compat (storefronts with no key configured, and the frozen WordPress plugin),
+> and as the latency baseline. Two consequences for anyone reading this section as
+> current: `query_log` rows for a direct-mode storefront are written by the telemetry
+> drain rather than by this handler, so `denial_reason`, `status` and
+> `total_handler_ms` are proxy-only artifacts; and the variant selection logic
+> described here is now also implemented client-side, ported into
+> `grolabs-search-core.js`.
 Request: `{ instance_id, query, limit, offset, filters, sort, facets? }`. Response: `{ hits[], total_hits, processing_time_ms, query_uid, facets?, facet_stats? }` where each hit is `{ document, matched_variation, _score }`.
 
 **Facets contract (added 2026-05-20).** Callers can request facet distribution and stats by passing a `facets: string[]` array. Server enforces a per-instance allowlist (currently: `brand`, `category_ids`, `in_stock`, `price`, `scout_attributes.species`, `scout_attributes.lifestage` — must be a subset of the index's `filterableAttributes`). Unknown facet names are silently dropped; an empty array (or omitted) returns no `facets`/`facet_stats` blocks. The response carries:

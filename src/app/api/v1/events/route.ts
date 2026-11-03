@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { capturePostHog } from "@/lib/analytics/posthog";
+import {
+  checkRateLimit,
+  eventsBucketKey,
+  eventsIpBucketKey,
+  EVENTS_PER_INSTANCE_ORIGIN_PER_MIN,
+  EVENTS_PER_IP_PER_MIN,
+  RATE_LIMIT_WINDOW_SECONDS,
+} from "@/lib/search/rate-limit";
 
 /**
  * POST /api/v1/events
@@ -49,6 +57,14 @@ function deny(origin: string | null, status = 403): NextResponse {
   );
 }
 
+function extractIp(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  const real = req.headers.get("x-real-ip");
+  if (real) return real;
+  return "unknown";
+}
+
 function originToHost(origin: string | null): string | null {
   if (!origin) return null;
   try {
@@ -65,7 +81,11 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
     res.headers.set("Access-Control-Allow-Origin", origin);
     res.headers.set("Vary", "Origin");
     res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    // Authorization is required here now (SEC-003). Omitting it from the
+    // preflight would fail every batch at the OPTIONS, before a single event
+    // was sent — and silently, because the storefront treats reporting as
+    // fire-and-forget.
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.headers.set("Access-Control-Max-Age", "600");
   }
   return res;
@@ -82,6 +102,68 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
 // it lets cart value be computed as adds − removes − purchases. See
 // docs/design/event-tracking.md.
 const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove", "view"]);
+
+// ── Reporter authentication (SEC-003) ────────────────────────────────────
+//
+// `Origin` is not an authenticator. A browser will not let a page lie about
+// its own origin, but nothing else is a browser: from curl it is a header you
+// type. Before this, anyone who knew a merchant's myshopify.com domain — which
+// is in the storefront's URL — could inject fabricated searches, clicks and
+// revenue for that instance.
+//
+// The credential is the instance's existing storefront search key, the one
+// already sitting in the theme block and the pixel settings. Reusing it means
+// no new merchant step, no second thing to paste, and no second thing to
+// forget. It also means revoking a merchant stops their telemetry as well as
+// their search, which is the behaviour the manual-cutoff design wants anyway
+// (R-9).
+//
+// REQUIRED ON THE BATCH PATH, and only where a live key exists. Two separate
+// conditions, both load-bearing. The batch path is new and every client of it
+// ships with the key. The single-event path is what storefronts on the older
+// extension still use, and they send no Authorization header — so enforcing
+// there would break a merchant's telemetry the moment someone provisioned a
+// key for them in the admin, with nothing having changed on their storefront.
+// The consequence worth being explicit about: SEC-003 is only fully closed
+// when the legacy single-event path is retired, because until then an
+// unauthenticated forgery route remains open.
+//
+// Honest about the ceiling: this key is public by design — it ships in page
+// source. So this raises the bar from "knows the shop's domain" to "has read
+// that shop's page source", which defeats blind and scripted forgery but not a
+// determined attacker. Sealing it needs a signed, expiring token, which is
+// precisely the renewal machinery R-2 removed on purpose. See SEC-003 before
+// reaching for that.
+type ReportAuth = "ok" | "not_required" | "rejected";
+
+async function verifyReporter(
+  sb: ReturnType<typeof createServiceRoleClient>,
+  instanceId: number,
+  req: NextRequest,
+): Promise<ReportAuth> {
+  const { data, error } = await sb
+    .from("search_key")
+    .select("key_value")
+    .eq("instance_id", instanceId)
+    .is("revoked_at", null)
+    .maybeSingle();
+
+  if (error) {
+    // Fail OPEN, deliberately, and loudly. This endpoint is best-effort
+    // analytics: losing a merchant's telemetry because our own database
+    // hiccuped is a worse outcome than accepting an unverified event, and an
+    // attacker cannot cause this branch.
+    console.error("[events] reporter key lookup failed, accepting:", error.message);
+    return "not_required";
+  }
+
+  const expected = typeof data?.key_value === "string" ? data.key_value : null;
+  if (!expected) return "not_required"; // not on direct mode
+
+  const auth = req.headers.get("authorization") ?? "";
+  const presented = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  return presented && presented === expected ? "ok" : "rejected";
+}
 
 // ── Handler ──────────────────────────────────────────────────────────────
 
@@ -101,11 +183,33 @@ type EventBody = {
   value?: unknown;
   quantity?: unknown;
   placement?: unknown;
+  /** Batch form. When present, every other top-level field is ignored. */
+  events?: unknown;
 };
+
+/** How many events one request may carry. A storefront batch is a handful of
+ *  funnel events plus the searches since the last flush; anything far past
+ *  this is a client bug or someone probing, and either way we would rather
+ *  reject it than accept an unbounded insert. */
+const MAX_BATCH = 200;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const origin = req.headers.get("origin");
   const host = originToHost(origin);
+
+  // Per-IP first, before parsing: throttling that happens after you have
+  // already done the expensive part is not throttling. No instance is
+  // resolved yet, so this protects shared infrastructure rather than a
+  // specific tenant.
+  const ip = extractIp(req);
+  const ipOk = await checkRateLimit(
+    eventsIpBucketKey(ip),
+    EVENTS_PER_IP_PER_MIN,
+    RATE_LIMIT_WINDOW_SECONDS,
+  );
+  if (!ipOk) {
+    return corsify(NextResponse.json({ error: "rate_limited" }, { status: 429 }), origin);
+  }
 
   let body: unknown;
   try {
@@ -132,21 +236,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (!host) return deny(origin);
 
-  // Minimum payload: eventType + eventName. Everything else is
-  // optional — the plugin sometimes ships a queryUid-less event by
-  // mistake (defensive logging) and we'd rather record the noise than
-  // drop signal.
-  const eventType = typeof b.eventType === "string" ? b.eventType.trim() : "";
-  const eventName = typeof b.eventName === "string" ? b.eventName.trim() : "";
-  if (!eventType || !eventName) return deny(origin, 400);
-  if (eventType.length > 64 || eventName.length > 256) return deny(origin, 400);
-  if (!KNOWN_EVENT_TYPES.has(eventType)) {
-    // Accept it anyway — future event types should land cleanly without
-    // a RRE deploy — but log so operators can spot drift between
-    // plugin and backend taxonomies.
-    console.warn("[events] unknown eventType:", eventType);
-  }
-
   const sb = createServiceRoleClient();
 
   // Validate instance + origin. Same denial path as /api/v1/search so
@@ -166,6 +255,64 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!row || !row.is_active) return deny(origin);
   const domains: string[] = Array.isArray(row.storefront_domains) ? row.storefront_domains : [];
   if (!domains.includes(host)) return deny(origin);
+
+  // Per-(instance, origin): a whole storefront's traffic shares this bucket,
+  // so it is wide. It exists to stop one merchant's runaway loop from
+  // crowding out every other tenant, not to police an individual shopper.
+  const instanceOk = await checkRateLimit(
+    eventsBucketKey(instanceId, host),
+    EVENTS_PER_INSTANCE_ORIGIN_PER_MIN,
+    RATE_LIMIT_WINDOW_SECONDS,
+  );
+  if (!instanceOk) {
+    return corsify(NextResponse.json({ error: "rate_limited" }, { status: 429 }), origin);
+  }
+
+  // ── Batch path (R-10) ──────────────────────────────────────────────────
+  //
+  // Now that the storefront searches Meilisearch directly, a search only
+  // reaches query_log by being reported afterwards. So reporting is
+  // accept-fast: append the batch to event_inbox, answer 202, and let the
+  // drainer do the real work. Anything that fails after we said 202 is ours
+  // to retry, not the shopper's to notice.
+  //
+  // The single-event path below is untouched on purpose. It is what the WP
+  // plugin and today's pixel still use, and flipping it to async in the same
+  // change would put every existing event behind a drainer that has never run
+  // in production. Phase 7 retires it.
+  const batch = Array.isArray(b.events) ? b.events : null;
+  if (batch) {
+    // The bearer is required on the BATCH path only, not on any instance that
+    // happens to hold a key. Tying it to the instance breaks storefronts that
+    // have not been upgraded: a merchant still running the older extension
+    // posts single events with no Authorization header, and provisioning a key
+    // for them in the admin would silently start rejecting their telemetry
+    // without anyone touching their storefront. The batch path is new, and
+    // every client of it ships with the key.
+    const reporter = await verifyReporter(sb, instanceId, req);
+    if (reporter === "rejected") {
+      // Same opaque body as every other denial here: a caller probing which
+      // instances exist, or whether their guessed key was close, learns
+      // nothing from the difference between "wrong key" and "wrong origin".
+      return deny(origin, 403);
+    }
+    return await acceptBatch(sb, instanceId, host, origin, batch);
+  }
+
+  // Minimum payload: eventType + eventName. Everything else is
+  // optional — the plugin sometimes ships a queryUid-less event by
+  // mistake (defensive logging) and we'd rather record the noise than
+  // drop signal.
+  const eventType = typeof b.eventType === "string" ? b.eventType.trim() : "";
+  const eventName = typeof b.eventName === "string" ? b.eventName.trim() : "";
+  if (!eventType || !eventName) return deny(origin, 400);
+  if (eventType.length > 64 || eventName.length > 256) return deny(origin, 400);
+  if (!KNOWN_EVENT_TYPES.has(eventType)) {
+    // Accept it anyway — future event types should land cleanly without
+    // a RRE deploy — but log so operators can spot drift between
+    // plugin and backend taxonomies.
+    console.warn("[events] unknown eventType:", eventType);
+  }
 
   // Coerce optional fields to safe types. Defensive — never trust the
   // sender to send a number where a number is expected.
@@ -258,4 +405,133 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   });
 
   return corsify(NextResponse.json({ ok: true }, { status: 200 }), origin);
+}
+
+// ── Batch acceptance ───────────────────────────────────────────────────────
+
+type InboxRow = {
+  event_id: string;
+  instance_id: number;
+  kind: string;
+  payload: Record<string, unknown>;
+  origin: string;
+  /** Per-session counter; a gap between delivered values is a lost event (R-14). */
+  seq: number | null;
+  session_id: string | null;
+};
+
+/**
+ * Append a reported batch to `event_inbox` and answer 202.
+ *
+ * Validation here is deliberately shallow: enough to keep the table clean
+ * (an id, a kind, a bounded size) and no more. Rejecting a whole batch
+ * because one event has an odd field would lose the other 49, and the
+ * storefront cannot fix it — it has already moved on. The drainer is where
+ * per-event shape is enforced, because that is where a bad event can be
+ * parked (`last_error`) without taking its neighbours down.
+ *
+ * `event_id` is the client's idempotency key and the reason retrying a batch
+ * is safe: a duplicate collides on the primary key and is ignored rather than
+ * double-counted. A batch that is all duplicates is a SUCCESSFUL retry, not an
+ * error, and is answered 202 like any other.
+ */
+async function acceptBatch(
+  sb: ReturnType<typeof createServiceRoleClient>,
+  instanceId: number,
+  host: string,
+  origin: string | null,
+  events: unknown[],
+): Promise<NextResponse> {
+  if (events.length === 0) {
+    return corsify(NextResponse.json({ accepted: 0 }, { status: 202 }), origin);
+  }
+  if (events.length > MAX_BATCH) return deny(origin, 400);
+
+  const rows: InboxRow[] = [];
+  let skipped = 0;
+
+  for (const raw of events) {
+    if (!raw || typeof raw !== "object") {
+      skipped++;
+      continue;
+    }
+    const e = raw as Record<string, unknown>;
+
+    // No id, no idempotency, no safe retry — so no insert.
+    const eventId = typeof e.event_id === "string" ? e.event_id.trim() : "";
+    if (!eventId || eventId.length > 128) {
+      skipped++;
+      continue;
+    }
+
+    // `kind` routes the drain. Fall back to eventType so a client that only
+    // knows the older vocabulary still lands somewhere sensible.
+    const kind =
+      typeof e.kind === "string" && e.kind.trim() !== ""
+        ? e.kind.trim().slice(0, 64)
+        : typeof e.eventType === "string"
+          ? e.eventType.trim().slice(0, 64)
+          : "";
+    if (!kind) {
+      skipped++;
+      continue;
+    }
+
+    // Lifted out of the payload into real columns so fidelity can be measured
+    // with a GROUP BY instead of a jsonb scan. Both are optional: an event
+    // without them still records, it just cannot be checked for gaps.
+    const seqRaw = e.seq;
+    const seq =
+      typeof seqRaw === "number" && Number.isFinite(seqRaw) && seqRaw >= 0
+        ? Math.round(seqRaw)
+        : null;
+    const sessionId =
+      typeof e.session_id === "string" && e.session_id.trim() !== ""
+        ? e.session_id.slice(0, 128)
+        : typeof e.userId === "string" && e.userId.trim() !== ""
+          ? e.userId.slice(0, 128)
+          : typeof e.user_id === "string" && e.user_id.trim() !== ""
+            ? e.user_id.slice(0, 128)
+            : null;
+
+    rows.push({
+      event_id: eventId,
+      instance_id: instanceId,
+      kind,
+      payload: e,
+      // Recorded per row: the drainer writes it onto the destination, and it
+      // is the only evidence of WHERE a reported event came from once the
+      // request is gone.
+      origin: host,
+      seq,
+      session_id: sessionId,
+    });
+  }
+
+  if (rows.length === 0) {
+    return corsify(
+      NextResponse.json({ accepted: 0, skipped }, { status: 202 }),
+      origin,
+    );
+  }
+
+  const { error } = await sb
+    .from("event_inbox")
+    .upsert(rows, { onConflict: "event_id", ignoreDuplicates: true });
+
+  if (error) {
+    // We have NOT accepted it, so do not say 202. A 500 is what tells the
+    // storefront's retry queue to hold the batch and send it again — which
+    // is the whole reason that queue exists.
+    console.error("[events] event_inbox insert failed:", error.message);
+    return corsify(
+      NextResponse.json({ error: "event_recording_failed" }, { status: 500 }),
+      origin,
+    );
+  }
+
+  return corsify(
+    NextResponse.json({ accepted: rows.length, skipped }, { status: 202 }),
+    origin,
+  );
 }

@@ -1757,6 +1757,56 @@
           "unmatchedTitle": "«{token}» no coincide con ningún atributo de este resultado"
         }
       },
+      "storefrontKey": {
+        "cardTitle": "Clave del storefront",
+        "cardDescription": "La clave permanente que lleva el storefront para que los compradores lleguen a Meilisearch directamente, sin pasar por GroLabs. No caduca y no se renueva — borrarla es la forma de cortar una instancia.",
+        "state": {
+          "liveLabel": "ACTIVA",
+          "liveBody": "Este storefront puede buscar. Confirmado contra Meilisearch al cargar esta página.",
+          "missingLabel": "SIN EMITIR",
+          "missingBody": "Esta instancia no tiene clave de storefront, por lo que su storefront no puede buscar en Meilisearch directamente.",
+          "revokedLabel": "REVOCADA",
+          "revokedBody": "La clave se revocó el {date}. Este storefront no puede buscar hasta que se emita una nueva.",
+          "goneLabel": "BORRADA EN MEILISEARCH",
+          "goneBody": "Tenemos una clave que ya no existe en Meilisearch — se borró ahí a mano. Las búsquedas de este storefront ya están fallando. Registra la revocación o emite un reemplazo.",
+          "unverifiedLabel": "SIN VERIFICAR",
+          "unverifiedBody": "Tenemos una clave pero no pudimos contactar a Meilisearch para confirmar que sigue existiendo. Esto no dice nada sobre si la búsqueda funciona."
+        },
+        "fields": {
+          "key": "Clave",
+          "keyName": "Nombre en Meilisearch",
+          "host": "Host",
+          "indexUid": "Índice",
+          "created": "Emitida",
+          "revoked": "Revocada",
+          "uid": "Uid de la clave"
+        },
+        "pasteHint": "Pega esto en los ajustes del bloque del tema de Shopify, junto al id de instancia. Es de solo lectura, limitada a este único índice y pública por diseño.",
+        "actions": {
+          "provision": "Emitir clave",
+          "provisioning": "Emitiendo…",
+          "reissue": "Emitir clave nueva",
+          "revoke": "Revocar clave",
+          "revoking": "Revocando…",
+          "markRevoked": "Registrar revocación",
+          "copy": "Copiar",
+          "copied": "Copiada"
+        },
+        "confirm": {
+          "body": "El storefront deja de devolver resultados en segundos. El índice del catálogo no se toca y se puede emitir una clave nueva en cualquier momento.",
+          "cancel": "Cancelar"
+        },
+        "history": {
+          "title": "HISTORIAL DE REVOCACIONES",
+          "row": "{name} · emitida {created} · revocada {revoked}"
+        },
+        "toast": {
+          "provisioned": "Clave del storefront emitida",
+          "revoked": "Clave del storefront revocada",
+          "alreadyRevoked": "No había una clave activa para revocar",
+          "failed": "No se pudo completar: {message}"
+        }
+      },
       "requestLog": {
         "cardTitle": "Solicitudes recientes",
         "cardDescription": "Cada llamada que recibe /api/v1/search desde el plugin de WordPress aparece aquí en ~2 segundos. Las solicitudes denegadas muestran el motivo.",

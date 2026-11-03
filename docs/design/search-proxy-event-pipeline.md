@@ -253,6 +253,30 @@ upstream misbehaves.
 
 ## 6. Open architectural question: separate service vs. in-app
 
+> **ANSWERED 2026-11-02 — sideways.** See
+> [`direct-meilisearch-search.md`](direct-meilisearch-search.md). The question was
+> "where should the proxy live?"; the answer is that the storefront no longer calls a
+> proxy at all. It queries Meilisearch directly with a permanent, search-only,
+> per-instance key, so the search hot path contains no GroLabs service to place
+> anywhere — and search now survives GroLabs being down entirely.
+>
+> What that does to the reasoning below: **blast-radius isolation** and **independent
+> scaling** are achieved more completely than a separate service would have achieved
+> them, because the traffic never arrives. **Independent deploys** stops mattering for
+> the hot path. What remains in-app is ingest and the telemetry drain, which scale with
+> merchant and reporting volume rather than with shoppers.
+>
+> §2's hot-path hardening (pooled connections, Redis rate limiting, per-keystroke
+> Postgres round-trips) is largely **moot**: those round-trips were the proxy's, and
+> the proxy is no longer on the shopper's path. The parts that survive are the ones
+> about ingest and the event pipeline, which Phase 4 of the direct-search plan
+> implements as `event_inbox` plus a drainer.
+>
+> One correction to §5 while we are here: it treats the proxy's rate limiter as the
+> only cap in front of Meilisearch. It is not — the Cloud project rate limits on its
+> own (measured 2026-11-02), and we cannot put a WAF in front of it without an
+> Enterprise plan. See R-15.
+
 **Directive captured (2026-05-28):** ideally the proxy + event-recording system should be a
 **completely separate service**, not tied to the whole application.
 

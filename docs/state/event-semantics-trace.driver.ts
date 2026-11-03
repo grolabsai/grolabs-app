@@ -134,7 +134,10 @@ if (process.argv.includes("--json")) {
       user: r.user,
       label: r.label,
       intent: r.kind === "committed" ? (shortJ.get(r.intent) ?? r.intent) : null,
-      type: r.kind === "committed" ? r.type : null,
+      // null when the query OPENS an intent: there is no previous query, so
+      // there is no relation to name. The human-readable table prints a dash;
+      // the JSON must not, because the page renders these as column values.
+      type: r.kind === "committed" && r.type !== "— opens intent" ? r.type : null,
       previous: r.kind === "committed" && r.prev !== "—" ? r.prev : null,
       expect: r.expect,
     })),

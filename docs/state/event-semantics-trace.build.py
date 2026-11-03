@@ -486,8 +486,21 @@ details.node > summary{list-style:none;cursor:pointer;padding:13px 16px;display:
 details.node > summary::-webkit-details-marker{display:none}
 details.node > summary:hover{background:var(--gl-surface-hover)}
 details.node > summary:focus-visible{outline:2px solid var(--gl-accent-ink);outline-offset:-2px}
-.caret{flex:none;width:16px;color:var(--gl-text-tertiary);font-family:var(--gl-font-mono);
-  font-size:13px;margin-top:1px}
+/* The expander. It was a bare grey "+" that read as decoration, and readers
+   concluded the nodes simply withheld their detail. It is a control, so it is
+   shaped like one: a bordered target, its own ground, and a hover state. */
+.caret{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;margin-top:1px;border:1px solid var(--gl-border-strong);
+  border-radius:var(--gl-radius-sm);background:var(--gl-surface);
+  color:var(--gl-text);font-family:var(--gl-font-mono);font-size:14px;line-height:1;
+  font-weight:700;transition:border-color .12s,background .12s}
+details.node > summary:hover .caret{border-color:var(--gl-accent-ink);
+  background:var(--gl-surface-hover)}
+/* How much is inside, so a closed row says whether opening it is worth it. */
+.howmany{margin-left:auto;flex:none;font-size:11px;letter-spacing:.04em;
+  color:var(--gl-text-tertiary);white-space:nowrap;padding-left:12px}
+details.node > summary:hover .howmany{color:var(--gl-accent-ink)}
+details.node[open] .howmany{display:none}
 .sumbody{flex:1;min-width:0}
 .sumtop{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
 .step{font-family:var(--gl-font-mono);font-size:11.5px;color:var(--gl-text-tertiary);flex:none}
@@ -555,7 +568,7 @@ def record_strip(step: dict, node: dict) -> str:
     pairs = []
     if step["kind"] == "committed":
         pairs.append(("intent_group_id", step["intent"], True))
-        pairs.append(("reformulation_type", step["type"], True))
+        pairs.append(("reformulation_type", step["type"] or "NULL", True))
         if step["previous"]:
             pairs.append(("previous_query", step["previous"], True))
     for k, v in node["cols"]:
@@ -599,7 +612,9 @@ def render(data: dict, artifact: bool = False) -> str:
                          '<div class="sumbody"><div class="sumtop">'
                          f'<span class="step">#{n}</span>'
                          f'<span class="did">{node["did"]}</span>'
-                         f'<span class="clock">{step["at"][11:19]}</span></div>'
+                         f'<span class="clock">{step["at"][11:19]}</span>'
+                         f'<span class="howmany">{len(node["br"])} branches &nbsp;·&nbsp; open</span>'
+                         '</div>'
                          f'<div class="sumline">{node["sum"]}</div>'
                          + record_strip(step, node)
                          + '<div class="marks">')
@@ -628,8 +643,8 @@ def render(data: dict, artifact: bool = False) -> str:
             # MEASURED — straight from executing the real code.
             if step["kind"] == "committed":
                 m = [("intent_group_id", step["intent"]),
-                     ("reformulation_type", step["type"]),
-                     ("previous_query", step["previous"] or "(opens the intent)")]
+                     ("reformulation_type", step["type"] or "NULL (opens the intent)"),
+                     ("previous_query", step["previous"] or "NULL (opens the intent)")]
                 parts.append(f'<div class="row">{lbl("Intent recorded","measured")}'
                              f'<div class="val mono">{kv(m)}</div></div>')
             parts.append(f'<div class="row">{lbl("Other columns","authored")}'
@@ -921,9 +936,13 @@ def main() -> int:
     for s in data["steps"]:
         if s["kind"] != "committed":
             continue
-        for field in ("intent", "type"):
-            assert s[field] and s[field] in page, \
-                f"step {s['n']}: measured {field}={s[field]!r} did not reach the page"
+        assert s["intent"] and s["intent"] in page, \
+            f"step {s['n']}: measured intent={s['intent']!r} did not reach the page"
+        # `type` is legitimately null on a query that OPENS an intent — there is
+        # no previous query to relate it to. Only a non-null one must appear.
+        if s["type"]:
+            assert s["type"] in page, \
+                f"step {s['n']}: measured type={s['type']!r} did not reach the page"
         if s["previous"]:
             assert html.escape(s["previous"]) in page or s["previous"] in page, \
                 f"step {s['n']}: measured previous_query did not reach the page"

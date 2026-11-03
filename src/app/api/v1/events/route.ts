@@ -118,11 +118,15 @@ const KNOWN_EVENT_TYPES = new Set(["click", "conversion", "cart_remove", "view"]
 // their search, which is the behaviour the manual-cutoff design wants anyway
 // (R-9).
 //
-// REQUIRED ONLY WHERE A LIVE KEY EXISTS. An instance that has never been
-// provisioned is not on direct mode, still reports through the old
-// single-event path, and must keep working — the same "blank changes nothing"
-// rule Phase 2 follows. Instances convert to authenticated reporting the
-// moment they are given a key.
+// REQUIRED ON THE BATCH PATH, and only where a live key exists. Two separate
+// conditions, both load-bearing. The batch path is new and every client of it
+// ships with the key. The single-event path is what storefronts on the older
+// extension still use, and they send no Authorization header — so enforcing
+// there would break a merchant's telemetry the moment someone provisioned a
+// key for them in the admin, with nothing having changed on their storefront.
+// The consequence worth being explicit about: SEC-003 is only fully closed
+// when the legacy single-event path is retired, because until then an
+// unauthenticated forgery route remains open.
 //
 // Honest about the ceiling: this key is public by design — it ships in page
 // source. So this raises the bar from "knows the shop's domain" to "has read
@@ -252,14 +256,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const domains: string[] = Array.isArray(row.storefront_domains) ? row.storefront_domains : [];
   if (!domains.includes(host)) return deny(origin);
 
-  const reporter = await verifyReporter(sb, instanceId, req);
-  if (reporter === "rejected") {
-    // Same opaque body as every other denial here: a caller probing which
-    // instances exist, or whether their guessed key was close, learns nothing
-    // from the difference between "wrong key" and "wrong origin".
-    return deny(origin, 403);
-  }
-
   // Per-(instance, origin): a whole storefront's traffic shares this bucket,
   // so it is wide. It exists to stop one merchant's runaway loop from
   // crowding out every other tenant, not to police an individual shopper.
@@ -286,6 +282,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // in production. Phase 7 retires it.
   const batch = Array.isArray(b.events) ? b.events : null;
   if (batch) {
+    // The bearer is required on the BATCH path only, not on any instance that
+    // happens to hold a key. Tying it to the instance breaks storefronts that
+    // have not been upgraded: a merchant still running the older extension
+    // posts single events with no Authorization header, and provisioning a key
+    // for them in the admin would silently start rejecting their telemetry
+    // without anyone touching their storefront. The batch path is new, and
+    // every client of it ships with the key.
+    const reporter = await verifyReporter(sb, instanceId, req);
+    if (reporter === "rejected") {
+      // Same opaque body as every other denial here: a caller probing which
+      // instances exist, or whether their guessed key was close, learns
+      // nothing from the difference between "wrong key" and "wrong origin".
+      return deny(origin, 403);
+    }
     return await acceptBatch(sb, instanceId, host, origin, batch);
   }
 

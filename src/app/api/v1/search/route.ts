@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { capturePostHog } from "@/lib/analytics/posthog";
 import { searchInstance } from "@/lib/search/meilisearch-client";
-import { assignIntent, type RecentQuery } from "@/lib/analytics/intent";
+import { assignIntent, INTENT_WINDOW_MS, type RecentQuery } from "@/lib/analytics/intent";
 import { pickMatchedVariation, type MatchesPosition } from "@/lib/search/variant-matcher";
 import { sanitizeFacets } from "@/lib/search/facets";
 import type { SearchHit, SearchResponse, RreSearchDocument } from "@/lib/search/types";
@@ -116,27 +116,50 @@ async function logRequest(input: {
     const sb = createServiceRoleClient();
     const isSuccess = input.denialReason === null;
 
-    // Intent grouping (skeleton): label this query with an intent_group_id so
-    // consecutive same-meaning refinements from one session collapse to one
-    // intent. Only for successful searches that carry a session + query — a
-    // denial or anonymous-less search has no journey to stitch. Best-effort:
-    // the read failing just leaves intent_group_id NULL.
+    // Intent grouping: label this query with an intent_group_id so the rewrites
+    // of ONE demand collapse to one intent, and name how each rewrite relates
+    // to the one before it (correcting / narrowing / broadening / lateral).
+    //
+    // Two conditions beyond "successful, has a session and a query":
+    //
+    //   * a PROBE never mints an intent. The grammar says a keystroke counts
+    //     for nothing, but this used to assign an intent to every logged
+    //     search including typeahead prefixes — so the id a committed search
+    //     inherited had been minted by whichever prefix happened to match it
+    //     (F-2). Probes are excluded from both the write and the window.
+    //   * `is_committed IS NOT FALSE`, matching metric_daily_source, so a
+    //     legacy NULL row still participates rather than being silently
+    //     dropped from its own chain.
+    //
+    // Best-effort: the read failing just leaves intent_group_id NULL.
     let intentGroupId: string | null = null;
-    if (isSuccess && input.userId && input.query) {
+    let reformulationType: string | null = null;
+    let previousQuery: string | null = null;
+    if (isSuccess && input.userId && input.query && input.isCommitted !== false) {
+      const since = new Date(Date.now() - INTENT_WINDOW_MS).toISOString();
       const { data: recentRows } = await sb
         .from("query_log")
-        .select("query, intent_group_id")
+        .select("query, intent_group_id, created_at")
         .eq("instance_id", input.instanceId)
         .eq("user_id", input.userId)
         .not("intent_group_id", "is", null)
+        .not("is_committed", "is", false)
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(10);
       const recent: RecentQuery[] = (recentRows ?? [])
-        .filter((r): r is { query: string; intent_group_id: string } =>
+        .filter((r): r is { query: string; intent_group_id: string; created_at: string } =>
           typeof r.query === "string" && typeof r.intent_group_id === "string"
         )
-        .map((r) => ({ query: r.query, intentGroupId: r.intent_group_id }));
-      intentGroupId = assignIntent(recent, input.query);
+        .map((r) => ({
+          query: r.query,
+          intentGroupId: r.intent_group_id,
+          at: r.created_at,
+        }));
+      const assigned = assignIntent(recent, input.query, new Date().toISOString());
+      intentGroupId = assigned.intentGroupId;
+      reformulationType = assigned.reformulationType;
+      previousQuery = assigned.previousQuery;
     }
     // Include wc_id + name so the request-log panel can show which products
     // we handed to the WordPress plugin — essential when WP says "no results"
@@ -162,6 +185,11 @@ async function logRequest(input: {
       query_uid: input.queryUid ?? null,
       user_id: input.userId ?? null,
       intent_group_id: intentGroupId,
+      // What kind of rewrite this was, and of what. Without these the type is
+      // computed once and thrown away, leaving the Demand-Interpretation agent
+      // to re-derive pairs from row ordering.
+      reformulation_type: reformulationType,
+      previous_query: previousQuery,
       account_id: input.accountId ?? null,
       // Commitment is decided by the caller (results-page PHP = committed;
       // typeahead JS = prefix probe). NULL when the caller didn't say.

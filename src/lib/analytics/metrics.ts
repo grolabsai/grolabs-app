@@ -243,7 +243,12 @@ export const METRICS: readonly MetricDef[] = [
     description: "Intents needing ≥1 rewrite ÷ intents (grouped by intent_group_id).",
     grain: "intent", sourceTier: "spine", outcomeFamily: "revenue", fence: "ranking",
     kind: "rate", buildable: "needs_instrumentation", materialized: false, unit: "ratio",
-    blockedReason: "Needs intent-grain rollup over intent_group_id; v1 search metrics are per-search.",
+    blockedReason:
+      "Needs the intent-grain rollup over intent_group_id; v1 search metrics are per-search. " +
+      "The INSTRUMENTATION is no longer the blocker (20261102000007): intents now span their " +
+      "reformulations and reformulation_type/previous_query are recorded, so the numerator is " +
+      "readable. Before that this would have returned ~0 rather than failing, because every " +
+      "intent held exactly one query.",
   },
 ] as const;
 

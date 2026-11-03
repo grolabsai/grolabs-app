@@ -14,6 +14,12 @@ Written 2026-11-02, the day Phases 1–7 landed. The design doc says what was bu
 and why; this says **what has actually been proven, how, and against which data** —
 and, more usefully, what has not.
 
+> **Companion, 2026-11-02: [`event-semantics-trace.md`](event-semantics-trace.md).**
+> This document proves the **plumbing** — a row arrives, a batch is idempotent, a
+> seq gap is caught. It does not prove the row **means** what the definitions say.
+> That is traced separately, one journey with every branch named, and it found
+> eight gaps including lost event timestamps and an unscheduled drain.
+
 One theme runs through it: nearly every piece is verified **in isolation**, and the
 one thing not yet verified is the **join** — a real shopper search in a real browser
 travelling all the way into `query_log`. That is Gate 1's job, and it is exactly the

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { capturePostHog } from "@/lib/analytics/posthog";
-import { assignIntent, type RecentQuery } from "@/lib/analytics/intent";
+import { assignIntent, INTENT_WINDOW_MS, type RecentQuery } from "@/lib/analytics/intent";
 
 /**
  * GET /api/v1/events/drain
@@ -50,6 +50,9 @@ type InboxRow = {
   payload: Record<string, unknown>;
   origin: string | null;
   attempts: number;
+  /** Shopper's event time, anchored to our clock at ingest (R-33). */
+  occurred_at: string | null;
+  received_at: string;
 };
 
 function str(v: unknown, max: number): string | null {
@@ -65,11 +68,30 @@ function int(v: unknown): number | null {
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const auth = req.headers.get("authorization") ?? "";
-  const expected = process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : null;
-  if (!expected) {
-    return NextResponse.json({ ok: false, error: "CRON_SECRET not configured" }, { status: 500 });
+
+  // Two accepted secrets, deliberately.
+  //
+  // CRON_SECRET is the platform-wide one Vercel's own scheduler presents, and
+  // it opens every cron route there is. DRAIN_CRON_SECRET opens only this one,
+  // and exists because the schedule for this route lives in Postgres
+  // (migration 20261102000008 -- Vercel's plan here refuses minute-granularity
+  // crons), which means the caller's secret has to be stored in a database
+  // table. A copy of CRON_SECRET sitting there would quietly widen the blast
+  // radius of a database read to every scheduled endpoint; a scoped one widens
+  // it to this endpoint, whose whole power is "move the inbox along".
+  //
+  // Either is sufficient on its own, so the Vercel path keeps working if the
+  // schedule ever moves back.
+  const accepted = [process.env.CRON_SECRET, process.env.DRAIN_CRON_SECRET]
+    .filter((s): s is string => typeof s === "string" && s.length > 0)
+    .map((s) => `Bearer ${s}`);
+  if (accepted.length === 0) {
+    return NextResponse.json(
+      { ok: false, error: "CRON_SECRET not configured" },
+      { status: 500 },
+    );
   }
-  if (auth !== expected) {
+  if (!accepted.includes(auth)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
@@ -80,7 +102,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const { data, error } = await sb
     .from("event_inbox")
-    .select("event_id, instance_id, kind, payload, origin, attempts")
+    .select("event_id, instance_id, kind, payload, origin, attempts, occurred_at, received_at")
     .is("processed_at", null)
     .order("received_at", { ascending: true })
     .limit(limit);
@@ -90,7 +112,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "inbox_read_failed" }, { status: 500 });
   }
 
-  const rows = (data ?? []) as InboxRow[];
+  // Selection is FIFO by arrival (above), but the WALK must follow the
+  // shopper's clock: intent chaining reads each query against the ones before
+  // it, and the retry queue can deliver an old event after a newer one. Sorted
+  // by occurred_at so a refinement chain is reconstructed in the order it was
+  // actually typed; rows with no reported age keep arrival order behind them.
+  const rows = ((data ?? []) as InboxRow[]).slice().sort((a, b) => {
+    const at = a.occurred_at ?? a.received_at;
+    const bt = b.occurred_at ?? b.received_at;
+    return at < bt ? -1 : at > bt ? 1 : 0;
+  });
   if (rows.length === 0) {
     return NextResponse.json({ ok: true, drained: 0, searches: 0, events: 0 });
   }
@@ -110,24 +141,39 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // visit its own intent id and quietly defeat the whole column.
   const intentCache = new Map<string, RecentQuery[]>();
 
-  async function recentFor(instanceId: number, userId: string): Promise<RecentQuery[]> {
+  async function recentFor(
+    instanceId: number,
+    userId: string,
+    atIso: string,
+  ): Promise<RecentQuery[]> {
     const key = `${instanceId}:${userId}`;
     const cached = intentCache.get(key);
     if (cached) return cached;
+    // Bounded in time as well as in count, and probes excluded — the same two
+    // rules the search route applies, for the same reasons (F-1, F-2). Seeded
+    // from the FIRST event of this user's run, which is the earliest thing a
+    // query in this batch could legitimately join.
+    const since = new Date(Date.parse(atIso) - INTENT_WINDOW_MS).toISOString();
     const { data: recentRows } = await sb
       .from("query_log")
-      .select("query, intent_group_id")
+      .select("query, intent_group_id, created_at")
       .eq("instance_id", instanceId)
       .eq("user_id", userId)
       .not("intent_group_id", "is", null)
+      .not("is_committed", "is", false)
+      .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(INTENT_WINDOW);
     const window: RecentQuery[] = (recentRows ?? [])
       .filter(
-        (r): r is { query: string; intent_group_id: string } =>
+        (r): r is { query: string; intent_group_id: string; created_at: string } =>
           typeof r.query === "string" && typeof r.intent_group_id === "string",
       )
-      .map((r) => ({ query: r.query, intentGroupId: r.intent_group_id }));
+      .map((r) => ({
+        query: r.query,
+        intentGroupId: r.intent_group_id,
+        at: r.created_at,
+      }));
     intentCache.set(key, window);
     return window;
   }
@@ -136,23 +182,40 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     try {
       const p = row.payload ?? {};
 
+      // WHEN it happened, not when we got round to moving it. `created_at` is
+      // what sessionization's 30-minute gap rule and instance_day()'s KPI
+      // bucketing both read, so letting it default to the drain's own clock
+      // collapsed every event in a drain window onto one instant (R-33).
+      // Falls back to ingest time for a client too old to report an age.
+      const createdAt = row.occurred_at ?? row.received_at;
+
       if (row.kind === "search_performed") {
         const query = str(p.query, 512);
         if (query === null) throw new Error("search_performed without a query");
 
         const userId = str(p.user_id ?? p.userId, 128);
+        const isCommitted =
+          typeof p.is_committed === "boolean" ? p.is_committed : null;
         let intentGroupId: string | null = null;
-        if (userId) {
-          const window = await recentFor(row.instance_id, userId);
-          intentGroupId = assignIntent(window, query);
+        let reformulationType: string | null = null;
+        let previousQuery: string | null = null;
+        // A typeahead probe does not mint an intent and does not enter the
+        // window (F-2); only a committed search does.
+        if (userId && isCommitted !== false) {
+          const window = await recentFor(row.instance_id, userId, createdAt);
+          const assigned = assignIntent(window, query, createdAt);
+          intentGroupId = assigned.intentGroupId;
+          reformulationType = assigned.reformulationType;
+          previousQuery = assigned.previousQuery;
           // Most-recent-first, so the next search in this batch sees this one.
-          window.unshift({ query, intentGroupId });
+          window.unshift({ query, intentGroupId, at: createdAt });
           if (window.length > INTENT_WINDOW) window.pop();
         }
 
         searchRows.push({
           event_id: row.event_id,
           instance_id: row.instance_id,
+          created_at: createdAt,
           query,
           // R-26: the page length and the whole-query estimate are two
           // different numbers and now live in two different columns.
@@ -169,7 +232,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           user_id: userId,
           account_id: str(p.account_id ?? p.accountId, 128),
           intent_group_id: intentGroupId,
-          is_committed: typeof p.is_committed === "boolean" ? p.is_committed : null,
+          reformulation_type: reformulationType,
+          previous_query: previousQuery,
+          is_committed: isCommitted,
           commit_reason: str(p.commit_reason, 64),
         });
       } else {
@@ -181,6 +246,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         eventRows.push({
           event_id: row.event_id,
           instance_id: row.instance_id,
+          created_at: createdAt,
           event_type: eventType,
           event_name: eventName,
           user_id: userId,

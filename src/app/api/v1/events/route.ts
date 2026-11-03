@@ -408,7 +408,14 @@ type InboxRow = {
   /** Per-session counter; a gap between delivered values is a lost event (R-14). */
   seq: number | null;
   session_id: string | null;
+  /** When the shopper actually did it, anchored to OUR clock (R-33). */
+  occurred_at: string | null;
 };
+
+/** Oldest age we will believe from a client. The retry queue can legitimately
+ *  hold events for days; past this, the reading is junk (a reset clock, a
+ *  tampered payload) and `received_at` is the better guess. */
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Append a reported batch to `event_inbox` and answer 202.
@@ -436,6 +443,11 @@ async function acceptBatch(
     return corsify(NextResponse.json({ accepted: 0 }, { status: 202 }), origin);
   }
   if (events.length > MAX_BATCH) return deny(origin, 400);
+
+  // One reading of our clock for the whole batch. Every event's occurred_at is
+  // derived from it, so the batch is internally consistent even if this
+  // function takes a moment.
+  const receivedMs = Date.now();
 
   const rows: InboxRow[] = [];
   let skipped = 0;
@@ -484,11 +496,28 @@ async function acceptBatch(
             ? e.user_id.slice(0, 128)
             : null;
 
+    // ── Event time (R-33) ────────────────────────────────────────────────
+    //
+    // The storefront reports how long AGO the event happened, never when. Both
+    // readings behind that age come from the device's own clock, so a device
+    // that is wrong by a year still reports a correct age. We then anchor it to
+    // our clock. Before this, nothing on the wire carried time at all and
+    // `created_at` ended up being whenever the drain happened to run -- which
+    // silently flattened the 30-minute gaps sessionization is built on.
+    const ageRaw = e.age_ms;
+    const ageMs =
+      typeof ageRaw === "number" && Number.isFinite(ageRaw) && ageRaw >= 0
+        ? Math.min(Math.round(ageRaw), MAX_AGE_MS)
+        : null;
+    const occurredAt =
+      ageMs === null ? null : new Date(receivedMs - ageMs).toISOString();
+
     rows.push({
       event_id: eventId,
       instance_id: instanceId,
       kind,
       payload: e,
+      occurred_at: occurredAt,
       // Recorded per row: the drainer writes it onto the destination, and it
       // is the only evidence of WHERE a reported event came from once the
       // request is gone.

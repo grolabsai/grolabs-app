@@ -142,9 +142,30 @@ flowchart TD
 | Proceeded to checkout | `conversion` | own store always; Meili iff attributed | object_id, account_id, cart_id, queryUid? |
 | Completed order | `conversion` | own store always; Meili iff attributed | object_id, account_id, cart_id, **order_id**, queryUid? |
 | Removed from cart | `cart_remove` | **own store only** | object_id, user_id, account_id, cart_id |
+| Product viewed | `view` | **own store only** | object_id, user_id, placement |
+| **Category viewed** | `view` | **own store only** | object_id (the collection), object_name, placement, **filters** |
+| **Filters changed** | `filter` | **own store only** | **filters**, **filter_delta**, placement — and NO object_id |
 
 "Meili iff attributed" = the Meilisearch write fires only when a `queryUid` attribution exists for
 that product (the fence — R-1). The own-store write always fires.
+
+**Category viewed and Filters changed (2026-11-02, Draft — see
+[`filter-and-category-tracking.md`](filter-and-category-tracking.md)).** Until these, how a
+shopper NARROWED was not recorded at all: GroLabs has no facet UI, `query_log` had no filter
+column, and the pixel did not subscribe to `collection_viewed`, so the merchant theme's own
+filtering was invisible. Two things are worth knowing about their shape:
+
+- **`Filters changed` carries no `object_id`.** Every other event is about a product; this one
+  is about the query. `object_id` is nullable in the schema, and `submitEvent` now admits the
+  `filter` type without one — every other type still requires it, because Meilisearch's event
+  schema is built around an object. The fence needs no special case: a filter event has no
+  `queryUid`, so the Meili write is skipped anyway.
+- **The two halves are emitted from different places, deliberately.** `Category viewed` comes
+  from the **pixel** (`collection_viewed`), which knows the collection's identity. `Filters
+  changed` comes from the **theme embed**, because Dawn-style themes apply a filter by fetching
+  a section and calling `history.replaceState` — no page load, so `collection_viewed` never
+  re-fires and a pixel implementation would miss every refinement after the first while
+  appearing to work.
 
 ## 3. Identity (Option B, device tier)
 

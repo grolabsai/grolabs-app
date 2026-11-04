@@ -61,6 +61,21 @@ function str(v: unknown, max: number): string | null {
   return null;
 }
 
+/** A bounded jsonb value. Rejects anything that is not a plain object, and
+ *  anything too large to be a filter set — the column is open-ended by design
+ *  (a merchant can define any option or metafield filter), so the guard is on
+ *  SHAPE and SIZE rather than on keys. */
+function obj(v: unknown, maxBytes = 2048): Record<string, unknown> | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  try {
+    const s = JSON.stringify(v);
+    if (s.length > maxBytes || s === "{}") return null;
+  } catch {
+    return null;
+  }
+  return v as Record<string, unknown>;
+}
+
 function int(v: unknown): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
   return Number.isFinite(n) ? Math.round(n) : null;
@@ -236,6 +251,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           previous_query: previousQuery,
           is_committed: isCommitted,
           commit_reason: str(p.commit_reason, 64),
+          // The filter state this search ran under. Without it a narrowed
+          // search and a repeat of the same query are the same row.
+          filters: obj(p.filters),
         });
       } else {
         const eventType = str(p.eventType ?? row.kind, 64);
@@ -262,6 +280,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           value: typeof p.value === "number" && Number.isFinite(p.value) ? p.value : null,
           quantity: int(p.quantity),
           placement: str(p.placement, 80),
+          // State after the change, and what moved. Both, because the delta
+          // cannot be reconstructed from a state series that may have gaps.
+          filters: obj(p.filters),
+          filter_delta: obj(p.filterDelta ?? p.filter_delta),
         });
 
         posthog.push({

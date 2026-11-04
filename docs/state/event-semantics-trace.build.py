@@ -150,6 +150,15 @@ EVERYTHING = [
     ("Removed from cart", "21", "yes", "Step 14. <code>cart_remove</code> — own store only."),
     ("Proceeded to check out", "34", "yes", "Step 15."),
     ("Completed order", "32", "yes", "Step 16, with the entity at 17."),
+    ("Category viewed", "0", "no",
+     "<strong>New, not deployed.</strong> The pixel now subscribes to "
+     "<code>collection_viewed</code>; until this ships, browsing by category leaves no trace "
+     "at all. Carries the filter state in force on that view."),
+    ("Filters changed", "0", "no",
+     "<strong>New, not deployed.</strong> Emitted by the THEME EMBED, not the pixel — "
+     "Dawn-style themes filter via <code>history.replaceState</code> with no page load, so "
+     "<code>collection_viewed</code> never re-fires. Carries both the state and the delta, and "
+     "is the only event with no <code>object_id</code>."),
     ("Cart updated", "20", "no",
      "<strong>No code emits this.</strong> It is in no taxonomy — not "
      "<code>event-tracking.md</code> §2, not <code>search-events.md</code> §2 — and no "
